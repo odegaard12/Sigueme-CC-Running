@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import urllib.request
+from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
 from hmac import compare_digest
 
@@ -170,6 +171,13 @@ def extract_telemetry(html):
 
 
 def fetch_page(url):
+    # ⚠️ Cloudflare bloquea por huella TLS (JA3), no por cabeceras: con
+    # urllib.request daba 403 SIEMPRE, aunque llevara User-Agent, Referer y
+    # sec-ch-ua de Chrome de verdad. curl_cffi reproduce la huella TLS real
+    # de Chrome (BoringSSL) y con eso Cloudflare deja pasar la petición.
+    if "igpsport.com" in url:
+        r = cffi_requests.get(url, impersonate="chrome120", timeout=10)
+        return r.text
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; 21LeguasTracker/1.0)"
     })
