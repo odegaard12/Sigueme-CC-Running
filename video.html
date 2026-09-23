@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>21 Leguas Video Render</title>
+  <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background: #050706; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #map3d { width: 100%; height: 100vh; }
+  </style>
+</head>
+<body>
+<div id="map3d"></div>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="geojson.js"></script>
+<script src="app.js"></script>
+<script>
+// Grabar fotogramas automáticamente
+let frameNum = 0;
+const plan = [
+  {center: [42.9, -8.68], zoom: 8, bearing: 0, pitch: 30, dur: 20},
+  {center: [42.9, -8.68], zoom: 10, bearing: 45, pitch: 45, dur: 20},
+  {center: [42.9, -8.68], zoom: 12, bearing: 90, pitch: 60, dur: 20},
+  {center: [42.9, -8.68], zoom: 14, bearing: 180, pitch: 50, dur: 20},
+  {center: [42.9, -8.68], zoom: 8, bearing: 270, pitch: 30, dur: 20}
+];
+
+setTimeout(async () => {
+  // Esperar a que mapa esté listo
+  while (!map3d || !mapReady) await new Promise(r => setTimeout(r, 100));
+
+  for (const kf of plan) {
+    map3d.easeTo({center: kf.center, zoom: kf.zoom, bearing: kf.bearing, pitch: kf.pitch, duration: kf.dur * 50});
+
+    // Capturar cada 50ms durante la duración
+    for (let i = 0; i < kf.dur; i++) {
+      await new Promise(r => setTimeout(r, 50));
+      const canvas = map3d.getCanvas();
+      if (canvas) {
+        const img = canvas.toDataURL('image/jpeg', 0.9);
+        // Enviar al servidor
+        fetch('/api/frame', {method: 'POST', body: JSON.stringify({num: frameNum, data: img.split(',')[1]})});
+        frameNum++;
+      }
+    }
+  }
+  console.log(`✅ Grabación completada: ${frameNum} fotogramas`);
+}, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>21 Leguas de Narón — Seguimiento en directo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1210">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="21 Leguas">
+<link rel="apple-touch-icon" href="icon-192.png?v=2">
+<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="style.css?v=49">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-fila">
+    <div class="marca">
+      <h1>21 Leguas <span>de Narón</span></h1>
+      <p class="marca-sub">by <b>Odegaard12</b></p>
+    </div>
+    <button class="ver-ficha" id="ver-ficha">
+      <img src="rider.png?v=4" alt=""><span id="ver-ficha-txt">Mi ficha</span>
+    </button>
+  </div>
+  <div class="cd-ruta">
+    <span><b id="stat-dist">—</b> km</span>
+    <span><b id="stat-gain">—</b> m+</span>
+    <span><b id="stat-limite">12 h</b> <i>para completar</i></span>
+  </div>
+</header>
+
+<section class="ficha" id="ficha" hidden>
+  <img class="ficha-foto" src="rider.png?v=4" alt="Óscar García">
+  <div class="ficha-datos">
+    <h2>Óscar García <span>«Odegaard12»</span></h2>
+    <p class="ficha-dorsal">Dorsal <b>1017</b> · MTB · 21 Leguas de Narón 2026</p>
+  </div>
+
+  <div class="ficha-bici-bloque">
+    <h3>Berria Bravo 4.1 Comp</h3>
+    <dl class="ficha-specs">
+      <div><dt>Cuadro</dt><dd>Carbono HM1X</dd></div>
+      <div><dt>Peso</dt><dd>10,4 kg</dd></div>
+      <div><dt>Horquilla</dt><dd>RockShox SID XX</dd></div>
+      <div><dt>Cambio</dt><dd>SRAM X01</dd></div>
+      <div><dt>Piñones</dt><dd>SRAM Eagle</dd></div>
+      <div><dt>Frenos</dt><dd>SRAM Guide RS</dd></div>
+      <div><dt>Llantas</dt><dd>ZTR Crest</dd></div>
+      <div><dt>Potencia</dt><dd>Ritchey WCS invertida</dd></div>
+    </dl>
+  </div>
+</section>
+
+<div class="panel-pc">
+<section class="map-wrap">
+  <div id="map3d"></div>
+
+  <div class="mapa-botones">
+    <button class="btn-flotante" id="btn-recenter" title="Centrar en el corredor">🎯</button>
+    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D">2D</button>
+  </div>
+
+  <div class="perfil-en-mapa">
+    <canvas id="elevation-chart"></canvas>
+  </div>
+
+  <div class="cargando" id="cargando">
+    <div class="rueda"></div>
+    <span>Cargando el mapa…</span>
+  </div>
+</section>
+
+<div class="leyenda">
+  <span><i style="background:#8fe06a"></i>avituallamiento</span>
+  <span><i style="background:#e08a3a"></i>comida caliente</span>
+  <span><i style="background:#5cc2e8"></i>taller MTB</span>
+</div>
+
+<div class="lateral">
+<p class="map-hint" id="geo-hint"></p>
+
+<section class="metricas">
+  <div class="metricas-top">
+    <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
+    <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
+    <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
+    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo</span></div>
+  </div>
+  <div class="metricas-sec">
+    <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> km/h media</span>
+    <span class="chip chip-nivel" data-tile="grad">pendiente <b id="m-grad">—</b>
+      <i class="nivel"><u id="nivel-marca"></u></i>
+    </span>
+    <span class="chip chip-pulso" data-tile="hr">♥ <b id="m-hr">—</b> ppm</span>
+    <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
+    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> cadencia</span>
+  </div>
+  <p class="estado-carrera" id="estado-carrera"></p>
+</section>
+
+<p class="live-updated" id="live-updated"></p>
+</div>
+</div>
+
+
+<footer>
+  <p>21 Leguas de Narón · Ferrolterra · <a href="admin.html">admin</a></p>
+  <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
+</footer>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="app.js?v=49"></script>
+<script>
+  // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
+  // sirviendo código viejo a móviles que ya habían abierto la web (pantalla
+  // de "Cargando" pegada, diseño antiguo...). Para una web que solo sirve
+  // datos en vivo no aporta nada y el riesgo el día de la carrera es enorme.
+  // Esto además DESINSTALA el que se hubiera quedado instalado antes.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(rs => rs.forEach(r => r.unregister()))
+      .catch(() => {});
+    if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+  }
+</script>
+</body>
+</html>

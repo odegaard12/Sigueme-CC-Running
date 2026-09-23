@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · 21 Leguas</title>
+<link rel="stylesheet" href="style.css?v=43">
+<style>
+  .admin-wrap { max-width: 520px; margin: 0 auto; padding: 18px 16px 60px; }
+  .tarjeta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .tarjeta h2 {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 0.95rem;
+  }
+  .field input:focus { outline: 1px solid rgba(255,255,255,0.35); outline-offset: -1px; }
+  .link-field input { font-size: 1rem; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .save-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: #f1f3f1; color: #0c0f0e;
+    font-weight: 700; font-size: 1rem; cursor: pointer;
+  }
+  .save-btn:active { transform: scale(0.98); }
+  .msg { text-align: center; margin-top: 10px; font-size: 0.82rem; min-height: 1.2em; }
+  .msg.ok { color: #c9d2cc; }
+  .msg.err { color: var(--danger); }
+  .howto { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+  .howto b { color: var(--text); }
+  .estado-fila {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; color: var(--muted);
+  }
+  .estado-fila b { color: var(--text); }
+  details { margin-top: 4px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 0.8rem; margin-bottom: 10px; }
+  /* todos los botones del panel con la misma altura y forma */
+  .quick-actions { display: flex; gap: 8px; }
+  .btn, .save-btn, a.btn {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    flex: 1;
+  }
+  .save-btn { background: #f1f3f1; color: #0c0f0e; border: none; font-weight: 600; }
+  .btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
+  .stop-btn { background: #3a1f1f; border-color: #5a2c2c; width: 100%; margin-top: 12px; }
+  #login-screen { max-width: 340px; margin: 50px auto 0; padding: 0 16px; }
+  #panel { display: none; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Panel admin</h1>
+  <div class="cabecera-datos">
+    <a class="cd-linea" href="index.html">← Volver a la web</a>
+  </div>
+</header>
+
+<div id="login-screen">
+  <div class="field">
+    <label for="token">Clave</label>
+    <input type="password" id="token" placeholder="clave" autofocus>
+  </div>
+  <button class="save-btn" id="login-btn">Entrar</button>
+  <p class="msg" id="login-msg"></p>
+</div>
+
+<div class="admin-wrap" id="panel">
+
+  <div class="tarjeta">
+    <h2>El enlace del BSC500</h2>
+    <div class="howto">
+      App iGPSPORT → compartir seguimiento en vivo → pega el enlace aquí.
+    </div>
+    <div class="field link-field" style="margin-top:12px">
+      <label for="livetrack">Enlace LiveTrack</label>
+      <input type="url" id="livetrack" placeholder="https://...">
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label for="hora-salida">Hora oficial de salida</label>
+      <input type="time" id="hora-salida" value="08:30">
+    </div>
+    <div class="howto" style="margin-top:8px">
+      El cronómetro de la web cuenta desde esta hora, no desde que pegas el
+      enlace. Si enciendes el GPS a las 08:15 y salís a las 08:30, déjalo en
+      08:30 y el tiempo empezará a correr a las 08:30.
+    </div>
+    <button class="save-btn" id="save">Guardar y empezar a seguir</button>
+    <button class="btn" id="save-hora" style="margin-top:8px">Guardar solo la hora de salida</button>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Estado</h2>
+    <div class="estado-fila" id="status-line">
+      <span>Estado: <b id="status-text">—</b></span>
+      <span id="extract-text"></span>
+    </div>
+    <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Pruebas</h2>
+    <div class="howto">
+      Recorre los 101 km en 2 minutos con datos falsos.
+    </div>
+    <div class="quick-actions" style="margin-top:10px">
+      <button class="btn" id="simular">▶ Simular carrera</button>
+      <button class="btn" id="reset">Dejar a cero</button>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Avanzado</h2>
+    <details>
+      <summary>Meter los datos a mano</summary>
+      <div class="row2">
+        <div class="field">
+          <label for="speed">Velocidad (km/h)</label>
+          <input type="number" step="0.1" id="speed">
+        </div>
+        <div class="field">
+          <label for="hr">Pulso (ppm)</label>
+          <input type="number" id="hr">
+        </div>
+        <div class="field">
+          <label for="cadence">Cadencia</label>
+          <input type="number" id="cadence">
+        </div>
+        <div class="field">
+          <label for="dist">Km recorridos</label>
+          <input type="number" step="0.1" id="dist">
+        </div>
+      </div>
+      <div class="field">
+        <label for="elapsed">Tiempo transcurrido (ej. 01:23:45)</label>
+        <input type="text" id="elapsed" placeholder="01:23:45">
+      </div>
+      <button class="btn" id="save-manual" style="width:100%">Guardar datos manuales</button>
+    </details>
+  </div>
+
+  <p class="msg" id="msg"></p>
+
+  <div class="quick-actions">
+    <a class="btn" href="index.html">← Volver a la web</a>
+    <button class="btn" id="salir">Cerrar sesión</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let TOKEN = sessionStorage.getItem('adminToken') || '';
+
+async function post(body) {
+  const msg = $('msg');
+  msg.textContent = 'Guardando…';
+  msg.className = 'msg';
+  try {
+    const res = await fetch('/api/live', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, ...body })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msg.textContent = 'Guardado ✓';
+      msg.className = 'msg ok';
+      refreshStatus(data.live);
+    } else {
+      msg.textContent = data.error || 'Error al guardar';
+      msg.className = 'msg err';
+    }
+  } catch (e) {
+    msg.textContent = 'No se pudo conectar con el servidor.';
+    msg.className = 'msg err';
+  }
+}
+
+let horaTocada = false;
+$('hora-salida').addEventListener('input', () => { horaTocada = true; });
+
+function refreshStatus(live) {
+  $('status-text').textContent = live.status_label || '—';
+  if (!horaTocada && live.hora_salida) $('hora-salida').value = live.hora_salida;
+  const ex = live.extract_status;
+  $('extract-text').textContent = ex === 'ok' ? 'extrayendo bien ✓'
+    : ex === 'buscando…' ? 'buscando…'
+    : ex === 'sin_datos' ? 'no encontré datos en ese enlace'
+    : ex ? ex
+    : '';
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch('live.json?_=' + Date.now());
+    refreshStatus(await res.json());
+  } catch (e) {}
+}
+
+async function tryLogin() {
+  const val = $('token').value.trim();
+  if (!val) return;
+  const loginMsg = $('login-msg');
+  loginMsg.textContent = 'Comprobando…';
+  loginMsg.className = 'msg';
+  try {
+    const res = await fetch('/api/live', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: val })
+    });
+    if (res.ok) {
+      TOKEN = val;
+      sessionStorage.setItem('adminToken', val);
+      $('login-screen').style.display = 'none';
+      $('panel').style.display = 'block';
+      pollStatus();
+      setInterval(pollStatus, 5000);
+    } else {
+      loginMsg.textContent = 'Clave incorrecta.';
+      loginMsg.className = 'msg err';
+    }
+  } catch (e) {
+    loginMsg.textContent = 'No se pudo conectar con el servidor.';
+    loginMsg.className = 'msg err';
+  }
+}
+
+$('salir').addEventListener('click', () => {
+  sessionStorage.removeItem('adminToken');
+  TOKEN = '';
+  location.reload();
+});
+
+$('login-btn').addEventListener('click', tryLogin);
+$('token').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+$('save').addEventListener('click', () => {
+  const url = $('livetrack').value.trim();
+  if (!url) { $('msg').textContent = 'Pega antes el enlace.'; $('msg').className = 'msg err'; return; }
+  post({ livetrack_url: url, hora_salida: $('hora-salida').value });
+});
+
+$('save-hora').addEventListener('click', () => post({ hora_salida: $('hora-salida').value }));
+
+$('stop').addEventListener('click', () => post({ action: 'stop' }));
+$('simular').addEventListener('click', () => post({ action: 'simular', segundos: 120 }));
+$('reset').addEventListener('click', () => post({ action: 'reset' }));
+
+$('save-manual').addEventListener('click', () => {
+  const p = {};
+  if ($('speed').value !== '') p.speed_kmh = parseFloat($('speed').value);
+  if ($('hr').value !== '') p.hr = parseInt($('hr').value, 10);
+  if ($('cadence').value !== '') p.cadence = parseInt($('cadence').value, 10);
+  if ($('dist').value !== '') p.dist_km = parseFloat($('dist').value);
+  if ($('elapsed').value.trim()) p.elapsed = $('elapsed').value.trim();
+  post(p);
+});
+
+if (TOKEN) {
+  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN }) })
+    .then(res => {
+      if (res.ok) {
+        $('login-screen').style.display = 'none';
+        $('panel').style.display = 'block';
+        pollStatus();
+        setInterval(pollStatus, 5000);
+      }
+    });
+}
+</script>
+</body>
+</html>
