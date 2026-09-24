@@ -22,6 +22,7 @@ function haversineKm(a, b) {
 // igual de cerca (±50 m), se elige el que esté más pegado a lo que ya llevaba
 // recorrido. Con eso el progreso avanza siempre hacia delante.
 let ultimoKmConocido = 0;
+let anclaDelGps = false;   // ultimoKmConocido viene del BSC500, no de la ruta
 let largoLinea = 0;
 let factorKm = 1;
 
@@ -832,7 +833,8 @@ function pintarNivel(texto) {
 }
 
 function esMeta(data, km) {
-  if (data.status_label === 'Finalizada') return true;
+  // la llegada la apunta el servidor una vez y ya no se desdice
+  if (data.finished_at || data.status_label === 'Finalizada') return true;
   if (!totalRouteKm || km == null || km < 80) return false;
   if (km >= totalRouteKm - 0.4) return true;
   const meta = routeLatLon[routeLatLon.length - 1];
@@ -869,14 +871,24 @@ function pollLive() {
       lastStartedAt = data.started_at || null;
 
       let doneKm = data.dist_km;
-      if (!ultimoKmConocido && data.dist_km) ultimoKmConocido = data.dist_km;
+      // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
+      // SOLO para desempatar en la salida/meta (la ruta es circular), NUNCA
+      // como mínimo: esa distancia incluye lo rodado antes de salir y el
+      // error del GPS, y con 2 km de más quien abría la web en el km 100,5
+      // ya le veía "En meta". La marca dura hasta la primera proyección de
+      // verdad: el primer poll suele llegar antes que la ruta y, si se
+      // perdía ahí, en el siguiente la distancia del GPS volvía a ser suelo.
+      if (!ultimoKmConocido && data.dist_km) { ultimoKmConocido = data.dist_km; anclaDelGps = true; }
+      let proyectado = false;
       if (data.lat != null && data.lon != null && routeLatLon.length) {
         doneKm = projectOntoRoute(data.lat, data.lon).alongKm * factorKm;
+        proyectado = true;
       }
       if (doneKm != null && totalRouteKm) {
         doneKm = Math.min(doneKm, totalRouteKm);
-        if (doneKm < ultimoKmConocido - 0.5) doneKm = ultimoKmConocido;
+        if (!anclaDelGps && doneKm < ultimoKmConocido - 0.5) doneKm = ultimoKmConocido;
         ultimoKmConocido = doneKm;
+        if (proyectado) anclaDelGps = false;
       }
 
       enMeta = esMeta(data, doneKm);
@@ -898,10 +910,11 @@ function pollLive() {
 
       // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
-      if (enMeta && lastStartedAt && ultimoDato) {
-        // tiempo final = del pistoletazo al último dato que llegó, congelado
+      const llegada = data.finished_at || ultimoDato;
+      if (enMeta && lastStartedAt && llegada) {
+        // tiempo final = del pistoletazo a la llegada (o al último dato)
         document.getElementById('m-time').textContent =
-          fmtFinal(new Date(ultimoDato) - new Date(lastStartedAt));
+          fmtFinal(new Date(llegada) - new Date(lastStartedAt));
       } else if (!haArrancado) {
         document.getElementById('m-time').textContent = '—';
       } else {
