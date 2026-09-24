@@ -857,9 +857,15 @@ function fmtDuracion(ms) {
 
 function pollLive() {
   fetch('live.json?_=' + Date.now())
-    .then(r => r.json())
+    .then(r => {
+      // la hora del servidor sale de la cabecera Date de la respuesta, no de
+      // "updated": si el servidor llevaba minutos sin escribir (sin señal),
+      // el cronómetro de quien miraba se atrasaba esos mismos minutos
+      const fecha = Date.parse(r.headers.get('Date'));
+      if (!isNaN(fecha)) desfaseReloj = Date.now() - fecha;
+      return r.json();
+    })
     .then(data => {
-      if (data.updated) desfaseReloj = Date.now() - new Date(data.updated).getTime();
       lastStartedAt = data.started_at || null;
 
       let doneKm = data.dist_km;
@@ -890,10 +896,12 @@ function pollLive() {
       document.getElementById('m-hr-avg').textContent = data.hr_avg ?? '—';
       document.getElementById('m-cad-avg').textContent = data.cadence_avg ?? '—';
 
-      if (enMeta && lastStartedAt && data.updated) {
+      // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
+      const ultimoDato = data.data_at || data.updated;
+      if (enMeta && lastStartedAt && ultimoDato) {
         // tiempo final = del pistoletazo al último dato que llegó, congelado
         document.getElementById('m-time').textContent =
-          fmtFinal(new Date(data.updated) - new Date(lastStartedAt));
+          fmtFinal(new Date(ultimoDato) - new Date(lastStartedAt));
       } else if (!haArrancado) {
         document.getElementById('m-time').textContent = '—';
       } else {
@@ -942,13 +950,13 @@ function pollLive() {
 
       // pie de estado: en meta, sin señal o la hora del último dato
       const pie = document.getElementById('live-updated');
-      const hueco = data.updated ? (Date.now() - new Date(data.updated)) : 0;
+      const hueco = ultimoDato ? (ahoraServidor() - new Date(ultimoDato)) : 0;
       {
-        if (data.updated && hueco > 240000 && data.status_label === 'En carrera') {
-          pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(data.updated) +
-            ' · puede ser cobertura';
-        } else if (data.updated && data.lat != null) {
-          pie.textContent = 'Última actualización: ' + fmtTime(data.updated);
+        if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
+          pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
+            ' · parado o sin cobertura';
+        } else if (ultimoDato && data.lat != null) {
+          pie.textContent = 'Última actualización: ' + fmtTime(ultimoDato);
         } else {
           pie.textContent = '';
         }

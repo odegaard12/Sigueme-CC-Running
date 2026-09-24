@@ -170,6 +170,12 @@ def extract_telemetry(html):
     return found
 
 
+class RespuestaHTTP(Exception):
+    def __init__(self, code):
+        super().__init__(f"HTTP {code}")
+        self.code = code
+
+
 def fetch_page(url):
     # ⚠️ Cloudflare bloquea por huella TLS (JA3), no por cabeceras: con
     # urllib.request daba 403 SIEMPRE, aunque llevara User-Agent, Referer y
@@ -177,7 +183,14 @@ def fetch_page(url):
     # de Chrome (BoringSSL) y con eso Cloudflare deja pasar la petición.
     if "igpsport.com" in url:
         r = cffi_requests.get(url, impersonate="chrome120", timeout=10)
-        return r.text
+        # curl_cffi no lanza excepción con los errores HTTP (urllib sí), así que
+        # el freno ante 403/429 no saltaba nunca. OJO: iGPSPORT contesta 403
+        # CON su JSON {"code":40604} cuando la actividad aún no ha empezado;
+        # eso no es un bloqueo y se deja pasar para que se lea como "sin datos".
+        cuerpo = r.text
+        if r.status_code == 429 or (r.status_code >= 400 and not cuerpo.lstrip().startswith("{")):
+            raise RespuestaHTTP(r.status_code)
+        return cuerpo
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; 21LeguasTracker/1.0)"
     })
@@ -228,9 +241,16 @@ def leer_telemetria(url):
     return extract_telemetry(fetch_page(url)), "generico"
 
 
+def huella(t):
+    """Lo que cambia cuando de verdad llega un dato nuevo del BSC500."""
+    return tuple(t.get(k) for k in ("lat", "lon", "dist_km", "elapsed"))
+
+
 def poll_loop(url, stop_event):
     first = True
     fallos = 0
+    sin_datos = False
+    ultima_huella = None
     sums = {"speed_kmh": 0.0, "hr": 0.0, "cadence": 0.0}
     counts = {"speed_kmh": 0, "hr": 0, "cadence": 0}
     while not stop_event.is_set():
@@ -246,10 +266,20 @@ def poll_loop(url, stop_event):
                         counts[key] += 1
                         patch[key + "_avg"] = round(sums[key] / counts[key], 1)
                 patch["extract_status"] = "ok (" + via + ")"
+                # ⚠️ "updated" se renueva en CADA consulta, llegue algo nuevo o
+                # no: con el móvil sin cobertura la web seguía diciendo
+                # "Última actualización: ahora" con la posición congelada, y en
+                # meta el tiempo final seguía creciendo. data_at solo avanza
+                # cuando el dato cambia de verdad.
+                if huella(telemetry) != ultima_huella:
+                    ultima_huella = huella(telemetry)
+                    patch["data_at"] = datetime.now(timezone.utc).isoformat()
                 merge_live(patch)
                 fallos = 0
+                sin_datos = False
             else:
                 fallos += 1
+                sin_datos = True
                 if first or fallos > 3:
                     merge_live({"extract_status": "sin_datos"})
         except Exception as exc:
@@ -257,6 +287,7 @@ def poll_loop(url, stop_event):
             # los valores ya recibidos NO se tocan: si deja de compartir (o se
             # queda sin cobertura), la web sigue enseñando el último estado
             codigo = getattr(exc, "code", None)
+            sin_datos = False
             if codigo in (403, 429):
                 # nos están frenando: retirarse un buen rato, no insistir
                 fallos = max(fallos, 6)
@@ -267,6 +298,11 @@ def poll_loop(url, stop_event):
         # espera normal si todo va bien; si falla, el doble cada vez
         espera = POLL_SECONDS if fallos == 0 else min(
             ESPERA_MAXIMA, POLL_SECONDS * (2 ** min(fallos, 5)))
+        # "La actividad aún no ha empezado" no es un error: si se pega el
+        # enlace a las 08:15 y se espera hasta 5 min entre consultas, la web
+        # tardaba eso en enterarse de que ya había salido. Tope de 1 min.
+        if sin_datos:
+            espera = min(espera, 60)
         stop_event.wait(espera)
 
 
@@ -305,6 +341,7 @@ def simular_loop(stop_event, segundos):
             "cadence_avg": cad_base + 3,
             "dist_km": round(recorrido, 2),
             "extract_status": "simulación",
+            "data_at": datetime.now(timezone.utc).isoformat(),
         })
         if avance >= 1:
             break
@@ -460,7 +497,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "extract_status": None, "started_at": None, "elapsed": None,
                 "lat": None, "lon": None, "speed_kmh": None, "speed_kmh_avg": None,
                 "hr": None, "hr_avg": None, "cadence": None, "cadence_avg": None,
-                "dist_km": None,
+                "dist_km": None, "data_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -468,9 +505,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if accion == "stop":
             parar_simulacion()
             stop_previous_poller()
+            # ⚠️ Antes borraba started_at y las medias: pulsar "Finalizar" en
+            # meta dejaba la web sin tiempo final y sin medias justo cuando
+            # todo el mundo mira el resultado. Solo se para la consulta.
             current = merge_live({
                 "status_label": "Finalizada", "livetrack_url": None, "extract_status": None,
-                "started_at": None, "speed_kmh_avg": None, "hr_avg": None, "cadence_avg": None
             })
             self._send_json(200, {"ok": True, "live": current})
             return

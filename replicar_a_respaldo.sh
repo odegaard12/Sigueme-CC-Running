@@ -10,6 +10,7 @@ VIP="192.168.68.202"
 DESTINO="odegaard12@192.168.68.104"
 ORIGEN="/home/odegaard12/21leguas/"
 LOG="/home/odegaard12/21leguas_replica.log"
+SSH="ssh -o BatchMode=yes -o ConnectTimeout=10"
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -17,12 +18,23 @@ if ! ip -4 addr show eth0 | grep -q "inet ${VIP}/"; then
     exit 0
 fi
 
-if rsync -a --delete \
-        --exclude '__pycache__' \
-        -e "ssh -o BatchMode=yes -o ConnectTimeout=10" \
-        "$ORIGEN" "${DESTINO}:/home/odegaard12/21leguas/" 2>>"$LOG"; then
+if cambios=$(rsync -a --delete --itemize-changes \
+        --exclude '__pycache__' --exclude '*.bak*' \
+        -e "$SSH" \
+        "$ORIGEN" "${DESTINO}:/home/odegaard12/21leguas/" 2>>"$LOG"); then
     log "OK: web y live.json replicados al respaldo"
 else
     log "ERROR: fallo la replica al respaldo"
     exit 1
+fi
+
+# ⚠️ Copiar server.py no basta: el respaldo sigue ejecutando el código viejo
+# que tiene en memoria hasta que se reinicia. Pasó con el arreglo de
+# Cloudflare: estuvo copiado en la .104 sin estar activo.
+if grep -q ' server\.py$' <<< "$cambios"; then
+    if $SSH "$DESTINO" 'sudo -n systemctl restart 21leguas' 2>>"$LOG"; then
+        log "OK: server.py cambió, servicio del respaldo reiniciado"
+    else
+        log "ERROR: no se pudo reiniciar el servicio del respaldo"
+    fi
 fi
