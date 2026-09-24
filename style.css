@@ -140,6 +140,8 @@ body {
   backdrop-filter: blur(6px);
 }
 .btn-flotante:active { transform: scale(0.94); }
+/* 🎯 encendido: la cámara va siguiendo al corredor */
+.btn-flotante.activo { background: #8fe06a; color: #0b1210; border-color: #8fe06a; }
 .btn-vista { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; }
 
 /* perfil de altimetría incrustado en la parte baja del mapa */
