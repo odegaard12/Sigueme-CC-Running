@@ -22,6 +22,7 @@ function haversineKm(a, b) {
 // igual de cerca (±50 m), se elige el que esté más pegado a lo que ya llevaba
 // recorrido. Con eso el progreso avanza siempre hacia delante.
 let ultimoKmConocido = 0;
+let anclaDelGps = false;   // ultimoKmConocido viene del BSC500, no de la ruta
 let largoLinea = 0;
 let factorKm = 1;
 
@@ -280,6 +281,8 @@ function buildMap3D() {
   // la foto del corredor crece al acercar y encoge al alejar: a zoom de toda
   // la ruta tapaba media provincia
   map3d.on('zoom', ajustarTamanoCorredor);
+  // arrastrar el mapa = quiere mirar otra cosa: se deja de seguir
+  map3d.on('dragstart', () => marcarSiguiendo(false));
 }
 
 let chinchetasPuestas = false;
@@ -290,6 +293,8 @@ let chinchetasPuestas = false;
 // puede pasar en el móvil si el navegador se lleva por delante el contexto
 // gráfico al cambiar de app. Este vigilante lo detecta y rehace el mapa.
 let intentosDeMapa = 0;
+let lienzoActual = null;
+const alPerderContexto = () => rehacerMapa('contexto gráfico perdido');
 
 function montarMapa() {
   try {
@@ -298,19 +303,26 @@ function montarMapa() {
     map3dDiv.innerHTML = '<p style="color:#eef2ee;text-align:center;padding:40px 16px">No se pudo cargar el mapa 3D: ' + e.message + '</p>';
     return;
   }
-  // si el contexto gráfico se pierde (cambiar de app, memoria baja), rehacer
-  const lienzo = map3d.getCanvas();
-  if (lienzo) lienzo.addEventListener('webglcontextlost', () => rehacerMapa('contexto gráfico perdido'));
+  // si el contexto gráfico se pierde (cambiar de app, memoria baja), rehacer.
+  // ⚠️ map3d.remove() también lo pierde (y el aviso llega un instante
+  // después): sin desengancharlo antes, cada rehacer contaba como DOS fallos
+  // y a la segunda salía "no se pudo cargar el mapa".
+  lienzoActual = map3d.getCanvas();
+  if (lienzoActual) lienzoActual.addEventListener('webglcontextlost', alPerderContexto);
   // ⚠️ Con la pestaña en segundo plano el navegador congela el dibujado y el
   // mapa NO se monta hasta que se mira: eso no es un fallo y no hay que
   // rehacer nada. Se comprueba solo con la página a la vista.
+  // ⚠️ Solo cuenta si el mapa NO llegó a arrancar ('load'). Antes también
+  // miraba isStyleLoaded(), que da falso mientras quedan teselas por bajar:
+  // con cobertura lenta (medido a 400 kbit/s) destruía a los 12 s un mapa que
+  // ya funcionaba, y lo volvía a descargar dos veces.
   const revisar = () => {
     if (document.hidden) return;
-    if (!mapReady || !map3d.isStyleLoaded()) rehacerMapa('el mapa no terminó de cargar');
+    if (!mapReady) rehacerMapa('el mapa no terminó de cargar');
   };
-  setTimeout(revisar, 12000);
+  setTimeout(revisar, 20000);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !mapReady) setTimeout(revisar, 12000);
+    if (!document.hidden && !mapReady) setTimeout(revisar, 20000);
   });
 }
 
@@ -332,6 +344,7 @@ function rehacerMapa(motivo) {
   console.warn('Rehaciendo el mapa:', motivo);
   const tapa = document.getElementById('cargando');
   if (tapa) tapa.classList.remove('fuera');
+  if (lienzoActual) lienzoActual.removeEventListener('webglcontextlost', alPerderContexto);
   try { map3d.remove(); } catch (e) {}
   mapReady = false;
   chinchetasPuestas = false;
@@ -339,6 +352,8 @@ function rehacerMapa(motivo) {
   riderMarkerEl = null;
   tamanoCorredorActual = 0;
   kmPintado = null;
+  objetivo = null;      // si no, el siguiente poll no repinta la línea azul
+  idxRecorridoPintado = -1;
   montarMapa();
 }
 
@@ -501,6 +516,17 @@ function drawElevationMarkers() {
   if (lastEleData) drawElevationChart(lastEleData.profile, lastEleData.min_ele_m, lastEleData.max_ele_m);
 }
 
+// en un perfil de ~380 px, un píxel son ~270 m: repintarlo 5 veces por
+// segundo no se veía, solo gastaba
+let pixelPerfilPintado = null;
+function perfilSiCambia(km) {
+  const canvas = document.getElementById('elevation-chart');
+  const px = Math.round((km / (totalRouteKm || 1)) * (canvas.clientWidth || 1));
+  if (px === pixelPerfilPintado) return;
+  pixelPerfilPintado = px;
+  drawElevationMarkers();
+}
+
 function drawElevationChart(profile, minEle, maxEle) {
   const canvas = document.getElementById('elevation-chart');
   const dpr = window.devicePixelRatio || 1;
@@ -617,12 +643,19 @@ function drawElevationChart(profile, minEle, maxEle) {
 
 window.addEventListener('resize', () => drawElevationMarkers());
 
+// ⚠️ Cada setData obliga a redibujar el mapa 3D entero. Se hacía 5 veces por
+// segundo aunque la línea no cambiara: medido, la página trabajaba el 100 %
+// del tiempo (batería y calor en el móvil de quien mira durante horas). La
+// línea solo crece al pasar un vértice del trazado (cada ~57 m).
+let idxRecorridoPintado = -1;
 function drawTraveledLine(doneKm) {
   const idx = traveledIndex(doneKm / (factorKm || 1));
+  if (idx === idxRecorridoPintado) return;
   const traveledPts = routeLatLon.slice(0, idx + 1);
   if (mapReady) {
     const src = map3d.getSource('traveled');
     if (src) {
+      idxRecorridoPintado = idx;
       src.setData({
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: traveledPts.map(p => [p[1], p[0]]) }
@@ -675,9 +708,33 @@ function ajustarTamanoCorredor() {
   document.documentElement.style.setProperty('--corredor', px + 'px');
 }
 
+// Con 🎯 la cámara se queda siguiendo al corredor mientras avanza (antes
+// centraba una vez y a los pocos minutos ya estaba fuera de la pantalla).
+// Se deja de seguir en cuanto quien mira arrastra el mapa.
+let siguiendo = false;
+let ultimoSeguimiento = 0;
+function marcarSiguiendo(si) {
+  siguiendo = si;
+  btnRecenter.classList.toggle('activo', si);
+}
+
+function seguirCorredor(pos) {
+  if (!siguiendo || !mapReady || !pos) return;
+  // si está haciendo zoom o girando con los dedos, no pelearse con su gesto
+  if (map3d.isZooming() || map3d.isRotating()) return;
+  const ahora = performance.now();
+  // una vez por segundo con un deslizamiento de un segundo: la cámara va
+  // continua y no se fuerza al móvil a redibujar el relieve 60 veces/s
+  if (ahora - ultimoSeguimiento < 1000) return;
+  ultimoSeguimiento = ahora;
+  map3d.easeTo({ center: [pos[1], pos[0]], duration: 1000, easing: t => t });
+}
+
 function recenterOnRider() {
   if (!mapReady) return;
   if (riderMarkerPos) {
+    marcarSiguiendo(true);
+    ultimoSeguimiento = performance.now() + 600;
     map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 14), duration: 600 });
   } else if (routeBounds) {
     // sin corredor en pantalla, el botón devuelve la vista a la ruta entera
@@ -730,52 +787,91 @@ let lastStartedAt = null;
 // trazado y el perfil crecen poco a poco.
 // dura casi lo mismo que el intervalo de consulta (10 s): así la foto no
 // pega un tirón y se para, sino que va andando todo el rato
-const SUAVIZADO_MS = 9500;
+// ⚠️ Antes duraba 9,5 s fijos, pero el servidor trae un dato cada 15 s: la
+// foto andaba 9,5 s y se quedaba quieta 5,5, a tirones. Ahora la duración es
+// el tiempo real entre datos (sacado de data_at del servidor), un poco más
+// largo para que nunca llegue a pararse antes del siguiente.
+let intervaloDatos = 15000;
+let ultimoDataAt = null;
 let kmPintado = null;
 let posPintada = null;
 let animacion = null;
 let ultimoRepintadoPesado = 0;
+let objetivo = null;        // [km, lat, lon] hacia donde va la animación
+
+function ponerTexto(id, texto) {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== texto) el.textContent = texto;
+}
 
 function pintarProgreso(km, pos) {
   currentKm = km;
-  document.getElementById('m-dist').textContent = km.toFixed(1);
-  document.getElementById('m-left').textContent = Math.max(0, totalRouteKm - km).toFixed(1);
+  ponerTexto('m-dist', km.toFixed(1));
+  ponerTexto('m-left', Math.max(0, totalRouteKm - km).toFixed(1));
   if (pos) placeRiderMarker(pos[0], pos[1]);
+  seguirCorredor(pos);
   // la línea recorrida y el perfil son caros de repintar (miles de puntos):
   // la foto va a 60 fps, esto a 5 veces por segundo, que no se nota
   const ahora = performance.now();
   if (ahora - ultimoRepintadoPesado > 200) {
     ultimoRepintadoPesado = ahora;
     const grad = pendienteEn(km);
-    document.getElementById('m-grad').textContent = grad;
-    pintarNivel(grad);
+    if (document.getElementById('m-grad').textContent !== grad) {
+      ponerTexto('m-grad', grad);
+      pintarNivel(grad);
+    }
     drawTraveledLine(km);
-    drawElevationMarkers();
+    perfilSiCambia(km);
   }
 }
 
-function moverSuave(km, pos) {
+// Si el corredor está sobre el trazado, la foto avanza POR el trazado
+// (punto del km que toca) en vez de en línea recta entre dos lecturas del
+// GPS: entre dos datos hay ~100 m y en las curvas y zetas se salía del
+// camino. Si está lejos de la ruta (se ha desviado), va a su posición real.
+function posicionEn(km, p0, p1, e, pegado) {
+  if (pegado && routeLatLon.length) return pointAtKm(km / (factorKm || 1));
+  if (p0 && p1) return [p0[0] + (p1[0] - p0[0]) * e, p0[1] + (p1[1] - p0[1]) * e];
+  return p1 || p0;
+}
+
+function moverSuave(km, pos, pegado) {
+  // ⚠️ Cada consulta volvía a arrancar la animación hacia el MISMO destino
+  // aunque el dato no hubiera cambiado: la foto frenaba al final de cada
+  // tramo. Si el destino es el mismo, se deja seguir la que ya va.
+  const nuevo = [km, pos ? pos[0] : null, pos ? pos[1] : null];
+  if (objetivo && objetivo.every((v, i) => v === nuevo[i])) return;
+  objetivo = nuevo;
+
   const km0 = kmPintado, p0 = posPintada;
   // primera vez: colocar directo, no hay desde dónde moverse
   if (km0 === null) {
     if (animacion) cancelAnimationFrame(animacion);
     animacion = null;
-    kmPintado = km; posPintada = pos;
+    kmPintado = km; posPintada = posicionEn(km, null, pos, 1, pegado);
     ultimoRepintadoPesado = 0;
-    pintarProgreso(km, pos);
+    pintarProgreso(km, posPintada);
     return;
   }
-  // un salto grande (simulación acelerada, cambio de enlace) se recorre
-  // deprisa en vez de plantarse de golpe: así tampoco va a tirones
-  const duracion = Math.abs(km - km0) > 8 ? 1500 : SUAVIZADO_MS;
-  if (Math.abs(km - km0) < 0.0005 && !pos) return;
+  // un salto grande (recarga, simulación acelerada, cambio de enlace) se
+  // recorre deprisa en vez de plantarse de golpe
+  const duracion = Math.abs(km - km0) > 8 ? 1500 : intervaloDatos * 1.1;
   if (animacion) cancelAnimationFrame(animacion);
   const t0 = performance.now();
+  let ultimoFotograma = 0;
   const paso = ahora => {
     const t = Math.min(1, (ahora - t0) / duracion);
+    // a ritmo de bici la foto avanza unos pocos píxeles por segundo: con 20
+    // fotogramas por segundo se ve igual de suave y el móvil recompone la
+    // pantalla un tercio de veces (batería durante toda la carrera)
+    if (t < 1 && ahora - ultimoFotograma < 50 && duracion > 2000) {
+      animacion = requestAnimationFrame(paso);
+      return;
+    }
+    ultimoFotograma = ahora;
     const e = t;   // a ritmo constante: si se acelera y frena, se nota raro
     kmPintado = km0 + (km - km0) * e;
-    posPintada = (p0 && pos) ? [p0[0] + (pos[0] - p0[0]) * e, p0[1] + (pos[1] - p0[1]) * e] : (pos || p0);
+    posPintada = posicionEn(kmPintado, p0, pos, e, pegado);
     pintarProgreso(kmPintado, posPintada);
     animacion = t < 1 ? requestAnimationFrame(paso) : null;
   };
@@ -832,7 +928,8 @@ function pintarNivel(texto) {
 }
 
 function esMeta(data, km) {
-  if (data.status_label === 'Finalizada') return true;
+  // la llegada la apunta el servidor una vez y ya no se desdice
+  if (data.finished_at || data.status_label === 'Finalizada') return true;
   if (!totalRouteKm || km == null || km < 80) return false;
   if (km >= totalRouteKm - 0.4) return true;
   const meta = routeLatLon[routeLatLon.length - 1];
@@ -869,14 +966,34 @@ function pollLive() {
       lastStartedAt = data.started_at || null;
 
       let doneKm = data.dist_km;
-      if (!ultimoKmConocido && data.dist_km) ultimoKmConocido = data.dist_km;
+      // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
+      // SOLO para desempatar en la salida/meta (la ruta es circular), NUNCA
+      // como mínimo: esa distancia incluye lo rodado antes de salir y el
+      // error del GPS, y con 2 km de más quien abría la web en el km 100,5
+      // ya le veía "En meta". La marca dura hasta la primera proyección de
+      // verdad: el primer poll suele llegar antes que la ruta y, si se
+      // perdía ahí, en el siguiente la distancia del GPS volvía a ser suelo.
+      if (!ultimoKmConocido && data.dist_km) { ultimoKmConocido = data.dist_km; anclaDelGps = true; }
+      let proyectado = false;
+      let lejosDeRuta = Infinity;
       if (data.lat != null && data.lon != null && routeLatLon.length) {
-        doneKm = projectOntoRoute(data.lat, data.lon).alongKm * factorKm;
+        const pr = projectOntoRoute(data.lat, data.lon);
+        doneKm = pr.alongKm * factorKm;
+        lejosDeRuta = pr.distKm;
+        proyectado = true;
+      }
+      if (data.data_at && data.data_at !== ultimoDataAt) {
+        if (ultimoDataAt) {
+          const dt = new Date(data.data_at) - new Date(ultimoDataAt);
+          if (dt > 0) intervaloDatos = Math.min(30000, Math.max(8000, dt));
+        }
+        ultimoDataAt = data.data_at;
       }
       if (doneKm != null && totalRouteKm) {
         doneKm = Math.min(doneKm, totalRouteKm);
-        if (doneKm < ultimoKmConocido - 0.5) doneKm = ultimoKmConocido;
+        if (!anclaDelGps && doneKm < ultimoKmConocido - 0.5) doneKm = ultimoKmConocido;
         ultimoKmConocido = doneKm;
+        if (proyectado) anclaDelGps = false;
       }
 
       enMeta = esMeta(data, doneKm);
@@ -898,10 +1015,11 @@ function pollLive() {
 
       // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
-      if (enMeta && lastStartedAt && ultimoDato) {
-        // tiempo final = del pistoletazo al último dato que llegó, congelado
+      const llegada = data.finished_at || ultimoDato;
+      if (enMeta && lastStartedAt && llegada) {
+        // tiempo final = del pistoletazo a la llegada (o al último dato)
         document.getElementById('m-time').textContent =
-          fmtFinal(new Date(ultimoDato) - new Date(lastStartedAt));
+          fmtFinal(new Date(llegada) - new Date(lastStartedAt));
       } else if (!haArrancado) {
         document.getElementById('m-time').textContent = '—';
       } else {
@@ -911,13 +1029,16 @@ function pollLive() {
 
       if (doneKm != null && totalRouteKm && haArrancado) {
         moverSuave(enMeta ? totalRouteKm : doneKm,
-                   data.lat != null && data.lon != null ? [data.lat, data.lon] : null);
+                   data.lat != null && data.lon != null ? [data.lat, data.lon] : null,
+                   enMeta || lejosDeRuta < 0.08);
       } else if (kmPintado !== null && kmPintado !== 0) {
         // se reseteó desde el panel: borrar también lo ya pintado en las
         // pantallas que estuvieran abiertas, o se quedan con el progreso
         if (animacion) cancelAnimationFrame(animacion);
         animacion = null;
         kmPintado = 0; posPintada = null; currentKm = 0; ultimoKmConocido = 0;
+        objetivo = null; ultimoDataAt = null; anclaDelGps = false;
+        idxRecorridoPintado = -1; pixelPerfilPintado = null;
         document.getElementById('m-dist').textContent = '—';
         document.getElementById('m-left').textContent = '—';
         document.getElementById('m-grad').textContent = '—';
@@ -987,4 +1108,4 @@ setInterval(() => {
 }, 1000);
 
 pollLive();
-setInterval(pollLive, 10000);
+setInterval(pollLive, 5000);

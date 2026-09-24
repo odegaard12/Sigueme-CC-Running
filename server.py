@@ -1,5 +1,6 @@
 import http.server
 import json
+import math
 import os
 import re
 import socket
@@ -241,6 +242,31 @@ def leer_telemetria(url):
     return extract_telemetry(fetch_page(url)), "generico"
 
 
+_meta = []
+
+
+def punto_de_meta():
+    if not _meta:
+        _meta.append(puntos_de_la_ruta()[-1])
+    return _meta[0]
+
+
+def km_entre(a, b):
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = (math.sin((la2 - la1) / 2) ** 2
+         + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2)
+    return 2 * 6371 * math.asin(math.sqrt(h))
+
+
+def ha_llegado(t):
+    """A menos de 200 m del punto de meta con más de 80 km hechos. La ruta
+    solo pasa tan cerca de meta en la salida (km 0-0,2) y en los últimos
+    200 m, y la salida la descarta el mínimo de 80 km."""
+    if t.get("lat") is None or t.get("lon") is None or (t.get("dist_km") or 0) < 80:
+        return False
+    return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
+
+
 def huella(t):
     """Lo que cambia cuando de verdad llega un dato nuevo del BSC500."""
     return tuple(t.get(k) for k in ("lat", "lon", "dist_km", "elapsed"))
@@ -274,6 +300,10 @@ def poll_loop(url, stop_event):
                 if huella(telemetry) != ultima_huella:
                     ultima_huella = huella(telemetry)
                     patch["data_at"] = datetime.now(timezone.utc).isoformat()
+                # la hora de llegada se apunta UNA vez: si después sigue
+                # pedaleando (hasta el coche, a casa) el tiempo final no crece
+                if ha_llegado(telemetry) and not read_live().get("finished_at"):
+                    patch["finished_at"] = datetime.now(timezone.utc).isoformat()
                 merge_live(patch)
                 fallos = 0
                 sin_datos = False
@@ -347,7 +377,8 @@ def simular_loop(stop_event, segundos):
             break
         stop_event.wait(1)
     if not stop_event.is_set():
-        merge_live({"status_label": "Finalizada (simulación)"})
+        merge_live({"status_label": "Finalizada (simulación)",
+                    "finished_at": datetime.now(timezone.utc).isoformat()})
 
 
 def parar_simulacion():
@@ -363,7 +394,8 @@ def arrancar_simulacion(segundos=120):
     hilo = threading.Thread(target=simular_loop, args=(stop_event, segundos), daemon=True)
     simulador["thread"] = hilo
     simulador["stop"] = stop_event
-    merge_live({"started_at": datetime.now(timezone.utc).isoformat(), "livetrack_url": None})
+    merge_live({"started_at": datetime.now(timezone.utc).isoformat(), "livetrack_url": None,
+                "finished_at": None})
     hilo.start()
 
 
@@ -455,7 +487,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path != "/api/live":
             self._send_json(404, {"error": "not found"})
             return
-        length = int(self.headers.get("Content-Length", 0))
+        # el panel manda unos pocos cientos de bytes; sin tope, cualquiera
+        # podía hacer que el servidor leyera en memoria lo que quisiera
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = -1
+        if not 0 <= length <= 16_384:
+            self._send_json(413, {"error": "petición demasiado grande"})
+            return
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
         except json.JSONDecodeError:
@@ -497,7 +537,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "extract_status": None, "started_at": None, "elapsed": None,
                 "lat": None, "lon": None, "speed_kmh": None, "speed_kmh_avg": None,
                 "hr": None, "hr_avg": None, "cadence": None, "cadence_avg": None,
-                "dist_km": None, "data_at": None,
+                "dist_km": None, "data_at": None, "finished_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -508,8 +548,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # ⚠️ Antes borraba started_at y las medias: pulsar "Finalizar" en
             # meta dejaba la web sin tiempo final y sin medias justo cuando
             # todo el mundo mira el resultado. Solo se para la consulta.
+            actual = read_live()
             current = merge_live({
                 "status_label": "Finalizada", "livetrack_url": None, "extract_status": None,
+                # si el GPS ya marcó la llegada se respeta; si no (móvil muerto
+                # en los últimos km), vale la hora del último dato recibido
+                "finished_at": actual.get("finished_at") or actual.get("data_at")
+                               or datetime.now(timezone.utc).isoformat(),
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -535,6 +580,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         new_url = data.get("livetrack_url")
         if new_url:
             patch.setdefault("status_label", "En carrera")
+            patch["finished_at"] = None
             patch["extract_status"] = "buscando…"
             # Si hay hora oficial de salida, el reloj cuenta SIEMPRE desde
             # ella. Si no la hubiera, solo se pone en marcha la primera vez:
@@ -605,7 +651,13 @@ def watch_live_file():
                 threading.Event().wait(20)
                 continue
             url = read_live().get("livetrack_url")
-            if url and url != poller["url"]:
+            # ⚠️ si el hilo del poller muere por algo imprevisto (p. ej. un
+            # error al guardar dentro de su propio except), nadie lo relanzaba:
+            # el seguimiento se paraba en silencio hasta reiniciar el servicio
+            muerto = poller["thread"] is not None and not poller["thread"].is_alive()
+            if url and (url != poller["url"] or muerto):
+                if muerto:
+                    print("[poller] el hilo había muerto: relanzado", flush=True)
                 start_poller(url)
             elif not url and poller["url"]:
                 stop_previous_poller()

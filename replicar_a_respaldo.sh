@@ -22,7 +22,11 @@ if cambios=$(rsync -a --delete --itemize-changes \
         --exclude '__pycache__' --exclude '*.bak*' \
         -e "$SSH" \
         "$ORIGEN" "${DESTINO}:/home/USUARIO/sigueme/" 2>>"$LOG"); then
-    log "OK: web y live.json replicados al respaldo"
+    # solo se apunta cuando se copió algo de la web (no el live.json de cada
+    # vez): antes era una línea cada 20 s, ~190 KB al día
+    if grep -v ' live\.json$' <<< "$cambios" | grep -q '^[<>c]f'; then
+        log "OK: copiado al respaldo: $(grep -v ' live\.json$' <<< "$cambios" | grep '^[<>c]f' | awk '{print $2}' | tr '\n' ' ')"
+    fi
 else
     log "ERROR: fallo la replica al respaldo"
     exit 1
