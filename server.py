@@ -487,7 +487,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path != "/api/live":
             self._send_json(404, {"error": "not found"})
             return
-        length = int(self.headers.get("Content-Length", 0))
+        # el panel manda unos pocos cientos de bytes; sin tope, cualquiera
+        # podía hacer que el servidor leyera en memoria lo que quisiera
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = -1
+        if not 0 <= length <= 16_384:
+            self._send_json(413, {"error": "petición demasiado grande"})
+            return
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
         except json.JSONDecodeError:
@@ -643,7 +651,13 @@ def watch_live_file():
                 threading.Event().wait(20)
                 continue
             url = read_live().get("livetrack_url")
-            if url and url != poller["url"]:
+            # ⚠️ si el hilo del poller muere por algo imprevisto (p. ej. un
+            # error al guardar dentro de su propio except), nadie lo relanzaba:
+            # el seguimiento se paraba en silencio hasta reiniciar el servicio
+            muerto = poller["thread"] is not None and not poller["thread"].is_alive()
+            if url and (url != poller["url"] or muerto):
+                if muerto:
+                    print("[poller] el hilo había muerto: relanzado", flush=True)
                 start_poller(url)
             elif not url and poller["url"]:
                 stop_previous_poller()

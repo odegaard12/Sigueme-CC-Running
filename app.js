@@ -353,6 +353,7 @@ function rehacerMapa(motivo) {
   tamanoCorredorActual = 0;
   kmPintado = null;
   objetivo = null;      // si no, el siguiente poll no repinta la línea azul
+  idxRecorridoPintado = -1;
   montarMapa();
 }
 
@@ -515,6 +516,17 @@ function drawElevationMarkers() {
   if (lastEleData) drawElevationChart(lastEleData.profile, lastEleData.min_ele_m, lastEleData.max_ele_m);
 }
 
+// en un perfil de ~380 px, un píxel son ~270 m: repintarlo 5 veces por
+// segundo no se veía, solo gastaba
+let pixelPerfilPintado = null;
+function perfilSiCambia(km) {
+  const canvas = document.getElementById('elevation-chart');
+  const px = Math.round((km / (totalRouteKm || 1)) * (canvas.clientWidth || 1));
+  if (px === pixelPerfilPintado) return;
+  pixelPerfilPintado = px;
+  drawElevationMarkers();
+}
+
 function drawElevationChart(profile, minEle, maxEle) {
   const canvas = document.getElementById('elevation-chart');
   const dpr = window.devicePixelRatio || 1;
@@ -631,12 +643,19 @@ function drawElevationChart(profile, minEle, maxEle) {
 
 window.addEventListener('resize', () => drawElevationMarkers());
 
+// ⚠️ Cada setData obliga a redibujar el mapa 3D entero. Se hacía 5 veces por
+// segundo aunque la línea no cambiara: medido, la página trabajaba el 100 %
+// del tiempo (batería y calor en el móvil de quien mira durante horas). La
+// línea solo crece al pasar un vértice del trazado (cada ~57 m).
+let idxRecorridoPintado = -1;
 function drawTraveledLine(doneKm) {
   const idx = traveledIndex(doneKm / (factorKm || 1));
+  if (idx === idxRecorridoPintado) return;
   const traveledPts = routeLatLon.slice(0, idx + 1);
   if (mapReady) {
     const src = map3d.getSource('traveled');
     if (src) {
+      idxRecorridoPintado = idx;
       src.setData({
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: traveledPts.map(p => [p[1], p[0]]) }
@@ -780,10 +799,15 @@ let animacion = null;
 let ultimoRepintadoPesado = 0;
 let objetivo = null;        // [km, lat, lon] hacia donde va la animación
 
+function ponerTexto(id, texto) {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== texto) el.textContent = texto;
+}
+
 function pintarProgreso(km, pos) {
   currentKm = km;
-  document.getElementById('m-dist').textContent = km.toFixed(1);
-  document.getElementById('m-left').textContent = Math.max(0, totalRouteKm - km).toFixed(1);
+  ponerTexto('m-dist', km.toFixed(1));
+  ponerTexto('m-left', Math.max(0, totalRouteKm - km).toFixed(1));
   if (pos) placeRiderMarker(pos[0], pos[1]);
   seguirCorredor(pos);
   // la línea recorrida y el perfil son caros de repintar (miles de puntos):
@@ -792,10 +816,12 @@ function pintarProgreso(km, pos) {
   if (ahora - ultimoRepintadoPesado > 200) {
     ultimoRepintadoPesado = ahora;
     const grad = pendienteEn(km);
-    document.getElementById('m-grad').textContent = grad;
-    pintarNivel(grad);
+    if (document.getElementById('m-grad').textContent !== grad) {
+      ponerTexto('m-grad', grad);
+      pintarNivel(grad);
+    }
     drawTraveledLine(km);
-    drawElevationMarkers();
+    perfilSiCambia(km);
   }
 }
 
@@ -832,8 +858,17 @@ function moverSuave(km, pos, pegado) {
   const duracion = Math.abs(km - km0) > 8 ? 1500 : intervaloDatos * 1.1;
   if (animacion) cancelAnimationFrame(animacion);
   const t0 = performance.now();
+  let ultimoFotograma = 0;
   const paso = ahora => {
     const t = Math.min(1, (ahora - t0) / duracion);
+    // a ritmo de bici la foto avanza unos pocos píxeles por segundo: con 20
+    // fotogramas por segundo se ve igual de suave y el móvil recompone la
+    // pantalla un tercio de veces (batería durante toda la carrera)
+    if (t < 1 && ahora - ultimoFotograma < 50 && duracion > 2000) {
+      animacion = requestAnimationFrame(paso);
+      return;
+    }
+    ultimoFotograma = ahora;
     const e = t;   // a ritmo constante: si se acelera y frena, se nota raro
     kmPintado = km0 + (km - km0) * e;
     posPintada = posicionEn(kmPintado, p0, pos, e, pegado);
@@ -1003,6 +1038,7 @@ function pollLive() {
         animacion = null;
         kmPintado = 0; posPintada = null; currentKm = 0; ultimoKmConocido = 0;
         objetivo = null; ultimoDataAt = null; anclaDelGps = false;
+        idxRecorridoPintado = -1; pixelPerfilPintado = null;
         document.getElementById('m-dist').textContent = '—';
         document.getElementById('m-left').textContent = '—';
         document.getElementById('m-grad').textContent = '—';
