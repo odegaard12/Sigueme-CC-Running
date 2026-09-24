@@ -1,0 +1,590 @@
+:root {
+  --bg: #0c0f0e;
+  --panel: #141917;
+  --panel-2: #191f1d;
+  --accent: #7fd46a;        /* solo mapa, foto y detalles mínimos */
+  --accent-dark: #06210c;
+  --accent-2: #5cc2e8;
+  --danger: #e0473a;
+  --text: #f1f3f1;
+  --muted: #7d8a83;
+  --border: #222926;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+/* Un doble toque en cualquier sitio (también fuera del mapa, y con la web
+   instalada como app) hacía zoom a la página y la dejaba torcida.
+   manipulation quita ese gesto pero deja el pellizco para ampliar. */
+html, body { touch-action: manipulation; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.3;
+}
+
+/* --- cabecera en una sola franja: título a la izquierda, datos a la derecha,
+   para no comerse altura de pantalla --- */
+/* En el iPhone (393 px) no cabían en una línea el título, los tres datos y el
+   botón: el texto de "Mi ficha" se cortaba. Ahora van en dos alturas — nombre
+   y botón arriba, los datos de la ruta repartidos debajo — y a partir de
+   620 px vuelve todo a una sola línea. */
+.topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: calc(9px + env(safe-area-inset-top)) 14px 9px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.marca { flex: 0 0 auto; min-width: 0; }
+.marca-sub {
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+.marca-sub b { color: var(--text); font-weight: 700; }
+.topbar h1 { white-space: nowrap; flex: 0 0 auto;
+  margin: 0;
+  font-size: clamp(1.05rem, 5vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* la parte derecha no encoge ni empuja al título fuera de pantalla */
+.cabecera-datos { flex-shrink: 0; }
+.ver-ficha img { flex-shrink: 0; }
+.topbar h1 span { color: var(--muted); font-weight: 600; }   /* mismo tamaño que el título */
+.topbar-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cabecera-datos { display: flex; align-items: center; gap: 10px; }
+.cd-linea { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+
+/* los tres datos de la ruta, como píldoras, separados por una línea fina */
+.cd-ruta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 7px;
+}
+.cd-ruta span {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: clamp(0.55rem, 2.4vw, 0.64rem);
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 0 10px;
+  border-right: 1px solid var(--border);
+  line-height: 1.1;
+  text-align: center;
+}
+.cd-ruta span:last-child { border-right: 0; }
+
+.cd-ruta b { display: block; color: var(--text); font-size: 0.82rem; font-weight: 700; }
+.cd-ruta i { font-style: normal; }
+
+/* --- el mapa manda: ocupa el hueco y lleva encima el botón y el perfil --- */
+.map-wrap {
+  position: relative;
+  margin: 14px 10px 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: none;
+}
+#map3d {
+  height: 60dvh;
+  min-height: 320px;
+  width: 100%;
+  background: #131c18;
+}
+
+.mapa-botones {
+  position: absolute;
+  left: 10px;
+  bottom: 72px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.btn-flotante {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(12,15,14,0.78);
+  color: var(--text);
+  font-size: 1.05rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.btn-flotante:active { transform: scale(0.94); }
+.btn-vista { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; }
+
+/* perfil de altimetría incrustado en la parte baja del mapa */
+/* fondo sólido: con el degradado translúcido, el satélite se veía por detrás
+   de la gráfica y parecía un estampado de rombos */
+.perfil-en-mapa {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  height: 108px;
+  /* degradado de transparente a oscuro: así la gráfica se funde con el mapa
+     en vez de quedar como una tira pegada encima */
+  background: linear-gradient(to bottom,
+      rgba(8, 14, 12, 0) 0%,
+      rgba(8, 14, 12, 0.35) 28%,
+      rgba(8, 14, 12, 0.72) 60%,
+      rgba(8, 14, 12, 0.88) 100%);
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+}
+/* la propia gráfica también se desvanece por arriba, para que no se vea un
+   borde recto donde empieza */
+#elevation-chart {
+  width: 100%;
+  height: 84px;
+  display: block;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%);
+}
+
+/* pantalla de carga: el mapa tarda en montarse y antes se veía el hueco negro
+   y luego el trazado apareciendo a trozos */
+.cargando {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  justify-items: center;
+  background: #0d1512;
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: opacity 0.4s;
+}
+.cargando.fuera { opacity: 0; pointer-events: none; }
+.btn-recargar {
+  margin-top: 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rueda {
+  width: 34px; height: 34px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: girar 0.9s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.map-hint { color: var(--muted); font-size: 0.75rem; text-align: center; margin: 8px 10px 0; min-height: 1em; }
+
+/* --- métricas chiquitas, todas de un vistazo --- */
+.metricas { padding: 10px 10px 0; display: grid; gap: 8px; }
+/* flex y no rejilla fija: al empezar y al terminar se esconden casillas
+   (velocidad "ahora", pulso, pendiente...) y las que quedan se reparten el
+   ancho, en vez de dejar huecos ni filas a medias */
+.metricas-top { display: flex; flex-wrap: wrap; gap: 7px; }
+/* en el móvil, 2x2: de cuatro en fila las etiquetas se parten */
+.metricas-top .metrica { flex: 1 1 calc(50% - 4px); }
+@media (min-width: 620px) { .metricas-top .metrica { flex: 1 1 120px; } }
+.metricas-sec { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.metrica {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 2px;
+  text-align: center;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+.m-val {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m-tag {
+  display: block;
+  font-size: 0.56rem;
+  color: var(--muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+/* la jerarquía la marca el tamaño, no el color: sin degradados ni neones */
+.metrica.destacada { padding: 12px 2px; }
+.metrica.destacada .m-val { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+.metrica.destacada .m-tag { font-size: 0.58rem; }
+/* la fila de abajo son cinco en cuatro columnas: que ocupe el ancho entero */
+/* datos secundarios como etiquetas sueltas: aparecen y desaparecen sin
+   descuadrar nada */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.64rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip b { color: var(--text); font-size: 0.82rem; font-weight: 600; }
+.chip-pulso { color: #c9d2cc; }
+.chip-pulso b { color: #ff7a6b; }
+/* la pendiente, con su número del color de la rampa */
+.chip-nivel { color: #c9d2cc; }
+.chip-nivel b { min-width: 46px; text-align: right; }
+.chip[hidden], .metrica[hidden] { display: none; }
+/* la pendiente, además del número, como un nivel de burbuja */
+.nivel {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4a92ae 0%, #3a6d82 26%, #4b5a52 48%,
+      #4fb350 56%, #e0c341 70%, #e08a3a 84%, #e0473a 100%);
+  opacity: 0.9;
+}
+.nivel u {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 3px;
+  height: 12px;
+  background: var(--text);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  transition: left 0.4s ease-out;
+}
+.estado-carrera {
+  margin: 2px 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  min-height: 1em;
+}
+.estado-carrera.meta { color: var(--text); font-weight: 600; }
+/* aviso de "aún no ha salido": color propio (ámbar) para que se distinga de
+   los datos en vivo, y pegado al mapa */
+.estado-carrera.previo {
+  color: #e0c341;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(224, 195, 65, 0.07);
+  border: 1px solid rgba(224, 195, 65, 0.26);
+  border-radius: 12px;
+  padding: 13px 10px;
+}
+.metricas.sin-datos { padding-top: 8px; }
+.metricas.sin-datos .metricas-top,
+.metricas.sin-datos .metricas-sec { display: none; }
+
+.livetrack-embed { margin: 10px; }
+.livetrack-btn {
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: var(--accent-dark);
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+.live-updated.meta { color: var(--text); font-weight: 600; }
+.live-updated { color: var(--muted); font-size: 0.72rem; text-align: center; margin: 8px 10px 0; }
+
+.leyenda {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+.leyenda i {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.aid-pin { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
+
+/* OJO: MapLibre posiciona el marcador con transform en ESTE elemento.
+   Animar transform aquí lo manda a la esquina del mapa; el pulso va en el hijo. */
+.map3d-rider { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)); }
+.map3d-rider span { display: block; animation: pulse-rider 1.6s ease-in-out infinite; }
+.map3d-rider img {
+  display: block;
+  width: var(--corredor, 34px);
+  height: var(--corredor, 34px);
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  /* doble halo: sobre satélite verde, sin esto la foto se camuflaba */
+  box-shadow: 0 0 0 3px rgba(11,18,16,0.9), 0 0 14px 4px rgba(143,224,106,0.55);
+}
+@keyframes pulse-rider {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+.maplibregl-popup-close-button { color: var(--muted); font-size: 16px; }
+/* contenido de los globos: tipo arriba en pequeño, nombre, y el km debajo */
+.globo { display: grid; gap: 2px; padding-right: 8px; }
+.globo b { font-size: 0.86rem; font-weight: 600; }
+.globo-tipo {
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.globo-km { font-size: 0.68rem; color: var(--muted); }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.72rem;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+}
+footer a { color: var(--muted); }
+
+@media (max-width: 700px) {
+
+}
+
+@media (min-width: 620px) {
+  .topbar { flex-direction: row; align-items: center; justify-content: space-between; gap: 14px; }
+  /* En pantalla ancha la fila se deshace (display:contents) para poder
+     ordenar los tres bloques: nombre a la izquierda, datos a la derecha y el
+     botón de la ficha al final. Con la fila entera como bloque, el botón
+     quedaba pegado al título en mitad de la cabecera. */
+  .topbar-fila { display: contents; }
+  .topbar .marca { order: 0; }
+  .topbar .ver-ficha { order: 2; }
+  .cd-ruta { order: 1; flex: 1 1 auto; justify-content: flex-end; border-top: 0; padding-top: 0; gap: 0; }
+  .cd-ruta span { flex: 0 0 auto; }
+  .topbar .ver-ficha { margin-left: 4px; }
+}
+
+/* En PC no vale con estirar la versión de móvil: el mapa se queda bajito y
+   todo lo demás nada en blanco. Dos columnas: mapa grande a la izquierda y
+   las métricas en vertical a la derecha. */
+@media (min-width: 900px) {
+  .topbar { padding: 14px 28px; }
+  .topbar h1 { font-size: 1.35rem; }
+  .cd-linea { font-size: 0.78rem; }
+  .cd-ruta b { font-size: 0.9rem; }
+
+  .panel-pc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 14px;
+    align-items: start;
+    max-width: 1280px;
+    margin: 14px auto 0;
+    padding: 0 20px;
+  }
+  .panel-pc .map-wrap { margin: 0; }
+  /* la leyenda va debajo del mapa, en su misma columna, no como tercera
+     celda de la rejilla (ahí se colaba en la columna de las métricas) */
+  .panel-pc .leyenda { grid-column: 1; grid-row: 2; padding: 8px 0 0; justify-content: flex-start; }
+  .panel-pc .lateral { grid-column: 2; grid-row: 1 / span 2; }
+  /* dvh y no vh: con vh el navegador cuenta la barra de direcciones y en
+     pantallas bajas el pie quedaba cortado. El clamp evita que se dispare en
+     monitores muy altos. */
+  .panel-pc #map3d { height: clamp(380px, calc(100dvh - 230px), 760px); }
+
+  .panel-pc .lateral { display: grid; gap: 10px; }
+  .panel-pc .metricas { padding: 0; gap: 8px; }
+  .panel-pc .metricas-top .metrica { flex: 1 1 calc(50% - 4px); }
+  .panel-pc .livetrack-embed { margin: 0; }
+  .panel-pc .live-updated, .panel-pc .map-hint { margin: 0; text-align: left; }
+  .panel-pc .metrica { padding: 12px 6px; }
+  .panel-pc .destacada .m-val { font-size: 1.7rem; }
+
+  .panel-pc .m-tag { font-size: 0.62rem; }
+
+  .live-updated, .map-hint { max-width: 1280px; margin-left: auto; margin-right: auto; }
+  .livetrack-embed { max-width: 1280px; margin-left: auto; margin-right: auto; }
+}
+
+.creditos { margin: 6px 0 0; font-size: 0.62rem; opacity: 0.75; }
+
+/* --- ficha del corredor --- */
+.ver-ficha {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 12px 4px 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ver-ficha img {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.ver-ficha:hover { border-color: rgba(255,255,255,0.28); }
+
+.ficha {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "foto datos" "bici bici";
+  gap: 10px 14px;
+  align-items: center;
+  max-width: 1280px;
+  margin: 10px auto 0;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.ficha[hidden] { display: none; }
+.ficha-foto {
+  grid-area: foto;
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.ficha-datos { grid-area: datos; min-width: 0; }
+.ficha-datos h2 { margin: 0; font-size: 1rem; }
+.ficha-datos h2 span { color: var(--muted); font-weight: 500; }
+.ficha-dorsal { margin: 2px 0 0; font-size: 0.72rem; color: var(--muted); }
+.ficha-dorsal b { color: var(--text); font-size: 0.85rem; }
+
+/* la bici, como ficha técnica: etiqueta arriba y valor debajo, en columnas */
+.ficha-bici-bloque {
+  grid-area: bici;
+  border-top: 1px solid var(--border);
+  padding-top: 9px;
+}
+.ficha-bici-bloque h3 {
+  margin: 0 0 7px;
+  font-size: 0.82rem;
+  color: var(--text);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.ficha-bici-bloque h3 b { color: var(--muted); font-size: 0.74rem; font-weight: 600; }
+.ficha-specs {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.ficha-specs > div {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 7px;
+  min-width: 0;
+}
+.ficha-specs dt {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ficha-specs dd {
+  margin: 1px 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .ficha { margin: 10px; gap: 10px 12px; padding: 12px; }
+  .ficha-foto { width: 82px; height: 82px; }
+  .ficha-datos h2 { font-size: 0.98rem; }
+  .ficha-specs { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+}
+
+@media (max-width: 560px) {
+  /* "de la salida" ya no va dentro del título, sino en la línea pequeña de
+     debajo: así cabe también en el móvil */
+  .marca-sub { font-size: 0.72rem; }
+  .cd-ruta span { padding: 0 7px; font-size: 0.58rem; }
+  .ver-ficha { padding: 3px 10px 3px 3px; font-size: 0.64rem; }
+  .ver-ficha img { width: 22px; height: 22px; }
+}
+
+/* objetivos táctiles: en el móvil nada por debajo de 34 px, que si no se
+   falla el dedo. Incluye los controles de zoom de MapLibre, que vienen a 29 */
+@media (max-width: 700px) {
+  .ver-ficha { min-height: 34px; }
+}
+
+
+/* Pantallas bajas (móvil en horizontal): el perfil se comía un tercio del
+   mapa. Se encoge, y los botones flotantes bajan con él. */
+@media (max-height: 520px) {
+  .perfil-en-mapa { height: 76px; }
+  #elevation-chart { height: 58px; }
+  .mapa-botones { bottom: 56px; }
+  #map3d { height: 62dvh; min-height: 260px; }
+}

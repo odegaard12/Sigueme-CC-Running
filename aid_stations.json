@@ -1,0 +1,14 @@
+[
+  {"name": "Escaño", "km": 10.3},
+  {"name": "Esengra", "km": 19.4},
+  {"name": "Confurco", "km": 27},
+  {"name": "San Jorge", "km": 35.6},
+  {"name": "Cabo Prior", "km": 46, "taller": true},
+  {"name": "Ponzos", "km": 52.8},
+  {"name": "Os Vilares", "km": 59.7},
+  {"name": "Costa do Marisco", "km": 64.7},
+  {"name": "Valdoviño (comida)", "km": 72.4, "principal": true},
+  {"name": "Ramalleira", "km": 80.2},
+  {"name": "P. Eólico Naturgy", "km": 86.8, "taller": true},
+  {"name": "Cantalarrana", "km": 94.6}
+]
