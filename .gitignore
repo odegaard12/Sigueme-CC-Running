@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+node_modules/
+*.log
+live.json
+*.mp4
+*.webm
+.env
+.env.local
+*.sw[op]
+*~
+.idea/
+.vscode/
