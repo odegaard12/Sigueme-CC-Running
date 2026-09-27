@@ -664,3 +664,12 @@ footer a { color: var(--muted); }
   background-size: 200% 100%; animation: esqueleto 1.2s ease-in-out infinite;
 }
 @keyframes esqueleto { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* --- aviso de conexión de quien mira --- */
+.aviso-conexion {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 1000;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  padding: 7px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  background: #3a2320; color: #f3d6d2; border: 1px solid #5a2c2c;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
