@@ -124,6 +124,15 @@
     <div class="estado-fila" style="margin-top:6px">
       <span>GPS del móvil: <b id="gps-text">—</b></span>
     </div>
+    <div class="field" style="margin-top:12px">
+      <label for="hora-llegada">Hora de llegada a meta (opcional)</label>
+      <input type="time" id="hora-llegada">
+    </div>
+    <div class="howto" style="margin-top:6px">
+      Si el directo se cortó y la web se quedó atrás, pon la hora a la que
+      llegaste: la web te pondrá en meta con ese tiempo final. Vacío = la que
+      detectó el GPS o, si no, ahora.
+    </div>
     <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
   </div>
 
@@ -340,8 +349,10 @@ function confirmar(texto, accion) {
   if (confirm(texto)) post(accion);
 }
 $('stop').addEventListener('click', () => confirmar(
-  '¿Dar la carrera por TERMINADA?\n\nLa web pasará a "En meta" y dejará de seguir el enlace.',
-  { action: 'stop' }));
+  '¿Dar la carrera por TERMINADA?\n\nLa web pasará a "En meta"' +
+    ($('hora-llegada').value ? ' con llegada a las ' + $('hora-llegada').value : '') +
+    ' y dejará de seguir el enlace.',
+  { action: 'stop', hora_llegada: $('hora-llegada').value }));
 $('simular').addEventListener('click', () => confirmar(
   '¿Simular una carrera?\n\nSe BORRA el seguimiento real (enlace y datos). Solo para pruebas.',
   { action: 'simular', segundos: 120 }));

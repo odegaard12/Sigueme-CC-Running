@@ -125,11 +125,16 @@ def _num(valor, sentinelas=SIN_SENSOR):
 
 def extract_igpsport(payload):
     datos = payload.get("data") or {}
-    ruta = datos.get("route") or {}
-    resumen = ruta.get("summary") or {}
+    if not isinstance(datos, dict):
+        return None
+    # por si otra sesión llega sin el nivel "route" (no se pudo comprobar el
+    # 26/09: el seguimiento nuevo no dio datos y no quedó su respuesta)
+    ruta = datos.get("route") if isinstance(datos.get("route"), dict) else datos
+    resumen = ruta.get("summary") or datos.get("summary") or {}
     fuera = {}
 
-    puntos = decode_polyline(ruta.get("gpsCoords") or "")
+    coords = ruta.get("gpsCoords") or datos.get("gpsCoords") or ""
+    puntos = decode_polyline(coords) if isinstance(coords, str) else []
     if puntos:
         fuera["lat"], fuera["lon"] = puntos[-1]
 
@@ -236,6 +241,7 @@ def merge_live(patch):
 # lo último que dijo iGPSPORT cuando NO dio datos (p. ej. 40604 "no se
 # encuentra la actividad, ¿ha terminado o no ha empezado?")
 aviso_igpsport = {"texto": None}
+_formato_visto = set()
 
 
 def leer_telemetria(url):
@@ -250,7 +256,19 @@ def leer_telemetria(url):
         mensaje = ("su directo ha terminado o aún no ha empezado" if codigo == 40604
                    else payload.get("message", "") if isinstance(payload, dict) else "")
         aviso_igpsport["texto"] = (None if codigo in (0, None) else f"{codigo}: {mensaje}"[:160])
-        return extract_igpsport(payload), "igpsport"
+        telemetria = extract_igpsport(payload)
+        # iGPSPORT dice "bien" pero no entendemos lo que manda: se guarda la
+        # respuesta (una vez por enlace) para poder adaptar el lector
+        if telemetria is None and codigo in (0, None) and ident not in _formato_visto:
+            _formato_visto.add(ident)
+            datos = payload.get("data") if isinstance(payload, dict) else None
+            apuntar_historial("igpsport_formato_desconocido", id=ident,
+                              claves=sorted(datos) if isinstance(datos, dict) else str(type(datos)),
+                              muestra=crudo[:3000])
+            print(f"[poller] iGPSPORT respondió bien pero sin datos reconocibles (id {ident})", flush=True)
+        if telemetria is None and codigo in (0, None):
+            aviso_igpsport["texto"] = "respuesta con un formato que no reconocemos (guardada en el historial)"
+        return telemetria, "igpsport"
     return extract_telemetry(fetch_page(url)), "generico"
 
 
@@ -270,13 +288,21 @@ def km_entre(a, b):
     return 2 * 6371 * math.asin(math.sqrt(h))
 
 
-def ha_llegado(t):
-    """A menos de 200 m del punto de meta con más de 80 km hechos. La ruta
-    solo pasa tan cerca de meta en la salida (km 0-0,2) y en los últimos
-    200 m, y la salida la descarta el mínimo de 80 km."""
-    if t.get("lat") is None or t.get("lon") is None or (t.get("dist_km") or 0) < 80:
+def ha_llegado(t, se_alejo=False):
+    """A menos de 200 m del punto de meta, y o bien con más de 80 km hechos, o
+    bien habiéndose alejado antes más de 5 km de meta. La ruta solo pasa tan
+    cerca de meta en la salida (km 0-0,2) y en los últimos 200 m.
+    ⚠️ Solo con los 80 km, un seguimiento nuevo empezado a mitad de carrera
+    (que cuenta desde 0) no llegaba nunca a meta: pasó el 26/09."""
+    if t.get("lat") is None or t.get("lon") is None:
+        return False
+    if (t.get("dist_km") or 0) < 80 and not se_alejo:
         return False
     return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
+
+
+def alejado_de_meta(lat, lon):
+    return lat is not None and lon is not None and km_entre((lat, lon), punto_de_meta()) > 5
 
 
 # --- GPS del móvil (Traccar Client) --------------------------------------
@@ -423,8 +449,11 @@ def recibir_gps(puntos):
              "gps_at": hora, "data_at": hora, "fuente_posicion": "movil",
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
     distancia = max(live.get("dist_km") or 0, dist)
+    se_alejo = live.get("lejos_de_meta") or any(alejado_de_meta(p["lat"], p["lon"]) for p in puntos)
+    if se_alejo and not live.get("lejos_de_meta"):
+        patch["lejos_de_meta"] = True
     if not live.get("finished_at") and live.get("started_at") and \
-            ha_llegado({"lat": ultimo["lat"], "lon": ultimo["lon"], "dist_km": distancia}):
+            ha_llegado({"lat": ultimo["lat"], "lon": ultimo["lon"], "dist_km": distancia}, se_alejo):
         patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
@@ -491,7 +520,13 @@ def poll_loop(url, stop_event):
                 patch["igpsport_aviso"] = None
                 # la hora de llegada se apunta UNA vez: si después sigue
                 # pedaleando (hasta el coche, a casa) el tiempo final no crece
-                if ha_llegado(telemetry) and not read_live().get("finished_at"):
+                estado = read_live()
+                se_alejo = estado.get("lejos_de_meta") or alejado_de_meta(
+                    telemetry.get("lat"), telemetry.get("lon"))
+                if se_alejo and not estado.get("lejos_de_meta"):
+                    patch["lejos_de_meta"] = True
+                if ha_llegado(telemetry, se_alejo) and not estado.get("finished_at") \
+                        and estado.get("started_at"):
                     patch["finished_at"] = datetime.now(timezone.utc).isoformat()
                 merge_live(patch)
                 fallos = 0
@@ -703,6 +738,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             hour=h, minute=m, second=0, microsecond=0)
         return local.astimezone(timezone.utc).isoformat()
 
+    def hora_de_llegada(self, data, actual):
+        """Hora de llegada al pulsar "Finalizar": la que se escriba en el
+        panel; si no, la que detectó el GPS; si no, la del último dato si es
+        reciente; y si no, ahora.
+        ⚠️ Antes usaba siempre el último dato: con la web clavada desde las
+        14:51, el tiempo final habría salido de cuando se cortó el directo."""
+        escrita = str(data.get("hora_llegada") or "").strip()
+        if escrita and self.hora_a_iso(escrita):
+            return self.hora_a_iso(escrita)
+        if actual.get("finished_at"):
+            return actual["finished_at"]
+        ultimo = actual.get("data_at")
+        if ultimo:
+            try:
+                if (datetime.now(timezone.utc) - datetime.fromisoformat(ultimo)).total_seconds() < 300:
+                    return ultimo
+            except ValueError:
+                pass
+        return datetime.now(timezone.utc).isoformat()
+
     def do_POST(self):
         if self.path.startswith("/api/gps"):
             try:
@@ -777,7 +832,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "dist_km": None, "data_at": None, "finished_at": None,
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
-                "fuente_posicion": None, "igpsport_aviso": None,
+                "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -797,6 +852,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
                 "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
                 "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
+                "lejos_de_meta": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -812,8 +868,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "status_label": "Finalizada", "livetrack_url": None, "extract_status": None,
                 # si el GPS ya marcó la llegada se respeta; si no (móvil muerto
                 # en los últimos km), vale la hora del último dato recibido
-                "finished_at": actual.get("finished_at") or actual.get("data_at")
-                               or datetime.now(timezone.utc).isoformat(),
+                "finished_at": self.hora_de_llegada(data, actual),
             })
             self._send_json(200, {"ok": True, "live": current})
             return
