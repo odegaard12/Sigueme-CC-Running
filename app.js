@@ -973,12 +973,44 @@ function fmtDuracion(ms) {
   return hh === '00' ? mm + ':' + ss : hh + ':' + mm + ':' + ss;
 }
 
+// ---------- Conexión de quien mira --------------------------------------
+// ⚠️ Con mala cobertura una petición podía quedarse colgada un minuto y, como
+// se pregunta cada 5 s, se amontonaban varias a la vez (peor aún la red). Y
+// si la Pi o el túnel caían, Cloudflare devuelve una página de error: la web
+// fallaba al leerla y se callaba, sin avisar de que no llegaban datos.
+let pidiendo = false;
+let fallosSeguidos = 0;
+
+function fetchConTiempo(url, ms = 8000) {
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), ms);
+  return fetch(url, { signal: control.signal, cache: 'no-store' }).finally(() => clearTimeout(reloj));
+}
+
+function avisoConexion(mal) {
+  let el = document.getElementById('aviso-conexion');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'aviso-conexion';
+    el.className = 'aviso-conexion';
+    el.setAttribute('role', 'status');
+    el.hidden = true;
+    document.body.appendChild(el);
+  }
+  if (mal) el.textContent = navigator.onLine === false
+    ? 'Sin conexión · reintentando…' : 'No llegan datos · reintentando…';
+  el.hidden = !mal;
+}
+
 function pollLive() {
   // hasta saber si hay resultado guardado no se pinta nada: si no, salía un
   // instante "INICIO 08:30 · SÁBADO 26/09" y luego cambiaba todo
   if (!resultadoConsultado) return;
-  precargado('live.json', () => fetch('live.json?_=' + Date.now()))
+  if (pidiendo) return;          // la anterior aún no ha vuelto: no amontonar
+  pidiendo = true;
+  precargado('live.json', () => fetchConTiempo('live.json?_=' + Date.now()))
     .then(r => {
+      if (!r || !r.ok) throw new Error('HTTP ' + (r ? r.status : 'sin respuesta'));
       // la hora del servidor sale de la cabecera Date de la respuesta, no de
       // "updated": si el servidor llevaba minutos sin escribir (sin señal),
       // el cronómetro de quien miraba se atrasaba esos mismos minutos
@@ -987,6 +1019,8 @@ function pollLive() {
       return r.json();
     })
     .then(data => {
+      fallosSeguidos = 0;
+      avisoConexion(false);
       lastStartedAt = data.started_at || null;
       document.querySelector('.metricas').classList.remove('cargando');
 
@@ -1146,7 +1180,16 @@ function pollLive() {
           : '';
       }
     })
-    .catch(() => {});
+    .catch(err => {
+      // un fallo suelto (un túnel, un cambio de antena) no se avisa; dos
+      // seguidos (~10 s sin datos) sí
+      fallosSeguidos++;
+      if (fallosSeguidos >= 2) avisoConexion(true);
+      if (!(err instanceof TypeError) && err.name !== 'AbortError' && !/^HTTP/.test(err.message)) {
+        console.error('pollLive:', err);   // fallo del código, no de la red
+      }
+    })
+    .finally(() => { pidiendo = false; });
 }
 
 // el tiempo transcurrido se refresca cada segundo aunque no llegue poll nuevo;
@@ -1287,3 +1330,8 @@ precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(
 
 pollLive();
 setInterval(pollLive, 5000);
+// al desbloquear el móvil o volver a la pestaña, datos al momento (antes había
+// que esperar al siguiente turno, y en segundo plano el navegador los frena)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
+window.addEventListener('online', pollLive);
+window.addEventListener('offline', () => avisoConexion(true));
