@@ -1,0 +1,5 @@
+[
+  {"name": "Avituallamiento 1", "km": 7.5},
+  {"name": "Avituallamiento 2 (comida)", "km": 14, "principal": true},
+  {"name": "Asistencia mecánica", "km": 17.5, "taller": true}
+]
