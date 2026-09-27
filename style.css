@@ -590,3 +590,26 @@ footer a { color: var(--muted); }
   .mapa-botones { bottom: 56px; }
   #map3d { height: 62dvh; min-height: 260px; }
 }
+
+/* --- resultado de la carrera (tras terminar) --- */
+.resultado { margin-top: 10px; }
+.btn-repeticion {
+  width: 100%; padding: 12px; border-radius: 12px; cursor: pointer;
+  background: transparent; color: var(--text); font: inherit; font-weight: 700;
+  border: 1px solid var(--accent);
+}
+.btn-repeticion:active { transform: scale(0.98); }
+.resultado h3 {
+  margin: 16px 2px 8px; font-size: 0.7rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); font-weight: 700;
+}
+.pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pasos li {
+  display: grid; grid-template-columns: 22px 1fr auto auto; gap: 10px; align-items: baseline;
+  padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 0.85rem;
+}
+.pasos li.actual { border-color: var(--accent); }
+.pasos .n { color: var(--muted); font-size: 0.75rem; text-align: right; }
+.pasos .km { color: var(--muted); font-size: 0.75rem; }
+.pasos .hora { font-variant-numeric: tabular-nums; font-weight: 700; }

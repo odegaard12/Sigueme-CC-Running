@@ -973,6 +973,13 @@ function pollLive() {
     .then(data => {
       lastStartedAt = data.started_at || null;
 
+      // sin carrera en marcha y con resultado guardado: se enseña el resultado
+      if (resultado && !data.started_at && !data.livetrack_url) {
+        if (!repitiendo) pintarResultado();
+        return;
+      }
+      document.getElementById('resultado').hidden = true;
+
       let doneKm = data.dist_km;
       // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
       // SOLO para desempatar en la salida/meta (la ruta es circular), NUNCA
@@ -1131,6 +1138,126 @@ setInterval(() => {
   if (enMeta) return;
   if (lastStartedAt) document.getElementById('m-time').textContent = fmtElapsedSince(lastStartedAt);
 }, 1000);
+
+// ---------- Resultado de la carrera ----------------------------------------
+// resultado.json se genera con el FIT del BSC500 (tiempos, paso por cada
+// avituallamiento y la traza real recortada a salida-meta).
+let resultado = null;
+let repitiendo = false;
+let kmsTraza = null;
+
+const horaNaron = iso => new Date(iso).toLocaleTimeString('es-ES',
+  { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+const fmtHM = s => Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + 'm';
+
+// km de ruta de cada punto de la traza, siempre hacia delante
+function calcularKmsTraza() {
+  if (kmsTraza || !resultado || !routeLatLon.length) return;
+  let km = 0;
+  kmsTraza = resultado.traza.map(([la, lo]) => {
+    let mejor = Infinity, mk = km;
+    for (let j = 0; j < routeLatLon.length; j++) {
+      if (routeCumKm[j] < km - 0.5 || routeCumKm[j] > km + 8) continue;
+      const d = haversineKm([la, lo], routeLatLon[j]);
+      if (d < mejor) { mejor = d; mk = routeCumKm[j]; }
+    }
+    if (mejor < 0.15) km = Math.max(km, mk);
+    return Math.min(totalRouteKm, km * factorKm);
+  });
+}
+
+function pintarResultado() {
+  const r = resultado;
+  ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
+  ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, true));
+  document.querySelector('.metricas').classList.remove('sin-datos');
+  ponerTexto('m-dist', r.distancia_km.toFixed(1));
+  ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));
+  ponerTexto('m-speed-avg', r.velocidad_media_mov != null ? String(r.velocidad_media_mov) : '—');
+  ponerTexto('m-hr-avg', r.pulso_medio != null ? String(r.pulso_medio) : '—');
+  ponerTexto('m-cad-avg', r.cadencia_media != null ? String(r.cadencia_media) : '—');
+  const estado = document.getElementById('estado-carrera');
+  estado.classList.remove('previo');
+  estado.classList.add('meta');
+  estado.textContent = '🏁 Terminada · ' + fmtHM(r.tiempo_oficial_s) + ' · llegada a las ' + horaNaron(r.llegada);
+  document.getElementById('live-updated').textContent =
+    r.carrera + ' · datos del ciclocomputador · ' + fmtHM(r.tiempo_movimiento_s) + ' en movimiento';
+  // mapa y perfil completos, la foto en meta
+  if (totalRouteKm) {
+    currentKm = totalRouteKm;
+    idxRecorridoPintado = -1; pixelPerfilPintado = null;
+    drawTraveledLine(totalRouteKm);
+    drawElevationMarkers();
+    const fin = r.traza[r.traza.length - 1];
+    placeRiderMarker(fin[0], fin[1]);
+  }
+  const lista = document.getElementById('pasos');
+  if (!lista.children.length) {
+    const salida = new Date(r.salida);
+    r.pasos.forEach((p, i) => {
+      const li = document.createElement('li');
+      const trans = (new Date(p.hora) - salida) / 1000;
+      li.innerHTML = '<span class="n">' + (i + 1) + '</span><span></span>' +
+        '<span class="km">km ' + p.km + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
+      li.children[1].textContent = p.nombre;   // el nombre como texto, no HTML
+      lista.appendChild(li);
+    });
+  }
+  document.getElementById('resultado').hidden = false;
+}
+
+// Repetición: la carrera entera en 60 s, con la foto por la traza real
+const DURACION_REPETICION = 60000;
+function repetirCarrera() {
+  const boton = document.getElementById('btn-repeticion');
+  if (repitiendo) { repitiendo = false; return; }
+  calcularKmsTraza();
+  if (!kmsTraza) return;
+  repitiendo = true;
+  boton.textContent = '■ Parar';
+  const tr = resultado.traza, total = tr[tr.length - 1][2];
+  const salida = new Date(resultado.salida).getTime();
+  if (mapReady) {
+    map3d.easeTo({ center: [tr[0][1], tr[0][0]], zoom: 12.5, duration: 800 });
+    marcarSiguiendo(true);
+    ultimoSeguimiento = performance.now() + 800;
+  }
+  idxRecorridoPintado = -1; pixelPerfilPintado = null;
+  const items = [...document.querySelectorAll('#pasos li')];
+  const t0 = performance.now();
+  let i = 0;
+  const paso = ahora => {
+    const fin = !repitiendo || ahora - t0 >= DURACION_REPETICION;
+    const t = fin ? total : (ahora - t0) / DURACION_REPETICION * total;
+    while (i < tr.length - 2 && tr[i + 1][2] <= t) i++;
+    const a = tr[i], b = tr[i + 1] || a;
+    const e = b[2] > a[2] ? Math.min(1, (t - a[2]) / (b[2] - a[2])) : 1;
+    const km = kmsTraza[i] + ((kmsTraza[i + 1] ?? kmsTraza[i]) - kmsTraza[i]) * e;
+    pintarProgreso(km, [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e]);
+    ponerTexto('m-time', fmtHM(t));
+    const reloj = new Date(salida + t * 1000).toISOString();
+    ponerTexto('estado-carrera', '▶ ' + horaNaron(reloj) + ' · km ' + km.toFixed(1));
+    const pasados = resultado.pasos.filter(p => new Date(p.hora).getTime() <= salida + t * 1000).length;
+    items.forEach((li, k) => li.classList.toggle('actual', k === pasados - 1));
+    if (!fin) { requestAnimationFrame(paso); return; }
+    repitiendo = false;
+    boton.textContent = '▶ Ver la carrera en 1 minuto';
+    items.forEach(li => li.classList.remove('actual'));
+    marcarSiguiendo(false);
+    if (mapReady && routeBounds) {
+      map3d.fitBounds([[routeBounds[0], routeBounds[1]], [routeBounds[2], routeBounds[3]]],
+        { padding: 30, pitch: 50, bearing: -20, duration: 1200 });
+    }
+    pintarResultado();
+  };
+  requestAnimationFrame(paso);
+}
+document.getElementById('btn-repeticion').addEventListener('click', repetirCarrera);
+
+fetch('resultado.json?_=' + Date.now())
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { resultado = d; if (d) pollLive(); })
+  .catch(() => {});
 
 pollLive();
 setInterval(pollLive, 5000);
