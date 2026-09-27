@@ -1012,12 +1012,26 @@ function pollLive() {
       // qué se enseña en cada momento: antes de salir, nada; en meta,
       // desaparece lo instantáneo (velocidad ahora, pulso, pendiente) y se
       // quedan fijos los totales
-      ['speed', 'hr', 'grad'].forEach(n => verCasilla(n, haArrancado && !enMeta));
-      ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, haArrancado));
+      // ⚠️ Si iGPSPORT se calla (su directo muere, o solo va Traccar), el
+      // pulso y la cadencia se quedaban clavados en el último valor durante
+      // horas. A los 3 min sin datos nuevos se ocultan; las casillas sin
+      // dato tampoco se enseñan (con solo Traccar no hay medias).
+      const vivo = iso => !!iso && ahoraServidor() - new Date(iso) < 180000;
+      const sensoresVivos = vivo(data.igpsport_at);
+      const posicionViva = vivo(data.data_at || data.updated);
+      verCasilla('speed', haArrancado && !enMeta);
+      verCasilla('grad', haArrancado && !enMeta);
+      verCasilla('hr', haArrancado && !enMeta && sensoresVivos && data.hr != null);
+      verCasilla('cad', haArrancado && data.cadence_avg != null && (sensoresVivos || enMeta));
+      verCasilla('hr-avg', haArrancado && data.hr_avg != null);
+      verCasilla('speed-avg', haArrancado && data.speed_kmh_avg != null);
+      ['dist', 'time'].forEach(n => verCasilla(n, haArrancado));
       verCasilla('left', haArrancado && !enMeta);
       document.querySelector('.metricas').classList.toggle('sin-datos', !haArrancado);
 
-      document.getElementById('m-speed').textContent = enMeta ? '0' : (data.speed_kmh ?? '—');
+      // velocidad "ahora" de hace más de 3 min no es "ahora"
+      document.getElementById('m-speed').textContent = enMeta ? '0'
+        : posicionViva ? (data.speed_kmh ?? '—') : '—';
       document.getElementById('m-speed-avg').textContent = data.speed_kmh_avg ?? '—';
       document.getElementById('m-hr').textContent = enMeta ? '—' : (data.hr ?? '—');
       document.getElementById('m-hr-avg').textContent = data.hr_avg ?? '—';

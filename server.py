@@ -406,9 +406,26 @@ def recibir_gps(puntos):
     # que ya tenemos: al historial sí, a la posición en directo no
     if ultimo["t"] <= (live.get("gps_t") or 0):
         return
+    # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
+    # había ninguna, y la llegada a meta la necesita (más de 80 km). Los
+    # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
+    dist = live.get("gps_dist_km") or 0.0
+    previo = live.get("gps_ult")
+    for p in puntos:
+        if previo and p["t"] > previo[2]:
+            tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
+            if tramo / max(1.0, p["t"] - previo[2]) * 3600 < 90:
+                dist += tramo
+        if not previo or p["t"] > previo[2]:
+            previo = [p["lat"], p["lon"], p["t"]]
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
     patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil"}
+             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil",
+             "gps_dist_km": round(dist, 3), "gps_ult": previo}
+    distancia = max(live.get("dist_km") or 0, dist)
+    if not live.get("finished_at") and live.get("started_at") and \
+            ha_llegado({"lat": ultimo["lat"], "lon": ultimo["lon"], "dist_km": distancia}):
+        patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
     if ultimo["bateria"] is not None:
@@ -426,6 +443,7 @@ def poll_loop(url, stop_event):
     fallos = 0
     sin_datos = False
     ultima_huella = None
+    ultimos_sensores = None
     frenados = False
     sums = {"speed_kmh": 0.0, "hr": 0.0, "cadence": 0.0}
     counts = {"speed_kmh": 0, "hr": 0, "cadence": 0}
@@ -447,14 +465,25 @@ def poll_loop(url, stop_event):
                 # "Última actualización: ahora" con la posición congelada, y en
                 # meta el tiempo final seguía creciendo. data_at solo avanza
                 # cuando el dato cambia de verdad.
-                if huella(telemetry) != ultima_huella:
+                nuevo = huella(telemetry) != ultima_huella
+                sensores = (telemetry.get("hr"), telemetry.get("cadence"))
+                # igpsport_at: cuándo dio iGPSPORT algo nuevo por última vez.
+                # La web oculta pulso y cadencia si lleva 3 min callado: si su
+                # directo muere, se quedaban clavados en el último valor.
+                if nuevo or sensores != ultimos_sensores:
+                    ultimos_sensores = sensores
+                    patch["igpsport_at"] = datetime.now(timezone.utc).isoformat()
+                if nuevo:
                     ultima_huella = huella(telemetry)
                     patch["data_at"] = datetime.now(timezone.utc).isoformat()
                     apuntar_historial("igpsport", **{k: telemetry.get(k) for k in (
                         "lat", "lon", "dist_km", "elapsed", "speed_kmh", "hr", "cadence")})
-                # con el GPS del móvil al día, su posición manda: la de
-                # iGPSPORT llega más tarde y a saltos
-                if gps_reciente(read_live()):
+                # ⚠️ La posición de iGPSPORT solo se escribe si es un punto
+                # NUEVO y el móvil lleva 2 min sin mandar nada. Antes se
+                # reescribía en cada consulta aunque no cambiara: si Traccar
+                # se callaba, la foto saltaba hacia atrás al último punto
+                # (más viejo) de iGPSPORT.
+                if not nuevo or gps_reciente(read_live()):
                     for k in ("lat", "lon", "speed_kmh"):
                         patch.pop(k, None)
                 if "lat" in patch:
@@ -546,6 +575,7 @@ def simular_loop(stop_event, segundos):
             "cadence_avg": cad_base + 3,
             "dist_km": round(recorrido, 2),
             "extract_status": "simulación",
+            "igpsport_at": datetime.now(timezone.utc).isoformat(),
             "data_at": datetime.now(timezone.utc).isoformat(),
         })
         if avance >= 1:
@@ -746,6 +776,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "hr": None, "hr_avg": None, "cadence": None, "cadence_avg": None,
                 "dist_km": None, "data_at": None, "finished_at": None,
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
+                "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
+                "fuente_posicion": None, "igpsport_aviso": None,
+            })
+            self._send_json(200, {"ok": True, "live": current})
+            return
+
+        if accion == "empezar":
+            # Carrera solo con Traccar: sin enlace de iGPSPORT el crono no
+            # arrancaba nunca (se ponía en marcha al pegar el enlace).
+            hora = str(data.get("hora_salida") or read_live().get("hora_salida") or "").strip()
+            inicio = self.hora_a_iso(hora) if hora else None
+            parar_simulacion()
+            stop_previous_poller()
+            apuntar_historial("empezar", hora_salida=hora)
+            current = merge_live({
+                "status_label": "En carrera", "livetrack_url": None, "extract_status": None,
+                "started_at": inicio or datetime.now(timezone.utc).isoformat(),
+                "hora_salida": hora or None, "finished_at": None, "elapsed": None,
+                "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
+                "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
+                "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return

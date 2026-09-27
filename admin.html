@@ -92,6 +92,7 @@
     <h2>El enlace del BSC500</h2>
     <div class="howto">
       App iGPSPORT → compartir seguimiento en vivo → pega el enlace aquí.
+      Si solo usas Traccar (GPS del móvil), déjalo vacío y pulsa el botón.
     </div>
     <div class="field link-field" style="margin-top:12px">
       <label for="livetrack">Enlace LiveTrack</label>
@@ -320,7 +321,13 @@ $('token').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin();
 
 $('save').addEventListener('click', () => {
   const url = $('livetrack').value.trim();
-  if (!url) { $('msg').textContent = 'Pega antes el enlace.'; $('msg').className = 'msg err'; return; }
+  if (!url) {
+    // sin enlace de iGPSPORT: carrera solo con el GPS del móvil (Traccar)
+    confirmar('¿Empezar SIN enlace de iGPSPORT?\n\nLa posición saldrá solo del GPS del móvil (Traccar). ' +
+      'No habrá pulso ni cadencia. Borra los datos de la carrera anterior.',
+      { action: 'empezar', hora_salida: $('hora-salida').value });
+    return;
+  }
   post({ livetrack_url: url, hora_salida: $('hora-salida').value });
 });
 
