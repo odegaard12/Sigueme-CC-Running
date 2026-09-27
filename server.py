@@ -233,13 +233,24 @@ def merge_live(patch):
         return current
 
 
+# lo último que dijo iGPSPORT cuando NO dio datos (p. ej. 40604 "no se
+# encuentra la actividad, ¿ha terminado o no ha empezado?")
+aviso_igpsport = {"texto": None}
+
+
 def leer_telemetria(url):
     """Devuelve (telemetria, via). Con un enlace de iGPSPORT va por su API
     JSON; con cualquier otro, raspado genérico del HTML."""
     ident = igpsport_id(url)
     if ident:
         crudo = fetch_page(IGPSPORT_API + ident)
-        return extract_igpsport(json.loads(crudo)), "igpsport"
+        payload = json.loads(crudo)
+        codigo = payload.get("code") if isinstance(payload, dict) else None
+        # iGPSPORT contesta en chino; el caso de siempre, traducido
+        mensaje = ("su directo ha terminado o aún no ha empezado" if codigo == 40604
+                   else payload.get("message", "") if isinstance(payload, dict) else "")
+        aviso_igpsport["texto"] = (None if codigo in (0, None) else f"{codigo}: {mensaje}"[:160])
+        return extract_igpsport(payload), "igpsport"
     return extract_telemetry(fetch_page(url)), "generico"
 
 
@@ -397,7 +408,7 @@ def recibir_gps(puntos):
         return
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
     patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora}
+             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil"}
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
     if ultimo["bateria"] is not None:
@@ -446,6 +457,9 @@ def poll_loop(url, stop_event):
                 if gps_reciente(read_live()):
                     for k in ("lat", "lon", "speed_kmh"):
                         patch.pop(k, None)
+                if "lat" in patch:
+                    patch["fuente_posicion"] = "igpsport"
+                patch["igpsport_aviso"] = None
                 # la hora de llegada se apunta UNA vez: si después sigue
                 # pedaleando (hasta el coche, a casa) el tiempo final no crece
                 if ha_llegado(telemetry) and not read_live().get("finished_at"):
@@ -455,9 +469,14 @@ def poll_loop(url, stop_event):
                 sin_datos = False
             else:
                 fallos += 1
+                # solo se apunta al empezar a faltar datos, no cada 20 s
+                if not sin_datos:
+                    apuntar_historial("igpsport_sin_datos", aviso=aviso_igpsport["texto"])
+                    print(f"[poller] iGPSPORT sin datos: {aviso_igpsport['texto']}", flush=True)
                 sin_datos = True
                 if first or fallos > 3:
-                    merge_live({"extract_status": "sin_datos"})
+                    merge_live({"extract_status": "sin_datos",
+                                "igpsport_aviso": aviso_igpsport["texto"]})
         except Exception as exc:
             fallos += 1
             # los valores ya recibidos NO se tocan: si deja de compartir (o se
@@ -781,6 +800,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 patch["started_at"] = self.hora_a_iso(guardada)
             elif not actual.get("started_at"):
                 patch["started_at"] = datetime.now(timezone.utc).isoformat()
+            apuntar_historial("enlace", id=igpsport_id(new_url), url=new_url[:300])
+            print(f"[admin] enlace nuevo: id={igpsport_id(new_url)}", flush=True)
+            patch["igpsport_aviso"] = None
             start_poller(new_url)
 
         # hora oficial de salida (HH:MM). Manda sobre el momento de pegar el

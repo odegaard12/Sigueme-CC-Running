@@ -249,13 +249,15 @@ function refreshStatus(live) {
   if (live.gps_at) {
     const m = Math.round((Date.now() - new Date(live.gps_at)) / 60000);
     $('gps-text').textContent = (m < 1 ? 'ahora mismo' : 'hace ' + m + ' min') +
-      (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '');
+      (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '') +
+      (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil' ? 'GPS del móvil' : 'iGPSPORT') : '');
   } else {
     $('gps-text').textContent = 'sin datos';
   }
   $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
     : ex === 'buscando…' ? 'buscando…'
-    : ex === 'sin_datos' ? 'no encontré datos en ese enlace'
+    : ex === 'sin_datos' ? ('iGPSPORT no tiene directo con ese enlace (terminado o sin empezar)' +
+        (live.igpsport_aviso ? ' · ' + live.igpsport_aviso : ''))
     : ex ? ex
     : '';
 }

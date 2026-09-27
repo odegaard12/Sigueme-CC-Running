@@ -1087,7 +1087,8 @@ function pollLive() {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
         } else if (ultimoDato && data.lat != null) {
-          pie.textContent = 'Última actualización: ' + fmtTime(ultimoDato);
+          pie.textContent = 'Última actualización: ' + fmtTime(ultimoDato) +
+            (data.fuente_posicion === 'movil' ? ' · GPS del móvil' : data.fuente_posicion === 'igpsport' ? ' · iGPSPORT' : '');
         } else {
           pie.textContent = '';
         }
