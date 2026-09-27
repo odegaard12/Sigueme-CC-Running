@@ -390,7 +390,9 @@ def puntos_traccar(query, cuerpo):
                                "t": _segundos(loc.get("timestamp")),
                                "kmh": v * 3.6 if v is not None and v >= 0 else None,
                                "precision": c.get("accuracy"),
-                               "bateria": (loc.get("battery") or {}).get("level")})
+                               "bateria": (loc.get("battery") or {}).get("level"),
+                               # el reloj (miniapp de Amazfit) manda el pulso aquí
+                               "hr": (loc.get("extras") or {}).get("hr")})
         elif j is None:
             try:
                 q.update({k: v[0] for k, v in parse_qs(cuerpo.decode("utf-8")).items()})
@@ -400,23 +402,29 @@ def puntos_traccar(query, cuerpo):
         v = _numero(q.get("speed"))
         crudos.append({"lat": q["lat"], "lon": q["lon"], "t": _segundos(q.get("timestamp")),
                        "kmh": v * 1.852 if v is not None and v >= 0 else None,
-                       "precision": q.get("accuracy"), "bateria": q.get("batt")})
+                       "precision": q.get("accuracy"), "bateria": q.get("batt"), "hr": q.get("hr")})
     ident = ident or q.get("id") or q.get("deviceid")
 
     puntos = []
     for p in crudos:
-        lat, lon = _numero(p["lat"]), _numero(p["lon"])
-        if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180) \
-                or (lat == 0 and lon == 0):
-            continue
-        precision = _numero(p["precision"])
-        if precision is not None and precision > PRECISION_MAXIMA:
-            continue
+        hr = _numero(p.get("hr"))
+        hr = hr if hr is not None and 30 <= hr <= 240 else None
         bateria = _numero(p["bateria"])
         if bateria is not None and bateria <= 1:
             bateria *= 100          # el JSON la da de 0 a 1
-        puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"],
-                       "precision": precision, "bateria": bateria})
+        lat, lon = _numero(p["lat"]), _numero(p["lon"])
+        precision = _numero(p["precision"])
+        valida = not (lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180)
+                      or (lat == 0 and lon == 0)
+                      or (precision is not None and precision > PRECISION_MAXIMA))
+        if not valida:
+            # sin posición buena pero con pulso (el reloj aún buscando GPS):
+            # vale para el pulso
+            if hr is None:
+                continue
+            lat = lon = None
+        puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"] if valida else None,
+                       "precision": precision, "bateria": bateria, "hr": hr})
     return ident, puntos
 
 
@@ -425,13 +433,28 @@ def recibir_gps(puntos):
     for p in puntos:
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
-                          kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"])
-    ultimo = puntos[-1]
+                          kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"], hr=p["hr"])
     live = read_live()
+    extra = {}
+    # pulso del reloj: el más reciente, y la media de todo lo recibido
+    nuevos_hr = [p for p in puntos if p["hr"] is not None and p["t"] > (live.get("hr_t") or 0)]
+    if nuevos_hr:
+        suma = (live.get("hr_suma") or 0) + sum(p["hr"] for p in nuevos_hr)
+        n = (live.get("hr_n") or 0) + len(nuevos_hr)
+        u = nuevos_hr[-1]
+        extra.update(hr=round(u["hr"]), hr_t=u["t"], hr_suma=suma, hr_n=n, hr_avg=round(suma / n),
+                     hr_at=datetime.fromtimestamp(u["t"], timezone.utc).isoformat())
+    con_bateria = [p for p in puntos if p["bateria"] is not None]
+    if con_bateria:
+        extra["bateria_movil"] = round(con_bateria[-1]["bateria"])
+    puntos = [p for p in puntos if p["lat"] is not None]
     # los que llegan de la cola (sin cobertura) pueden ser más viejos que lo
     # que ya tenemos: al historial sí, a la posición en directo no
-    if ultimo["t"] <= (live.get("gps_t") or 0):
+    if not puntos or puntos[-1]["t"] <= (live.get("gps_t") or 0):
+        if extra:
+            merge_live(extra)
         return
+    ultimo = puntos[-1]
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
     # había ninguna, y la llegada a meta la necesita (más de 80 km). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
@@ -457,8 +480,7 @@ def recibir_gps(puntos):
         patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
-    if ultimo["bateria"] is not None:
-        patch["bateria_movil"] = round(ultimo["bateria"])
+    patch.update(extra)
     merge_live(patch)
 
 
@@ -837,6 +859,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
+                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -856,7 +879,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
                 "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
                 "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-                "lejos_de_meta": None,
+                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return

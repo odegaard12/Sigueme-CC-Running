@@ -17,3 +17,6 @@ gps.clave
 historial.jsonl
 *.bak
 resultado.json
+amazfit/node_modules/
+amazfit/dist/
+amazfit/.zeus/
