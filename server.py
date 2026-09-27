@@ -710,7 +710,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # rota después de desplegar. Con no-cache revalida siempre: para
         # ficheros de 16 KB no cuesta nada y evita enseñar una versión antigua.
         ruta = self.path.split("?")[0]
-        if ruta.endswith((".html", ".css", ".js", ".json", "/")):
+        if ruta.startswith("/lib/"):
+            # la librería lleva la versión en el nombre y no cambia nunca: sin
+            # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        elif ruta.endswith((".html", ".css", ".js", ".json", "/")):
             self.send_header("Cache-Control", "no-cache, must-revalidate")
         super().end_headers()
 
