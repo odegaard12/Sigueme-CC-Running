@@ -6,6 +6,22 @@ let routeCumKm = [];         // km acumulados en cada punto de routeLatLon
 let totalRouteKm = 0;
 let aidStations = [];
 
+// números en formato español: 102,1 km, 11,8 km/h
+const num = (v, dec = 1) => (v == null || v === '' || isNaN(v)) ? '—'
+  : Number(v).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.round(v));
+
+// Datos pedidos desde el <head> (index.html) para no esperar a la librería
+// del mapa. Si no están (o fallaron), se piden aquí.
+function precargado(nombre, respaldo) {
+  const p = window.__datos && window.__datos[nombre];
+  if (p) {
+    delete window.__datos[nombre];
+    return p.then(v => v || respaldo());
+  }
+  return respaldo();
+}
+
 function haversineKm(a, b) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -392,7 +408,7 @@ function onMapReady() {
         .setPopup(nuevoPopup(30).setHTML(
           '<div class="globo"><span class="globo-tipo">Salida y meta</span>' +
           '<b>Paseo Marítimo de Xuvia</b>' +
-          '<span class="globo-km">km 0 · km ' + totalRouteKm.toFixed(1) + '</span></div>'))
+          '<span class="globo-km">km 0 · km ' + num(totalRouteKm) + '</span></div>'))
         .addTo(map3d),
       el);
   }
@@ -415,8 +431,8 @@ function onMapReady() {
         .setPopup(nuevoPopup(30).setHTML(
           '<div class="globo"><span class="globo-tipo" style="color:' + color + '">' + tipo + '</span>' +
           '<b>' + (i + 1) + '. ' + s.name + '</b>' +
-          '<span class="globo-km">km ' + s.km + ' · faltan ' +
-          (totalRouteKm - s.km).toFixed(1) + ' km para meta</span></div>'))
+          '<span class="globo-km">km ' + num(s.km) + ' · faltan ' +
+          num(totalRouteKm - s.km) + ' km para meta</span></div>'))
         .addTo(map3d),
       el);
   });
@@ -424,13 +440,12 @@ function onMapReady() {
   if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
 }
 
-fetch('route.geojson')
-  .then(r => r.json())
+precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
-    document.getElementById('stat-dist').textContent = props.distance_km;
-    document.getElementById('stat-gain').textContent = props.elevation_gain_m;
+    document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
+    document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
     totalRouteKm = props.distance_km;
 
     const coords = geojson.features[0].geometry.coordinates;
@@ -463,8 +478,7 @@ fetch('route.geojson')
 // Se editan a mano en aid_stations.json ([{ "name": "...", "km": 0 }, ...]) —
 // no hay forma de sacarlos del GPX, así que se rellenan antes de la carrera.
 function loadAidStations() {
-  fetch('aid_stations.json')
-    .then(r => r.ok ? r.json() : [])
+  precargado('aid_stations.json', () => fetch('aid_stations.json').then(r => r.ok ? r.json() : []))
     .then(stations => {
       aidStations = stations || [];
       drawElevationMarkers();
@@ -495,8 +509,7 @@ function gradColor(g) {
 let lastEleData = null;
 let currentKm = 0; // hasta dónde ha avanzado el corredor, para completar el perfil
 
-fetch('elevation.json')
-  .then(r => r.json())
+precargado('elevation.json', () => fetch('elevation.json').then(r => r.json()))
   .then(data => {
     lastEleData = data;
     drawElevationChart(data.profile, data.min_ele_m, data.max_ele_m);
@@ -509,7 +522,7 @@ function pendienteEn(km) {
   const maxD = perfil[perfil.length - 1].d;
   const i = Math.min(perfil.length - 1, Math.max(1, Math.round(km / maxD * (perfil.length - 1))));
   const g = perfil[i].grad;
-  return (g > 0 ? '+' : '') + g.toFixed(1) + '%';
+  return (g > 0 ? '+' : '') + num(g) + '%';
 }
 
 function drawElevationMarkers() {
@@ -810,8 +823,8 @@ function ponerTexto(id, texto) {
 
 function pintarProgreso(km, pos) {
   currentKm = km;
-  ponerTexto('m-dist', km.toFixed(1));
-  ponerTexto('m-left', Math.max(0, totalRouteKm - km).toFixed(1));
+  ponerTexto('m-dist', num(km));
+  ponerTexto('m-left', num(Math.max(0, totalRouteKm - km)));
   if (pos) placeRiderMarker(pos[0], pos[1]);
   seguirCorredor(pos);
   // la línea recorrida y el perfil son caros de repintar (miles de puntos):
@@ -961,7 +974,10 @@ function fmtDuracion(ms) {
 }
 
 function pollLive() {
-  fetch('live.json?_=' + Date.now())
+  // hasta saber si hay resultado guardado no se pinta nada: si no, salía un
+  // instante "INICIO 08:30 · SÁBADO 26/09" y luego cambiaba todo
+  if (!resultadoConsultado) return;
+  precargado('live.json', () => fetch('live.json?_=' + Date.now()))
     .then(r => {
       // la hora del servidor sale de la cabecera Date de la respuesta, no de
       // "updated": si el servidor llevaba minutos sin escribir (sin señal),
@@ -972,6 +988,7 @@ function pollLive() {
     })
     .then(data => {
       lastStartedAt = data.started_at || null;
+      document.querySelector('.metricas').classList.remove('cargando');
 
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
       if (resultado && !data.started_at && !data.livetrack_url) {
@@ -979,6 +996,7 @@ function pollLive() {
         return;
       }
       document.getElementById('resultado').hidden = true;
+      document.getElementById('aviso-resultado').hidden = true;
 
       let doneKm = data.dist_km;
       // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
@@ -1037,12 +1055,11 @@ function pollLive() {
       document.querySelector('.metricas').classList.toggle('sin-datos', !haArrancado);
 
       // velocidad "ahora" de hace más de 3 min no es "ahora"
-      document.getElementById('m-speed').textContent = enMeta ? '0'
-        : posicionViva ? (data.speed_kmh ?? '—') : '—';
-      document.getElementById('m-speed-avg').textContent = data.speed_kmh_avg ?? '—';
-      document.getElementById('m-hr').textContent = enMeta ? '—' : (data.hr ?? '—');
-      document.getElementById('m-hr-avg').textContent = data.hr_avg ?? '—';
-      document.getElementById('m-cad-avg').textContent = data.cadence_avg ?? '—';
+      ponerTexto('m-speed', enMeta ? '0' : posicionViva ? num(data.speed_kmh) : '—');
+      ponerTexto('m-speed-avg', num(data.speed_kmh_avg));
+      ponerTexto('m-hr', enMeta ? '—' : entero(data.hr));
+      ponerTexto('m-hr-avg', entero(data.hr_avg));
+      ponerTexto('m-cad-avg', entero(data.cadence_avg));
 
       // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
@@ -1143,6 +1160,7 @@ setInterval(() => {
 // resultado.json se genera con el FIT del BSC500 (tiempos, paso por cada
 // avituallamiento y la traza real recortada a salida-meta).
 let resultado = null;
+let resultadoConsultado = false;
 let repitiendo = false;
 let kmsTraza = null;
 
@@ -1171,15 +1189,23 @@ function pintarResultado() {
   ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
   ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, true));
   document.querySelector('.metricas').classList.remove('sin-datos');
-  ponerTexto('m-dist', r.distancia_km.toFixed(1));
+  ponerTexto('m-dist', num(r.distancia_km));
   ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));
-  ponerTexto('m-speed-avg', r.velocidad_media_mov != null ? String(r.velocidad_media_mov) : '—');
-  ponerTexto('m-hr-avg', r.pulso_medio != null ? String(r.pulso_medio) : '—');
-  ponerTexto('m-cad-avg', r.cadencia_media != null ? String(r.cadencia_media) : '—');
+  ponerTexto('m-speed-avg', num(r.velocidad_media_mov));
+  ponerTexto('m-hr-avg', entero(r.pulso_medio));
+  ponerTexto('m-cad-avg', entero(r.cadencia_media));
+  // el resultado va arriba, antes del mapa: era lo primero que había que ver
+  // y quedaba debajo del mapa y la leyenda
   const estado = document.getElementById('estado-carrera');
-  estado.classList.remove('previo');
-  estado.classList.add('meta');
-  estado.textContent = '🏁 Terminada · ' + fmtHM(r.tiempo_oficial_s) + ' · llegada a las ' + horaNaron(r.llegada);
+  estado.classList.remove('previo', 'meta');
+  estado.textContent = '';
+  ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
+  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaNaron(r.llegada) +
+    ' · dentro del límite de 12 h');
+  document.getElementById('aviso-resultado').hidden = false;
+  ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
+  const etiqueta = document.querySelector('#stat-limite + i');
+  if (etiqueta) etiqueta.textContent = 'de 12 h';
   document.getElementById('live-updated').textContent =
     r.carrera + ' · datos del ciclocomputador · ' + fmtHM(r.tiempo_movimiento_s) + ' en movimiento';
   // mapa y perfil completos, la foto en meta
@@ -1198,7 +1224,7 @@ function pintarResultado() {
       const li = document.createElement('li');
       const trans = (new Date(p.hora) - salida) / 1000;
       li.innerHTML = '<span class="n">' + (i + 1) + '</span><span></span>' +
-        '<span class="km">km ' + p.km + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
+        '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
       li.children[1].textContent = p.nombre;   // el nombre como texto, no HTML
       lista.appendChild(li);
     });
@@ -1236,7 +1262,7 @@ function repetirCarrera() {
     pintarProgreso(km, [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e]);
     ponerTexto('m-time', fmtHM(t));
     const reloj = new Date(salida + t * 1000).toISOString();
-    ponerTexto('estado-carrera', '▶ ' + horaNaron(reloj) + ' · km ' + km.toFixed(1));
+    ponerTexto('aviso-titulo', '▶ ' + horaNaron(reloj) + ' · km ' + num(km));
     const pasados = resultado.pasos.filter(p => new Date(p.hora).getTime() <= salida + t * 1000).length;
     items.forEach((li, k) => li.classList.toggle('actual', k === pasados - 1));
     if (!fin) { requestAnimationFrame(paso); return; }
@@ -1254,10 +1280,9 @@ function repetirCarrera() {
 }
 document.getElementById('btn-repeticion').addEventListener('click', repetirCarrera);
 
-fetch('resultado.json?_=' + Date.now())
-  .then(r => r.ok ? r.json() : null)
-  .then(d => { resultado = d; if (d) pollLive(); })
-  .catch(() => {});
+precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(r => r.ok ? r.json() : null))
+  .catch(() => null)
+  .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
 
 pollLive();
 setInterval(pollLive, 5000);

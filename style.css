@@ -613,3 +613,26 @@ footer a { color: var(--muted); }
 .pasos .n { color: var(--muted); font-size: 0.75rem; text-align: right; }
 .pasos .km { color: var(--muted); font-size: 0.75rem; }
 .pasos .hora { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* --- aviso de resultado, arriba del todo --- */
+.aviso-resultado {
+  margin: 12px 10px 0; padding: 14px 16px 16px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+}
+.aviso-titulo { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
+.aviso-sub { margin: 4px 0 12px; color: var(--muted); font-size: 0.85rem; }
+.aviso-resultado .btn-repeticion { border-color: var(--border); background: #1b211e; }
+@media (min-width: 900px) {
+  .aviso-resultado { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .aviso-resultado .aviso-titulo { flex: 0 0 auto; }
+  .aviso-resultado .aviso-sub { flex: 1 1 260px; margin: 0; }
+  .aviso-resultado .btn-repeticion { width: auto; padding: 10px 18px; }
+}
+
+/* --- esqueleto mientras llegan los datos (antes: huecos vacíos y, de golpe, todo) --- */
+.metricas.cargando .m-val, .metricas.cargando .chip b {
+  color: transparent; border-radius: 6px;
+  background: linear-gradient(90deg, #1a201d 0%, #232a26 50%, #1a201d 100%);
+  background-size: 200% 100%; animation: esqueleto 1.2s ease-in-out infinite;
+}
+@keyframes esqueleto { from { background-position: 100% 0; } to { background-position: -100% 0; } }

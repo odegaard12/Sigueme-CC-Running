@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>21 Leguas de Narón — Seguimiento en directo</title>
+<script>
+  // Los datos se piden YA, en paralelo con la librería del mapa: antes
+  // esperaban a que se descargara y durante ese rato la web salía vacía.
+  // Va antes de las hojas de estilo: detrás, el navegador no lo ejecuta
+  // hasta que llegan (medido: 300 ms de espera).
+  window.__datos = {};
+  ['route.geojson', 'elevation.json', 'aid_stations.json', 'resultado.json'].forEach(function (u) {
+    window.__datos[u] = fetch(u + '?_=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  });
+  window.__datos['live.json'] = fetch('live.json?_=' + Date.now()).catch(function () { return null; });
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1210">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +26,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=51">
+<link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
 <header class="topbar">
@@ -56,6 +68,12 @@
   </div>
 </section>
 
+<section class="aviso-resultado" id="aviso-resultado" hidden>
+  <p class="aviso-titulo" id="aviso-titulo"></p>
+  <p class="aviso-sub" id="aviso-sub"></p>
+  <button class="btn-repeticion" id="btn-repeticion">▶ Ver la carrera en 1 minuto</button>
+</section>
+
 <div class="panel-pc">
 <section class="map-wrap">
   <div id="map3d"></div>
@@ -84,7 +102,7 @@
 <div class="lateral">
 <p class="map-hint" id="geo-hint"></p>
 
-<section class="metricas">
+<section class="metricas cargando">
   <div class="metricas-top">
     <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
     <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
@@ -102,9 +120,8 @@
   </div>
   <p class="estado-carrera" id="estado-carrera"></p>
   <div class="resultado" id="resultado" hidden>
-    <button class="btn-repeticion" id="btn-repeticion">▶ Ver la carrera en 1 minuto</button>
     <h3>Paso por los avituallamientos</h3>
-    <ol class="pasos" id="pasos"></ol>
+    <ul class="pasos" id="pasos"></ul>
   </div>
 </section>
 
@@ -119,7 +136,7 @@
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=61"></script>
+<script src="app.js?v=62"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla
