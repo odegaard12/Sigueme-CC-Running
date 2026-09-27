@@ -590,3 +590,77 @@ footer a { color: var(--muted); }
   .mapa-botones { bottom: 56px; }
   #map3d { height: 62dvh; min-height: 260px; }
 }
+
+/* --- resultado de la carrera (tras terminar) --- */
+.resultado { margin-top: 10px; }
+.btn-repeticion {
+  width: 100%; padding: 12px; border-radius: 12px; cursor: pointer;
+  background: transparent; color: var(--text); font: inherit; font-weight: 700;
+  border: 1px solid var(--accent);
+}
+.btn-repeticion:active { transform: scale(0.98); }
+.resultado h3 {
+  margin: 16px 2px 8px; font-size: 0.7rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); font-weight: 700;
+}
+.pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pasos li {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 1px;
+  grid-template-areas: "n nombre hora" "n km hora"; align-items: center;
+  padding: 7px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 0.85rem;
+}
+.pasos .nombre { grid-area: nombre; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pasos li.actual { border-color: var(--accent); }
+.pasos .n { grid-area: n; color: var(--muted); font-size: 0.75rem; text-align: right; }
+.pasos .km { grid-area: km; color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+.pasos .hora { grid-area: hora; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.95rem; }
+
+/* --- aviso de resultado, arriba del todo ---
+   Compacto: antes era un bloque de ~150 px (título, subtítulo y botón a todo
+   lo ancho) que en el móvil empujaba el mapa y en horizontal se comía un
+   tercio de la pantalla. */
+.aviso-resultado {
+  margin: 10px 10px 0; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1px 12px;
+}
+.aviso-titulo { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+.aviso-sub { margin: 0; color: var(--muted); font-size: 0.78rem; }
+.aviso-resultado .btn-repeticion {
+  grid-column: 2; grid-row: 1 / span 2; width: auto; padding: 9px 14px;
+  font-size: 0.85rem; white-space: nowrap; border-color: var(--border); background: #1b211e;
+}
+/* móvil estrecho: el botón se queda en el icono, y así el título cabe en una línea */
+@media (max-width: 440px) and (min-height: 521px) {
+  .aviso-resultado .btn-repeticion { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 1rem; }
+  .aviso-resultado .btn-repeticion .txt { display: none; }
+}
+/* móvil en horizontal: una sola fila, que el mapa es lo que importa */
+@media (max-height: 520px) {
+  .aviso-resultado { grid-template-columns: auto minmax(0, 1fr) auto; margin-top: 6px; padding: 6px 10px; }
+  .aviso-sub { grid-column: 2; grid-row: 1; }
+  .aviso-resultado .btn-repeticion { grid-column: 3; grid-row: 1; padding: 6px 12px; }
+}
+/* PC: alineado con el mapa y la columna de datos, no de borde a borde */
+@media (min-width: 900px) {
+  .aviso-resultado {
+    width: calc(100% - 40px); max-width: 1240px; box-sizing: border-box;
+    margin: 14px auto 0; padding: 12px 16px;
+    grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px;
+  }
+  .aviso-titulo { font-size: 1.2rem; }
+  .aviso-sub { grid-column: 2; grid-row: 1; font-size: 0.85rem; }
+  .aviso-resultado .btn-repeticion { grid-column: 3; grid-row: 1; padding: 9px 18px; }
+  /* la columna de datos, algo más ancha: con 260 px los nombres de la lista
+     de avituallamientos se partían en dos líneas ("San / Jorge") */
+  .panel-pc { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+
+/* --- esqueleto mientras llegan los datos (antes: huecos vacíos y, de golpe, todo) --- */
+.metricas.cargando .m-val, .metricas.cargando .chip b {
+  color: transparent; border-radius: 6px;
+  background: linear-gradient(90deg, #1a201d 0%, #232a26 50%, #1a201d 100%);
+  background-size: 200% 100%; animation: esqueleto 1.2s ease-in-out infinite;
+}
+@keyframes esqueleto { from { background-position: 100% 0; } to { background-position: -100% 0; } }
