@@ -13,3 +13,6 @@ live.json
 *~
 .idea/
 .vscode/
+gps.clave
+historial.jsonl
+*.bak

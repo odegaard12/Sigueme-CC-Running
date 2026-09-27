@@ -798,6 +798,10 @@ let posPintada = null;
 let animacion = null;
 let ultimoRepintadoPesado = 0;
 let objetivo = null;        // [km, lat, lon] hacia donde va la animación
+// ⚠️ Tras un hueco sin cobertura el punto nuevo llega lejos, y la foto
+// tardaba hasta 33 s en arrastrarse hasta él: parecía que la web no se
+// enteraba. Tras un hueco se pone al día en 2,5 s.
+let ponerseAlDia = false;
 
 function ponerTexto(id, texto) {
   const el = document.getElementById(id);
@@ -855,7 +859,11 @@ function moverSuave(km, pos, pegado) {
   }
   // un salto grande (recarga, simulación acelerada, cambio de enlace) se
   // recorre deprisa en vez de plantarse de golpe
-  const duracion = Math.abs(km - km0) > 8 ? 1500 : intervaloDatos * 1.1;
+  const salto = Math.abs(km - km0);
+  const duracion = salto > 8 ? 1500
+    : (ponerseAlDia || salto > 0.6) ? 2500
+    : intervaloDatos * 1.1;
+  ponerseAlDia = false;
   if (animacion) cancelAnimationFrame(animacion);
   const t0 = performance.now();
   let ultimoFotograma = 0;
@@ -985,7 +993,9 @@ function pollLive() {
       if (data.data_at && data.data_at !== ultimoDataAt) {
         if (ultimoDataAt) {
           const dt = new Date(data.data_at) - new Date(ultimoDataAt);
-          if (dt > 0) intervaloDatos = Math.min(30000, Math.max(8000, dt));
+          // un hueco (sin cobertura) no es el ritmo normal de los datos
+          if (dt > 45000) ponerseAlDia = true;
+          else if (dt > 0) intervaloDatos = Math.min(30000, Math.max(5000, dt));
         }
         ultimoDataAt = data.data_at;
       }
@@ -1002,12 +1012,26 @@ function pollLive() {
       // qué se enseña en cada momento: antes de salir, nada; en meta,
       // desaparece lo instantáneo (velocidad ahora, pulso, pendiente) y se
       // quedan fijos los totales
-      ['speed', 'hr', 'grad'].forEach(n => verCasilla(n, haArrancado && !enMeta));
-      ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, haArrancado));
+      // ⚠️ Si iGPSPORT se calla (su directo muere, o solo va Traccar), el
+      // pulso y la cadencia se quedaban clavados en el último valor durante
+      // horas. A los 3 min sin datos nuevos se ocultan; las casillas sin
+      // dato tampoco se enseñan (con solo Traccar no hay medias).
+      const vivo = iso => !!iso && ahoraServidor() - new Date(iso) < 180000;
+      const sensoresVivos = vivo(data.igpsport_at);
+      const posicionViva = vivo(data.data_at || data.updated);
+      verCasilla('speed', haArrancado && !enMeta);
+      verCasilla('grad', haArrancado && !enMeta);
+      verCasilla('hr', haArrancado && !enMeta && sensoresVivos && data.hr != null);
+      verCasilla('cad', haArrancado && data.cadence_avg != null && (sensoresVivos || enMeta));
+      verCasilla('hr-avg', haArrancado && data.hr_avg != null);
+      verCasilla('speed-avg', haArrancado && data.speed_kmh_avg != null);
+      ['dist', 'time'].forEach(n => verCasilla(n, haArrancado));
       verCasilla('left', haArrancado && !enMeta);
       document.querySelector('.metricas').classList.toggle('sin-datos', !haArrancado);
 
-      document.getElementById('m-speed').textContent = enMeta ? '0' : (data.speed_kmh ?? '—');
+      // velocidad "ahora" de hace más de 3 min no es "ahora"
+      document.getElementById('m-speed').textContent = enMeta ? '0'
+        : posicionViva ? (data.speed_kmh ?? '—') : '—';
       document.getElementById('m-speed-avg').textContent = data.speed_kmh_avg ?? '—';
       document.getElementById('m-hr').textContent = enMeta ? '—' : (data.hr ?? '—');
       document.getElementById('m-hr-avg').textContent = data.hr_avg ?? '—';
@@ -1077,7 +1101,8 @@ function pollLive() {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
         } else if (ultimoDato && data.lat != null) {
-          pie.textContent = 'Última actualización: ' + fmtTime(ultimoDato);
+          pie.textContent = 'Última actualización: ' + fmtTime(ultimoDato) +
+            (data.fuente_posicion === 'movil' ? ' · GPS del móvil' : data.fuente_posicion === 'igpsport' ? ' · iGPSPORT' : '');
         } else {
           pie.textContent = '';
         }
