@@ -120,7 +120,32 @@
       <span>Crono desde: <b id="crono-text">—</b></span>
       <span>Último dato: <b id="dato-text">—</b></span>
     </div>
+    <div class="estado-fila" style="margin-top:6px">
+      <span>GPS del móvil: <b id="gps-text">—</b></span>
+    </div>
     <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
+  </div>
+
+  <div class="tarjeta">
+    <h2>GPS del móvil (Traccar Client)</h2>
+    <div class="howto">
+      Posición directa desde el móvil, más fiable que la de iGPSPORT con mala
+      cobertura: sin señal guarda los puntos y los manda al volver. Instala
+      <b>Traccar Client</b> (gratis, Android e iPhone) y pon:
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Dirección del servidor</label>
+      <input type="text" id="gps-url" readonly onclick="this.select()">
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label>Identificador del dispositivo</label>
+      <input type="text" id="gps-id" readonly onclick="this.select()">
+    </div>
+    <div class="howto" style="margin-top:8px">
+      Frecuencia: 10 s · Precisión: alta · Distancia: 0 · y activa el servicio.
+      En Android, quita el ahorro de batería a Traccar Client. iGPSPORT sigue
+      dando el pulso y la cadencia.
+    </div>
   </div>
 
   <div class="tarjeta">
@@ -221,11 +246,28 @@ function refreshStatus(live) {
   } else {
     $('dato-text').textContent = '—';
   }
+  if (live.gps_at) {
+    const m = Math.round((Date.now() - new Date(live.gps_at)) / 60000);
+    $('gps-text').textContent = (m < 1 ? 'ahora mismo' : 'hace ' + m + ' min') +
+      (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '');
+  } else {
+    $('gps-text').textContent = 'sin datos';
+  }
   $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
     : ex === 'buscando…' ? 'buscando…'
     : ex === 'sin_datos' ? 'no encontré datos en ese enlace'
     : ex ? ex
     : '';
+}
+
+async function cargarGps() {
+  $('gps-url').value = location.origin + '/api/gps';
+  try {
+    const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, action: 'gps_info' }) });
+    const d = await res.json();
+    $('gps-id').value = d.gps_id || '(falta generar la clave en el servidor)';
+  } catch (e) {}
 }
 
 async function pollStatus() {
@@ -253,6 +295,7 @@ async function tryLogin() {
       $('login-screen').style.display = 'none';
       $('panel').style.display = 'block';
       pollStatus();
+      cargarGps();
       setInterval(pollStatus, 5000);
     } else {
       loginMsg.textContent = 'Clave incorrecta.';
@@ -314,6 +357,7 @@ if (TOKEN) {
         $('login-screen').style.display = 'none';
         $('panel').style.display = 'block';
         pollStatus();
+        cargarGps();
         setInterval(pollStatus, 5000);
       }
     });

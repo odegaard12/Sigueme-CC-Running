@@ -12,6 +12,7 @@ import urllib.request
 from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
 from hmac import compare_digest
+from urllib.parse import parse_qs
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 LIVE_PATH = os.path.join(ROOT, "live.json")
@@ -267,6 +268,143 @@ def ha_llegado(t):
     return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
 
 
+# --- GPS del móvil (Traccar Client) --------------------------------------
+# En la carrera del 26/09/2026 la posición de iGPSPORT iba a saltos con los
+# datos del móvil y, a las 14:51 (km 46), dejó de llegar para siempre: su
+# directo depende de BSC500 -> Bluetooth -> app -> servidor de iGPSPORT, y
+# con cobertura mala esa cadena se rompe y no recupera lo perdido.
+# Traccar Client (gratis, Android e iPhone) manda la posición del móvil
+# directamente aquí y, sin cobertura, GUARDA los puntos y los envía todos al
+# volver. Mientras mande posición, manda sobre la de iGPSPORT; iGPSPORT sigue
+# aportando pulso, cadencia y distancia.
+GPS_CLAVE_PATH = os.path.join(ROOT, "gps.clave")      # no se sirve: sin extensión pública
+HISTORIAL_PATH = os.path.join(ROOT, "historial.jsonl")  # ídem
+GPS_VIGENTE = 120      # s: con un punto del móvil más reciente, no se usa el de iGPSPORT
+PRECISION_MAXIMA = 100  # m: puntos peores se descartan (arranque en frío, túneles)
+
+
+def clave_gps():
+    try:
+        with open(GPS_CLAVE_PATH, encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return ""
+
+
+def apuntar_historial(fuente, **datos):
+    """Una línea por dato recibido: para poder auditar después qué llegó y
+    cuándo (el día de la carrera solo se guardaba el último punto)."""
+    try:
+        with open(HISTORIAL_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"recibido": datetime.now(timezone.utc).isoformat(),
+                                "fuente": fuente, **datos}, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def gps_reciente(live):
+    t = live.get("gps_t")
+    return bool(t) and time.time() - t < GPS_VIGENTE
+
+
+def _segundos(valor):
+    """Hora del punto: segundos o milisegundos Unix, o ISO 8601."""
+    if valor in (None, ""):
+        return time.time()
+    try:
+        n = float(valor)
+        return n / 1000 if n > 1e11 else n
+    except (TypeError, ValueError):
+        pass
+    try:
+        return datetime.fromisoformat(str(valor).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return time.time()
+
+
+def _numero(valor):
+    try:
+        return float(valor)
+    except (TypeError, ValueError):
+        return None
+
+
+def puntos_traccar(query, cuerpo):
+    """Devuelve (identificador, [puntos]). Acepta los dos formatos de Traccar
+    Client: parámetros en la URL (protocolo OsmAnd, velocidad en nudos, que
+    usan también OsmAnd y GPSLogger) y JSON (Traccar Client 9, velocidad en
+    m/s, varios puntos de golpe cuando vuelve la cobertura)."""
+    q = {k: v[0] for k, v in parse_qs(query).items()}
+    crudos, ident = [], None
+    if cuerpo:
+        try:
+            j = json.loads(cuerpo)
+        except (ValueError, UnicodeDecodeError):
+            j = None
+        if isinstance(j, dict):
+            ident = j.get("device_id") or j.get("id")
+            locs = j.get("location") or j.get("locations") or []
+            for loc in (locs if isinstance(locs, list) else [locs]):
+                if not isinstance(loc, dict):
+                    continue
+                c = loc.get("coords") or {}
+                v = _numero(c.get("speed"))
+                crudos.append({"lat": c.get("latitude"), "lon": c.get("longitude"),
+                               "t": _segundos(loc.get("timestamp")),
+                               "kmh": v * 3.6 if v is not None and v >= 0 else None,
+                               "precision": c.get("accuracy"),
+                               "bateria": (loc.get("battery") or {}).get("level")})
+        elif j is None:
+            try:
+                q.update({k: v[0] for k, v in parse_qs(cuerpo.decode("utf-8")).items()})
+            except UnicodeDecodeError:
+                pass
+    if "lat" in q and "lon" in q:
+        v = _numero(q.get("speed"))
+        crudos.append({"lat": q["lat"], "lon": q["lon"], "t": _segundos(q.get("timestamp")),
+                       "kmh": v * 1.852 if v is not None and v >= 0 else None,
+                       "precision": q.get("accuracy"), "bateria": q.get("batt")})
+    ident = ident or q.get("id") or q.get("deviceid")
+
+    puntos = []
+    for p in crudos:
+        lat, lon = _numero(p["lat"]), _numero(p["lon"])
+        if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180) \
+                or (lat == 0 and lon == 0):
+            continue
+        precision = _numero(p["precision"])
+        if precision is not None and precision > PRECISION_MAXIMA:
+            continue
+        bateria = _numero(p["bateria"])
+        if bateria is not None and bateria <= 1:
+            bateria *= 100          # el JSON la da de 0 a 1
+        puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"],
+                       "precision": precision, "bateria": bateria})
+    return ident, puntos
+
+
+def recibir_gps(puntos):
+    puntos.sort(key=lambda p: p["t"])
+    for p in puntos:
+        apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
+                          hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
+                          kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"])
+    ultimo = puntos[-1]
+    live = read_live()
+    # los que llegan de la cola (sin cobertura) pueden ser más viejos que lo
+    # que ya tenemos: al historial sí, a la posición en directo no
+    if ultimo["t"] <= (live.get("gps_t") or 0):
+        return
+    hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
+    patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
+             "gps_at": hora, "data_at": hora}
+    if ultimo["kmh"] is not None:
+        patch["speed_kmh"] = round(ultimo["kmh"], 1)
+    if ultimo["bateria"] is not None:
+        patch["bateria_movil"] = round(ultimo["bateria"])
+    merge_live(patch)
+
+
 def huella(t):
     """Lo que cambia cuando de verdad llega un dato nuevo del BSC500."""
     return tuple(t.get(k) for k in ("lat", "lon", "dist_km", "elapsed"))
@@ -277,6 +415,7 @@ def poll_loop(url, stop_event):
     fallos = 0
     sin_datos = False
     ultima_huella = None
+    frenados = False
     sums = {"speed_kmh": 0.0, "hr": 0.0, "cadence": 0.0}
     counts = {"speed_kmh": 0, "hr": 0, "cadence": 0}
     while not stop_event.is_set():
@@ -300,6 +439,13 @@ def poll_loop(url, stop_event):
                 if huella(telemetry) != ultima_huella:
                     ultima_huella = huella(telemetry)
                     patch["data_at"] = datetime.now(timezone.utc).isoformat()
+                    apuntar_historial("igpsport", **{k: telemetry.get(k) for k in (
+                        "lat", "lon", "dist_km", "elapsed", "speed_kmh", "hr", "cadence")})
+                # con el GPS del móvil al día, su posición manda: la de
+                # iGPSPORT llega más tarde y a saltos
+                if gps_reciente(read_live()):
+                    for k in ("lat", "lon", "speed_kmh"):
+                        patch.pop(k, None)
                 # la hora de llegada se apunta UNA vez: si después sigue
                 # pedaleando (hasta el coche, a casa) el tiempo final no crece
                 if ha_llegado(telemetry) and not read_live().get("finished_at"):
@@ -318,10 +464,13 @@ def poll_loop(url, stop_event):
             # queda sin cobertura), la web sigue enseñando el último estado
             codigo = getattr(exc, "code", None)
             sin_datos = False
-            if codigo in (403, 429):
+            frenados = codigo in (403, 429)
+            if frenados:
                 # nos están frenando: retirarse un buen rato, no insistir
                 fallos = max(fallos, 6)
                 print(f"[poller] iGPSPORT devolvió {codigo}: esperando", flush=True)
+            else:
+                print(f"[poller] error: {str(exc)[:160]}", flush=True)
             merge_live({"extract_status": ("sin señal" if fallos > 3
                                            else "error: " + str(exc)[:120])})
         first = False
@@ -331,8 +480,15 @@ def poll_loop(url, stop_event):
         # "La actividad aún no ha empezado" no es un error: si se pega el
         # enlace a las 08:15 y se espera hasta 5 min entre consultas, la web
         # tardaba eso en enterarse de que ya había salido. Tope de 1 min.
-        if sin_datos:
+        # ⚠️ Con un fallo de red cualquiera se llegaba a esperar 5 min: al
+        # volver la cobertura la web tardaba en enterarse. Solo un bloqueo de
+        # verdad (403/429 sin datos) espera tanto; lo demás, 1 min como mucho,
+        # y "aún sin datos", 20 s.
+        if not frenados:
             espera = min(espera, 60)
+        if sin_datos:
+            espera = min(espera, 20)
+        frenados = False
         stop_event.wait(espera)
 
 
@@ -438,7 +594,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return False
         return os.path.splitext(ruta)[1].lower() in EXTENSIONES_PUBLICAS
 
+    def _gps(self, cuerpo=b""):
+        _, _, query = self.path.partition("?")
+        ident, puntos = puntos_traccar(query, cuerpo)
+        clave = clave_gps()
+        if not clave or not ident or not compare_digest(str(ident), clave):
+            self._send_json(403, {"error": "identificador incorrecto"})
+            return
+        if puntos:
+            recibir_gps(puntos)
+        # Traccar solo borra los puntos de su cola si le contestamos 200
+        self._send_json(200, {"ok": True, "puntos": len(puntos)})
+
     def do_GET(self):
+        if self.path.startswith("/api/gps"):
+            self._gps()
+            return
         if not self._ruta_publica():
             self.send_error(404, "Not Found")
             return
@@ -484,6 +655,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return local.astimezone(timezone.utc).isoformat()
 
     def do_POST(self):
+        if self.path.startswith("/api/gps"):
+            try:
+                largo = int(self.headers.get("Content-Length", 0))
+            except ValueError:
+                largo = -1
+            # con la cola llena (horas sin cobertura) Traccar manda muchos
+            # puntos de golpe: tope generoso, pero tope
+            if not 0 <= largo <= 2_000_000:
+                self._send_json(413, {"error": "petición demasiado grande"})
+                return
+            self._gps(self.rfile.read(largo) if largo else b"")
+            return
         if self.path != "/api/live":
             self._send_json(404, {"error": "not found"})
             return
@@ -524,12 +707,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         accion = data.get("action")
 
+        if accion == "gps_info":
+            self._send_json(200, {"ok": True, "gps_id": clave_gps(), "live": read_live()})
+            return
+
         if accion == "simular":
             arrancar_simulacion(int(data.get("segundos", 120)))
             self._send_json(200, {"ok": True, "live": read_live()})
             return
 
         if accion == "reset":
+            apuntar_historial("reset")
             parar_simulacion()
             stop_previous_poller()
             current = merge_live({
@@ -538,6 +726,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "lat": None, "lon": None, "speed_kmh": None, "speed_kmh_avg": None,
                 "hr": None, "hr_avg": None, "cadence": None, "cadence_avg": None,
                 "dist_km": None, "data_at": None, "finished_at": None,
+                "gps_t": None, "gps_at": None, "bateria_movil": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return

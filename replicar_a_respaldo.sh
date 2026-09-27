@@ -19,7 +19,7 @@ if ! ip -4 addr show eth0 | grep -q "inet ${VIP}/"; then
 fi
 
 if cambios=$(rsync -a --delete --itemize-changes \
-        --exclude '__pycache__' --exclude '*.bak*' \
+        --exclude '__pycache__' --exclude '*.bak*' --exclude '*.tmp' \
         -e "$SSH" \
         "$ORIGEN" "${DESTINO}:/home/odegaard12/21leguas/" 2>>"$LOG"); then
     # solo se apunta cuando se copió algo de la web (no el live.json de cada

@@ -798,6 +798,10 @@ let posPintada = null;
 let animacion = null;
 let ultimoRepintadoPesado = 0;
 let objetivo = null;        // [km, lat, lon] hacia donde va la animación
+// ⚠️ Tras un hueco sin cobertura el punto nuevo llega lejos, y la foto
+// tardaba hasta 33 s en arrastrarse hasta él: parecía que la web no se
+// enteraba. Tras un hueco se pone al día en 2,5 s.
+let ponerseAlDia = false;
 
 function ponerTexto(id, texto) {
   const el = document.getElementById(id);
@@ -855,7 +859,11 @@ function moverSuave(km, pos, pegado) {
   }
   // un salto grande (recarga, simulación acelerada, cambio de enlace) se
   // recorre deprisa en vez de plantarse de golpe
-  const duracion = Math.abs(km - km0) > 8 ? 1500 : intervaloDatos * 1.1;
+  const salto = Math.abs(km - km0);
+  const duracion = salto > 8 ? 1500
+    : (ponerseAlDia || salto > 0.6) ? 2500
+    : intervaloDatos * 1.1;
+  ponerseAlDia = false;
   if (animacion) cancelAnimationFrame(animacion);
   const t0 = performance.now();
   let ultimoFotograma = 0;
@@ -985,7 +993,9 @@ function pollLive() {
       if (data.data_at && data.data_at !== ultimoDataAt) {
         if (ultimoDataAt) {
           const dt = new Date(data.data_at) - new Date(ultimoDataAt);
-          if (dt > 0) intervaloDatos = Math.min(30000, Math.max(8000, dt));
+          // un hueco (sin cobertura) no es el ritmo normal de los datos
+          if (dt > 45000) ponerseAlDia = true;
+          else if (dt > 0) intervaloDatos = Math.min(30000, Math.max(5000, dt));
         }
         ultimoDataAt = data.data_at;
       }
