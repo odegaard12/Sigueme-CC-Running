@@ -1200,8 +1200,9 @@ function pintarResultado() {
   estado.classList.remove('previo', 'meta');
   estado.textContent = '';
   ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
-  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaNaron(r.llegada) +
-    ' · dentro del límite de 12 h');
+  // corto a propósito: en el móvil pequeño partía en dos líneas (el "de 12 h"
+  // ya sale en la cabecera)
+  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaNaron(r.llegada));
   document.getElementById('aviso-resultado').hidden = false;
   ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
   const etiqueta = document.querySelector('#stat-limite + i');
@@ -1223,7 +1224,7 @@ function pintarResultado() {
     r.pasos.forEach((p, i) => {
       const li = document.createElement('li');
       const trans = (new Date(p.hora) - salida) / 1000;
-      li.innerHTML = '<span class="n">' + (i + 1) + '</span><span></span>' +
+      li.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="nombre"></span>' +
         '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
       li.children[1].textContent = p.nombre;   // el nombre como texto, no HTML
       lista.appendChild(li);
@@ -1240,7 +1241,7 @@ function repetirCarrera() {
   calcularKmsTraza();
   if (!kmsTraza) return;
   repitiendo = true;
-  boton.textContent = '■ Parar';
+  boton.innerHTML = '<span class="ico">■</span><span class="txt"> Parar</span>';
   const tr = resultado.traza, total = tr[tr.length - 1][2];
   const salida = new Date(resultado.salida).getTime();
   if (mapReady) {
@@ -1267,7 +1268,7 @@ function repetirCarrera() {
     items.forEach((li, k) => li.classList.toggle('actual', k === pasados - 1));
     if (!fin) { requestAnimationFrame(paso); return; }
     repitiendo = false;
-    boton.textContent = '▶ Ver la carrera en 1 minuto';
+    boton.innerHTML = '<span class="ico">▶</span><span class="txt"> Ver la carrera</span>';
     items.forEach(li => li.classList.remove('actual'));
     marcarSiguiendo(false);
     if (mapReady && routeBounds) {
