@@ -7,6 +7,8 @@
 set -u
 
 VIP="IP_FLOTANTE"
+# En la .104 va el mismo script con DESTINO la .103: la réplica sale de la
+# que tenga la VIP (con nopreempt puede quedarse en la .104 tras una caída).
 DESTINO="USUARIO@IP_OTRA_PI"
 ORIGEN="/home/USUARIO/sigueme/"
 LOG="/home/USUARIO/sigueme_replica.log"
