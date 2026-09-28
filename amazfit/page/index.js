@@ -93,8 +93,9 @@ Page(BasePage({
     try {
       const g = JSON.parse(almacen.getItem('estado', '{}') || '{}')
       if (Array.isArray(g.cola)) this.state.cola = g.cola.slice(-MAX_COLA)
-      // solo si se cerró hace menos de 1 h: no reanudar una carrera de ayer
-      if (g.activo && Date.now() - (g.t || 0) < 3600000) this.arrancar()
+      // solo si se cerró hace menos de 14 h (lo que dura la carrera): no
+      // reanudar una de ayer
+      if (g.activo && Date.now() - (g.t || 0) < 14 * 3600000) this.arrancar()
       else if (this.state.cola.length) this.mandar()
     } catch (e) {}
   },
