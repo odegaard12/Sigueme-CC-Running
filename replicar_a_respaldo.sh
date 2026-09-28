@@ -7,6 +7,8 @@
 set -u
 
 VIP="192.168.68.202"
+# En la .104 va el mismo script con DESTINO la .103: la réplica sale de la
+# que tenga la VIP (con nopreempt puede quedarse en la .104 tras una caída).
 DESTINO="odegaard12@192.168.68.104"
 ORIGEN="/home/odegaard12/21leguas/"
 LOG="/home/odegaard12/21leguas_replica.log"
