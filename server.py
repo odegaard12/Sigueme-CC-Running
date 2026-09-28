@@ -763,7 +763,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # El panel avisa: con el identificador mal copiado, Traccar o el
             # reloj mandaban y la web no se movía, sin pista de por qué. Solo
             # la hora (live.json es público) y como mucho una vez por minuto.
-            if puntos and time.time() - rechazo["t"] > 60:
+            # (solo si trae identificador: un escáner cualquiera sin él no avisa)
+            if puntos and ident and time.time() - rechazo["t"] > 60:
                 rechazo["t"] = time.time()
                 merge_live({"gps_rechazado_at": datetime.now(timezone.utc).isoformat()})
             self._send_json(403, {"error": "identificador incorrecto"})
