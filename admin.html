@@ -260,9 +260,18 @@ function refreshStatus(live) {
     const m = Math.round((Date.now() - new Date(live.gps_at)) / 60000);
     $('gps-text').textContent = (m < 1 ? 'ahora mismo' : 'hace ' + m + ' min') +
       (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '') +
-      (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil' ? 'GPS del móvil' : 'iGPSPORT') : '');
+      (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil'
+        ? (live.gps_origen === 'amazfit' ? 'GPS del reloj' : 'GPS del móvil') : 'iGPSPORT') : '');
   } else {
     $('gps-text').textContent = 'sin datos';
+  }
+  if (live.hr_at && Date.now() - new Date(live.hr_at) < 180000) {
+    $('gps-text').textContent += ' · pulso del reloj ' + live.hr;
+  }
+  // llegan datos con otro identificador: Traccar o el reloj mal configurados
+  if (live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
+      (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at))) {
+    $('gps-text').textContent += ' · ⚠ llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
   }
   $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
     : ex === 'buscando…' ? 'buscando…'

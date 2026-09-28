@@ -1,0 +1,52 @@
+{
+  "configVersion": "v3",
+  "app": {
+    "appId": 1098217,
+    "appName": "Sigueme",
+    "appType": "app",
+    "version": {
+      "code": 2,
+      "name": "0.2.0"
+    },
+    "icon": "icon.png",
+    "vender": "odegaard12",
+    "description": "Manda la posición y el pulso del reloj a la web de seguimiento en directo"
+  },
+  "permissions": [
+    "device:os.geolocation",
+    "data:user.hd.heart_rate",
+    "device:os.local_storage"
+  ],
+  "runtime": {
+    "apiVersion": {
+      "compatible": "3.0",
+      "target": "3.0",
+      "minVersion": "3.0"
+    }
+  },
+  "debug": false,
+  "targets": {
+    "common": {
+      "module": {
+        "page": {
+          "pages": ["page/index"]
+        },
+        "app-side": {
+          "path": "app-side/index"
+        },
+        "setting": {
+          "path": "setting/index"
+        }
+      },
+      "platforms": [
+        { "st": "r" }
+      ],
+      "designWidth": 480
+    }
+  },
+  "i18n": {
+    "es-ES": { "appName": "Sígueme" },
+    "en-US": { "appName": "Sigueme" }
+  },
+  "defaultLanguage": "es-ES"
+}

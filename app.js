@@ -1076,7 +1076,8 @@ function pollLive() {
       // horas. A los 3 min sin datos nuevos se ocultan; las casillas sin
       // dato tampoco se enseñan (con solo Traccar no hay medias).
       const vivo = iso => !!iso && ahoraServidor() - new Date(iso) < 180000;
-      const sensoresVivos = vivo(data.igpsport_at);
+      // pulso de iGPSPORT o del reloj (miniapp de Amazfit, hr_at)
+      const sensoresVivos = vivo(data.igpsport_at) || vivo(data.hr_at);
       const posicionViva = vivo(data.data_at || data.updated);
       verCasilla('speed', haArrancado && !enMeta);
       verCasilla('grad', haArrancado && !enMeta);
