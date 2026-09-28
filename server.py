@@ -339,6 +339,19 @@ def apuntar_historial(fuente, **datos):
         pass
 
 
+def hace_segundos(iso):
+    try:
+        return time.time() - datetime.fromisoformat(str(iso).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return float("inf")
+
+
+# Dos envíos a la vez (Traccar reintentando y el reloj, o el poller) leían el
+# mismo estado y uno pisaba la distancia del otro
+gps_lock = threading.Lock()
+rechazo = {"t": 0.0}
+
+
 def gps_reciente(live):
     t = live.get("gps_t")
     return bool(t) and time.time() - t < GPS_VIGENTE
@@ -392,7 +405,8 @@ def puntos_traccar(query, cuerpo):
                                "precision": c.get("accuracy"),
                                "bateria": (loc.get("battery") or {}).get("level"),
                                # el reloj (miniapp de Amazfit) manda el pulso aquí
-                               "hr": (loc.get("extras") or {}).get("hr")})
+                               "hr": (loc.get("extras") or {}).get("hr"),
+                               "origen": (loc.get("extras") or {}).get("origen")})
         elif j is None:
             try:
                 q.update({k: v[0] for k, v in parse_qs(cuerpo.decode("utf-8")).items()})
@@ -406,7 +420,12 @@ def puntos_traccar(query, cuerpo):
     ident = ident or q.get("id") or q.get("deviceid")
 
     puntos = []
+    ahora = time.time()
     for p in crudos:
+        # ⚠️ Un aparato con la hora adelantada dejaba gps_t en el futuro y
+        # todos los puntos buenos siguientes se descartaban por "viejos": la
+        # foto se quedaba clavada hasta que el reloj real alcanzaba esa hora.
+        p["t"] = min(p["t"], ahora)
         hr = _numero(p.get("hr"))
         hr = hr if hr is not None and 30 <= hr <= 240 else None
         bateria = _numero(p["bateria"])
@@ -424,7 +443,8 @@ def puntos_traccar(query, cuerpo):
                 continue
             lat = lon = None
         puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"] if valida else None,
-                       "precision": precision, "bateria": bateria, "hr": hr})
+                       "precision": precision, "bateria": bateria, "hr": hr,
+                       "origen": str(p.get("origen") or "movil")[:20]})
     return ident, puntos
 
 
@@ -448,6 +468,14 @@ def recibir_gps(puntos):
     if con_bateria:
         extra["bateria_movil"] = round(con_bateria[-1]["bateria"])
     puntos = [p for p in puntos if p["lat"] is not None]
+    # Móvil (Traccar) y reloj (Amazfit) a la vez: la posición la da solo UNO,
+    # el que ya estaba mandando. Alternando entre dos GPS la foto temblaba y
+    # la distancia sumaba el zigzag entre los dos. Si el que manda se calla
+    # 2 min, toma el relevo el otro. El pulso vale de cualquiera.
+    manda = live.get("gps_origen") if gps_reciente(live) else None
+    if puntos:
+        manda = manda or puntos[-1]["origen"]
+        puntos = [p for p in puntos if p["origen"] == manda]
     # los que llegan de la cola (sin cobertura) pueden ser más viejos que lo
     # que ya tenemos: al historial sí, a la posición en directo no
     if not puntos or puntos[-1]["t"] <= (live.get("gps_t") or 0):
@@ -460,16 +488,21 @@ def recibir_gps(puntos):
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
+    velocidad = None
     for p in puntos:
         if previo and p["t"] > previo[2]:
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
-            if tramo / max(1.0, p["t"] - previo[2]) * 3600 < 90:
+            v = tramo / max(1.0, p["t"] - previo[2]) * 3600
+            if v < 90:
                 dist += tramo
+                # el reloj no manda velocidad: se saca de los dos últimos
+                # puntos (si no, se quedaba la última de iGPSPORT, de horas antes)
+                velocidad = v if p["t"] - previo[2] <= 120 else None
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
     patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil",
+             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
     distancia = max(live.get("dist_km") or 0, dist)
     se_alejo = live.get("lejos_de_meta") or any(alejado_de_meta(p["lat"], p["lon"]) for p in puntos)
@@ -480,6 +513,8 @@ def recibir_gps(puntos):
         patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
+    elif velocidad is not None:
+        patch["speed_kmh"] = round(velocidad, 1)
     patch.update(extra)
     merge_live(patch)
 
@@ -539,6 +574,11 @@ def poll_loop(url, stop_event):
                         patch.pop(k, None)
                 if "lat" in patch:
                     patch["fuente_posicion"] = "igpsport"
+                # pulso: si llega del reloj, manda el reloj (si no, la cifra
+                # y la media saltaban entre los dos cada pocos segundos)
+                if hace_segundos(read_live().get("hr_at")) < GPS_VIGENTE:
+                    patch.pop("hr", None)
+                    patch.pop("hr_avg", None)
                 patch["igpsport_aviso"] = None
                 # la hora de llegada se apunta UNA vez: si después sigue
                 # pedaleando (hasta el coche, a casa) el tiempo final no crece
@@ -705,10 +745,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ident, puntos = puntos_traccar(query, cuerpo)
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident), clave):
+            # El panel avisa: con el identificador mal copiado, Traccar o el
+            # reloj mandaban y la web no se movía, sin pista de por qué. Solo
+            # la hora (live.json es público) y como mucho una vez por minuto.
+            if puntos and time.time() - rechazo["t"] > 60:
+                rechazo["t"] = time.time()
+                merge_live({"gps_rechazado_at": datetime.now(timezone.utc).isoformat()})
             self._send_json(403, {"error": "identificador incorrecto"})
             return
         if puntos:
-            recibir_gps(puntos)
+            with gps_lock:
+                recibir_gps(puntos)
         # Traccar solo borra los puntos de su cola si le contestamos 200
         self._send_json(200, {"ok": True, "puntos": len(puntos)})
 
@@ -859,7 +906,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
-                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
+                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -879,7 +926,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
                 "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
                 "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
+                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return

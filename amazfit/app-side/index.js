@@ -62,8 +62,16 @@ AppSideService(BaseSideService({
         this.guardar()
         this.settings.setItem('ultimo_envio', new Date().toISOString())
         this.settings.setItem('ultimo_error', '')
+      } else if (r && (r.status === 400 || r.status === 413 || r.status === 422)) {
+        // el servidor no acepta ESE lote (no se arregla reintentando): fuera,
+        // o taparía para siempre todos los puntos de detrás
+        pendientes = pendientes.slice(lote.length)
+        this.guardar()
+        this.settings.setItem('ultimo_error', 'El servidor rechazó ' + lote.length + ' puntos (' + r.status + ')')
       } else {
-        this.settings.setItem('ultimo_error', 'El servidor respondió ' + (r ? r.status : 'nada'))
+        this.settings.setItem('ultimo_error', r && r.status === 403
+          ? 'Identificador incorrecto: cópialo del panel admin'
+          : 'El servidor respondió ' + (r ? r.status : 'nada'))
       }
     } catch (e) {
       this.settings.setItem('ultimo_error', 'Sin conexión: ' + String(e).slice(0, 80))
