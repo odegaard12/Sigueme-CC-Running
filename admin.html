@@ -216,13 +216,17 @@ async function post(body) {
   msg.textContent = 'Guardando…';
   msg.className = 'msg';
   try {
+    // con tiempo límite: sin él, con el servidor colgado se quedaba en
+    // "Guardando…" para siempre
     const res = await fetch('/api/live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, ...body })
+      body: JSON.stringify({ token: TOKEN, ...body }),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
     });
     const data = await res.json();
     if (res.ok) {
+      horaTocada = false;     // lo guardado ya es lo del servidor
       msg.textContent = 'Guardado ✓';
       msg.className = 'msg ok';
       refreshStatus(data.live);
@@ -288,7 +292,10 @@ async function cargarGps() {
       body: JSON.stringify({ token: TOKEN, action: 'gps_info' }) });
     const d = await res.json();
     $('gps-id').value = d.gps_id || '(falta generar la clave en el servidor)';
-  } catch (e) {}
+  } catch (e) {
+    // sin conexión al abrir el panel: se reintenta (antes se quedaba en blanco)
+    setTimeout(cargarGps, 10000);
+  }
 }
 
 async function pollStatus() {

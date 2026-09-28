@@ -5,6 +5,7 @@ import { BaseSideService } from '@zeppos/zml/base-side'
 
 const MAX_PENDIENTES = 3000
 const POR_SUBIDA = 150
+const URL_DEFECTO = 'https://odegaard12.online/api/gps'
 let pendientes = []
 let subiendo = false
 
@@ -28,14 +29,17 @@ AppSideService(BaseSideService({
   },
 
   guardar() {
-    // el almacén de ajustes no es para mucho: se guardan los últimos 800
-    this.settings.setItem('pendientes', JSON.stringify(pendientes.slice(-800)))
+    // el almacén de ajustes no es para mucho: se guardan los últimos 1500
+    // (lo que cabe en la cola del reloj, ~4 h)
+    this.settings.setItem('pendientes', JSON.stringify(pendientes.slice(-1500)))
     this.settings.setItem('estado', JSON.stringify({ pendientes: pendientes.length, hora: Date.now() }))
   },
 
   async subir() {
     if (subiendo || !pendientes.length) return
-    const url = (this.settings.getItem('url') || '').trim()
+    // ⚠️ Ajustes enseña esta dirección de entrada pero, si no se toca, no se
+    // guarda: sin esto el móvil nunca subía nada ("falta la dirección")
+    const url = (this.settings.getItem('url') || URL_DEFECTO).trim()
     const id = (this.settings.getItem('id') || '').trim()
     if (!url || !id) {
       this.settings.setItem('ultimo_error', 'Falta la dirección o el identificador en Ajustes')

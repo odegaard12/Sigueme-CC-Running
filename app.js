@@ -17,7 +17,11 @@ function precargado(nombre, respaldo) {
   const p = window.__datos && window.__datos[nombre];
   if (p) {
     delete window.__datos[nombre];
-    return p.then(v => v || respaldo());
+    // ⚠️ esa petición no tiene tiempo límite: si al abrir la web la conexión
+    // se quedaba colgada, el primer poll no acababa nunca y, con el cerrojo
+    // puesto, ya no se pedía nada más (web congelada y sin aviso)
+    const tope = new Promise(r => setTimeout(() => r(null), 10000));
+    return Promise.race([p, tope]).then(v => v || respaldo());
   }
   return respaldo();
 }
@@ -310,6 +314,7 @@ let chinchetasPuestas = false;
 // gráfico al cambiar de app. Este vigilante lo detecta y rehace el mapa.
 let intentosDeMapa = 0;
 let lienzoActual = null;
+let revisarActual = null;
 const alPerderContexto = () => rehacerMapa('contexto gráfico perdido');
 
 function montarMapa() {
@@ -337,10 +342,14 @@ function montarMapa() {
     if (!mapReady) rehacerMapa('el mapa no terminó de cargar');
   };
   setTimeout(revisar, 20000);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !mapReady) setTimeout(revisar, 20000);
-  });
+  revisarActual = revisar;
 }
+
+// UNA sola escucha: si se ponía dentro de montarMapa, cada mapa rehecho añadía
+// otra, y al volver a la pestaña saltaban todas y gastaban los reintentos
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !mapReady && revisarActual) setTimeout(revisarActual, 20000);
+});
 
 function avisoMapaRoto() {
   // Si ni rehaciéndolo arranca (móvil sin memoria, WebGL agotado), mejor
@@ -773,7 +782,7 @@ btnVista.addEventListener('click', () => {
 
 function fmtTime(iso) {
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
 }
 
 // Diferencia entre el reloj de quien mira y el del servidor. Sin esto, un
@@ -961,7 +970,9 @@ function esMeta(data, km) {
 }
 
 function fmtFinal(ms) {
-  const m = Math.max(0, Math.round(ms / 60000));
+  // hacia abajo, como el resultado final: si no, 11h 43m en directo y
+  // 11h 42m al cargar resultado.json
+  const m = Math.max(0, Math.floor(ms / 60000));
   return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm';
 }
 
@@ -1082,7 +1093,7 @@ function pollLive() {
       verCasilla('speed', haArrancado && !enMeta);
       verCasilla('grad', haArrancado && !enMeta);
       verCasilla('hr', haArrancado && !enMeta && sensoresVivos && data.hr != null);
-      verCasilla('cad', haArrancado && data.cadence_avg != null && (sensoresVivos || enMeta));
+      verCasilla('cad', haArrancado && data.cadence_avg != null);
       verCasilla('hr-avg', haArrancado && data.hr_avg != null);
       verCasilla('speed-avg', haArrancado && data.speed_kmh_avg != null);
       ['dist', 'time'].forEach(n => verCasilla(n, haArrancado));
@@ -1170,7 +1181,7 @@ function pollLive() {
       if (data.lat != null && data.lon != null) {
         if (!haArrancado) placeRiderMarker(data.lat, data.lon);
         geoHint.textContent = '';
-      } else {
+      } else if (!haArrancado) {
         if (riderMarkerEl) {
           riderMarkerEl.remove();
           riderMarkerEl = null;

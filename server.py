@@ -40,6 +40,9 @@ poller = {"thread": None, "stop": None, "url": None}
 # espera; a los 10, medio minuto. Un acierto lo borra todo.
 intentos_lock = threading.Lock()
 intentos = {}   # ip -> [fallos, momento_del_ultimo_fallo]
+# los intentos castigados pasan de uno en uno: con 50 a la vez, cada uno
+# esperaba su segundo en paralelo y el freno no frenaba nada
+castigo_lock = threading.Lock()
 
 
 def segundos_de_castigo(ip):
@@ -150,7 +153,7 @@ def extract_igpsport(payload):
         if valor is not None:
             fuera[clave] = valor
 
-    if resumen.get("totalTime"):
+    if resumen.get("totalTime") is not None:
         fuera["elapsed"] = resumen["totalTime"]
 
     return fuera or None
@@ -379,6 +382,12 @@ def _numero(valor):
         return None
 
 
+def _fraccion(valor):
+    """Traccar 9 (JSON) da la batería de 0 a 1; la URL, en %: "batt=1" es 1 %."""
+    n = _numero(valor)
+    return n * 100 if n is not None and n <= 1 else n
+
+
 def puntos_traccar(query, cuerpo):
     """Devuelve (identificador, [puntos]). Acepta los dos formatos de Traccar
     Client: parámetros en la URL (protocolo OsmAnd, velocidad en nudos, que
@@ -397,13 +406,16 @@ def puntos_traccar(query, cuerpo):
             for loc in (locs if isinstance(locs, list) else [locs]):
                 if not isinstance(loc, dict):
                     continue
-                c = loc.get("coords") or {}
+                for k in ("coords", "battery", "extras"):
+                    if not isinstance(loc.get(k), dict):
+                        loc[k] = {}
+                c = loc["coords"]
                 v = _numero(c.get("speed"))
                 crudos.append({"lat": c.get("latitude"), "lon": c.get("longitude"),
                                "t": _segundos(loc.get("timestamp")),
                                "kmh": v * 3.6 if v is not None and v >= 0 else None,
                                "precision": c.get("accuracy"),
-                               "bateria": (loc.get("battery") or {}).get("level"),
+                               "bateria": _fraccion((loc.get("battery") or {}).get("level")),
                                # el reloj (miniapp de Amazfit) manda el pulso aquí
                                "hr": (loc.get("extras") or {}).get("hr"),
                                "origen": (loc.get("extras") or {}).get("origen")})
@@ -429,8 +441,6 @@ def puntos_traccar(query, cuerpo):
         hr = _numero(p.get("hr"))
         hr = hr if hr is not None and 30 <= hr <= 240 else None
         bateria = _numero(p["bateria"])
-        if bateria is not None and bateria <= 1:
-            bateria *= 100          # el JSON la da de 0 a 1
         lat, lon = _numero(p["lat"]), _numero(p["lon"])
         precision = _numero(p["precision"])
         valida = not (lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180)
@@ -498,6 +508,11 @@ def recibir_gps(puntos):
                 # el reloj no manda velocidad: se saca de los dos últimos
                 # puntos (si no, se quedaba la última de iGPSPORT, de horas antes)
                 velocidad = v if p["t"] - previo[2] <= 120 else None
+            elif p["t"] - previo[2] < 60:
+                # salto imposible: se ignora el punto y la referencia sigue
+                # siendo el último bueno (si el "salto" dura más de 1 min, es
+                # que la referencia era la mala y se cambia)
+                continue
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
@@ -513,8 +528,8 @@ def recibir_gps(puntos):
         patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
-    elif velocidad is not None:
-        patch["speed_kmh"] = round(velocidad, 1)
+    else:
+        patch["speed_kmh"] = round(velocidad, 1) if velocidad is not None else None
     patch.update(extra)
     merge_live(patch)
 
@@ -754,8 +769,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(403, {"error": "identificador incorrecto"})
             return
         if puntos:
-            with gps_lock:
-                recibir_gps(puntos)
+            try:
+                with gps_lock:
+                    recibir_gps(puntos)
+            except Exception as exc:
+                # contestar igual: si no, el móvil reintenta ese lote para
+                # siempre. Los puntos ya quedaron en el historial.
+                print(f"[gps] error procesando {len(puntos)} puntos: {exc!r}", flush=True)
         # Traccar solo borra los puntos de su cola si le contestamos 200
         self._send_json(200, {"ok": True, "puntos": len(puntos)})
 
@@ -869,7 +889,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # segundo y luego compara. Al que acierta le da igual; al que adivina,
         # le limita el ritmo igual que antes.
         if segundos_de_castigo(ip):
-            time.sleep(1)
+            with castigo_lock:
+                time.sleep(1)
 
         if not ADMIN_TOKEN:
             print("[admin] ADMIN_TOKEN vacío: no se admite ningún acceso", flush=True)
@@ -983,7 +1004,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             apuntar_historial("enlace", id=igpsport_id(new_url), url=new_url[:300])
             print(f"[admin] enlace nuevo: id={igpsport_id(new_url)}", flush=True)
             patch["igpsport_aviso"] = None
-            start_poller(new_url)
 
         # hora oficial de salida (HH:MM). Manda sobre el momento de pegar el
         # enlace, pero por sí sola NO pone el crono en marcha: guardarla días
@@ -1001,6 +1021,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         patch["started_at"] = iso
 
         current = merge_live(patch)
+        # ⚠️ el poller arranca DESPUÉS de guardar el enlace: si arrancaba antes,
+        # el vigilante (watch_live_file) podía leer el enlace viejo del disco
+        # justo en medio y volver a lanzar el poller con él
+        if new_url:
+            start_poller(new_url)
         self._send_json(200, {"ok": True, "live": current})
 
     def log_message(self, fmt, *args):
