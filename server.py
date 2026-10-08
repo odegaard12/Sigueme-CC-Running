@@ -11,6 +11,8 @@ import time
 import urllib.request
 from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
+import hashlib
+import hmac
 from hmac import compare_digest
 from urllib.parse import parse_qs
 
@@ -64,6 +66,37 @@ def fallo_de(ip):
 def acierto_de(ip):
     with intentos_lock:
         intentos.pop(ip, None)
+
+# --- sesión del panel --------------------------------------------------------
+# Antes el panel guardaba la CLAVE en el navegador (sessionStorage) y la mandaba
+# en cada petición: cualquier script que corriera en la página podía leerla.
+# Ahora la clave se manda una vez y el servidor devuelve una cookie HttpOnly
+# (JavaScript no la ve) firmada con HMAC. Sin estado: vale en las dos Pis (las
+# dos tienen la misma clave) y cambiar la clave invalida todas las sesiones.
+SESION_HORAS = 12
+
+
+def _firma(exp):
+    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_TOKEN.encode()).digest()
+    return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
+
+
+def nueva_sesion():
+    exp = int(time.time()) + SESION_HORAS * 3600
+    return f"{exp}.{_firma(exp)}"
+
+
+def sesion_valida(cabecera_cookie):
+    if not ADMIN_TOKEN or not cabecera_cookie:
+        return False
+    for trozo in cabecera_cookie.split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "adm":
+            exp, _, firma = valor.partition(".")
+            if exp.isdigit() and int(exp) > time.time() and compare_digest(firma, _firma(int(exp))):
+                return True
+    return False
+
 
 # --- iGPSPORT ---------------------------------------------------------------
 # El enlace que comparte la app (prod.en.igpsport.com/.../GetShareHtml?id=...)
@@ -804,14 +837,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        elif ruta == "/admin.html":
+            self.send_header("Cache-Control", "no-store")
         elif ruta.endswith((".html", ".css", ".js", ".json", "/")):
             self.send_header("Cache-Control", "no-cache, must-revalidate")
+        # buenas prácticas: que nadie meta la web en un iframe ajeno, que el
+        # navegador no "adivine" tipos, y no regalar la URL al salir
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        self.send_header("Strict-Transport-Security", "max-age=31536000")
+        if ruta == "/admin.html":
+            # el panel solo habla con su propio servidor y no sale en Google
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                             "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                             "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+            self.send_header("X-Robots-Tag", "noindex, nofollow")
         super().end_headers()
 
-    def _send_json(self, status, payload):
+    def _send_json(self, status, payload, cookie=None):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
+        if cookie is not None:
+            # Secure solo si llega por https (Cloudflare); por la red de casa
+            # (http) el navegador no guardaría una cookie Secure
+            https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
+            self.send_header("Set-Cookie", f"adm={cookie}; Path=/api; HttpOnly; SameSite=Strict"
+                             + ("; Secure" if https else "")
+                             + (f"; Max-Age={SESION_HORAS * 3600}" if cookie else "; Max-Age=0"))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -865,7 +922,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path != "/api/live":
+        if self.path == "/api/logout":
+            self._send_json(200, {"ok": True}, cookie="")
+            return
+        if self.path not in ("/api/live", "/api/login"):
             self._send_json(404, {"error": "not found"})
             return
         # el panel manda unos pocos cientos de bytes; sin tope, cualquiera
@@ -897,10 +957,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             print("[admin] ADMIN_TOKEN vacío: no se admite ningún acceso", flush=True)
             self._send_json(503, {"error": "servidor sin clave configurada"})
             return
-        if not compare_digest(str(data.get("token", "")), ADMIN_TOKEN):
-            fallo_de(ip)
-            print(f"[admin] clave incorrecta desde {ip}", flush=True)
-            self._send_json(403, {"error": "clave incorrecta"})
+        if not isinstance(data, dict):
+            self._send_json(400, {"error": "invalid json"})
+            return
+        # login: la clave una vez, a cambio de la cookie de sesión
+        if self.path == "/api/login":
+            if not compare_digest(str(data.get("password", "")), ADMIN_TOKEN):
+                fallo_de(ip)
+                print(f"[admin] clave incorrecta (login) desde {ip}", flush=True)
+                self._send_json(403, {"error": "clave incorrecta"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion())
+            return
+        # el resto: con sesión (panel) o con la clave en el cuerpo (scripts)
+        con_clave = "token" in data and compare_digest(str(data.get("token", "")), ADMIN_TOKEN)
+        if not con_clave and not sesion_valida(self.headers.get("Cookie")):
+            if "token" in data:
+                fallo_de(ip)
+                print(f"[admin] clave incorrecta desde {ip}", flush=True)
+            self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
             return
         acierto_de(ip)
 
@@ -911,7 +987,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if accion == "simular":
-            arrancar_simulacion(int(data.get("segundos", 120)))
+            try:
+                segundos = min(3600, max(10, int(data.get("segundos", 120))))
+            except (TypeError, ValueError):
+                self._send_json(400, {"error": "segundos no válidos"})
+                return
+            arrancar_simulacion(segundos)
             self._send_json(200, {"ok": True, "live": read_live()})
             return
 

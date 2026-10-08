@@ -214,7 +214,15 @@
 
 <script>
 const $ = id => document.getElementById(id);
-let TOKEN = sessionStorage.getItem('adminToken') || '';
+// La clave ya no se guarda en el navegador: el servidor da una cookie de
+// sesión HttpOnly (12 h) al entrar. Se borra lo que dejaron versiones viejas.
+try { sessionStorage.removeItem('adminToken'); } catch (e) {}
+function sesionCaducada() {
+  $('panel').style.display = 'none';
+  $('login-screen').style.display = 'block';
+  $('login-msg').textContent = 'La sesión ha caducado: vuelve a entrar.';
+  $('login-msg').className = 'msg err';
+}
 
 async function post(body) {
   const msg = $('msg');
@@ -226,10 +234,11 @@ async function post(body) {
     const res = await fetch('/api/live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, ...body }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
     });
     const data = await res.json();
+    if (res.status === 403) { sesionCaducada(); return; }
     if (res.ok) {
       horaTocada = false;     // lo guardado ya es lo del servidor
       msg.textContent = 'Guardado ✓';
@@ -294,7 +303,8 @@ async function cargarGps() {
   $('gps-url').value = location.origin + '/api/gps';
   try {
     const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, action: 'gps_info' }) });
+      body: JSON.stringify({ action: 'gps_info' }) });
+    if (res.status === 403) { sesionCaducada(); return; }
     const d = await res.json();
     $('gps-id').value = d.gps_id || '(falta generar la clave en el servidor)';
   } catch (e) {
@@ -317,14 +327,14 @@ async function tryLogin() {
   loginMsg.textContent = 'Comprobando…';
   loginMsg.className = 'msg';
   try {
-    const res = await fetch('/api/live', {
+    const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: val })
+      body: JSON.stringify({ password: val })
     });
     if (res.ok) {
-      TOKEN = val;
-      sessionStorage.setItem('adminToken', val);
+      $('token').value = '';
+      loginMsg.textContent = '';
       $('login-screen').style.display = 'none';
       $('panel').style.display = 'block';
       pollStatus();
@@ -340,9 +350,8 @@ async function tryLogin() {
   }
 }
 
-$('salir').addEventListener('click', () => {
-  sessionStorage.removeItem('adminToken');
-  TOKEN = '';
+$('salir').addEventListener('click', async () => {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
   location.reload();
 });
 
@@ -391,8 +400,9 @@ $('save-manual').addEventListener('click', () => {
   post(p);
 });
 
-if (TOKEN) {
-  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN }) })
+// ¿ya hay sesión? (gps_info solo lee: no toca live.json)
+{
+  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gps_info' }) })
     .then(res => {
       if (res.ok) {
         $('login-screen').style.display = 'none';
