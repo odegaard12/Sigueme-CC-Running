@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.2.0 · 2026-10-09
+- Botón de compartir en la cabecera (menú de compartir en el móvil, copiar el
+  enlace en el PC) y vista previa con imagen al compartir el enlace.
+- Seguridad (revisión): como mucho dos cálculos de clave a la vez (antes una
+  ráfaga de logins podía agotar la memoria), usuario o cookie con «ñ» ya no
+  rompen la petición, el freno a la fuerza bruta ya no bloquea al panel con
+  sesión, conexiones lentas cortadas a los 20 s, rutas normalizadas y ficheros
+  ocultos nunca servidos.
+- Panel: un solo sondeo aunque se entre varias veces.
+- robots.txt: el panel y la API fuera de los buscadores.
+- Plantilla del servicio con `VIP_SIGUEME` activa (se había quedado comentada).
+
 ## v1.1.1 · 2026-10-09
 - Licencia MIT.
 - Ficha del repo en GitHub: descripción, web y temas.

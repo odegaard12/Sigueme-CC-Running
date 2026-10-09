@@ -175,6 +175,22 @@ if (btnRecenter) {
 }
 const geoHint = document.getElementById('geo-hint');
 
+// Compartir: en el móvil abre el menú de compartir (WhatsApp, etc.); en el PC
+// copia el enlace. La vista previa sale de las etiquetas og: del <head>.
+const botonCompartir = document.getElementById('compartir');
+if (botonCompartir) {
+  botonCompartir.addEventListener('click', async () => {
+    const datos = { title: 'Sígueme CC', text: 'Sígueme en directo', url: location.origin + '/' };
+    try {
+      if (navigator.share) { await navigator.share(datos); return; }
+      await navigator.clipboard.writeText(datos.url);
+      botonCompartir.classList.add('hecho');
+      botonCompartir.title = 'Enlace copiado';
+      setTimeout(() => { botonCompartir.classList.remove('hecho'); botonCompartir.title = 'Compartir el enlace'; }, 1800);
+    } catch (e) { /* cancelado por el usuario */ }
+  });
+}
+
 const botonFicha = document.getElementById('ver-ficha');
 if (botonFicha) {
   botonFicha.addEventListener('click', () => {

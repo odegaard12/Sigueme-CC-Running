@@ -325,6 +325,17 @@ async function pollStatus() {
   } catch (e) {}
 }
 
+// ⚠️ Antes cada entrada (sesión al cargar, login, volver a entrar tras caducar)
+// añadía otro setInterval: el panel acababa preguntando varias veces cada 5 s.
+let sondeo = null;
+function entrar() {
+  $('login-screen').style.display = 'none';
+  $('panel').style.display = 'block';
+  pollStatus();
+  cargarGps();
+  if (!sondeo) sondeo = setInterval(pollStatus, 5000);
+}
+
 async function tryLogin() {
   const val = $('token').value;
   const usuario = $('usuario').value.trim();
@@ -341,11 +352,7 @@ async function tryLogin() {
     if (res.ok) {
       $('token').value = '';
       loginMsg.textContent = '';
-      $('login-screen').style.display = 'none';
-      $('panel').style.display = 'block';
-      pollStatus();
-      cargarGps();
-      setInterval(pollStatus, 5000);
+      entrar();
     } else {
       loginMsg.textContent = 'Usuario o clave incorrectos.';
       loginMsg.className = 'msg err';
@@ -411,11 +418,7 @@ $('save-manual').addEventListener('click', () => {
   fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gps_info' }) })
     .then(res => {
       if (res.ok) {
-        $('login-screen').style.display = 'none';
-        $('panel').style.display = 'block';
-        pollStatus();
-        cargarGps();
-        setInterval(pollStatus, 5000);
+        entrar();
       }
     });
 }
