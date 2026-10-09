@@ -7,7 +7,7 @@ corre en la que tiene la IP).
 
 | Fichero | Dónde va | Qué hace |
 |---|---|---|
-| `sigueme.service` | `/etc/systemd/system/` (las dos) | El servidor. Poner la clave del panel en `ADMIN_TOKEN`. |
+| `sigueme.service` | `/etc/systemd/system/` (las dos) | El servidor. Usuario y hash de la clave en `/etc/sigueme/secreto.env` (root, 600). |
 | `keepalived-sigueme.conf` | bloque dentro de `/etc/keepalived/keepalived.conf` (las dos) | IP flotante. Prioridad 101 en una y 100 en la otra; el resto igual. |
 | `replicar.sh` + `sigueme-replica.{service,timer}` | `~/` y systemd (las dos) | Cada 20 s copia la carpeta de la web a la otra Pi, **solo desde la que tiene la IP**. |
 | `desplegar.sh` | `~/` de una de ellas | Copia los ficheros nuevos a las dos y reinicia si cambió `server.py`. |

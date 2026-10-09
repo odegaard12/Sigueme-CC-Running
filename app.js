@@ -700,7 +700,7 @@ function placeRiderMarker(lat, lon) {
     // chincheta le tapaba la cara
     el.style.zIndex = '6';
     // ?v= para que el móvil no siga enseñando la foto cacheada
-    el.innerHTML = '<span><img src="rider.png?v=3" alt="Dorsal 1"></span>';
+    el.innerHTML = '<span><img src="rider.png?v=5" alt="Dorsal 1"></span>';
     // opacityWhenCovered: con terreno 3D MapLibre da por "tapado" todo lo que
     // está pegado al suelo y lo deja casi invisible al acercar. Aquí no
     // interesa: el corredor tiene que verse siempre.
