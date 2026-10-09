@@ -1114,7 +1114,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-VIP = os.environ.get("VIP_SIGUEME", "IP_FLOTANTE")
+# IP flotante (keepalived) de la instalación con dos Pis, desde la configuración
+# del servicio. Sin ella, una sola máquina: siempre es la que sirve.
+VIP = os.environ.get("VIP_SIGUEME", "")
 
 
 def tengo_la_vip():
@@ -1123,6 +1125,8 @@ def tengo_la_vip():
     Se comprueba intentando reservar un puerto cualquiera en la VIP: si la
     dirección no está puesta en esta máquina, el sistema lo impide. Sin
     dependencias ni llamar a `ip`."""
+    if not VIP:
+        return True
     probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         probe.bind((VIP, 0))
