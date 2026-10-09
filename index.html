@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=57">
+<link rel="stylesheet" href="style.css?v=58">
 </head>
 <body>
 <header class="topbar">
@@ -51,7 +51,7 @@
     <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
     </button>
-    <button class="ver-ficha" id="ver-ficha">
+    <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
       <img src="rider.png?v=5" alt=""><span id="ver-ficha-txt">Mi ficha</span>
     </button>
   </div>
@@ -86,12 +86,12 @@
   <div id="map3d"></div>
 
   <div class="mapa-botones">
-    <button class="btn-flotante" id="btn-recenter" title="Centrar en el corredor">🎯</button>
-    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D">2D</button>
+    <button class="btn-flotante" id="btn-recenter" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false">🎯</button>
+    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D" aria-label="Ver el mapa en 2D">2D</button>
   </div>
 
   <div class="perfil-en-mapa">
-    <canvas id="elevation-chart"></canvas>
+    <canvas id="elevation-chart" role="img" aria-label="Perfil de altimetría de la ruta"></canvas>
   </div>
 
   <div class="cargando" id="cargando">
@@ -123,9 +123,9 @@
     </span>
     <span class="chip chip-pulso" data-tile="hr">♥ <b id="m-hr">—</b> ppm</span>
     <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
-    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> cadencia</span>
+    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
   </div>
-  <p class="estado-carrera" id="estado-carrera"></p>
+  <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
   <div class="resultado" id="resultado" hidden>
     <h3>Paso por los avituallamientos</h3>
     <ul class="pasos" id="pasos"></ul>
@@ -138,12 +138,12 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.3.0</p>
+  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.4.0</p>
   <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=69"></script>
+<script src="app.js?v=70"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

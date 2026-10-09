@@ -16,6 +16,9 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 // Todo lo propio de la carrera viene de carrera.json (nombre, fecha, hora de
 // salida, límite, km mínimos para meta, corredor y bici): el código vale para
 // cualquier carrera. Estos son los valores si falta algo.
+// quien pide menos movimiento en el sistema no ve animaciones de cámara
+const QUIETO = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 let CARRERA = {
   nombre: '', lugar: '', fecha: '', modalidad: '', hora_salida: '08:30', limite_h: 12,
   zona_horaria: 'Europe/Madrid', km_minimos_meta: null, corredor: { nombre: '', dorsal: '' }, bici: null,
@@ -84,7 +87,7 @@ function haversineKm(a, b) {
 // igual de cerca (±50 m), se elige el que esté más pegado a lo que ya llevaba
 // recorrido. Con eso el progreso avanza siempre hacia delante.
 let ultimoKmConocido = 0;
-let anclaDelGps = false;   // ultimoKmConocido viene del BSC500, no de la ruta
+let anclaDelGps = false;   // ultimoKmConocido viene del ciclocomputador, no de la ruta
 let largoLinea = 0;
 let factorKm = 1;
 
@@ -211,7 +214,7 @@ let tamanoCorredorActual = 0;
 const map3dDiv = document.getElementById('map3d');
 const btnRecenter = document.getElementById('btn-recenter');
 if (btnRecenter) {
-  btnRecenter.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
+  btnRecenter.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
     '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
 }
@@ -238,10 +241,11 @@ if (botonFicha) {
   botonFicha.addEventListener('click', () => {
     const ficha = document.getElementById('ficha');
     ficha.hidden = !ficha.hidden;
+    botonFicha.setAttribute('aria-expanded', ficha.hidden ? 'false' : 'true');
     // OJO: cambiar textContent del botón borraba la foto que lleva dentro.
     // Solo se toca el <span> del texto.
     document.getElementById('ver-ficha-txt').textContent = ficha.hidden ? 'Mi ficha' : 'Cerrar';
-    if (!ficha.hidden) ficha.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!ficha.hidden) ficha.scrollIntoView({ behavior: QUIETO ? 'auto' : 'smooth', block: 'nearest' });
   });
 }
 
@@ -747,7 +751,7 @@ function drawTraveledLine(doneKm) {
   }
 }
 
-// ---------- Corredor: posición extraída del enlace BSC500 vía admin ----------
+// ---------- Corredor: posición extraída del enlace de iGPSPORT vía admin ----------
 // (riderMarkerEl / riderMarkerPos se declaran arriba: rehacerMapa las usa)
 riderMarkerPos = null;
 
@@ -800,6 +804,7 @@ let ultimoSeguimiento = 0;
 function marcarSiguiendo(si) {
   siguiendo = si;
   btnRecenter.classList.toggle('activo', si);
+  btnRecenter.setAttribute('aria-pressed', si ? 'true' : 'false');
 }
 
 function seguirCorredor(pos) {
@@ -833,7 +838,10 @@ btnRecenter.addEventListener('click', recenterOnRider);
 // inclinación: 0° se ve en plano (mejor para leer el trazado) y 50° en relieve.
 const btnVista = document.getElementById('btn-vista');
 let vista3d = true;
-function pintarBotonVista() { btnVista.textContent = vista3d ? '2D' : '3D'; }
+function pintarBotonVista() {
+  btnVista.textContent = vista3d ? '2D' : '3D';
+  btnVista.setAttribute('aria-label', vista3d ? 'Ver el mapa en 2D' : 'Ver el mapa en 3D');
+}
 pintarBotonVista();
 btnVista.addEventListener('click', () => {
   vista3d = !vista3d;
@@ -865,7 +873,7 @@ function fmtElapsedSince(iso) {
 let lastStartedAt = null;
 
 // ---------- Movimiento fluido ----------------------------------------------
-// Los datos llegan a tirones (el servidor pregunta al BSC500 cada pocos
+// Los datos llegan a tirones (el servidor pregunta al ciclocomputador cada pocos
 // segundos), así que pintar la posición en crudo daba saltos. Aquí se
 // interpola entre el punto anterior y el nuevo: la foto se desliza y el
 // trazado y el perfil crecen poco a poco.
@@ -1104,7 +1112,7 @@ function pollLive() {
       document.getElementById('aviso-resultado').hidden = true;
 
       let doneKm = data.dist_km;
-      // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
+      // ⚠️ Al abrir la web a mitad de carrera, la distancia del ciclocomputador sirve
       // SOLO para desempatar en la salida/meta (la ruta es circular), NUNCA
       // como mínimo: esa distancia incluye lo rodado antes de salir y el
       // error del GPS, y con 2 km de más quien abría la web en el km 100,5
@@ -1167,7 +1175,7 @@ function pollLive() {
       ponerTexto('m-hr-avg', entero(data.hr_avg));
       ponerTexto('m-cad-avg', entero(data.cadence_avg));
 
-      // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
+      // último dato NUEVO del ciclocomputador (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
       const llegada = data.finished_at || ultimoDato;
       if (enMeta && lastStartedAt && llegada) {
@@ -1213,7 +1221,8 @@ function pollLive() {
         const hora = lastStartedAt ? fmtTime(lastStartedAt) : CARRERA.hora_salida;
         if (data.lat != null && !haArrancado) {
           // ya está compartiendo y se le ve en el mapa, pero aún no ha salido
-          estado.textContent = 'INICIO ' + hora + ' · Odegaard12 ya está en la salida';
+          const quien = (CARRERA.corredor || {}).nombre;
+          estado.textContent = 'INICIO ' + hora + ' · ' + (quien ? quien + ' ya está' : 'Ya está') + ' en la salida';
           estado.classList.add('previo');
         } else if (!haArrancado) {
           estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
@@ -1272,7 +1281,7 @@ setInterval(() => {
 }, 1000);
 
 // ---------- Resultado de la carrera ----------------------------------------
-// resultado.json se genera con el FIT del BSC500 (tiempos, paso por cada
+// resultado.json se genera con el FIT del ciclocomputador (tiempos, paso por cada
 // avituallamiento y la traza real recortada a salida-meta).
 let resultado = null;
 let resultadoConsultado = false;
@@ -1357,6 +1366,7 @@ function repetirCarrera() {
   if (!kmsTraza) return;
   repitiendo = true;
   boton.innerHTML = '<span class="ico">■</span><span class="txt"> Parar</span>';
+  boton.setAttribute('aria-label', 'Parar la repetición');
   const tr = resultado.traza, total = tr[tr.length - 1][2];
   const salida = new Date(resultado.salida).getTime();
   if (mapReady) {
@@ -1384,11 +1394,12 @@ function repetirCarrera() {
     if (!fin) { requestAnimationFrame(paso); return; }
     repitiendo = false;
     boton.innerHTML = '<span class="ico">▶</span><span class="txt"> Ver la carrera</span>';
+    boton.setAttribute('aria-label', 'Ver la carrera en 1 minuto');
     items.forEach(li => li.classList.remove('actual'));
     marcarSiguiendo(false);
     if (mapReady && routeBounds) {
       map3d.fitBounds([[routeBounds[0], routeBounds[1]], [routeBounds[2], routeBounds[3]]],
-        { padding: 30, pitch: 50, bearing: -20, duration: 1200 });
+        { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 1200 });
     }
     pintarResultado();
   };

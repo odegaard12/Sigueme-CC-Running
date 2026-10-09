@@ -4,6 +4,21 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.4.0 · 2026-10-09
+- Arreglado: en directo, antes de haber resultado, salía una caja vacía con el
+  botón ▶ encima del mapa; y el aviso de salida llevaba un nombre fijo en vez
+  del corredor de `carrera.json`.
+- Legibilidad: etiquetas de los datos a 0,72 rem como mínimo (antes ~9 px) y
+  créditos con contraste suficiente; «rpm media» en la cadencia.
+- Accesibilidad: nombres y estado en los botones del mapa, la ficha y la
+  repetición; foco visible con teclado; perfil con descripción; avisos de
+  estado anunciados; menos movimiento si el sistema lo pide.
+- Botones de 44 px, la muesca del iPhone en horizontal ya no tapa nada y al
+  acabar la repetición se respeta la vista 2D/3D elegida.
+- Panel: el resultado de «Guardar» siempre a la vista, sin doble envío, las
+  pruebas que borran la carrera plegadas, el aviso de identificador mal copiado
+  en rojo y textos sin aparatos concretos.
+
 ## v1.3.1 · 2026-10-09
 - Capturas del README con la carrera de ejemplo.
 
