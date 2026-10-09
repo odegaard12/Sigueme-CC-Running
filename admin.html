@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin · Sígueme CC</title>
 <link rel="icon" type="image/png" href="favicon.png?v=3">
-<link rel="stylesheet" href="style.css?v=43">
+<link rel="stylesheet" href="style.css?v=58">
 <style>
   .admin-wrap { max-width: 520px; margin: 0 auto; padding: 18px 16px 60px; }
   .tarjeta {
@@ -29,7 +29,7 @@
     border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
     font-size: 0.95rem;
   }
-  .field input:focus { outline: 1px solid rgba(255,255,255,0.35); outline-offset: -1px; }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent, #7fd46a); outline-offset: 1px; }
   .link-field input { font-size: 1rem; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .save-btn {
@@ -39,6 +39,13 @@
   }
   .save-btn:active { transform: scale(0.98); }
   .msg { text-align: center; margin-top: 10px; font-size: 0.82rem; min-height: 1.2em; }
+  /* el resultado de "Guardar" siempre a la vista (antes quedaba abajo, fuera de pantalla) */
+  #msg:not(:empty) { position: sticky; bottom: 12px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px; z-index: 5; }
+  .btn:disabled, .save-btn:disabled { opacity: 0.5; }
+  .peligro { color: #ff8a7a; font-weight: 600; }
+  .estado-fila { flex-wrap: wrap; gap: 4px 12px; }
+  details.pruebas > summary { cursor: pointer; font-weight: 600; margin-bottom: 6px; }
   .msg.ok { color: #c9d2cc; }
   .msg.err { color: var(--danger); }
   .howto { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
@@ -94,7 +101,7 @@
 <div class="admin-wrap" id="panel">
 
   <div class="tarjeta">
-    <h2>El enlace del BSC500</h2>
+    <h2>Enlace de iGPSPORT (opcional)</h2>
     <div class="howto">
       App iGPSPORT → compartir seguimiento en vivo → pega el enlace aquí.
       Si solo usas Traccar (GPS del móvil), déjalo vacío y pulsa el botón.
@@ -169,14 +176,17 @@
   </div>
 
   <div class="tarjeta">
-    <h2>Pruebas</h2>
-    <div class="howto">
-      Recorre los 101 km en 2 minutos con datos falsos.
-    </div>
-    <div class="quick-actions" style="margin-top:10px">
-      <button class="btn" id="simular">▶ Simular carrera</button>
-      <button class="btn" id="reset">Dejar a cero</button>
-    </div>
+    <!-- plegado: el día de la carrera no se puede pulsar sin querer -->
+    <details class="pruebas">
+      <summary>Pruebas (borran la carrera en curso)</summary>
+      <div class="howto">
+        Recorre la ruta en 2 minutos con datos falsos, o deja todo a cero antes de una carrera nueva.
+      </div>
+      <div class="quick-actions" style="margin-top:10px">
+        <button class="btn" id="simular">▶ Simular carrera</button>
+        <button class="btn stop-btn" id="reset" style="width:auto;margin-top:0">Dejar a cero</button>
+      </div>
+    </details>
   </div>
 
   <div class="tarjeta">
@@ -209,7 +219,7 @@
     </details>
   </div>
 
-  <p class="msg" id="msg"></p>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
   <div class="quick-actions">
     <a class="btn" href="index.html">← Volver a la web</a>
@@ -231,6 +241,9 @@ function sesionCaducada() {
 
 async function post(body) {
   const msg = $('msg');
+  // sin doble envío: los botones se desactivan hasta que contesta el servidor
+  const botones = document.querySelectorAll('.btn, .save-btn');
+  botones.forEach(x => { x.disabled = true; });
   msg.textContent = 'Guardando…';
   msg.className = 'msg';
   try {
@@ -256,6 +269,8 @@ async function post(body) {
   } catch (e) {
     msg.textContent = 'No se pudo conectar con el servidor.';
     msg.className = 'msg err';
+  } finally {
+    botones.forEach(x => { x.disabled = false; });
   }
 }
 
@@ -296,10 +311,13 @@ function refreshStatus(live) {
     $('gps-text').textContent += ' · pulso del reloj ' + live.hr;
   }
   // llegan datos con otro identificador: Traccar o el reloj mal configurados
-  if (live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
-      (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at))) {
+  const idMal = live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
+      (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at));
+  if (idMal) {
     $('gps-text').textContent += ' · ⚠ llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
   }
+  // el único aviso que significa "tu posición no llega": en rojo, que se vea
+  $('gps-text').classList.toggle('peligro', !!idMal);
   $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
     : ex === 'buscando…' ? 'buscando…'
     : ex === 'sin_datos' ? ('iGPSPORT no tiene directo con ese enlace (terminado o sin empezar)' +

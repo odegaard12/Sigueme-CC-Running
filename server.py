@@ -85,7 +85,7 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8710
 BIND_HOST = os.environ.get("BIND_HOST", "0.0.0.0")
 # Preguntar cada 8 s eran 5 400 peticiones en las 12 h de carrera a una API de
 # iGPSPORT que no es pública: demasiado para que no se fijen en nosotros. El
-# BSC500 sube por el móvil cada pocos segundos, así que con 15 s no se pierde
+# ciclocomputador sube por el móvil cada pocos segundos, así que con 15 s no se pierde
 # nada útil. Ante errores se espera cada vez más (hasta 5 min) en vez de
 # insistir, que es lo que de verdad hace que te corten.
 POLL_SECONDS = 15
@@ -404,7 +404,7 @@ def alejado_de_meta(lat, lon):
 # --- GPS del móvil (Traccar Client) --------------------------------------
 # En la carrera del 26/09/2026 la posición de iGPSPORT iba a saltos con los
 # datos del móvil y, a las 14:51 (km 46), dejó de llegar para siempre: su
-# directo depende de BSC500 -> Bluetooth -> app -> servidor de iGPSPORT, y
+# directo depende de ciclocomputador -> Bluetooth -> app -> servidor de iGPSPORT, y
 # con cobertura mala esa cadena se rompe y no recupera lo perdido.
 # Traccar Client (gratis, Android e iPhone) manda la posición del móvil
 # directamente aquí y, sin cobertura, GUARDA los puntos y los envía todos al
@@ -628,7 +628,7 @@ def recibir_gps(puntos):
 
 
 def huella(t):
-    """Lo que cambia cuando de verdad llega un dato nuevo del BSC500."""
+    """Lo que cambia cuando de verdad llega un dato nuevo del ciclocomputador."""
     return tuple(t.get(k) for k in ("lat", "lon", "dist_km", "elapsed"))
 
 
@@ -747,7 +747,7 @@ def poll_loop(url, stop_event):
 
 # --- simulador de carrera --------------------------------------------------
 # Recorre la ruta real a toda pastilla escribiendo en live.json lo mismo que
-# escribiría el BSC500. Sirve para ver moverse la foto, el trazado azul, el
+# escribiría el ciclocomputador. Sirve para ver moverse la foto, el trazado azul, el
 # perfil y las métricas sin esperar al sábado.
 simulador = {"thread": None, "stop": None}
 

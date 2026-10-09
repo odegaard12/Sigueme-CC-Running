@@ -1,3 +1,7 @@
+/* ⚠️ "hidden" manda siempre: varias cajas tienen display propio y el
+   atributo hidden no las ocultaba (la del resultado salía vacía en directo) */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #0c0f0e;
   --panel: #141917;
@@ -686,3 +690,24 @@ footer a { color: var(--muted); }
 .compartir:hover { border-color: rgba(255,255,255,0.28); }
 .compartir.hecho { background: #1f8a4c; border-color: #1f8a4c; }
 @media (min-width: 620px) { .topbar .compartir { order: 2; margin: 0 0 0 4px; } }
+
+
+/* --- v1.4.0: legibilidad y accesibilidad --- */
+/* nada de etiquetas de ~9 px: se leen al sol y con una mano */
+.m-tag, .metrica.destacada .m-tag { font-size: 0.72rem; letter-spacing: 0.04em; }
+.cd-ruta span, .chip, .leyenda, .globo-tipo, .ficha-specs dt { font-size: 0.72rem; }
+.creditos { opacity: 1; font-size: 0.7rem; }
+/* se ve dónde está el foco al navegar con teclado */
+:focus-visible { outline: 2px solid var(--accent, #7fd46a); outline-offset: 2px; }
+/* botones fáciles de pulsar (44 px) */
+.compartir { width: 44px; height: 44px; }
+.ver-ficha { min-height: 40px; }
+.maplibregl-popup-close-button { width: 32px; height: 32px; font-size: 20px; }
+footer a, .pie a { display: inline-block; padding: 10px 4px; }
+/* iPhone en horizontal: la muesca no tapa la cabecera ni los botones */
+.topbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+.mapa-botones { left: calc(10px + env(safe-area-inset-left)); }
+/* menos movimiento si el sistema lo pide */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
