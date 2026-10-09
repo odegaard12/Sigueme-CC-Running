@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.3.1 · 2026-10-09
+- Capturas del README con la carrera de ejemplo.
+
 ## v1.3.0 · 2026-10-09
 - **Para cualquier carrera:** nombre, fecha, hora de salida, distancia, límite,
   km mínimos para meta, corredor y bici salen de `carrera.json`; el código no
