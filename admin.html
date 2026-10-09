@@ -80,8 +80,12 @@
 
 <div id="login-screen">
   <div class="field">
+    <label for="usuario">Usuario</label>
+    <input type="text" id="usuario" placeholder="usuario" autocomplete="username" autocapitalize="none" autofocus>
+  </div>
+  <div class="field">
     <label for="token">Clave</label>
-    <input type="password" id="token" placeholder="clave" autofocus>
+    <input type="password" id="token" placeholder="clave" autocomplete="current-password">
   </div>
   <button class="save-btn" id="login-btn">Entrar</button>
   <p class="msg" id="login-msg"></p>
@@ -322,8 +326,9 @@ async function pollStatus() {
 }
 
 async function tryLogin() {
-  const val = $('token').value.trim();
-  if (!val) return;
+  const val = $('token').value;
+  const usuario = $('usuario').value.trim();
+  if (!val || !usuario) return;
   const loginMsg = $('login-msg');
   loginMsg.textContent = 'Comprobando…';
   loginMsg.className = 'msg';
@@ -331,7 +336,7 @@ async function tryLogin() {
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: val })
+      body: JSON.stringify({ usuario, password: val })
     });
     if (res.ok) {
       $('token').value = '';
@@ -342,7 +347,7 @@ async function tryLogin() {
       cargarGps();
       setInterval(pollStatus, 5000);
     } else {
-      loginMsg.textContent = 'Clave incorrecta.';
+      loginMsg.textContent = 'Usuario o clave incorrectos.';
       loginMsg.className = 'msg err';
     }
   } catch (e) {
@@ -357,7 +362,7 @@ $('salir').addEventListener('click', async () => {
 });
 
 $('login-btn').addEventListener('click', tryLogin);
-$('token').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+['usuario', 'token'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); }));
 
 $('save').addEventListener('click', () => {
   const url = $('livetrack').value.trim();

@@ -22,7 +22,33 @@ LIVE_PATH = os.path.join(ROOT, "live.json")
 # propia web (http://.../server.py devolvía 200) y cualquiera podía leerla.
 # Ahora la clave llega solo por el entorno (systemd) y, además, el servidor no
 # entrega ficheros que no sean los de la web (ver EXTENSIONES_PUBLICAS).
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+# Panel: usuario y HASH de la clave (scrypt), nunca la clave en claro. Se
+# generan con:  python3 server.py --hash-clave
+ADMIN_USER = os.environ.get("ADMIN_USER", "")
+ADMIN_HASH = os.environ.get("ADMIN_HASH", "")
+
+
+def _scrypt(clave, sal):
+    return hashlib.scrypt(clave.encode(), salt=sal, n=2 ** 14, r=8, p=1, dklen=32).hex()
+
+
+if sys.argv[1:2] == ["--hash-clave"]:
+    import getpass
+    _sal = os.urandom(16)
+    print(f"ADMIN_HASH=scrypt:{_sal.hex()}:{_scrypt(getpass.getpass('Clave nueva: '), _sal)}")
+    sys.exit(0)
+
+
+def credenciales_ok(usuario, clave):
+    if not (ADMIN_USER and ADMIN_HASH):
+        return False
+    try:
+        tipo, sal, esperado = ADMIN_HASH.split(":")
+        calculado = _scrypt(str(clave), bytes.fromhex(sal))
+    except ValueError:
+        return False
+    # las dos comparaciones siempre, en tiempo constante
+    return compare_digest(str(usuario), ADMIN_USER) & compare_digest(calculado, esperado) and tipo == "scrypt"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8710
 BIND_HOST = os.environ.get("BIND_HOST", "0.0.0.0")
 # Preguntar cada 8 s eran 5 400 peticiones en las 12 h de carrera a una API de
@@ -77,7 +103,7 @@ SESION_HORAS = 12
 
 
 def _firma(exp):
-    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_TOKEN.encode()).digest()
+    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_HASH.encode()).digest()
     return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
 
 
@@ -87,7 +113,7 @@ def nueva_sesion():
 
 
 def sesion_valida(cabecera_cookie):
-    if not ADMIN_TOKEN or not cabecera_cookie:
+    if not ADMIN_HASH or not cabecera_cookie:
         return False
     for trozo in cabecera_cookie.split(";"):
         nombre, _, valor = trozo.strip().partition("=")
@@ -953,16 +979,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             with castigo_lock:
                 time.sleep(1)
 
-        if not ADMIN_TOKEN:
-            print("[admin] ADMIN_TOKEN vacío: no se admite ningún acceso", flush=True)
+        if not (ADMIN_USER and ADMIN_HASH):
+            print("[admin] sin ADMIN_USER/ADMIN_HASH: no se admite ningún acceso", flush=True)
             self._send_json(503, {"error": "servidor sin clave configurada"})
             return
         if not isinstance(data, dict):
             self._send_json(400, {"error": "invalid json"})
             return
-        # login: la clave una vez, a cambio de la cookie de sesión
+        # login: usuario y clave una vez, a cambio de la cookie de sesión
         if self.path == "/api/login":
-            if not compare_digest(str(data.get("password", "")), ADMIN_TOKEN):
+            if not credenciales_ok(data.get("usuario", ""), data.get("password", "")):
                 fallo_de(ip)
                 print(f"[admin] clave incorrecta (login) desde {ip}", flush=True)
                 self._send_json(403, {"error": "clave incorrecta"})
@@ -970,10 +996,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
             self._send_json(200, {"ok": True}, cookie=nueva_sesion())
             return
-        # el resto: con sesión (panel) o con la clave en el cuerpo (scripts)
-        con_clave = "token" in data and compare_digest(str(data.get("token", "")), ADMIN_TOKEN)
+        # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
+        con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))
         if not con_clave and not sesion_valida(self.headers.get("Cookie")):
-            if "token" in data:
+            if "password" in data:
                 fallo_de(ip)
                 print(f"[admin] clave incorrecta desde {ip}", flush=True)
             self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
@@ -1181,5 +1207,5 @@ if __name__ == "__main__":
     http.server.ThreadingHTTPServer.daemon_threads = True
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
         print(f"la carrera tracker en http://127.0.0.1:{PORT}"
-          + ("" if ADMIN_TOKEN else "  ⚠️ SIN ADMIN_TOKEN: el panel no dejará entrar"))
+          + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar"))
         httpd.serve_forever()
