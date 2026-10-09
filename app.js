@@ -13,6 +13,48 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 
 // Datos pedidos desde el <head> (index.html) para no esperar a la librería
 // del mapa. Si no están (o fallaron), se piden aquí.
+// Todo lo propio de la carrera viene de carrera.json (nombre, fecha, hora de
+// salida, límite, km mínimos para meta, corredor y bici): el código vale para
+// cualquier carrera. Estos son los valores si falta algo.
+let CARRERA = {
+  nombre: '', lugar: '', fecha: '', modalidad: '', hora_salida: '08:30', limite_h: 12,
+  zona_horaria: 'Europe/Madrid', km_minimos_meta: null, corredor: { nombre: '', dorsal: '' }, bici: null,
+};
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const kmMinimosMeta = () => CARRERA.km_minimos_meta || 0.8 * (totalRouteKm || 100);
+function diaCarrera() {
+  if (!CARRERA.fecha) return '';
+  const d = new Date(CARRERA.fecha + 'T12:00:00');
+  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '').toUpperCase();
+}
+function pintarCarrera() {
+  const c = CARRERA, corredor = c.corredor || {};
+  const sl = document.getElementById('stat-limite');
+  if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  const nombre = document.getElementById('ficha-nombre');
+  if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
+  const dorsal = document.getElementById('ficha-dorsal');
+  if (dorsal) {
+    dorsal.textContent = '';
+    if (corredor.dorsal) { dorsal.append('Dorsal '); const n = document.createElement('b'); n.textContent = corredor.dorsal; dorsal.append(n); }
+    const resto = [c.modalidad, c.nombre].filter(Boolean).join(' · ');
+    if (resto) dorsal.append((corredor.dorsal ? ' · ' : '') + resto);
+  }
+  const bici = document.getElementById('ficha-bici');
+  if (bici && c.bici && c.bici.modelo) {
+    document.getElementById('ficha-bici-modelo').textContent = c.bici.modelo;
+    const dl = document.getElementById('ficha-specs');
+    dl.textContent = '';
+    Object.entries(c.bici.piezas || {}).forEach(([k, v]) => {
+      const fila = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = k; dd.textContent = v; fila.append(dt, dd); dl.append(fila);
+    });
+    bici.hidden = false;
+  }
+  const pie = document.getElementById('pie-carrera');
+  if (pie) pie.textContent = [c.nombre, c.lugar].filter(Boolean).map(t => t + ' · ').join('');
+}
+
 function precargado(nombre, respaldo) {
   const p = window.__datos && window.__datos[nombre];
   if (p) {
@@ -465,6 +507,9 @@ function onMapReady() {
   if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
 }
 
+precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
+  .then(c => { if (c) CARRERA = Object.assign(CARRERA, c); pintarCarrera(); });
+
 precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
@@ -716,15 +761,16 @@ function placeRiderMarker(lat, lon) {
     // chincheta le tapaba la cara
     el.style.zIndex = '6';
     // ?v= para que el móvil no siga enseñando la foto cacheada
-    el.innerHTML = '<span><img src="rider.png?v=5" alt="Dorsal 1"></span>';
+    const corredor = CARRERA.corredor || {};
+    el.innerHTML = '<span><img src="rider.png?v=5" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
     // opacityWhenCovered: con terreno 3D MapLibre da por "tapado" todo lo que
     // está pegado al suelo y lo deja casi invisible al acercar. Aquí no
     // interesa: el corredor tiene que verse siempre.
     riderMarkerEl = new maplibregl.Marker({ element: el, opacityWhenCovered: '0.99' })
       .setLngLat([lon, lat])
       .setPopup(nuevoPopup(18).setHTML(
-        '<div class="globo"><span class="globo-tipo">Dorsal 1</span>' +
-        '<b>Odegaard12</b><span class="globo-km">Mi bici</span></div>'))
+        '<div class="globo"><span class="globo-tipo">' + (corredor.dorsal ? 'Dorsal ' + esc(corredor.dorsal) : 'Corredor') + '</span>' +
+        '<b>' + esc(corredor.nombre || '') + '</b><span class="globo-km">' + esc((CARRERA.bici || {}).modelo || '') + '</span></div>'))
       .addTo(map3d);
     pulsarAbrePopup(riderMarkerEl, el);
   } else {
@@ -798,7 +844,7 @@ btnVista.addEventListener('click', () => {
 
 function fmtTime(iso) {
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: CARRERA.zona_horaria });
 }
 
 // Diferencia entre el reloj de quien mira y el del servidor. Sin esto, un
@@ -936,8 +982,6 @@ function moverSuave(km, pos, pegado) {
 // seguía corriendo en meta y la velocidad se quedaba clavada en el último valor.
 let enMeta = false;
 let haArrancado = false;
-const DIA_CARRERA = 'SÁBADO 26/09';
-const HORA_SALIDA = '08:30';
 
 // Odegaard12 enciende el GPS en la salida sobre las 08:15, pero la carrera sale a
 // las 08:30. Hasta que no son las 08:30 Y no se ha separado 40 m de la línea
@@ -976,7 +1020,7 @@ function pintarNivel(texto) {
 function esMeta(data, km) {
   // la llegada la apunta el servidor una vez y ya no se desdice
   if (data.finished_at || data.status_label === 'Finalizada') return true;
-  if (!totalRouteKm || km == null || km < 80) return false;
+  if (!totalRouteKm || km == null || km < kmMinimosMeta()) return false;
   if (km >= totalRouteKm - 0.4) return true;
   const meta = routeLatLon[routeLatLon.length - 1];
   if (meta && data.lat != null && data.lon != null) {
@@ -1166,13 +1210,13 @@ function pollLive() {
       } else {
         estado.classList.remove('meta');
         estado.classList.remove('previo');
-        const hora = lastStartedAt ? fmtTime(lastStartedAt) : HORA_SALIDA;
+        const hora = lastStartedAt ? fmtTime(lastStartedAt) : CARRERA.hora_salida;
         if (data.lat != null && !haArrancado) {
           // ya está compartiendo y se le ve en el mapa, pero aún no ha salido
           estado.textContent = 'INICIO ' + hora + ' · Odegaard12 ya está en la salida';
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          estado.textContent = 'INICIO ' + hora + ' · ' + DIA_CARRERA;
+          estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
           estado.classList.add('previo');
         } else {
           estado.textContent = '';
@@ -1235,8 +1279,8 @@ let resultadoConsultado = false;
 let repitiendo = false;
 let kmsTraza = null;
 
-const horaNaron = iso => new Date(iso).toLocaleTimeString('es-ES',
-  { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+const horaCarrera = iso => new Date(iso).toLocaleTimeString('es-ES',
+  { hour: '2-digit', minute: '2-digit', timeZone: CARRERA.zona_horaria });
 const fmtHM = s => Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + 'm';
 
 // km de ruta de cada punto de la traza, siempre hacia delante
@@ -1273,11 +1317,11 @@ function pintarResultado() {
   ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
   // corto a propósito: en el móvil pequeño partía en dos líneas (el "de 12 h"
   // ya sale en la cabecera)
-  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaNaron(r.llegada));
+  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));
   document.getElementById('aviso-resultado').hidden = false;
   ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
   const etiqueta = document.querySelector('#stat-limite + i');
-  if (etiqueta) etiqueta.textContent = 'de 12 h';
+  if (etiqueta) etiqueta.textContent = 'de ' + CARRERA.limite_h + ' h';
   document.getElementById('live-updated').textContent =
     r.carrera + ' · datos del ciclocomputador · ' + fmtHM(r.tiempo_movimiento_s) + ' en movimiento';
   // mapa y perfil completos, la foto en meta
@@ -1296,7 +1340,7 @@ function pintarResultado() {
       const li = document.createElement('li');
       const trans = (new Date(p.hora) - salida) / 1000;
       li.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="nombre"></span>' +
-        '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
+        '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaCarrera(p.hora) + '</span>';
       li.children[1].textContent = p.nombre;   // el nombre como texto, no HTML
       lista.appendChild(li);
     });
@@ -1334,7 +1378,7 @@ function repetirCarrera() {
     pintarProgreso(km, [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e]);
     ponerTexto('m-time', fmtHM(t));
     const reloj = new Date(salida + t * 1000).toISOString();
-    ponerTexto('aviso-titulo', '▶ ' + horaNaron(reloj) + ' · km ' + num(km));
+    ponerTexto('aviso-titulo', '▶ ' + horaCarrera(reloj) + ' · km ' + num(km));
     const pasados = resultado.pasos.filter(p => new Date(p.hora).getTime() <= salida + t * 1000).length;
     items.forEach((li, k) => li.classList.toggle('actual', k === pasados - 1));
     if (!fin) { requestAnimationFrame(paso); return; }

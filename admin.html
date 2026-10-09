@@ -260,6 +260,10 @@ async function post(body) {
 }
 
 let horaTocada = false;
+// hora de salida por defecto: la de carrera.json (si live.json trae otra, manda esa)
+fetch('carrera.json').then(r => r.ok ? r.json() : null).then(c => {
+  if (c && c.hora_salida && !horaTocada) $('hora-salida').value = c.hora_salida;
+}).catch(() => {});
 $('hora-salida').addEventListener('input', () => { horaTocada = true; });
 
 function refreshStatus(live) {

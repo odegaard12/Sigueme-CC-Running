@@ -1,7 +1,7 @@
 {
   "name": "Sígueme CC",
   "short_name": "Sígueme CC",
-  "description": "Seguimiento en directo de Odegaard12 (Mi carrera)",
+  "description": "Seguimiento en directo de carreras de MTB o a pie",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

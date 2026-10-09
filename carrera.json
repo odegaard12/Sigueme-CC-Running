@@ -1,0 +1,24 @@
+{
+  "nombre": "Mi carrera MTB",
+  "lugar": "",
+  "fecha": "2026-09-26",
+  "modalidad": "MTB",
+  "hora_salida": "08:30",
+  "limite_h": 12,
+  "zona_horaria": "Europe/Madrid",
+  "distancia_km": 103.36,
+  "desnivel_m": 2629,
+  "km_minimos_meta": 80,
+  "corredor": {
+    "nombre": "Corredor",
+    "dorsal": "1"
+  },
+  "bici": {
+    "modelo": "Mi bici",
+    "piezas": {
+      "Cuadro": "Carbono",
+      "Peso": "10 kg",
+      "Ruedas": "29\""
+    }
+  }
+}

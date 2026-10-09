@@ -19,6 +19,24 @@ from urllib.parse import parse_qs, unquote
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 LIVE_PATH = os.path.join(ROOT, "live.json")
+CARRERA_PATH = os.path.join(ROOT, "carrera.json")
+
+
+def carrera():
+    """Datos de la carrera (carrera.json): distancia, km mínimos para meta…
+    Se lee cada vez (es pequeño) para poder cambiarlo sin reiniciar."""
+    try:
+        with open(CARRERA_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def km_minimos_meta():
+    """Km hechos a partir de los cuales pasar cerca de meta cuenta como llegada
+    (la salida suele estar junto a la meta). Por defecto, el 80 % de la ruta."""
+    c = carrera()
+    return c.get("km_minimos_meta") or 0.8 * (c.get("distancia_km") or 100)
 # ⚠️ NUNCA poner la clave de verdad aquí: este fichero estaba servido por la
 # propia web (http://.../server.py devolvía 200) y cualquiera podía leerla.
 # Ahora la clave llega solo por el entorno (systemd) y, además, el servidor no
@@ -276,7 +294,7 @@ def fetch_page(url):
             raise RespuestaHTTP(r.status_code)
         return cuerpo
     req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (compatible; la carreraTracker/1.0)"
+        "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
     with urllib.request.urlopen(req, timeout=10) as resp:
         return resp.read(2_000_000).decode("utf-8", errors="ignore")
@@ -366,14 +384,15 @@ def km_entre(a, b):
 
 
 def ha_llegado(t, se_alejo=False):
-    """A menos de 200 m del punto de meta, y o bien con más de 80 km hechos, o
+    """A menos de 200 m del punto de meta, y o bien con los km mínimos hechos
+    (carrera.json, km_minimos_meta), o
     bien habiéndose alejado antes más de 5 km de meta. La ruta solo pasa tan
     cerca de meta en la salida (km 0-0,2) y en los últimos 200 m.
-    ⚠️ Solo con los 80 km, un seguimiento nuevo empezado a mitad de carrera
+    ⚠️ Solo con los km mínimos, un seguimiento nuevo empezado a mitad de carrera
     (que cuenta desde 0) no llegaba nunca a meta: pasó el 26/09."""
     if t.get("lat") is None or t.get("lon") is None:
         return False
-    if (t.get("dist_km") or 0) < 80 and not se_alejo:
+    if (t.get("dist_km") or 0) < km_minimos_meta() and not se_alejo:
         return False
     return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
 
@@ -568,7 +587,7 @@ def recibir_gps(puntos):
         return
     ultimo = puntos[-1]
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
-    # había ninguna, y la llegada a meta la necesita (más de 80 km). Los
+    # había ninguna, y la llegada a meta la necesita (km mínimos). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
@@ -749,7 +768,7 @@ def simular_loop(stop_event, segundos):
         avance = (time.time() - inicio) / segundos      # 0 -> 1
         i = min(total - 1, int(avance * total))
         lat, lon = puntos[i]
-        recorrido = 103.36 * (i / (total - 1))
+        recorrido = (carrera().get("distancia_km") or 100) * (i / (total - 1))
         merge_live({
             "status_label": "SIMULACIÓN",
             "lat": lat, "lon": lon,
@@ -1179,7 +1198,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 # IP flotante (keepalived) de la instalación con dos Pis, desde la configuración
 # del servicio. Sin ella, una sola máquina: siempre es la que sirve.
-VIP = os.environ.get("VIP_SIGUEME", "")
+VIP = os.environ.get("SIGUEME_VIP", "")
 
 
 def tengo_la_vip():
@@ -1243,7 +1262,7 @@ if __name__ == "__main__":
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
-        print(f"la carrera tracker en http://127.0.0.1:{PORT}"
+        print(f"Sígueme CC en http://127.0.0.1:{PORT}"
           + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")
-          + ("" if VIP else "  · sin VIP_SIGUEME: una sola máquina (con dos Pis, las dos leerían iGPSPORT)"))
+          + ("" if VIP else "  · sin SIGUEME_VIP: una sola máquina (con dos Pis, las dos leerían iGPSPORT)"))
         httpd.serve_forever()

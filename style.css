@@ -567,7 +567,7 @@ footer a { color: var(--muted); }
 }
 
 @media (max-width: 560px) {
-  /* "de la salida" ya no va dentro del título, sino en la línea pequeña de
+  /* el subtítulo ya no va dentro del título, sino en la línea pequeña de
      debajo: así cabe también en el móvil */
   .marca-sub { font-size: 0.72rem; }
   .cd-ruta span { padding: 0 7px; font-size: 0.58rem; }
