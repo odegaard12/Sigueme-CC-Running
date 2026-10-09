@@ -1,0 +1,10 @@
+[Unit]
+Description=Replica la carrera a la otra Pi cada 20 s
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=20s
+AccuracySec=2s
+
+[Install]
+WantedBy=timers.target

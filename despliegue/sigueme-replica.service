@@ -1,0 +1,8 @@
+[Unit]
+Description=Replica la carrera a la otra Pi
+
+[Service]
+Type=oneshot
+User=USUARIO
+ExecStart=/home/USUARIO/replicar.sh
+LogLevelMax=notice

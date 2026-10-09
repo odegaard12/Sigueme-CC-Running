@@ -11,6 +11,8 @@ import time
 import urllib.request
 from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
+import hashlib
+import hmac
 from hmac import compare_digest
 from urllib.parse import parse_qs
 
@@ -40,6 +42,9 @@ poller = {"thread": None, "stop": None, "url": None}
 # espera; a los 10, medio minuto. Un acierto lo borra todo.
 intentos_lock = threading.Lock()
 intentos = {}   # ip -> [fallos, momento_del_ultimo_fallo]
+# los intentos castigados pasan de uno en uno: con 50 a la vez, cada uno
+# esperaba su segundo en paralelo y el freno no frenaba nada
+castigo_lock = threading.Lock()
 
 
 def segundos_de_castigo(ip):
@@ -61,6 +66,37 @@ def fallo_de(ip):
 def acierto_de(ip):
     with intentos_lock:
         intentos.pop(ip, None)
+
+# --- sesión del panel --------------------------------------------------------
+# Antes el panel guardaba la CLAVE en el navegador (sessionStorage) y la mandaba
+# en cada petición: cualquier script que corriera en la página podía leerla.
+# Ahora la clave se manda una vez y el servidor devuelve una cookie HttpOnly
+# (JavaScript no la ve) firmada con HMAC. Sin estado: vale en las dos Pis (las
+# dos tienen la misma clave) y cambiar la clave invalida todas las sesiones.
+SESION_HORAS = 12
+
+
+def _firma(exp):
+    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_TOKEN.encode()).digest()
+    return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
+
+
+def nueva_sesion():
+    exp = int(time.time()) + SESION_HORAS * 3600
+    return f"{exp}.{_firma(exp)}"
+
+
+def sesion_valida(cabecera_cookie):
+    if not ADMIN_TOKEN or not cabecera_cookie:
+        return False
+    for trozo in cabecera_cookie.split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "adm":
+            exp, _, firma = valor.partition(".")
+            if exp.isdigit() and int(exp) > time.time() and compare_digest(firma, _firma(int(exp))):
+                return True
+    return False
+
 
 # --- iGPSPORT ---------------------------------------------------------------
 # El enlace que comparte la app (prod.en.igpsport.com/.../GetShareHtml?id=...)
@@ -150,7 +186,7 @@ def extract_igpsport(payload):
         if valor is not None:
             fuera[clave] = valor
 
-    if resumen.get("totalTime"):
+    if resumen.get("totalTime") is not None:
         fuera["elapsed"] = resumen["totalTime"]
 
     return fuera or None
@@ -339,6 +375,19 @@ def apuntar_historial(fuente, **datos):
         pass
 
 
+def hace_segundos(iso):
+    try:
+        return time.time() - datetime.fromisoformat(str(iso).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return float("inf")
+
+
+# Dos envíos a la vez (Traccar reintentando y el reloj, o el poller) leían el
+# mismo estado y uno pisaba la distancia del otro
+gps_lock = threading.Lock()
+rechazo = {"t": 0.0}
+
+
 def gps_reciente(live):
     t = live.get("gps_t")
     return bool(t) and time.time() - t < GPS_VIGENTE
@@ -366,6 +415,12 @@ def _numero(valor):
         return None
 
 
+def _fraccion(valor):
+    """Traccar 9 (JSON) da la batería de 0 a 1; la URL, en %: "batt=1" es 1 %."""
+    n = _numero(valor)
+    return n * 100 if n is not None and n <= 1 else n
+
+
 def puntos_traccar(query, cuerpo):
     """Devuelve (identificador, [puntos]). Acepta los dos formatos de Traccar
     Client: parámetros en la URL (protocolo OsmAnd, velocidad en nudos, que
@@ -384,13 +439,19 @@ def puntos_traccar(query, cuerpo):
             for loc in (locs if isinstance(locs, list) else [locs]):
                 if not isinstance(loc, dict):
                     continue
-                c = loc.get("coords") or {}
+                for k in ("coords", "battery", "extras"):
+                    if not isinstance(loc.get(k), dict):
+                        loc[k] = {}
+                c = loc["coords"]
                 v = _numero(c.get("speed"))
                 crudos.append({"lat": c.get("latitude"), "lon": c.get("longitude"),
                                "t": _segundos(loc.get("timestamp")),
                                "kmh": v * 3.6 if v is not None and v >= 0 else None,
                                "precision": c.get("accuracy"),
-                               "bateria": (loc.get("battery") or {}).get("level")})
+                               "bateria": _fraccion((loc.get("battery") or {}).get("level")),
+                               # el reloj (miniapp de Amazfit) manda el pulso aquí
+                               "hr": (loc.get("extras") or {}).get("hr"),
+                               "origen": (loc.get("extras") or {}).get("origen")})
         elif j is None:
             try:
                 q.update({k: v[0] for k, v in parse_qs(cuerpo.decode("utf-8")).items()})
@@ -400,23 +461,33 @@ def puntos_traccar(query, cuerpo):
         v = _numero(q.get("speed"))
         crudos.append({"lat": q["lat"], "lon": q["lon"], "t": _segundos(q.get("timestamp")),
                        "kmh": v * 1.852 if v is not None and v >= 0 else None,
-                       "precision": q.get("accuracy"), "bateria": q.get("batt")})
+                       "precision": q.get("accuracy"), "bateria": q.get("batt"), "hr": q.get("hr")})
     ident = ident or q.get("id") or q.get("deviceid")
 
     puntos = []
+    ahora = time.time()
     for p in crudos:
-        lat, lon = _numero(p["lat"]), _numero(p["lon"])
-        if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180) \
-                or (lat == 0 and lon == 0):
-            continue
-        precision = _numero(p["precision"])
-        if precision is not None and precision > PRECISION_MAXIMA:
-            continue
+        # ⚠️ Un aparato con la hora adelantada dejaba gps_t en el futuro y
+        # todos los puntos buenos siguientes se descartaban por "viejos": la
+        # foto se quedaba clavada hasta que el reloj real alcanzaba esa hora.
+        p["t"] = min(p["t"], ahora)
+        hr = _numero(p.get("hr"))
+        hr = hr if hr is not None and 30 <= hr <= 240 else None
         bateria = _numero(p["bateria"])
-        if bateria is not None and bateria <= 1:
-            bateria *= 100          # el JSON la da de 0 a 1
-        puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"],
-                       "precision": precision, "bateria": bateria})
+        lat, lon = _numero(p["lat"]), _numero(p["lon"])
+        precision = _numero(p["precision"])
+        valida = not (lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180)
+                      or (lat == 0 and lon == 0)
+                      or (precision is not None and precision > PRECISION_MAXIMA))
+        if not valida:
+            # sin posición buena pero con pulso (el reloj aún buscando GPS):
+            # vale para el pulso
+            if hr is None:
+                continue
+            lat = lon = None
+        puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"] if valida else None,
+                       "precision": precision, "bateria": bateria, "hr": hr,
+                       "origen": str(p.get("origen") or "movil")[:20]})
     return ident, puntos
 
 
@@ -425,28 +496,61 @@ def recibir_gps(puntos):
     for p in puntos:
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
-                          kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"])
-    ultimo = puntos[-1]
+                          kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"], hr=p["hr"])
     live = read_live()
+    extra = {}
+    # pulso del reloj: el más reciente, y la media de todo lo recibido
+    nuevos_hr = [p for p in puntos if p["hr"] is not None and p["t"] > (live.get("hr_t") or 0)]
+    if nuevos_hr:
+        suma = (live.get("hr_suma") or 0) + sum(p["hr"] for p in nuevos_hr)
+        n = (live.get("hr_n") or 0) + len(nuevos_hr)
+        u = nuevos_hr[-1]
+        extra.update(hr=round(u["hr"]), hr_t=u["t"], hr_suma=suma, hr_n=n, hr_avg=round(suma / n),
+                     hr_at=datetime.fromtimestamp(u["t"], timezone.utc).isoformat())
+    con_bateria = [p for p in puntos if p["bateria"] is not None]
+    if con_bateria:
+        extra["bateria_movil"] = round(con_bateria[-1]["bateria"])
+    puntos = [p for p in puntos if p["lat"] is not None]
+    # Móvil (Traccar) y reloj (Amazfit) a la vez: la posición la da solo UNO,
+    # el que ya estaba mandando. Alternando entre dos GPS la foto temblaba y
+    # la distancia sumaba el zigzag entre los dos. Si el que manda se calla
+    # 2 min, toma el relevo el otro. El pulso vale de cualquiera.
+    manda = live.get("gps_origen") if gps_reciente(live) else None
+    if puntos:
+        manda = manda or puntos[-1]["origen"]
+        puntos = [p for p in puntos if p["origen"] == manda]
     # los que llegan de la cola (sin cobertura) pueden ser más viejos que lo
     # que ya tenemos: al historial sí, a la posición en directo no
-    if ultimo["t"] <= (live.get("gps_t") or 0):
+    if not puntos or puntos[-1]["t"] <= (live.get("gps_t") or 0):
+        if extra:
+            merge_live(extra)
         return
+    ultimo = puntos[-1]
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
     # había ninguna, y la llegada a meta la necesita (más de 80 km). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
+    velocidad = None
     for p in puntos:
         if previo and p["t"] > previo[2]:
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
-            if tramo / max(1.0, p["t"] - previo[2]) * 3600 < 90:
+            v = tramo / max(1.0, p["t"] - previo[2]) * 3600
+            if v < 90:
                 dist += tramo
+                # el reloj no manda velocidad: se saca de los dos últimos
+                # puntos (si no, se quedaba la última de iGPSPORT, de horas antes)
+                velocidad = v if p["t"] - previo[2] <= 120 else None
+            elif p["t"] - previo[2] < 60:
+                # salto imposible: se ignora el punto y la referencia sigue
+                # siendo el último bueno (si el "salto" dura más de 1 min, es
+                # que la referencia era la mala y se cambia)
+                continue
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
     patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil",
+             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
     distancia = max(live.get("dist_km") or 0, dist)
     se_alejo = live.get("lejos_de_meta") or any(alejado_de_meta(p["lat"], p["lon"]) for p in puntos)
@@ -457,8 +561,9 @@ def recibir_gps(puntos):
         patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
-    if ultimo["bateria"] is not None:
-        patch["bateria_movil"] = round(ultimo["bateria"])
+    else:
+        patch["speed_kmh"] = round(velocidad, 1) if velocidad is not None else None
+    patch.update(extra)
     merge_live(patch)
 
 
@@ -517,6 +622,11 @@ def poll_loop(url, stop_event):
                         patch.pop(k, None)
                 if "lat" in patch:
                     patch["fuente_posicion"] = "igpsport"
+                # pulso: si llega del reloj, manda el reloj (si no, la cifra
+                # y la media saltaban entre los dos cada pocos segundos)
+                if hace_segundos(read_live().get("hr_at")) < GPS_VIGENTE:
+                    patch.pop("hr", None)
+                    patch.pop("hr_avg", None)
                 patch["igpsport_aviso"] = None
                 # la hora de llegada se apunta UNA vez: si después sigue
                 # pedaleando (hasta el coche, a casa) el tiempo final no crece
@@ -683,10 +793,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ident, puntos = puntos_traccar(query, cuerpo)
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident), clave):
+            # El panel avisa: con el identificador mal copiado, Traccar o el
+            # reloj mandaban y la web no se movía, sin pista de por qué. Solo
+            # la hora (live.json es público) y como mucho una vez por minuto.
+            # (solo si trae identificador: un escáner cualquiera sin él no avisa)
+            if puntos and ident and time.time() - rechazo["t"] > 60:
+                rechazo["t"] = time.time()
+                merge_live({"gps_rechazado_at": datetime.now(timezone.utc).isoformat()})
             self._send_json(403, {"error": "identificador incorrecto"})
             return
         if puntos:
-            recibir_gps(puntos)
+            try:
+                with gps_lock:
+                    recibir_gps(puntos)
+            except Exception as exc:
+                # contestar igual: si no, el móvil reintenta ese lote para
+                # siempre. Los puntos ya quedaron en el historial.
+                print(f"[gps] error procesando {len(puntos)} puntos: {exc!r}", flush=True)
         # Traccar solo borra los puntos de su cola si le contestamos 200
         self._send_json(200, {"ok": True, "puntos": len(puntos)})
 
@@ -714,14 +837,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        elif ruta == "/admin.html":
+            self.send_header("Cache-Control", "no-store")
         elif ruta.endswith((".html", ".css", ".js", ".json", "/")):
             self.send_header("Cache-Control", "no-cache, must-revalidate")
+        # buenas prácticas: que nadie meta la web en un iframe ajeno, que el
+        # navegador no "adivine" tipos, y no regalar la URL al salir
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        self.send_header("Strict-Transport-Security", "max-age=31536000")
+        if ruta == "/admin.html":
+            # el panel solo habla con su propio servidor y no sale en Google
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                             "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                             "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+            self.send_header("X-Robots-Tag", "noindex, nofollow")
         super().end_headers()
 
-    def _send_json(self, status, payload):
+    def _send_json(self, status, payload, cookie=None):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
+        if cookie is not None:
+            # Secure solo si llega por https (Cloudflare); por la red de casa
+            # (http) el navegador no guardaría una cookie Secure
+            https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
+            self.send_header("Set-Cookie", f"adm={cookie}; Path=/api; HttpOnly; SameSite=Strict"
+                             + ("; Secure" if https else "")
+                             + (f"; Max-Age={SESION_HORAS * 3600}" if cookie else "; Max-Age=0"))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -775,7 +922,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path != "/api/live":
+        if self.path == "/api/logout":
+            self._send_json(200, {"ok": True}, cookie="")
+            return
+        if self.path not in ("/api/live", "/api/login"):
             self._send_json(404, {"error": "not found"})
             return
         # el panel manda unos pocos cientos de bytes; sin tope, cualquiera
@@ -800,16 +950,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # segundo y luego compara. Al que acierta le da igual; al que adivina,
         # le limita el ritmo igual que antes.
         if segundos_de_castigo(ip):
-            time.sleep(1)
+            with castigo_lock:
+                time.sleep(1)
 
         if not ADMIN_TOKEN:
             print("[admin] ADMIN_TOKEN vacío: no se admite ningún acceso", flush=True)
             self._send_json(503, {"error": "servidor sin clave configurada"})
             return
-        if not compare_digest(str(data.get("token", "")), ADMIN_TOKEN):
-            fallo_de(ip)
-            print(f"[admin] clave incorrecta desde {ip}", flush=True)
-            self._send_json(403, {"error": "clave incorrecta"})
+        if not isinstance(data, dict):
+            self._send_json(400, {"error": "invalid json"})
+            return
+        # login: la clave una vez, a cambio de la cookie de sesión
+        if self.path == "/api/login":
+            if not compare_digest(str(data.get("password", "")), ADMIN_TOKEN):
+                fallo_de(ip)
+                print(f"[admin] clave incorrecta (login) desde {ip}", flush=True)
+                self._send_json(403, {"error": "clave incorrecta"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion())
+            return
+        # el resto: con sesión (panel) o con la clave en el cuerpo (scripts)
+        con_clave = "token" in data and compare_digest(str(data.get("token", "")), ADMIN_TOKEN)
+        if not con_clave and not sesion_valida(self.headers.get("Cookie")):
+            if "token" in data:
+                fallo_de(ip)
+                print(f"[admin] clave incorrecta desde {ip}", flush=True)
+            self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
             return
         acierto_de(ip)
 
@@ -820,7 +987,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if accion == "simular":
-            arrancar_simulacion(int(data.get("segundos", 120)))
+            try:
+                segundos = min(3600, max(10, int(data.get("segundos", 120))))
+            except (TypeError, ValueError):
+                self._send_json(400, {"error": "segundos no válidos"})
+                return
+            arrancar_simulacion(segundos)
             self._send_json(200, {"ok": True, "live": read_live()})
             return
 
@@ -837,6 +1009,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
+                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -856,7 +1029,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
                 "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
                 "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-                "lejos_de_meta": None,
+                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
@@ -913,7 +1086,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             apuntar_historial("enlace", id=igpsport_id(new_url), url=new_url[:300])
             print(f"[admin] enlace nuevo: id={igpsport_id(new_url)}", flush=True)
             patch["igpsport_aviso"] = None
-            start_poller(new_url)
 
         # hora oficial de salida (HH:MM). Manda sobre el momento de pegar el
         # enlace, pero por sí sola NO pone el crono en marcha: guardarla días
@@ -931,6 +1103,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         patch["started_at"] = iso
 
         current = merge_live(patch)
+        # ⚠️ el poller arranca DESPUÉS de guardar el enlace: si arrancaba antes,
+        # el vigilante (watch_live_file) podía leer el enlace viejo del disco
+        # justo en medio y volver a lanzar el poller con él
+        if new_url:
+            start_poller(new_url)
         self._send_json(200, {"ok": True, "live": current})
 
     def log_message(self, fmt, *args):

@@ -156,6 +156,11 @@
       En Android, quita el ahorro de batería a Traccar Client. iGPSPORT sigue
       dando el pulso y la cadencia.
     </div>
+    <div class="howto" style="margin-top:8px">
+      <b>Reloj Amazfit</b> (miniapp Sígueme): en la app Zepp → Sígueme → Ajustes,
+      la misma dirección y el mismo identificador. Manda posición y pulso; si
+      llevas móvil con Traccar y reloj a la vez, la posición la da uno solo.
+    </div>
   </div>
 
   <div class="tarjeta">
@@ -209,20 +214,33 @@
 
 <script>
 const $ = id => document.getElementById(id);
-let TOKEN = sessionStorage.getItem('adminToken') || '';
+// La clave ya no se guarda en el navegador: el servidor da una cookie de
+// sesión HttpOnly (12 h) al entrar. Se borra lo que dejaron versiones viejas.
+try { sessionStorage.removeItem('adminToken'); } catch (e) {}
+function sesionCaducada() {
+  $('panel').style.display = 'none';
+  $('login-screen').style.display = 'block';
+  $('login-msg').textContent = 'La sesión ha caducado: vuelve a entrar.';
+  $('login-msg').className = 'msg err';
+}
 
 async function post(body) {
   const msg = $('msg');
   msg.textContent = 'Guardando…';
   msg.className = 'msg';
   try {
+    // con tiempo límite: sin él, con el servidor colgado se quedaba en
+    // "Guardando…" para siempre
     const res = await fetch('/api/live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, ...body })
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
     });
     const data = await res.json();
+    if (res.status === 403) { sesionCaducada(); return; }
     if (res.ok) {
+      horaTocada = false;     // lo guardado ya es lo del servidor
       msg.textContent = 'Guardado ✓';
       msg.className = 'msg ok';
       refreshStatus(data.live);
@@ -260,9 +278,18 @@ function refreshStatus(live) {
     const m = Math.round((Date.now() - new Date(live.gps_at)) / 60000);
     $('gps-text').textContent = (m < 1 ? 'ahora mismo' : 'hace ' + m + ' min') +
       (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '') +
-      (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil' ? 'GPS del móvil' : 'iGPSPORT') : '');
+      (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil'
+        ? (live.gps_origen === 'amazfit' ? 'GPS del reloj' : 'GPS del móvil') : 'iGPSPORT') : '');
   } else {
     $('gps-text').textContent = 'sin datos';
+  }
+  if (live.hr_at && Date.now() - new Date(live.hr_at) < 180000) {
+    $('gps-text').textContent += ' · pulso del reloj ' + live.hr;
+  }
+  // llegan datos con otro identificador: Traccar o el reloj mal configurados
+  if (live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
+      (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at))) {
+    $('gps-text').textContent += ' · ⚠ llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
   }
   $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
     : ex === 'buscando…' ? 'buscando…'
@@ -276,10 +303,14 @@ async function cargarGps() {
   $('gps-url').value = location.origin + '/api/gps';
   try {
     const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, action: 'gps_info' }) });
+      body: JSON.stringify({ action: 'gps_info' }) });
+    if (res.status === 403) { sesionCaducada(); return; }
     const d = await res.json();
     $('gps-id').value = d.gps_id || '(falta generar la clave en el servidor)';
-  } catch (e) {}
+  } catch (e) {
+    // sin conexión al abrir el panel: se reintenta (antes se quedaba en blanco)
+    setTimeout(cargarGps, 10000);
+  }
 }
 
 async function pollStatus() {
@@ -296,14 +327,14 @@ async function tryLogin() {
   loginMsg.textContent = 'Comprobando…';
   loginMsg.className = 'msg';
   try {
-    const res = await fetch('/api/live', {
+    const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: val })
+      body: JSON.stringify({ password: val })
     });
     if (res.ok) {
-      TOKEN = val;
-      sessionStorage.setItem('adminToken', val);
+      $('token').value = '';
+      loginMsg.textContent = '';
       $('login-screen').style.display = 'none';
       $('panel').style.display = 'block';
       pollStatus();
@@ -319,9 +350,8 @@ async function tryLogin() {
   }
 }
 
-$('salir').addEventListener('click', () => {
-  sessionStorage.removeItem('adminToken');
-  TOKEN = '';
+$('salir').addEventListener('click', async () => {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
   location.reload();
 });
 
@@ -370,8 +400,9 @@ $('save-manual').addEventListener('click', () => {
   post(p);
 });
 
-if (TOKEN) {
-  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN }) })
+// ¿ya hay sesión? (gps_info solo lee: no toca live.json)
+{
+  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gps_info' }) })
     .then(res => {
       if (res.ok) {
         $('login-screen').style.display = 'none';

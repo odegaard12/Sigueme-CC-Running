@@ -1,0 +1,5 @@
+# todo el texto con saltos de línea LF (los ficheros escritos en Windows
+# entraban con CRLF y cada cambio parecía reescribir el fichero entero)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
