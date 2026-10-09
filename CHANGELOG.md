@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.3.0 · 2026-10-09
+- **Para cualquier carrera:** nombre, fecha, hora de salida, distancia, límite,
+  km mínimos para meta, corredor y bici salen de `carrera.json`; el código no
+  nombra ninguna carrera.
+- `herramientas/preparar_ruta.py`: crea la ruta y el perfil desde un GPX.
+- `generar_resultado.py` toma la fecha, la hora y la distancia de `carrera.json`.
+- README como guía paso a paso (preparar la carrera, arrancar, día de carrera,
+  después); README del reloj con el estado en la tienda y la instalación.
+- Plantillas de despliegue con nombres genéricos (`sigueme.service`,
+  `SIGUEME_VIP`).
+
 ## v1.2.0 · 2026-10-09
 - Botón de compartir en la cabecera (menú de compartir en el móvil, copiar el
   enlace en el PC) y vista previa con imagen al compartir el enlace.
@@ -14,7 +25,7 @@ release en GitHub.
   ocultos nunca servidos.
 - Panel: un solo sondeo aunque se entre varias veces.
 - robots.txt: el panel y la API fuera de los buscadores.
-- Plantilla del servicio con `VIP_SIGUEME` activa (se había quedado comentada).
+- Plantilla del servicio con `SIGUEME_VIP` activa (se había quedado comentada).
 
 ## v1.1.1 · 2026-10-09
 - Licencia MIT.
@@ -28,7 +39,7 @@ release en GitHub.
 - Versión visible al pie de la web. README con capturas, CHANGELOG y releases.
 
 ## v1.0.1 · 2026-10-09
-- La IP flotante sale de la configuración del servicio (`VIP_SIGUEME`); sin
+- La IP flotante sale de la configuración del servicio (`SIGUEME_VIP`); sin
   ella, el servidor funciona como una sola máquina.
 - `generar_resultado.py`: el FIT se pasa por argumento y la web se busca en la
   raíz del repo (desde `herramientas/` no encontraba el trazado).

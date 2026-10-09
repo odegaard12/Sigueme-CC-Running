@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""resultado.json a partir del FIT del 26/09: tiempos, pasos por
-avituallamiento y la traza real recortada a salida-meta."""
+"""resultado.json a partir del FIT de la carrera: tiempos, pasos por
+avituallamiento y la traza real recortada a salida-meta. La fecha, la hora
+de salida, la distancia y el nombre salen de carrera.json."""
 import json, math, pathlib, sys
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import fitdecode
 
 # la web (route.geojson, aid_stations.json, resultado.json) está en la raíz del repo
@@ -11,7 +13,9 @@ if len(sys.argv) != 2:
     sys.exit('uso: python herramientas/generar_resultado.py actividad.fit')
 FIT = pathlib.Path(sys.argv[1])
 SC = 180 / 2 ** 31
-SALIDA_OFICIAL = datetime(2026, 9, 26, 6, 30, tzinfo=timezone.utc)   # 08:30
+CARRERA = json.loads((AQUI / 'carrera.json').read_text(encoding='utf-8'))
+SALIDA_OFICIAL = datetime.fromisoformat(f"{CARRERA['fecha']}T{CARRERA['hora_salida']}").replace(
+    tzinfo=ZoneInfo(CARRERA.get('zona_horaria', 'Europe/Madrid')))
 
 
 def hav(a, b):
@@ -25,7 +29,7 @@ ruta = [(c[1], c[0]) for c in json.loads((AQUI / 'route.geojson').read_text(enco
 cum = [0.0]
 for a, b in zip(ruta, ruta[1:]):
     cum.append(cum[-1] + hav(a, b))
-TOTAL_OFICIAL = 103.36
+TOTAL_OFICIAL = CARRERA['distancia_km']
 factor = TOTAL_OFICIAL / cum[-1]
 avis = json.loads((AQUI / 'aid_stations.json').read_text(encoding='utf-8-sig'))
 
@@ -63,10 +67,10 @@ for _, la, lo in recs:
     kms.append(km)
 
 salida_pt, meta_pt = ruta[0], ruta[-1]
-# salida: primer punto a las 08:30 o después que ya se aleja de la línea
+# salida: primer punto desde la hora oficial de salida
 i0 = next(i for i, (t, la, lo) in enumerate(recs) if t >= SALIDA_OFICIAL)
-# meta: punto más cercano a meta en el último tramo (km de ruta > 100)
-finales = [i for i in range(len(recs)) if kms[i] > 100]
+# meta: punto más cercano a meta en el último tramo (últimos 3,5 km de ruta)
+finales = [i for i in range(len(recs)) if kms[i] > TOTAL_OFICIAL - 3.5]
 i1 = min(finales, key=lambda i: hav(recs[i][1:], meta_pt))
 llegada = recs[i1][0]
 print('salida', recs[i0][0], '· llegada', llegada, f'a {hav(recs[i1][1:], meta_pt) * 1000:.0f} m de meta')
@@ -98,7 +102,7 @@ traza.append([round(meta_pt[0], 5), round(meta_pt[1], 5), int((llegada - SALIDA_
 
 mov = sesion.get('total_timer_time') or 0
 res = {
-    'carrera': 'Mi carrera MTB',
+    'carrera': CARRERA.get('nombre', ''),
     'salida': SALIDA_OFICIAL.isoformat(),
     'llegada': llegada.isoformat(),
     'tiempo_oficial_s': int((llegada - SALIDA_OFICIAL).total_seconds()),

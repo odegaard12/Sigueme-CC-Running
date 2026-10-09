@@ -15,14 +15,14 @@
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="es_ES">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="description" content="Sígueme CC: seguimiento en directo de Odegaard12 en la Mi carrera.">
+<meta name="description" content="Sígueme CC: seguimiento en directo de la carrera, con mapa 3D, tiempos y avituallamientos.">
 <script>
   // Los datos se piden YA, en paralelo con la librería del mapa: antes
   // esperaban a que se descargara y durante ese rato la web salía vacía.
   // Va antes de las hojas de estilo: detrás, el navegador no lo ejecuta
   // hasta que llegan (medido: 300 ms de espera).
   window.__datos = {};
-  ['route.geojson', 'elevation.json', 'aid_stations.json', 'resultado.json'].forEach(function (u) {
+  ['carrera.json', 'route.geojson', 'elevation.json', 'aid_stations.json', 'resultado.json'].forEach(function (u) {
     window.__datos[u] = fetch(u + '?_=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   });
@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=56">
+<link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
 <header class="topbar">
@@ -63,24 +63,15 @@
 </header>
 
 <section class="ficha" id="ficha" hidden>
-  <img class="ficha-foto" src="rider.png?v=5" alt="Odegaard12">
+  <img class="ficha-foto" src="rider.png?v=5" alt="">
   <div class="ficha-datos">
-    <h2>Odegaard12</h2>
-    <p class="ficha-dorsal">Dorsal <b>1</b> · MTB · Mi carrera MTB</p>
+    <h2 id="ficha-nombre">Corredor</h2>
+    <p class="ficha-dorsal" id="ficha-dorsal"></p>
   </div>
 
-  <div class="ficha-bici-bloque">
-    <h3>Mi bici</h3>
-    <dl class="ficha-specs">
-      <div><dt>Cuadro</dt><dd>Carbono HM1X</dd></div>
-      <div><dt>Peso</dt><dd>10,4 kg</dd></div>
-      <div><dt>Horquilla</dt><dd>RockShox SID XX</dd></div>
-      <div><dt>Cambio</dt><dd>SRAM X01</dd></div>
-      <div><dt>Piñones</dt><dd>SRAM Eagle</dd></div>
-      <div><dt>Frenos</dt><dd>SRAM Guide RS</dd></div>
-      <div><dt>Llantas</dt><dd>ZTR Crest</dd></div>
-      <div><dt>Potencia</dt><dd>Ritchey WCS invertida</dd></div>
-    </dl>
+  <div class="ficha-bici-bloque" id="ficha-bici" hidden>
+    <h3 id="ficha-bici-modelo"></h3>
+    <dl class="ficha-specs" id="ficha-specs"></dl>
   </div>
 </section>
 
@@ -147,12 +138,12 @@
 
 
 <footer>
-  <p>Mi carrera · <a href="admin.html">admin</a> · Sígueme CC v1.2.0</p>
+  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.3.0</p>
   <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=68"></script>
+<script src="app.js?v=69"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

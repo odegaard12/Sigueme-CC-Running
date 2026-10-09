@@ -1,5 +1,5 @@
 [Unit]
-Description=la carrera tracker
+Description=Sígueme CC tracker
 After=network.target
 
 [Service]
@@ -9,7 +9,7 @@ WorkingDirectory=/home/USUARIO/sigueme
 # ADMIN_USER y ADMIN_HASH (python3 server.py --hash-clave) en un fichero solo para root
 EnvironmentFile=/etc/sigueme/secreto.env
 # IP flotante de keepalived; sin ella, una sola máquina (siempre la activa)
-Environment=VIP_SIGUEME=IP_FLOTANTE
+Environment=SIGUEME_VIP=IP_FLOTANTE
 ExecStart=/usr/bin/python3 /home/USUARIO/sigueme/server.py 8710
 Restart=always
 RestartSec=5

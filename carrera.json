@@ -1,0 +1,24 @@
+{
+  "nombre": "Mi carrera de ejemplo",
+  "lugar": "",
+  "fecha": "2027-05-16",
+  "modalidad": "Trail",
+  "hora_salida": "09:00",
+  "limite_h": 5,
+  "zona_horaria": "Europe/Madrid",
+  "distancia_km": 21.1,
+  "desnivel_m": 309,
+  "corredor": {
+    "nombre": "Corredor",
+    "dorsal": "1"
+  },
+  "bici": {
+    "modelo": "Mi bici",
+    "piezas": {
+      "Cuadro": "Carbono",
+      "Peso": "10 kg",
+      "Ruedas": "29\""
+    }
+  },
+  "ocultar_m": 0
+}

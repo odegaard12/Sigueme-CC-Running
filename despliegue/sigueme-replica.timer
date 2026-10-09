@@ -1,5 +1,5 @@
 [Unit]
-Description=Replica la carrera a la otra Pi cada 20 s
+Description=Replica Sígueme CC a la otra Pi cada 20 s
 
 [Timer]
 OnBootSec=1min
