@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.1.1 · 2026-10-09
+- Licencia MIT.
+- Ficha del repo en GitHub: descripción, web y temas.
+
 ## v1.1.0 · 2026-10-09
 - Panel con **usuario y clave**; el servidor solo guarda el hash (scrypt), en un
   fichero que solo lee root. `python3 server.py --hash-clave` genera el hash.
