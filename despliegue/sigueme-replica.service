@@ -1,5 +1,5 @@
 [Unit]
-Description=Replica la carrera a la otra Pi
+Description=Replica Sígueme CC a la otra Pi
 
 [Service]
 Type=oneshot

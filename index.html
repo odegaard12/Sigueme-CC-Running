@@ -3,14 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mi carrera — Seguimiento en directo</title>
+<title>Sígueme CC — Seguimiento en directo</title>
+<meta name="application-name" content="Sígueme CC">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sígueme CC">
+<meta property="og:title" content="Sígueme CC — Seguimiento en directo">
+<meta property="og:description" content="Sígueme en directo: mapa 3D, tiempos y avituallamientos.">
+<meta property="og:url" content="https://odegaard12.online/">
+<meta property="og:image" content="https://odegaard12.online/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Sígueme CC: seguimiento en directo de la carrera, con mapa 3D, tiempos y avituallamientos.">
 <script>
   // Los datos se piden YA, en paralelo con la librería del mapa: antes
   // esperaban a que se descargara y durante ese rato la web salía vacía.
   // Va antes de las hojas de estilo: detrás, el navegador no lo ejecuta
   // hasta que llegan (medido: 300 ms de espera).
   window.__datos = {};
-  ['route.geojson', 'elevation.json', 'aid_stations.json', 'resultado.json'].forEach(function (u) {
+  ['carrera.json', 'route.geojson', 'elevation.json', 'aid_stations.json', 'resultado.json'].forEach(function (u) {
     window.__datos[u] = fetch(u + '?_=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   });
@@ -21,22 +33,26 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="la carrera">
-<link rel="apple-touch-icon" href="icon-192.png?v=2">
+<meta name="apple-mobile-web-app-title" content="Sígueme CC">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="icon" type="image/png" href="favicon.png?v=3">
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=55">
+<link rel="stylesheet" href="style.css?v=58">
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-fila">
     <div class="marca">
-      <h1>la carrera <span>de la salida</span></h1>
+      <h1>Sígueme <span>CC</span></h1>
       <p class="marca-sub">by <b>Odegaard12</b></p>
     </div>
-    <button class="ver-ficha" id="ver-ficha">
-      <img src="rider.png?v=4" alt=""><span id="ver-ficha-txt">Mi ficha</span>
+    <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+    </button>
+    <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
+      <img src="rider.png?v=5" alt=""><span id="ver-ficha-txt">Mi ficha</span>
     </button>
   </div>
   <div class="cd-ruta">
@@ -47,24 +63,15 @@
 </header>
 
 <section class="ficha" id="ficha" hidden>
-  <img class="ficha-foto" src="rider.png?v=4" alt="Odegaard12">
+  <img class="ficha-foto" src="rider.png?v=5" alt="">
   <div class="ficha-datos">
-    <h2>Odegaard12 <span>«Odegaard12»</span></h2>
-    <p class="ficha-dorsal">Dorsal <b>1</b> · MTB · Mi carrera MTB</p>
+    <h2 id="ficha-nombre">Corredor</h2>
+    <p class="ficha-dorsal" id="ficha-dorsal"></p>
   </div>
 
-  <div class="ficha-bici-bloque">
-    <h3>Mi bici</h3>
-    <dl class="ficha-specs">
-      <div><dt>Cuadro</dt><dd>Carbono HM1X</dd></div>
-      <div><dt>Peso</dt><dd>10,4 kg</dd></div>
-      <div><dt>Horquilla</dt><dd>RockShox SID XX</dd></div>
-      <div><dt>Cambio</dt><dd>SRAM X01</dd></div>
-      <div><dt>Piñones</dt><dd>SRAM Eagle</dd></div>
-      <div><dt>Frenos</dt><dd>SRAM Guide RS</dd></div>
-      <div><dt>Llantas</dt><dd>ZTR Crest</dd></div>
-      <div><dt>Potencia</dt><dd>Ritchey WCS invertida</dd></div>
-    </dl>
+  <div class="ficha-bici-bloque" id="ficha-bici" hidden>
+    <h3 id="ficha-bici-modelo"></h3>
+    <dl class="ficha-specs" id="ficha-specs"></dl>
   </div>
 </section>
 
@@ -79,12 +86,12 @@
   <div id="map3d"></div>
 
   <div class="mapa-botones">
-    <button class="btn-flotante" id="btn-recenter" title="Centrar en el corredor">🎯</button>
-    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D">2D</button>
+    <button class="btn-flotante" id="btn-recenter" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false">🎯</button>
+    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D" aria-label="Ver el mapa en 2D">2D</button>
   </div>
 
   <div class="perfil-en-mapa">
-    <canvas id="elevation-chart"></canvas>
+    <canvas id="elevation-chart" role="img" aria-label="Perfil de altimetría de la ruta"></canvas>
   </div>
 
   <div class="cargando" id="cargando">
@@ -116,9 +123,9 @@
     </span>
     <span class="chip chip-pulso" data-tile="hr">♥ <b id="m-hr">—</b> ppm</span>
     <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
-    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> cadencia</span>
+    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
   </div>
-  <p class="estado-carrera" id="estado-carrera"></p>
+  <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
   <div class="resultado" id="resultado" hidden>
     <h3>Paso por los avituallamientos</h3>
     <ul class="pasos" id="pasos"></ul>
@@ -131,12 +138,12 @@
 
 
 <footer>
-  <p>Mi carrera · <a href="admin.html">admin</a></p>
+  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.4.0</p>
   <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=70"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

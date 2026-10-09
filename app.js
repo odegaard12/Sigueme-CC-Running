@@ -13,6 +13,51 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 
 // Datos pedidos desde el <head> (index.html) para no esperar a la librería
 // del mapa. Si no están (o fallaron), se piden aquí.
+// Todo lo propio de la carrera viene de carrera.json (nombre, fecha, hora de
+// salida, límite, km mínimos para meta, corredor y bici): el código vale para
+// cualquier carrera. Estos son los valores si falta algo.
+// quien pide menos movimiento en el sistema no ve animaciones de cámara
+const QUIETO = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let CARRERA = {
+  nombre: '', lugar: '', fecha: '', modalidad: '', hora_salida: '08:30', limite_h: 12,
+  zona_horaria: 'Europe/Madrid', km_minimos_meta: null, corredor: { nombre: '', dorsal: '' }, bici: null,
+};
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const kmMinimosMeta = () => CARRERA.km_minimos_meta || 0.8 * (totalRouteKm || 100);
+function diaCarrera() {
+  if (!CARRERA.fecha) return '';
+  const d = new Date(CARRERA.fecha + 'T12:00:00');
+  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '').toUpperCase();
+}
+function pintarCarrera() {
+  const c = CARRERA, corredor = c.corredor || {};
+  const sl = document.getElementById('stat-limite');
+  if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  const nombre = document.getElementById('ficha-nombre');
+  if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
+  const dorsal = document.getElementById('ficha-dorsal');
+  if (dorsal) {
+    dorsal.textContent = '';
+    if (corredor.dorsal) { dorsal.append('Dorsal '); const n = document.createElement('b'); n.textContent = corredor.dorsal; dorsal.append(n); }
+    const resto = [c.modalidad, c.nombre].filter(Boolean).join(' · ');
+    if (resto) dorsal.append((corredor.dorsal ? ' · ' : '') + resto);
+  }
+  const bici = document.getElementById('ficha-bici');
+  if (bici && c.bici && c.bici.modelo) {
+    document.getElementById('ficha-bici-modelo').textContent = c.bici.modelo;
+    const dl = document.getElementById('ficha-specs');
+    dl.textContent = '';
+    Object.entries(c.bici.piezas || {}).forEach(([k, v]) => {
+      const fila = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = k; dd.textContent = v; fila.append(dt, dd); dl.append(fila);
+    });
+    bici.hidden = false;
+  }
+  const pie = document.getElementById('pie-carrera');
+  if (pie) pie.textContent = [c.nombre, c.lugar].filter(Boolean).map(t => t + ' · ').join('');
+}
+
 function precargado(nombre, respaldo) {
   const p = window.__datos && window.__datos[nombre];
   if (p) {
@@ -42,7 +87,7 @@ function haversineKm(a, b) {
 // igual de cerca (±50 m), se elige el que esté más pegado a lo que ya llevaba
 // recorrido. Con eso el progreso avanza siempre hacia delante.
 let ultimoKmConocido = 0;
-let anclaDelGps = false;   // ultimoKmConocido viene del BSC500, no de la ruta
+let anclaDelGps = false;   // ultimoKmConocido viene del ciclocomputador, no de la ruta
 let largoLinea = 0;
 let factorKm = 1;
 
@@ -169,21 +214,38 @@ let tamanoCorredorActual = 0;
 const map3dDiv = document.getElementById('map3d');
 const btnRecenter = document.getElementById('btn-recenter');
 if (btnRecenter) {
-  btnRecenter.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
+  btnRecenter.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
     '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
 }
 const geoHint = document.getElementById('geo-hint');
+
+// Compartir: en el móvil abre el menú de compartir (WhatsApp, etc.); en el PC
+// copia el enlace. La vista previa sale de las etiquetas og: del <head>.
+const botonCompartir = document.getElementById('compartir');
+if (botonCompartir) {
+  botonCompartir.addEventListener('click', async () => {
+    const datos = { title: 'Sígueme CC', text: 'Sígueme en directo', url: location.origin + '/' };
+    try {
+      if (navigator.share) { await navigator.share(datos); return; }
+      await navigator.clipboard.writeText(datos.url);
+      botonCompartir.classList.add('hecho');
+      botonCompartir.title = 'Enlace copiado';
+      setTimeout(() => { botonCompartir.classList.remove('hecho'); botonCompartir.title = 'Compartir el enlace'; }, 1800);
+    } catch (e) { /* cancelado por el usuario */ }
+  });
+}
 
 const botonFicha = document.getElementById('ver-ficha');
 if (botonFicha) {
   botonFicha.addEventListener('click', () => {
     const ficha = document.getElementById('ficha');
     ficha.hidden = !ficha.hidden;
+    botonFicha.setAttribute('aria-expanded', ficha.hidden ? 'false' : 'true');
     // OJO: cambiar textContent del botón borraba la foto que lleva dentro.
     // Solo se toca el <span> del texto.
     document.getElementById('ver-ficha-txt').textContent = ficha.hidden ? 'Mi ficha' : 'Cerrar';
-    if (!ficha.hidden) ficha.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!ficha.hidden) ficha.scrollIntoView({ behavior: QUIETO ? 'auto' : 'smooth', block: 'nearest' });
   });
 }
 
@@ -449,6 +511,9 @@ function onMapReady() {
   if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
 }
 
+precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
+  .then(c => { if (c) CARRERA = Object.assign(CARRERA, c); pintarCarrera(); });
+
 precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
@@ -686,7 +751,7 @@ function drawTraveledLine(doneKm) {
   }
 }
 
-// ---------- Corredor: posición extraída del enlace BSC500 vía admin ----------
+// ---------- Corredor: posición extraída del enlace de iGPSPORT vía admin ----------
 // (riderMarkerEl / riderMarkerPos se declaran arriba: rehacerMapa las usa)
 riderMarkerPos = null;
 
@@ -700,15 +765,16 @@ function placeRiderMarker(lat, lon) {
     // chincheta le tapaba la cara
     el.style.zIndex = '6';
     // ?v= para que el móvil no siga enseñando la foto cacheada
-    el.innerHTML = '<span><img src="rider.png?v=3" alt="Dorsal 1"></span>';
+    const corredor = CARRERA.corredor || {};
+    el.innerHTML = '<span><img src="rider.png?v=5" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
     // opacityWhenCovered: con terreno 3D MapLibre da por "tapado" todo lo que
     // está pegado al suelo y lo deja casi invisible al acercar. Aquí no
     // interesa: el corredor tiene que verse siempre.
     riderMarkerEl = new maplibregl.Marker({ element: el, opacityWhenCovered: '0.99' })
       .setLngLat([lon, lat])
       .setPopup(nuevoPopup(18).setHTML(
-        '<div class="globo"><span class="globo-tipo">Dorsal 1</span>' +
-        '<b>Odegaard12</b><span class="globo-km">Mi bici</span></div>'))
+        '<div class="globo"><span class="globo-tipo">' + (corredor.dorsal ? 'Dorsal ' + esc(corredor.dorsal) : 'Corredor') + '</span>' +
+        '<b>' + esc(corredor.nombre || '') + '</b><span class="globo-km">' + esc((CARRERA.bici || {}).modelo || '') + '</span></div>'))
       .addTo(map3d);
     pulsarAbrePopup(riderMarkerEl, el);
   } else {
@@ -738,6 +804,7 @@ let ultimoSeguimiento = 0;
 function marcarSiguiendo(si) {
   siguiendo = si;
   btnRecenter.classList.toggle('activo', si);
+  btnRecenter.setAttribute('aria-pressed', si ? 'true' : 'false');
 }
 
 function seguirCorredor(pos) {
@@ -771,7 +838,10 @@ btnRecenter.addEventListener('click', recenterOnRider);
 // inclinación: 0° se ve en plano (mejor para leer el trazado) y 50° en relieve.
 const btnVista = document.getElementById('btn-vista');
 let vista3d = true;
-function pintarBotonVista() { btnVista.textContent = vista3d ? '2D' : '3D'; }
+function pintarBotonVista() {
+  btnVista.textContent = vista3d ? '2D' : '3D';
+  btnVista.setAttribute('aria-label', vista3d ? 'Ver el mapa en 2D' : 'Ver el mapa en 3D');
+}
 pintarBotonVista();
 btnVista.addEventListener('click', () => {
   vista3d = !vista3d;
@@ -782,7 +852,7 @@ btnVista.addEventListener('click', () => {
 
 function fmtTime(iso) {
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: CARRERA.zona_horaria });
 }
 
 // Diferencia entre el reloj de quien mira y el del servidor. Sin esto, un
@@ -803,7 +873,7 @@ function fmtElapsedSince(iso) {
 let lastStartedAt = null;
 
 // ---------- Movimiento fluido ----------------------------------------------
-// Los datos llegan a tirones (el servidor pregunta al BSC500 cada pocos
+// Los datos llegan a tirones (el servidor pregunta al ciclocomputador cada pocos
 // segundos), así que pintar la posición en crudo daba saltos. Aquí se
 // interpola entre el punto anterior y el nuevo: la foto se desliza y el
 // trazado y el perfil crecen poco a poco.
@@ -920,8 +990,6 @@ function moverSuave(km, pos, pegado) {
 // seguía corriendo en meta y la velocidad se quedaba clavada en el último valor.
 let enMeta = false;
 let haArrancado = false;
-const DIA_CARRERA = 'SÁBADO 26/09';
-const HORA_SALIDA = '08:30';
 
 // Odegaard12 enciende el GPS en la salida sobre las 08:15, pero la carrera sale a
 // las 08:30. Hasta que no son las 08:30 Y no se ha separado 40 m de la línea
@@ -960,7 +1028,7 @@ function pintarNivel(texto) {
 function esMeta(data, km) {
   // la llegada la apunta el servidor una vez y ya no se desdice
   if (data.finished_at || data.status_label === 'Finalizada') return true;
-  if (!totalRouteKm || km == null || km < 80) return false;
+  if (!totalRouteKm || km == null || km < kmMinimosMeta()) return false;
   if (km >= totalRouteKm - 0.4) return true;
   const meta = routeLatLon[routeLatLon.length - 1];
   if (meta && data.lat != null && data.lon != null) {
@@ -1044,7 +1112,7 @@ function pollLive() {
       document.getElementById('aviso-resultado').hidden = true;
 
       let doneKm = data.dist_km;
-      // ⚠️ Al abrir la web a mitad de carrera, la distancia del BSC500 sirve
+      // ⚠️ Al abrir la web a mitad de carrera, la distancia del ciclocomputador sirve
       // SOLO para desempatar en la salida/meta (la ruta es circular), NUNCA
       // como mínimo: esa distancia incluye lo rodado antes de salir y el
       // error del GPS, y con 2 km de más quien abría la web en el km 100,5
@@ -1107,7 +1175,7 @@ function pollLive() {
       ponerTexto('m-hr-avg', entero(data.hr_avg));
       ponerTexto('m-cad-avg', entero(data.cadence_avg));
 
-      // último dato NUEVO del BSC500 (updated se renueva en cada consulta)
+      // último dato NUEVO del ciclocomputador (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
       const llegada = data.finished_at || ultimoDato;
       if (enMeta && lastStartedAt && llegada) {
@@ -1150,13 +1218,14 @@ function pollLive() {
       } else {
         estado.classList.remove('meta');
         estado.classList.remove('previo');
-        const hora = lastStartedAt ? fmtTime(lastStartedAt) : HORA_SALIDA;
+        const hora = lastStartedAt ? fmtTime(lastStartedAt) : CARRERA.hora_salida;
         if (data.lat != null && !haArrancado) {
           // ya está compartiendo y se le ve en el mapa, pero aún no ha salido
-          estado.textContent = 'INICIO ' + hora + ' · Odegaard12 ya está en la salida';
+          const quien = (CARRERA.corredor || {}).nombre;
+          estado.textContent = 'INICIO ' + hora + ' · ' + (quien ? quien + ' ya está' : 'Ya está') + ' en la salida';
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          estado.textContent = 'INICIO ' + hora + ' · ' + DIA_CARRERA;
+          estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
           estado.classList.add('previo');
         } else {
           estado.textContent = '';
@@ -1212,15 +1281,15 @@ setInterval(() => {
 }, 1000);
 
 // ---------- Resultado de la carrera ----------------------------------------
-// resultado.json se genera con el FIT del BSC500 (tiempos, paso por cada
+// resultado.json se genera con el FIT del ciclocomputador (tiempos, paso por cada
 // avituallamiento y la traza real recortada a salida-meta).
 let resultado = null;
 let resultadoConsultado = false;
 let repitiendo = false;
 let kmsTraza = null;
 
-const horaNaron = iso => new Date(iso).toLocaleTimeString('es-ES',
-  { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+const horaCarrera = iso => new Date(iso).toLocaleTimeString('es-ES',
+  { hour: '2-digit', minute: '2-digit', timeZone: CARRERA.zona_horaria });
 const fmtHM = s => Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + 'm';
 
 // km de ruta de cada punto de la traza, siempre hacia delante
@@ -1257,11 +1326,11 @@ function pintarResultado() {
   ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
   // corto a propósito: en el móvil pequeño partía en dos líneas (el "de 12 h"
   // ya sale en la cabecera)
-  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaNaron(r.llegada));
+  ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));
   document.getElementById('aviso-resultado').hidden = false;
   ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
   const etiqueta = document.querySelector('#stat-limite + i');
-  if (etiqueta) etiqueta.textContent = 'de 12 h';
+  if (etiqueta) etiqueta.textContent = 'de ' + CARRERA.limite_h + ' h';
   document.getElementById('live-updated').textContent =
     r.carrera + ' · datos del ciclocomputador · ' + fmtHM(r.tiempo_movimiento_s) + ' en movimiento';
   // mapa y perfil completos, la foto en meta
@@ -1280,7 +1349,7 @@ function pintarResultado() {
       const li = document.createElement('li');
       const trans = (new Date(p.hora) - salida) / 1000;
       li.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="nombre"></span>' +
-        '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaNaron(p.hora) + '</span>';
+        '<span class="km">km ' + num(p.km) + ' · +' + fmtHM(trans) + '</span><span class="hora">' + horaCarrera(p.hora) + '</span>';
       li.children[1].textContent = p.nombre;   // el nombre como texto, no HTML
       lista.appendChild(li);
     });
@@ -1297,6 +1366,7 @@ function repetirCarrera() {
   if (!kmsTraza) return;
   repitiendo = true;
   boton.innerHTML = '<span class="ico">■</span><span class="txt"> Parar</span>';
+  boton.setAttribute('aria-label', 'Parar la repetición');
   const tr = resultado.traza, total = tr[tr.length - 1][2];
   const salida = new Date(resultado.salida).getTime();
   if (mapReady) {
@@ -1318,17 +1388,18 @@ function repetirCarrera() {
     pintarProgreso(km, [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e]);
     ponerTexto('m-time', fmtHM(t));
     const reloj = new Date(salida + t * 1000).toISOString();
-    ponerTexto('aviso-titulo', '▶ ' + horaNaron(reloj) + ' · km ' + num(km));
+    ponerTexto('aviso-titulo', '▶ ' + horaCarrera(reloj) + ' · km ' + num(km));
     const pasados = resultado.pasos.filter(p => new Date(p.hora).getTime() <= salida + t * 1000).length;
     items.forEach((li, k) => li.classList.toggle('actual', k === pasados - 1));
     if (!fin) { requestAnimationFrame(paso); return; }
     repitiendo = false;
     boton.innerHTML = '<span class="ico">▶</span><span class="txt"> Ver la carrera</span>';
+    boton.setAttribute('aria-label', 'Ver la carrera en 1 minuto');
     items.forEach(li => li.classList.remove('actual'));
     marcarSiguiendo(false);
     if (mapReady && routeBounds) {
       map3d.fitBounds([[routeBounds[0], routeBounds[1]], [routeBounds[2], routeBounds[3]]],
-        { padding: 30, pitch: 50, bearing: -20, duration: 1200 });
+        { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 1200 });
     }
     pintarResultado();
   };

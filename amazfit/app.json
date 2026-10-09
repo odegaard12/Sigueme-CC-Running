@@ -2,7 +2,7 @@
   "configVersion": "v3",
   "app": {
     "appId": 1098217,
-    "appName": "Sigueme",
+    "appName": "Sigueme CC",
     "appType": "app",
     "version": {
       "code": 2,
@@ -45,8 +45,8 @@
     }
   },
   "i18n": {
-    "es-ES": { "appName": "Sígueme" },
-    "en-US": { "appName": "Sigueme" }
+    "es-ES": { "appName": "Sígueme CC" },
+    "en-US": { "appName": "Sigueme CC" }
   },
   "defaultLanguage": "es-ES"
 }

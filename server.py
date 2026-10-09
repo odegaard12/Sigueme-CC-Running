@@ -14,20 +14,78 @@ from datetime import datetime, timezone
 import hashlib
 import hmac
 from hmac import compare_digest
-from urllib.parse import parse_qs
+import posixpath
+from urllib.parse import parse_qs, unquote
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 LIVE_PATH = os.path.join(ROOT, "live.json")
+CARRERA_PATH = os.path.join(ROOT, "carrera.json")
+
+
+def carrera():
+    """Datos de la carrera (carrera.json): distancia, km mínimos para meta…
+    Se lee cada vez (es pequeño) para poder cambiarlo sin reiniciar."""
+    try:
+        with open(CARRERA_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def km_minimos_meta():
+    """Km hechos a partir de los cuales pasar cerca de meta cuenta como llegada
+    (la salida suele estar junto a la meta). Por defecto, el 80 % de la ruta."""
+    c = carrera()
+    return c.get("km_minimos_meta") or 0.8 * (c.get("distancia_km") or 100)
 # ⚠️ NUNCA poner la clave de verdad aquí: este fichero estaba servido por la
 # propia web (http://.../server.py devolvía 200) y cualquiera podía leerla.
 # Ahora la clave llega solo por el entorno (systemd) y, además, el servidor no
 # entrega ficheros que no sean los de la web (ver EXTENSIONES_PUBLICAS).
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+# Panel: usuario y HASH de la clave (scrypt), nunca la clave en claro. Se
+# generan con:  python3 server.py --hash-clave
+ADMIN_USER = os.environ.get("ADMIN_USER", "")
+ADMIN_HASH = os.environ.get("ADMIN_HASH", "")
+
+
+def _scrypt(clave, sal):
+    return hashlib.scrypt(clave.encode(), salt=sal, n=2 ** 14, r=8, p=1, dklen=32).hex()
+
+
+if sys.argv[1:2] == ["--hash-clave"]:
+    import getpass
+    _sal = os.urandom(16)
+    print(f"ADMIN_HASH=scrypt:{_sal.hex()}:{_scrypt(getpass.getpass('Clave nueva: '), _sal)}")
+    sys.exit(0)
+
+
+# ⚠️ Cada scrypt usa ~16 MB: sin tope, cientos de intentos a la vez dejaban a
+# la Pi sin memoria. Como mucho dos a la vez; el resto espera o se rechaza.
+_scrypt_sem = threading.BoundedSemaphore(2)
+
+
+def credenciales_ok(usuario, clave):
+    if not (ADMIN_USER and ADMIN_HASH):
+        return False
+    try:
+        tipo, sal, esperado = ADMIN_HASH.split(":")
+        sal = bytes.fromhex(sal)
+    except ValueError:
+        return False
+    if not _scrypt_sem.acquire(timeout=3):
+        return False
+    try:
+        calculado = _scrypt(str(clave), sal)
+    finally:
+        _scrypt_sem.release()
+    # en bytes: compare_digest con texto no ASCII ("ñ") lanzaba una excepción.
+    # Las dos comparaciones siempre, en tiempo constante.
+    return (compare_digest(str(usuario).encode(), ADMIN_USER.encode())
+            & compare_digest(calculado.encode(), esperado.encode())) and tipo == "scrypt"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8710
 BIND_HOST = os.environ.get("BIND_HOST", "0.0.0.0")
 # Preguntar cada 8 s eran 5 400 peticiones en las 12 h de carrera a una API de
 # iGPSPORT que no es pública: demasiado para que no se fijen en nosotros. El
-# BSC500 sube por el móvil cada pocos segundos, así que con 15 s no se pierde
+# ciclocomputador sube por el móvil cada pocos segundos, así que con 15 s no se pierde
 # nada útil. Ante errores se espera cada vez más (hasta 5 min) en vez de
 # insistir, que es lo que de verdad hace que te corten.
 POLL_SECONDS = 15
@@ -77,7 +135,7 @@ SESION_HORAS = 12
 
 
 def _firma(exp):
-    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_TOKEN.encode()).digest()
+    clave = hashlib.sha256(b"sesion-panel\0" + ADMIN_HASH.encode()).digest()
     return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
 
 
@@ -87,13 +145,14 @@ def nueva_sesion():
 
 
 def sesion_valida(cabecera_cookie):
-    if not ADMIN_TOKEN or not cabecera_cookie:
+    if not ADMIN_HASH or not cabecera_cookie:
         return False
     for trozo in cabecera_cookie.split(";"):
         nombre, _, valor = trozo.strip().partition("=")
         if nombre == "adm":
             exp, _, firma = valor.partition(".")
-            if exp.isdigit() and int(exp) > time.time() and compare_digest(firma, _firma(int(exp))):
+            if exp.isascii() and exp.isdigit() and int(exp) > time.time() \
+                    and compare_digest(firma.encode(), _firma(int(exp)).encode()):
                 return True
     return False
 
@@ -235,7 +294,7 @@ def fetch_page(url):
             raise RespuestaHTTP(r.status_code)
         return cuerpo
     req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (compatible; la carreraTracker/1.0)"
+        "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
     with urllib.request.urlopen(req, timeout=10) as resp:
         return resp.read(2_000_000).decode("utf-8", errors="ignore")
@@ -325,14 +384,15 @@ def km_entre(a, b):
 
 
 def ha_llegado(t, se_alejo=False):
-    """A menos de 200 m del punto de meta, y o bien con más de 80 km hechos, o
+    """A menos de 200 m del punto de meta, y o bien con los km mínimos hechos
+    (carrera.json, km_minimos_meta), o
     bien habiéndose alejado antes más de 5 km de meta. La ruta solo pasa tan
     cerca de meta en la salida (km 0-0,2) y en los últimos 200 m.
-    ⚠️ Solo con los 80 km, un seguimiento nuevo empezado a mitad de carrera
+    ⚠️ Solo con los km mínimos, un seguimiento nuevo empezado a mitad de carrera
     (que cuenta desde 0) no llegaba nunca a meta: pasó el 26/09."""
     if t.get("lat") is None or t.get("lon") is None:
         return False
-    if (t.get("dist_km") or 0) < 80 and not se_alejo:
+    if (t.get("dist_km") or 0) < km_minimos_meta() and not se_alejo:
         return False
     return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
 
@@ -344,7 +404,7 @@ def alejado_de_meta(lat, lon):
 # --- GPS del móvil (Traccar Client) --------------------------------------
 # En la carrera del 26/09/2026 la posición de iGPSPORT iba a saltos con los
 # datos del móvil y, a las 14:51 (km 46), dejó de llegar para siempre: su
-# directo depende de BSC500 -> Bluetooth -> app -> servidor de iGPSPORT, y
+# directo depende de ciclocomputador -> Bluetooth -> app -> servidor de iGPSPORT, y
 # con cobertura mala esa cadena se rompe y no recupera lo perdido.
 # Traccar Client (gratis, Android e iPhone) manda la posición del móvil
 # directamente aquí y, sin cobertura, GUARDA los puntos y los envía todos al
@@ -527,7 +587,7 @@ def recibir_gps(puntos):
         return
     ultimo = puntos[-1]
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
-    # había ninguna, y la llegada a meta la necesita (más de 80 km). Los
+    # había ninguna, y la llegada a meta la necesita (km mínimos). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
@@ -568,7 +628,7 @@ def recibir_gps(puntos):
 
 
 def huella(t):
-    """Lo que cambia cuando de verdad llega un dato nuevo del BSC500."""
+    """Lo que cambia cuando de verdad llega un dato nuevo del ciclocomputador."""
     return tuple(t.get(k) for k in ("lat", "lon", "dist_km", "elapsed"))
 
 
@@ -687,7 +747,7 @@ def poll_loop(url, stop_event):
 
 # --- simulador de carrera --------------------------------------------------
 # Recorre la ruta real a toda pastilla escribiendo en live.json lo mismo que
-# escribiría el BSC500. Sirve para ver moverse la foto, el trazado azul, el
+# escribiría el ciclocomputador. Sirve para ver moverse la foto, el trazado azul, el
 # perfil y las métricas sin esperar al sábado.
 simulador = {"thread": None, "stop": None}
 
@@ -708,7 +768,7 @@ def simular_loop(stop_event, segundos):
         avance = (time.time() - inicio) / segundos      # 0 -> 1
         i = min(total - 1, int(avance * total))
         lat, lon = puntos[i]
-        recorrido = 103.36 * (i / (total - 1))
+        recorrido = (carrera().get("distancia_km") or 100) * (i / (total - 1))
         merge_live({
             "status_label": "SIMULACIÓN",
             "lat": lat, "lon": lon,
@@ -777,14 +837,25 @@ EXTENSIONES_PUBLICAS = {
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    timeout = 20    # una conexión que no manda nada no se queda un hilo para siempre
+
+    def _ruta(self):
+        """Ruta pedida, decodificada y normalizada ("/./admin.html", "//admin.html"
+        o "%61dmin.html" son "/admin.html": si no, se saltaban las cabeceras)."""
+        crudo = unquote(self.path.split("?")[0].split("#")[0])
+        return "/" + posixpath.normpath(crudo).lstrip("/") if crudo.strip("/") else "/"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def _ruta_publica(self):
-        ruta = self.path.split("?")[0].split("#")[0]
+        if self.path.split("?")[0].endswith("/") and self.path.split("?")[0] != "/":
+            return False                 # nada de listados de directorio
+        ruta = self._ruta()
         if ruta in ("/", "/index.html"):
             return True
-        if ruta.endswith("/"):          # nada de listados de directorio
+        # nada de carpetas o ficheros ocultos (.git, .vscode, .claude…)
+        if any(trozo.startswith(".") for trozo in ruta.split("/")):
             return False
         return os.path.splitext(ruta)[1].lower() in EXTENSIONES_PUBLICAS
 
@@ -792,7 +863,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         _, _, query = self.path.partition("?")
         ident, puntos = puntos_traccar(query, cuerpo)
         clave = clave_gps()
-        if not clave or not ident or not compare_digest(str(ident), clave):
+        if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
             # El panel avisa: con el identificador mal copiado, Traccar o el
             # reloj mandaban y la web no se movía, sin pista de por qué. Solo
             # la hora (live.json es público) y como mucho una vez por minuto.
@@ -832,7 +903,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # El navegador se quedaba con el css/js viejo y el usuario veía la web
         # rota después de desplegar. Con no-cache revalida siempre: para
         # ficheros de 16 KB no cuesta nada y evita enseñar una versión antigua.
-        ruta = self.path.split("?")[0]
+        ruta = self._ruta()
         if ruta.startswith("/lib/"):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
@@ -949,20 +1020,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # claves. Ahora el castigo NO rechaza de entrada: frena el intento un
         # segundo y luego compara. Al que acierta le da igual; al que adivina,
         # le limita el ritmo igual que antes.
-        if segundos_de_castigo(ip):
-            with castigo_lock:
+        # ⚠️ Solo frena los intentos CON clave: antes frenaba también al panel
+        # (con sesión), y detrás de Cloudflare todos comparten IP: un atacante
+        # dejaba a Odegaard12 sin poder pulsar "Finalizar" en plena carrera.
+        # Sin cola infinita: si ya hay uno esperando, 429.
+        pide_clave = self.path == "/api/login" or (isinstance(data, dict) and "password" in data)
+        if pide_clave and segundos_de_castigo(ip):
+            if not castigo_lock.acquire(timeout=5):
+                self._send_json(429, {"error": "demasiados intentos: espera un poco"})
+                return
+            try:
                 time.sleep(1)
+            finally:
+                castigo_lock.release()
 
-        if not ADMIN_TOKEN:
-            print("[admin] ADMIN_TOKEN vacío: no se admite ningún acceso", flush=True)
+        if not (ADMIN_USER and ADMIN_HASH):
+            print("[admin] sin ADMIN_USER/ADMIN_HASH: no se admite ningún acceso", flush=True)
             self._send_json(503, {"error": "servidor sin clave configurada"})
             return
         if not isinstance(data, dict):
             self._send_json(400, {"error": "invalid json"})
             return
-        # login: la clave una vez, a cambio de la cookie de sesión
+        # login: usuario y clave una vez, a cambio de la cookie de sesión
         if self.path == "/api/login":
-            if not compare_digest(str(data.get("password", "")), ADMIN_TOKEN):
+            if not credenciales_ok(data.get("usuario", ""), data.get("password", "")):
                 fallo_de(ip)
                 print(f"[admin] clave incorrecta (login) desde {ip}", flush=True)
                 self._send_json(403, {"error": "clave incorrecta"})
@@ -970,15 +1051,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
             self._send_json(200, {"ok": True}, cookie=nueva_sesion())
             return
-        # el resto: con sesión (panel) o con la clave en el cuerpo (scripts)
-        con_clave = "token" in data and compare_digest(str(data.get("token", "")), ADMIN_TOKEN)
+        # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
+        con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))
         if not con_clave and not sesion_valida(self.headers.get("Cookie")):
-            if "token" in data:
+            if "password" in data:
                 fallo_de(ip)
                 print(f"[admin] clave incorrecta desde {ip}", flush=True)
             self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
             return
-        acierto_de(ip)
+        if con_clave:
+            acierto_de(ip)
 
         accion = data.get("action")
 
@@ -1114,7 +1196,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-VIP = os.environ.get("VIP_SIGUEME", "IP_FLOTANTE")
+# IP flotante (keepalived) de la instalación con dos Pis, desde la configuración
+# del servicio. Sin ella, una sola máquina: siempre es la que sirve.
+VIP = os.environ.get("SIGUEME_VIP", "")
 
 
 def tengo_la_vip():
@@ -1123,6 +1207,8 @@ def tengo_la_vip():
     Se comprueba intentando reservar un puerto cualquiera en la VIP: si la
     dirección no está puesta en esta máquina, el sistema lo impide. Sin
     dependencias ni llamar a `ip`."""
+    if not VIP:
+        return True
     probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         probe.bind((VIP, 0))
@@ -1176,6 +1262,7 @@ if __name__ == "__main__":
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
-        print(f"la carrera tracker en http://127.0.0.1:{PORT}"
-          + ("" if ADMIN_TOKEN else "  ⚠️ SIN ADMIN_TOKEN: el panel no dejará entrar"))
+        print(f"Sígueme CC en http://127.0.0.1:{PORT}"
+          + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")
+          + ("" if VIP else "  · sin SIGUEME_VIP: una sola máquina (con dos Pis, las dos leerían iGPSPORT)"))
         httpd.serve_forever()
