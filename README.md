@@ -54,6 +54,10 @@ pip install curl_cffi
 ADMIN_TOKEN='una-clave-larga' python3 server.py 8710
 ```
 
+Con dos Pis, `VIP_SIGUEME` = la IP flotante (solo la que la tiene consulta
+iGPSPORT). Resultado tras la carrera: `python herramientas/generar_resultado.py actividad.fit`
+(necesita `fitdecode`).
+
 - Panel: `/admin.html`. La clave se manda una vez a `/api/login` y el servidor
   devuelve una cookie de sesión HttpOnly firmada (12 h). Los scripts pueden
   mandar `{"token": ...}` en el cuerpo.

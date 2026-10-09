@@ -7,7 +7,8 @@ Type=simple
 User=USUARIO
 WorkingDirectory=/home/USUARIO/sigueme
 Environment=ADMIN_TOKEN=CAMBIAME
-# Environment=VIP_SIGUEME=IP_FLOTANTE
+# IP flotante de keepalived; sin ella, una sola máquina (siempre la activa)
+Environment=VIP_SIGUEME=IP_FLOTANTE
 ExecStart=/usr/bin/python3 /home/USUARIO/sigueme/server.py 8710
 Restart=always
 RestartSec=5

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 """resultado.json a partir del FIT del 26/09: tiempos, pasos por
 avituallamiento y la traza real recortada a salida-meta."""
-import json, math, pathlib
+import json, math, pathlib, sys
 from datetime import datetime, timezone
 import fitdecode
 
-AQUI = pathlib.Path(__file__).parent
-FIT = pathlib.Path(r'.\ride-0-2026-09-26-08-08-44.fit')
+# la web (route.geojson, aid_stations.json, resultado.json) está en la raíz del repo
+AQUI = pathlib.Path(__file__).resolve().parent.parent
+if len(sys.argv) != 2:
+    sys.exit('uso: python herramientas/generar_resultado.py actividad.fit')
+FIT = pathlib.Path(sys.argv[1])
 SC = 180 / 2 ** 31
 SALIDA_OFICIAL = datetime(2026, 9, 26, 6, 30, tzinfo=timezone.utc)   # 08:30
 
