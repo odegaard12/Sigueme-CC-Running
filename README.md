@@ -1,4 +1,6 @@
-# Sígueme · Mi carrera
+# Sígueme CC
+
+Seguimiento en directo de Odegaard12 · estrenada en la Mi carrera MTB
 
 Web de seguimiento en directo de un corredor de MTB (o a pie) por la ruta de
 la carrera: mapa 3D con la posición sobre el trazado, perfil altimétrico,
