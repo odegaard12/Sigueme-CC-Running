@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sígueme CC — Seguimiento en directo</title>
 <meta name="application-name" content="Sígueme CC">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sígueme CC">
+<meta property="og:title" content="Sígueme CC — Seguimiento en directo">
+<meta property="og:description" content="Sígueme en directo: mapa 3D, tiempos y avituallamientos.">
+<meta property="og:url" content="https://odegaard12.online/">
+<meta property="og:image" content="https://odegaard12.online/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Sígueme CC: seguimiento en directo de Odegaard12 en la Mi carrera.">
 <script>
   // Los datos se piden YA, en paralelo con la librería del mapa: antes
@@ -29,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=55">
+<link rel="stylesheet" href="style.css?v=56">
 </head>
 <body>
 <header class="topbar">
@@ -38,6 +48,9 @@
       <h1>Sígueme <span>CC</span></h1>
       <p class="marca-sub">by <b>Odegaard12</b></p>
     </div>
+    <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+    </button>
     <button class="ver-ficha" id="ver-ficha">
       <img src="rider.png?v=5" alt=""><span id="ver-ficha-txt">Mi ficha</span>
     </button>
@@ -134,12 +147,12 @@
 
 
 <footer>
-  <p>Mi carrera · <a href="admin.html">admin</a> · Sígueme CC v1.1.1</p>
+  <p>Mi carrera · <a href="admin.html">admin</a> · Sígueme CC v1.2.0</p>
   <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=68"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

@@ -14,7 +14,8 @@ from datetime import datetime, timezone
 import hashlib
 import hmac
 from hmac import compare_digest
-from urllib.parse import parse_qs
+import posixpath
+from urllib.parse import parse_qs, unquote
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 LIVE_PATH = os.path.join(ROOT, "live.json")
@@ -39,16 +40,29 @@ if sys.argv[1:2] == ["--hash-clave"]:
     sys.exit(0)
 
 
+# ⚠️ Cada scrypt usa ~16 MB: sin tope, cientos de intentos a la vez dejaban a
+# la Pi sin memoria. Como mucho dos a la vez; el resto espera o se rechaza.
+_scrypt_sem = threading.BoundedSemaphore(2)
+
+
 def credenciales_ok(usuario, clave):
     if not (ADMIN_USER and ADMIN_HASH):
         return False
     try:
         tipo, sal, esperado = ADMIN_HASH.split(":")
-        calculado = _scrypt(str(clave), bytes.fromhex(sal))
+        sal = bytes.fromhex(sal)
     except ValueError:
         return False
-    # las dos comparaciones siempre, en tiempo constante
-    return compare_digest(str(usuario), ADMIN_USER) & compare_digest(calculado, esperado) and tipo == "scrypt"
+    if not _scrypt_sem.acquire(timeout=3):
+        return False
+    try:
+        calculado = _scrypt(str(clave), sal)
+    finally:
+        _scrypt_sem.release()
+    # en bytes: compare_digest con texto no ASCII ("ñ") lanzaba una excepción.
+    # Las dos comparaciones siempre, en tiempo constante.
+    return (compare_digest(str(usuario).encode(), ADMIN_USER.encode())
+            & compare_digest(calculado.encode(), esperado.encode())) and tipo == "scrypt"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8710
 BIND_HOST = os.environ.get("BIND_HOST", "0.0.0.0")
 # Preguntar cada 8 s eran 5 400 peticiones en las 12 h de carrera a una API de
@@ -119,7 +133,8 @@ def sesion_valida(cabecera_cookie):
         nombre, _, valor = trozo.strip().partition("=")
         if nombre == "adm":
             exp, _, firma = valor.partition(".")
-            if exp.isdigit() and int(exp) > time.time() and compare_digest(firma, _firma(int(exp))):
+            if exp.isascii() and exp.isdigit() and int(exp) > time.time() \
+                    and compare_digest(firma.encode(), _firma(int(exp)).encode()):
                 return True
     return False
 
@@ -803,14 +818,25 @@ EXTENSIONES_PUBLICAS = {
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    timeout = 20    # una conexión que no manda nada no se queda un hilo para siempre
+
+    def _ruta(self):
+        """Ruta pedida, decodificada y normalizada ("/./admin.html", "//admin.html"
+        o "%61dmin.html" son "/admin.html": si no, se saltaban las cabeceras)."""
+        crudo = unquote(self.path.split("?")[0].split("#")[0])
+        return "/" + posixpath.normpath(crudo).lstrip("/") if crudo.strip("/") else "/"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def _ruta_publica(self):
-        ruta = self.path.split("?")[0].split("#")[0]
+        if self.path.split("?")[0].endswith("/") and self.path.split("?")[0] != "/":
+            return False                 # nada de listados de directorio
+        ruta = self._ruta()
         if ruta in ("/", "/index.html"):
             return True
-        if ruta.endswith("/"):          # nada de listados de directorio
+        # nada de carpetas o ficheros ocultos (.git, .vscode, .claude…)
+        if any(trozo.startswith(".") for trozo in ruta.split("/")):
             return False
         return os.path.splitext(ruta)[1].lower() in EXTENSIONES_PUBLICAS
 
@@ -818,7 +844,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         _, _, query = self.path.partition("?")
         ident, puntos = puntos_traccar(query, cuerpo)
         clave = clave_gps()
-        if not clave or not ident or not compare_digest(str(ident), clave):
+        if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
             # El panel avisa: con el identificador mal copiado, Traccar o el
             # reloj mandaban y la web no se movía, sin pista de por qué. Solo
             # la hora (live.json es público) y como mucho una vez por minuto.
@@ -858,7 +884,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # El navegador se quedaba con el css/js viejo y el usuario veía la web
         # rota después de desplegar. Con no-cache revalida siempre: para
         # ficheros de 16 KB no cuesta nada y evita enseñar una versión antigua.
-        ruta = self.path.split("?")[0]
+        ruta = self._ruta()
         if ruta.startswith("/lib/"):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
@@ -975,9 +1001,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # claves. Ahora el castigo NO rechaza de entrada: frena el intento un
         # segundo y luego compara. Al que acierta le da igual; al que adivina,
         # le limita el ritmo igual que antes.
-        if segundos_de_castigo(ip):
-            with castigo_lock:
+        # ⚠️ Solo frena los intentos CON clave: antes frenaba también al panel
+        # (con sesión), y detrás de Cloudflare todos comparten IP: un atacante
+        # dejaba a Odegaard12 sin poder pulsar "Finalizar" en plena carrera.
+        # Sin cola infinita: si ya hay uno esperando, 429.
+        pide_clave = self.path == "/api/login" or (isinstance(data, dict) and "password" in data)
+        if pide_clave and segundos_de_castigo(ip):
+            if not castigo_lock.acquire(timeout=5):
+                self._send_json(429, {"error": "demasiados intentos: espera un poco"})
+                return
+            try:
                 time.sleep(1)
+            finally:
+                castigo_lock.release()
 
         if not (ADMIN_USER and ADMIN_HASH):
             print("[admin] sin ADMIN_USER/ADMIN_HASH: no se admite ningún acceso", flush=True)
@@ -1004,7 +1040,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 print(f"[admin] clave incorrecta desde {ip}", flush=True)
             self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
             return
-        acierto_de(ip)
+        if con_clave:
+            acierto_de(ip)
 
         accion = data.get("action")
 
@@ -1207,5 +1244,6 @@ if __name__ == "__main__":
     http.server.ThreadingHTTPServer.daemon_threads = True
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
         print(f"la carrera tracker en http://127.0.0.1:{PORT}"
-          + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar"))
+          + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")
+          + ("" if VIP else "  · sin VIP_SIGUEME: una sola máquina (con dos Pis, las dos leerían iGPSPORT)"))
         httpd.serve_forever()
