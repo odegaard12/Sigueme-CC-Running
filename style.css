@@ -711,3 +711,14 @@ footer a, .pie a { display: inline-block; padding: 10px 4px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* --- índice de carreras (/carreras/) --- */
+body.indice { min-height: 100vh; }
+.indice-main { max-width: 720px; margin: 0 auto; padding: 16px; }
+.indice-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.indice-lista a { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; text-decoration: none;
+  background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+.indice-lista a:hover { border-color: rgba(255,255,255,0.28); }
+.indice-lista b { font-size: 1.05rem; }
+.indice-lista span { color: var(--muted); font-size: 0.85rem; }
+.indice-vivo a { display: inline-block; margin-bottom: 12px; color: #7fd46a; font-weight: 700; }

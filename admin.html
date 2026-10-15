@@ -177,6 +177,13 @@
   </div>
 
   <div class="tarjeta">
+    <!-- archivar: la carrera terminada pasa a su carpeta y la portada queda libre -->
+    <div class="howto"><b>Archivar la carrera terminada</b>: pasa a su propia
+      dirección (por ejemplo /2027-mi-carrera/) y sale en «Todas las carreras».
+      Necesita el resultado (generar_resultado.py) y deja todo a cero para la siguiente.</div>
+    <div class="quick-actions" style="margin:10px 0 14px">
+      <button class="btn" id="archivar" type="button">Archivar la carrera terminada</button>
+    </div>
     <!-- plegado: el día de la carrera no se puede pulsar sin querer -->
     <details class="pruebas">
       <summary>Pruebas (borran la carrera en curso)</summary>
@@ -350,6 +357,18 @@ document.addEventListener('click', async e => {
   if (res.status === 403) { sesionCaducada(); return; }
   const d = await res.json();
   if (d.gps_id) { $('gps-id').value = d.gps_id; $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
+});
+
+document.addEventListener('click', async e => {
+  if (e.target.id !== 'archivar') return;
+  if (!confirm('¿Archivar la carrera terminada?\n\nSu resultado pasa a su propia dirección y la portada queda a cero para la siguiente carrera.')) return;
+  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'archivar' }) });
+  if (res.status === 403) { sesionCaducada(); return; }
+  const d = await res.json();
+  $('msg').textContent = res.ok ? 'Archivada en /' + d.archivada + '/' : (d.error || 'No se pudo archivar');
+  $('msg').className = res.ok ? 'msg ok' : 'msg err';
+  if (res.ok) refreshStatus(d.live);
 });
 
 async function pollStatus() {

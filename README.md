@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.5.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.6.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -90,6 +90,7 @@ Crea `route.geojson` (trazado) y `elevation.json` (perfil y pendientes).
 | `corredor` | `nombre` y `dorsal` | `{"nombre": "Ana", "dorsal": "27"}` |
 | `bici` | `modelo` y `piezas` para la ficha (opcional) | ver el ejemplo |
 | `ocultar_m` | Si la salida o la meta son en tu casa: a menos de estos metros no se publica tu posición | `500` |
+| `slug` | Dirección de la carrera al archivarla (opcional) | `"2026-mi-carrera"` |
 
 **d) Tu avatar**, en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
 
@@ -145,8 +146,12 @@ pip install fitdecode
 python herramientas/generar_resultado.py actividad.fit
 ```
 
-Antes de la siguiente carrera, borra `resultado.json` y pulsa **Dejar a cero**
-en el panel.
+Después, en el panel, **Archivar la carrera terminada**: se guarda en
+`carreras/<año-nombre>/` y queda en su propia dirección (`/2026-mi-carrera/`),
+con el mismo diseño en modo resultado, y en el índice **`/carreras/`**. La
+portada queda a cero para la siguiente: mientras no haya otra en marcha, lleva
+al último resultado (así los enlaces que ya compartiste siguen sirviendo).
+La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar.
 
 ---
 

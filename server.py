@@ -12,6 +12,9 @@ import urllib.request
 from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
 import base64
+import mimetypes
+import shutil
+import unicodedata
 import hashlib
 import ipaddress
 import secrets
@@ -153,6 +156,52 @@ def live_publico():
         except (OSError, ValueError, KeyError, IndexError):
             pass
     return p
+
+
+# --- archivo de carreras ---------------------------------------------------
+# Cada carrera terminada se guarda en carreras/<AAAA-nombre>/ con sus datos
+# (carrera.json, ruta, perfil, avituallamientos, resultado, avatar) y se ve en
+# /<AAAA-nombre>/ con la misma web en modo resultado. Índice en /carreras/.
+ARCHIVO_DIR = os.path.join(ROOT, "carreras")
+mimetypes.add_type("application/geo+json", ".geojson")
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+SLUG_RE = re.compile(r"^/(\d{4}-[a-z0-9-]{1,60})(/.*)?$")
+FICHEROS_CARRERA = ("carrera.json", "route.geojson", "elevation.json", "aid_stations.json", "rider.png")
+
+
+def slug_de(c):
+    if c.get("slug"):
+        return str(c["slug"])
+    base = unicodedata.normalize("NFKD", c.get("lugar") or c.get("nombre") or "carrera")
+    base = re.sub(r"[^a-z0-9]+", "-", base.encode("ascii", "ignore").decode().lower()).strip("-")[:40]
+    return f"{(c.get('fecha') or time.strftime('%Y'))[:4]}-{base or 'carrera'}"
+
+
+def carreras_archivadas():
+    """[(slug, carrera, resultado)] de la más reciente a la más antigua."""
+    salida = []
+    try:
+        nombres = os.listdir(ARCHIVO_DIR)
+    except OSError:
+        return salida
+    for slug in nombres:
+        d = os.path.join(ARCHIVO_DIR, slug)
+        if not SLUG_RE.match("/" + slug) or not os.path.isdir(d):
+            continue
+        datos = []
+        for n in ("carrera.json", "resultado.json"):
+            try:
+                with open(os.path.join(d, n), encoding="utf-8") as f:
+                    datos.append(json.load(f))
+            except (OSError, ValueError):
+                datos.append({})
+        salida.append((slug, datos[0], datos[1]))
+    return sorted(salida, key=lambda x: (x[1].get("fecha") or x[0]), reverse=True)
+
+
+def hay_carrera_en_marcha():
+    d = read_live()
+    return bool(d.get("started_at") or d.get("livetrack_url"))
 
 
 _csp = {"mtime": None, "valor": ""}
@@ -992,6 +1041,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path.startswith("/api/gps"):
             self._gps()
             return
+        crudo = self.path.split("?")[0]
+        ruta = self._ruta()
+        if ruta == "/carreras":
+            return self._indice_carreras()
+        m = SLUG_RE.match(ruta)
+        if m and os.path.isdir(os.path.join(ARCHIVO_DIR, m.group(1))):
+            if not m.group(2) and not crudo.endswith("/"):
+                return self._redirigir("/" + m.group(1) + "/", 301)   # sin la barra, los enlaces relativos fallan
+            return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
+        if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() \
+                and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+            # sin carrera en marcha: la portada lleva al último resultado (302,
+            # no 301: cuando empiece la siguiente carrera, la portada será ella)
+            archivadas = carreras_archivadas()
+            if archivadas:
+                return self._redirigir("/" + archivadas[0][0] + "/", 302)
         if not self._ruta_publica():
             self.send_error(404, "Not Found")
             return
@@ -1004,13 +1069,85 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
-    def _index_resultado(self):
+    def _redirigir(self, destino, codigo):
+        self.send_response(codigo)
+        self.send_header("Location", destino)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _servir_fichero(self, ruta_fichero):
+        with open(ruta_fichero, "rb") as f:
+            cuerpo = f.read()
+        tipo = mimetypes.guess_type(ruta_fichero)[0] or "application/octet-stream"
+        if tipo.startswith("text/") or tipo in ("application/javascript", "application/json"):
+            tipo += "; charset=utf-8"
+        self.send_response(200)
+        self.send_header("Content-Type", tipo)
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
+
+    def _servir_archivada(self, slug, nombre):
+        """/<slug>/X: X de la carpeta de la carrera si lo tiene (sus datos);
+        si no, el de la web (app.js, estilos, librería)."""
+        if nombre in ("", "index.html"):
+            return self._index_resultado(os.path.join(ARCHIVO_DIR, slug), slug)
+        if ".." in nombre or nombre.startswith(".") or os.path.splitext(nombre)[1].lower() not in EXTENSIONES_PUBLICAS:
+            return self.send_error(404)
+        propio = os.path.join(ARCHIVO_DIR, slug, nombre)
+        if "/" not in nombre and os.path.isfile(propio):
+            return self._servir_fichero(propio)
+        if nombre == "live.json":                    # carrera archivada: ya terminó
+            return self._send_json(200, {"status_label": "Finalizada"}, cache="public, max-age=300")
+        if nombre == "admin.html" or nombre in ("resultado.json", "carrera.json"):
+            return self.send_error(404)
+        web = os.path.join(ROOT, nombre)
+        if os.path.isfile(web):
+            return self._servir_fichero(web)
+        return self.send_error(404)
+
+    def _indice_carreras(self):
+        esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;").replace('"', "&quot;")
+        filas = []
+        for slug, c, r in carreras_archivadas():
+            h, m = divmod(int(r.get("tiempo_oficial_s", 0)) // 60, 60)
+            f = c.get("fecha", "")
+            fecha = "/".join(reversed(f.split("-"))) if re.match(r"^\d{4}-\d{2}-\d{2}$", f) else f
+            datos = " · ".join(x for x in (
+                fecha, c.get("lugar", ""), f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else "",
+                f"{str(r.get('distancia_km', '')).replace('.', ',')} km" if r.get("distancia_km") else "",
+                f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
+            filas.append(f'<li><a href="/{esc(slug)}/"><b>{esc(c.get("nombre") or slug)}</b>'
+                         f'<span>{esc(datos)}</span></a></li>')
+        en_marcha = '<p class="indice-vivo"><a href="/">● Carrera en directo ahora</a></p>' if hay_carrera_en_marcha() else ""
+        html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                '<title>Carreras · Sígueme CC</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=3"><link rel="stylesheet" href="/style.css?v=indice">'
+                '</head><body class="indice"><header class="topbar"><div class="marca"><h1>Sígueme <span>CC</span></h1>'
+                '<p class="marca-sub">Todas las carreras</p></div></header><main class="indice-main">'
+                f'{en_marcha}<ul class="indice-lista">{"".join(filas) or "<li>Todavía no hay carreras archivadas.</li>"}</ul>'
+                '</main></body></html>').encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(html)))
+        self.end_headers()
+        self.wfile.write(html)
+
+    def _index_resultado(self, base=ROOT, slug=None):
         """Con resultado.json, el título, la descripción y la vista previa del
-        enlace dicen "Resultado" (los buscadores y WhatsApp no ejecutan JS)."""
+        enlace dicen "Resultado" (los buscadores y WhatsApp no ejecutan JS).
+        En una carrera archivada, además, la web no sondea (meta archivo)."""
         try:
-            with open(os.path.join(ROOT, "resultado.json"), encoding="utf-8") as f:
+            with open(os.path.join(base, "resultado.json"), encoding="utf-8") as f:
                 r = json.load(f)
-            nombre = carrera().get("nombre") or r.get("carrera") or "la carrera"
+            try:
+                with open(os.path.join(base, "carrera.json"), encoding="utf-8") as f:
+                    c = json.load(f)
+            except (OSError, ValueError):
+                c = {}
+            nombre = c.get("nombre") or r.get("carrera") or "la carrera"
             h, m = divmod(int(r.get("tiempo_oficial_s", 0)) // 60, 60)
             desc = f"{nombre}: terminada en {h}h {m:02d}m · {str(r.get('distancia_km', '')).replace('.', ',')} km"
             with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
@@ -1021,6 +1158,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             html = re.sub(r'(<meta property="og:title" content=")[^"]*', lambda x: x.group(1) + esc(titulo), html, count=1)
             html = re.sub(r'(<meta property="og:description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
             html = re.sub(r'(<meta name="description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
+            if slug:
+                url = f"https://{self.headers.get('Host', '')}/{slug}/"
+                html = re.sub(r'(<meta property="og:url" content=")[^"]*', lambda x: x.group(1) + esc(url), html, count=1)
+                html = html.replace("<head>", '<head>\n<meta name="archivo" content="1">', 1)
             cuerpo = html.encode("utf-8")
         except (OSError, ValueError):
             return super().do_GET()
@@ -1240,6 +1381,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(200, {"ok": True, "live": read_live()})
             return
 
+        archivada = None
+        if accion == "archivar":
+            # la carrera terminada pasa a carreras/<slug>/ y la portada queda
+            # libre para la siguiente (después se hace lo mismo que "reset")
+            if not os.path.exists(os.path.join(ROOT, "resultado.json")):
+                self._send_json(400, {"error": "falta resultado.json: genéralo antes con el FIT"})
+                return
+            archivada = slug_de(carrera())
+            destino = os.path.join(ARCHIVO_DIR, archivada)
+            if os.path.exists(destino):
+                self._send_json(409, {"error": f"ya hay una carrera archivada en /{archivada}/ (pon otro \"slug\" en carrera.json)"})
+                return
+            os.makedirs(destino)
+            for n in FICHEROS_CARRERA:
+                if os.path.exists(os.path.join(ROOT, n)):
+                    shutil.copy2(os.path.join(ROOT, n), destino)
+            shutil.move(os.path.join(ROOT, "resultado.json"), os.path.join(destino, "resultado.json"))
+            apuntar_historial("archivada", slug=archivada)
+            accion = "reset"
+
         if accion == "reset":
             apuntar_historial("reset")
             parar_simulacion()
@@ -1255,7 +1416,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
                 "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
             })
-            self._send_json(200, {"ok": True, "live": current})
+            self._send_json(200, {"ok": True, "live": current, "archivada": archivada})
             return
 
         if accion == "empezar":

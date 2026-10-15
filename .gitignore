@@ -20,3 +20,6 @@ resultado.json
 amazfit/node_modules/
 amazfit/dist/
 amazfit/.zeus/
+
+# carreras archivadas (datos personales de cada carrera)
+carreras/

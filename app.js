@@ -20,8 +20,9 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 const QUIETO = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let relojSondeo = null, ritmoActual = 0;
+const ARCHIVADA = !!document.querySelector('meta[name="archivo"]');
 function ritmoSondeo(ms) {
-  if (ms === ritmoActual) return;
+  if (ARCHIVADA || ms === ritmoActual) return;
   clearInterval(relojSondeo);
   relojSondeo = setInterval(pollLive, ms);
   ritmoActual = ms;
@@ -234,7 +235,7 @@ const geoHint = document.getElementById('geo-hint');
 const botonCompartir = document.getElementById('compartir');
 if (botonCompartir) {
   botonCompartir.addEventListener('click', async () => {
-    const datos = { title: 'Sígueme CC', text: 'Sígueme en directo', url: location.origin + '/' };
+    const datos = { title: document.title, text: ARCHIVADA ? 'Mira mi carrera' : 'Sígueme en directo', url: location.href.split('#')[0] };
     try {
       if (navigator.share) { await navigator.share(datos); return; }
       await navigator.clipboard.writeText(datos.url);

@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.6.0 · 2026-10-15
+- **Carreras por carpetas:** cada carrera terminada se archiva (botón en el
+  panel) en `carreras/<año-nombre>/` y se ve en `/<año-nombre>/` con la misma
+  web en modo resultado, sin sondear nada.
+- Índice de todas las carreras en `/carreras/` (fecha, lugar, tiempo,
+  distancia y desnivel) y enlace «Todas las carreras» al pie.
+- Sin carrera en marcha, la portada redirige (302) al último resultado: los
+  enlaces viejos siguen sirviendo y la portada vuelve a ser la carrera en
+  cuanto empieza la siguiente.
+- Compartir comparte la página en la que estás; cada carrera archivada tiene su
+  título y su vista previa.
+
 ## v1.5.0 · 2026-10-15
 Auditoría externa:
 - Panel: bloqueo de 15 min por IP real tras 10 fallos (sin bloquear al dueño),
