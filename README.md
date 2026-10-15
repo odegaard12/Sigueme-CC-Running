@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.6.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.7.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -32,6 +32,8 @@
 ---
 
 ## Índice
+
+> **¿Primera carrera?** Sigue la guía visual [Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md).
 
 1. [Qué necesitas](#1-qué-necesitas)
 2. [Preparar tu carrera](#2-preparar-tu-carrera)
@@ -93,6 +95,18 @@ Crea `route.geojson` (trazado) y `elevation.json` (perfil y pendientes).
 | `slug` | Dirección de la carrera al archivarla (opcional) | `"2026-mi-carrera"` |
 
 **d) Tu avatar**, en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
+
+**e) El plan de avisos para la pulsera** (opcional):
+
+```bash
+python herramientas/plan_avisos.py
+```
+
+Crea `avisos.json` desde el perfil: 300 m antes de cada subida (tipo, largo, %, D+ y
+rampa), mitad de las largas, cima con la bajada y el D+ que queda, avituallamientos,
+resumen cada pocos km, última subida y último km. En carrera el servidor manda por
+**ntfy** el aviso que toca según tu km (`SIGUEME_NTFY`); el móvil lo enseña y Mi
+Fitness lo pasa a la pulsera. Por estado: sin cobertura no llegan avisos viejos.
 
 ## 3. Arrancar el servidor
 

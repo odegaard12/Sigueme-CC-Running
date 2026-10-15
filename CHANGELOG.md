@@ -4,6 +4,19 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.7.0 · 2026-10-16
+- **Avisos de desnivel a la pulsera:** `herramientas/plan_avisos.py` calcula
+  desde el perfil las subidas (larga, corta y dura, rampa), su mitad, la cima con
+  la bajada y el D+ que queda, los avituallamientos, resúmenes, la última subida
+  y el último km. En carrera el servidor sigue tu km de ruta y manda por ntfy el
+  aviso que toca; tras un corte de cobertura manda el estado de ahora, nunca
+  avisos atrasados. La distancia al avituallamiento se calcula al enviarlo.
+- Panel: lista «Preparar la carrera» (qué está listo y qué falta) y tarjeta
+  «Avisos a la pulsera» con aviso de prueba.
+- Guía visual `docs/GUIA-CARRERA.md` para preparar una carrera, comprobada con
+  un ensayo completo (GPX → plan → carrera simulada con corte → meta → archivo).
+- Las carreras archivadas guardan también su plan de avisos.
+
 ## v1.6.0 · 2026-10-15
 - **Carreras por carpetas:** cada carrera terminada se archiva (botón en el
   panel) en `carreras/<año-nombre>/` y se ve en `/<año-nombre>/` con la misma

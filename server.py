@@ -166,7 +166,7 @@ ARCHIVO_DIR = os.path.join(ROOT, "carreras")
 mimetypes.add_type("application/geo+json", ".geojson")
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 SLUG_RE = re.compile(r"^/(\d{4}-[a-z0-9-]{1,60})(/.*)?$")
-FICHEROS_CARRERA = ("carrera.json", "route.geojson", "elevation.json", "aid_stations.json", "rider.png")
+FICHEROS_CARRERA = ("carrera.json", "route.geojson", "elevation.json", "aid_stations.json", "rider.png", "avisos.json")
 
 
 def slug_de(c):
@@ -197,6 +197,146 @@ def carreras_archivadas():
                 datos.append({})
         salida.append((slug, datos[0], datos[1]))
     return sorted(salida, key=lambda x: (x[1].get("fecha") or x[0]), reverse=True)
+
+
+# --- avisos a la pulsera ----------------------------------------------------
+# avisos.json (herramientas/plan_avisos.py) dice «en el km X, este texto». En
+# carrera, con cada posición nueva se calcula el km de ruta y se manda por ntfy
+# el aviso que toca (el móvil lo enseña y Mi Fitness lo pasa a la pulsera).
+# ⚠️ Por ESTADO, no por eventos: si sin cobertura llegan de golpe muchos puntos,
+# no se mandan los avisos atrasados; se manda uno, el de ahora, y si ya no vale
+# (p. ej. «subida en 300 m» cuando ya vas subiendo), el estado actual.
+NTFY_URL = os.environ.get("SIGUEME_NTFY", "")          # p. ej. https://ntfy.sh/tema-secreto
+NTFY_TOKEN = os.environ.get("SIGUEME_NTFY_TOKEN", "")
+AVISOS_PATH = os.path.join(ROOT, "avisos.json")
+AVISO_SEPARACION = int(os.environ.get("SIGUEME_AVISO_SEP", "90"))   # s como mínimo entre avisos
+_ruta_km = {"mtime": None, "pts": [], "cum": []}
+
+
+def km_txt(km):
+    return f"{round(km * 1000 / 50) * 50:.0f}m" if km < 1 else f"{km:.1f}".replace(".", ",") + "km"
+
+
+def plan_avisos():
+    try:
+        with open(AVISOS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def ruta_con_km():
+    """Puntos de la ruta con su km (escalado a la distancia oficial)."""
+    ruta = os.path.join(ROOT, "route.geojson")
+    try:
+        mtime = os.path.getmtime(ruta)
+    except OSError:
+        return [], []
+    if mtime != _ruta_km["mtime"]:
+        pts = puntos_de_la_ruta()
+        cum = [0.0]
+        for p, q in zip(pts, pts[1:]):
+            cum.append(cum[-1] + km_entre(p, q))
+        factor = (carrera().get("distancia_km") or cum[-1]) / (cum[-1] or 1)
+        _ruta_km.update(mtime=mtime, pts=pts, cum=[c * factor for c in cum])
+    return _ruta_km["pts"], _ruta_km["cum"]
+
+
+def km_en_ruta(lat, lon, ultimo):
+    """Km de ruta del punto, siempre hacia delante (la salida y la meta suelen
+    estar juntas: buscar en toda la ruta saltaría a la meta en la salida)."""
+    pts, cum = ruta_con_km()
+    mejor, km = 0.15, None                     # a más de 150 m de la ruta: no se sabe
+    for ventana in (5, 40):
+        for p, c in zip(pts, cum):
+            if ultimo - 0.5 <= c <= ultimo + ventana:
+                d = km_entre((lat, lon), p)
+                if d < mejor:
+                    mejor, km = d, c
+        if km is not None:
+            return km
+    return None
+
+
+def texto_estado(plan, km):
+    for s in plan.get("subidas", []):
+        if s["inicio"] <= km < s["fin"]:
+            queda = s["fin"] - km
+            return f"EN SUBIDA · quedan {km_txt(queda)} · +{round(s['desnivel_m'] * queda / (s['largo_km'] or 1))}m"
+    total = plan.get("distancia_km") or 0
+    resto = next((r for k, r in plan.get("restante", []) if k >= km), 0)
+    return f"KM {km:.0f} · faltan {km_txt(max(0, total - km))} · +{resto}m"
+
+
+def aviso_que_toca(plan, km, enviado):
+    pendientes = [a for a in plan.get("avisos", []) if a["km"] <= km and a["id"] > enviado]
+    if not pendientes:
+        return None
+    a = pendientes[-1]
+    if km > a["valido_hasta"]:
+        return a["id"], texto_estado(plan, km)
+    # {dist}: lo que falta hasta el avituallamiento, calculado al enviar
+    falta = (a.get("objetivo_km") or km) - km
+    return a["id"], a["texto"].replace("{dist}", "en " + km_txt(falta) if falta > 0.05 else "AQUÍ")
+
+
+def enviar_ntfy(texto, prueba=False):
+    """En un hilo aparte: el GPS nunca espera a ntfy. Devuelve el hilo."""
+    def mandar():
+        cab = {"Title": "Sígueme CC".encode("utf-8").decode("latin-1"), "Tags": "mountain", "Priority": "high"}
+        if NTFY_TOKEN:
+            cab["Authorization"] = "Bearer " + NTFY_TOKEN
+        try:
+            urllib.request.urlopen(urllib.request.Request(NTFY_URL, texto.encode("utf-8"), cab), timeout=15)
+            apuntar_historial("aviso", texto=texto, prueba=prueba)
+        except Exception as exc:
+            apuntar_historial("aviso_fallido", texto=texto, error=str(exc)[:120])
+    hilo = threading.Thread(target=mandar, daemon=True)
+    hilo.start()
+    return hilo
+
+
+def revisar_avisos(lat, lon):
+    """Con cada posición nueva en carrera: km de ruta y, si toca, aviso."""
+    if lat is None or lon is None:
+        return
+    live = read_live()
+    if not live.get("started_at") or live.get("finished_at"):
+        return
+    plan = plan_avisos()
+    km = km_en_ruta(lat, lon, live.get("ruta_km") or 0) if plan else None
+    if km is None:
+        return
+    patch = {"ruta_km": round(km, 3)}
+    toca = aviso_que_toca(plan, km, live.get("aviso_id") or 0)
+    if toca and NTFY_URL and time.time() - (live.get("aviso_t") or 0) >= AVISO_SEPARACION:
+        enviar_ntfy(toca[1])
+        patch.update(aviso_id=toca[0], aviso_t=time.time(), aviso_texto=toca[1], aviso_km=round(km, 2))
+    merge_live(patch)
+
+
+def preparacion():
+    """Lista de comprobación de la carrera para el panel."""
+    c, plan = carrera(), plan_avisos()
+    def leer_json(n):
+        try:
+            with open(os.path.join(ROOT, n), encoding="utf-8-sig") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return None
+    ruta = leer_json("route.geojson") or {}
+    avit = leer_json("aid_stations.json") or []
+    try:
+        props = ruta["features"][0]["properties"]
+    except (KeyError, IndexError, TypeError):
+        props = {}
+    live = read_live()
+    return {"nombre": c.get("nombre"), "fecha": c.get("fecha"), "hora_salida": c.get("hora_salida"),
+            "distancia_km": c.get("distancia_km"), "ruta_km": props.get("distance_km"),
+            "avituallamientos": len(avit), "avisos": len((plan or {}).get("avisos", [])),
+            "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,
+            "ntfy": bool(NTFY_URL), "resultado_pendiente": os.path.exists(os.path.join(ROOT, "resultado.json")),
+            "aviso_ultimo": {k: live.get(k) for k in ("aviso_texto", "aviso_km", "aviso_t")} if live.get("aviso_texto") else None}
 
 
 def hay_carrera_en_marcha():
@@ -731,6 +871,7 @@ def recibir_gps(puntos):
         patch["speed_kmh"] = round(velocidad, 1) if velocidad is not None else None
     patch.update(extra)
     merge_live(patch)
+    revisar_avisos(ultimo["lat"], ultimo["lon"])
 
 
 def huella(t):
@@ -805,6 +946,8 @@ def poll_loop(url, stop_event):
                         and estado.get("started_at"):
                     patch["finished_at"] = datetime.now(timezone.utc).isoformat()
                 merge_live(patch)
+                if "lat" in patch:
+                    revisar_avisos(patch.get("lat"), patch.get("lon"))
                 fallos = 0
                 sin_datos = False
             else:
@@ -1367,8 +1510,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(200, {"ok": True, "gps_id": nueva, "live": read_live()})
             return
 
+        if accion == "aviso_prueba":
+            if not NTFY_URL:
+                self._send_json(400, {"error": "falta SIGUEME_NTFY en la configuración del servicio"})
+                return
+            enviar_ntfy("Prueba de Sígueme CC · si lo ves en la pulsera, los avisos funcionan", prueba=True).join(16)
+            ultimo = ""
+            try:
+                with open(HISTORIAL_PATH, encoding="utf-8") as f:
+                    ultimo = f.readlines()[-1]
+            except (OSError, IndexError):
+                pass
+            if '"aviso_fallido"' in ultimo:
+                self._send_json(502, {"error": "ntfy no contestó: " + json.loads(ultimo).get("error", "")})
+            else:
+                self._send_json(200, {"ok": True})
+            return
+
         if accion == "gps_info":
-            self._send_json(200, {"ok": True, "gps_id": clave_gps(), "live": read_live()})
+            self._send_json(200, {"ok": True, "gps_id": clave_gps(), "live": read_live(), "preparacion": preparacion()})
             return
 
         if accion == "simular":
@@ -1415,6 +1575,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
                 "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
+                "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None, "aviso_km": None,
             })
             self._send_json(200, {"ok": True, "live": current, "archivada": archivada})
             return
@@ -1434,7 +1595,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
                 "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
                 "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
+                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None, "gps_origen": None, "gps_rechazado_at": None,
             })
             self._send_json(200, {"ok": True, "live": current})
             return
