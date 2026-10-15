@@ -162,6 +162,7 @@
     <div class="field" style="margin-top:8px">
       <label>Identificador del dispositivo</label>
       <input type="text" id="gps-id" readonly onclick="this.select()">
+      <button class="btn" id="rotar-gps" type="button" style="margin-top:8px">Generar identificador nuevo</button>
     </div>
     <div class="howto" style="margin-top:8px">
       Frecuencia: 10 s · Precisión: alta · Distancia: 0 · y activa el servicio.
@@ -340,10 +341,23 @@ async function cargarGps() {
   }
 }
 
+// identificador nuevo para cada carrera (el de antes deja de valer)
+document.addEventListener('click', async e => {
+  if (e.target.id !== 'rotar-gps') return;
+  if (!confirm('¿Generar un identificador nuevo?\n\nEl actual deja de valer al momento: tendrás que ponerlo en Traccar y en el reloj.')) return;
+  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'rotar_gps' }) });
+  if (res.status === 403) { sesionCaducada(); return; }
+  const d = await res.json();
+  if (d.gps_id) { $('gps-id').value = d.gps_id; $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
+});
+
 async function pollStatus() {
   try {
-    const res = await fetch('live.json?_=' + Date.now());
-    refreshStatus(await res.json());
+    const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gps_info' }) });
+    if (res.status === 403) { sesionCaducada(); return; }
+    refreshStatus((await res.json()).live || {});
   } catch (e) {}
 }
 

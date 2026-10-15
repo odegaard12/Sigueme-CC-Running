@@ -19,6 +19,14 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 // quien pide menos movimiento en el sistema no ve animaciones de cámara
 const QUIETO = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+let relojSondeo = null, ritmoActual = 0;
+function ritmoSondeo(ms) {
+  if (ms === ritmoActual) return;
+  clearInterval(relojSondeo);
+  relojSondeo = setInterval(pollLive, ms);
+  ritmoActual = ms;
+}
+
 let CARRERA = {
   nombre: '', lugar: '', fecha: '', modalidad: '', hora_salida: '08:30', limite_h: 12,
   zona_horaria: 'Europe/Madrid', km_minimos_meta: null, corredor: { nombre: '', dorsal: '' }, bici: null,
@@ -34,6 +42,7 @@ function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  document.querySelectorAll('img[src^="rider.png"]').forEach(i => { i.alt = 'Avatar de ' + (corredor.nombre || 'corredor'); });
   const nombre = document.getElementById('ficha-nombre');
   if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
   const dorsal = document.getElementById('ficha-dorsal');
@@ -269,7 +278,7 @@ function buildMap3D() {
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Imágenes © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS'
         },
         terrain: {
           type: 'raster-dem',
@@ -518,8 +527,8 @@ precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
-    document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
-    document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
+    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
+    if (!document.getElementById('stat-gain').dataset.real) document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
     totalRouteKm = props.distance_km;
 
     const coords = geojson.features[0].geometry.coordinates;
@@ -1087,7 +1096,8 @@ function pollLive() {
   if (!resultadoConsultado) return;
   if (pidiendo) return;          // la anterior aún no ha vuelto: no amontonar
   pidiendo = true;
-  precargado('live.json', () => fetchConTiempo('live.json?_=' + Date.now()))
+  // tramos de 3 s: quien mira a la vez comparte la misma copia en la caché del borde
+  precargado('live.json', () => fetchConTiempo('live.json?_=' + Math.floor(Date.now() / 3000)))
     .then(r => {
       if (!r || !r.ok) throw new Error('HTTP ' + (r ? r.status : 'sin respuesta'));
       // la hora del servidor sale de la cabecera Date de la respuesta, no de
@@ -1104,10 +1114,14 @@ function pollLive() {
       document.querySelector('.metricas').classList.remove('cargando');
 
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
-      if (resultado && !data.started_at && !data.livetrack_url) {
+      if (resultado && !data.started_at && !data.livetrack_url && !data.en_seguimiento) {
         if (!repitiendo) pintarResultado();
+        ritmoSondeo(60000);
         return;
       }
+      ritmoSondeo(5000);
+      verCasilla('speed-total', false);
+      ponerTexto('m-speed-avg-txt', 'km/h media');
       document.getElementById('resultado').hidden = true;
       document.getElementById('aviso-resultado').hidden = true;
 
@@ -1308,6 +1322,20 @@ function calcularKmsTraza() {
   });
 }
 
+// cabecera con lo REAL y, entre paréntesis, lo previsto (carrera.json)
+function cabeceraReal(r) {
+  const pon = (id, real, unidad, previsto) => {
+    const b = document.getElementById(id);
+    if (!b || real == null) return;
+    b.textContent = real;
+    b.dataset.real = '1';
+    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' (prev. ' + previsto + ')' : '');
+  };
+  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
+  pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
+      CARRERA.desnivel_m ? Number(CARRERA.desnivel_m).toLocaleString('es-ES') : '');
+}
+
 function pintarResultado() {
   const r = resultado;
   ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
@@ -1316,6 +1344,9 @@ function pintarResultado() {
   ponerTexto('m-dist', num(r.distancia_km));
   ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));
   ponerTexto('m-speed-avg', num(r.velocidad_media_mov));
+  ponerTexto('m-speed-avg-txt', 'km/h en movimiento');
+  if (r.tiempo_oficial_s) { ponerTexto('m-speed-total', num(r.distancia_km / (r.tiempo_oficial_s / 3600))); verCasilla('speed-total', true); }
+  cabeceraReal(r);
   ponerTexto('m-hr-avg', entero(r.pulso_medio));
   ponerTexto('m-cad-avg', entero(r.cadencia_media));
   // el resultado va arriba, antes del mapa: era lo primero que había que ver
@@ -1412,7 +1443,8 @@ precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(
   .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
 
 pollLive();
-setInterval(pollLive, 5000);
+// con resultado (carrera terminada) basta con mirar cada minuto si empieza otra
+ritmoSondeo(5000);
 // al desbloquear el móvil o volver a la pestaña, datos al momento (antes había
 // que esperar al siguiente turno, y en segundo plano el navegador los frena)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.4.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.5.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -89,6 +89,7 @@ Crea `route.geojson` (trazado) y `elevation.json` (perfil y pendientes).
 | `modalidad` | MTB, trail… | `"MTB"` |
 | `corredor` | `nombre` y `dorsal` | `{"nombre": "Ana", "dorsal": "27"}` |
 | `bici` | `modelo` y `piezas` para la ficha (opcional) | ver el ejemplo |
+| `ocultar_m` | Si la salida o la meta son en tu casa: a menos de estos metros no se publica tu posición | `500` |
 
 **d) Tu avatar**, en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
 
@@ -122,7 +123,8 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
 ## 5. El día de la carrera
 
 1. En el **panel**: revisa la hora oficial de salida, y si usas iGPSPORT pega el
-   enlace. Pulsa **Guardar y empezar a seguir**.
+   enlace. Pulsa **Guardar y empezar a seguir**. Recomendado: **Generar
+   identificador nuevo** para cada carrera y ponerlo en Traccar y en el reloj.
 2. Arranca Traccar o la miniapp del reloj antes de salir. En el panel, la línea
    «GPS del móvil» tiene que decir «ahora mismo».
 3. Comparte el enlace con el botón de la cabecera de la web: en WhatsApp sale
@@ -173,12 +175,20 @@ recibido), `resultado.json` y los FIT.
 ## Seguridad
 
 - Solo se sirven ficheros públicos: `server.py`, `gps.clave`, `historial.jsonl`,
-  scripts, configuraciones y carpetas ocultas dan 404.
+  scripts, configuraciones y carpetas ocultas dan 404 (página propia en español).
+- `live.json` público recortado a lo que pinta la web: nada de enlace de
+  iGPSPORT, batería del móvil ni datos internos (el panel pide el estado completo
+  con su sesión). Con `ocultar_m`, sin posición cerca de salida y meta.
+- Identificador de Traccar/reloj de 32 caracteres, nuevo en cada carrera desde
+  el panel; el servidor no guarda registros de peticiones y descarta puntos de
+  hace más de un día.
 - Panel con usuario y clave (hash scrypt), sesión en cookie HttpOnly +
-  SameSite=Strict (+ Secure por https), freno a la fuerza bruta que no bloquea
-  al panel ya dentro, tope de peticiones y conexiones lentas cortadas.
+  SameSite=Strict (+ Secure por https), comprobación de origen (CSRF), freno a
+  la fuerza bruta por IP real (10 fallos: 15 min bloqueada esa IP, no las
+  demás), tope de peticiones y conexiones lentas cortadas.
 - Cabeceras `nosniff`, `X-Frame-Options`, `Referrer-Policy`,
-  `Permissions-Policy` y HSTS; el panel además con CSP estricta y `noindex`.
+  `Permissions-Policy`, HSTS y CSP (en la web, scripts por hash y solo las
+  teselas de Esri y AWS); el panel además con `noindex`.
 - Sin base de datos (todo son ficheros JSON): no hay inyección SQL posible.
 
 ## Versiones

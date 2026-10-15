@@ -4,6 +4,21 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.5.0 · 2026-10-15
+Auditoría externa:
+- Panel: bloqueo de 15 min por IP real tras 10 fallos (sin bloquear al dueño),
+  comprobación de origen (CSRF) y robots.txt sin anunciar rutas.
+- GPS: identificador nuevo de 32 caracteres desde el panel; puntos de hace más
+  de un día descartados.
+- Errores en español con página propia; el servidor ya no se anuncia.
+- CSP en la web (scripts por hash; teselas de Esri y AWS).
+- `live.json` público sin enlace de iGPSPORT, batería ni datos internos;
+  `ocultar_m` en carrera.json para no publicar la posición junto a casa.
+- Con resultado: sondeo cada minuto en vez de cada 5 s y live.json cacheable
+  3 s; cabecera con distancia y desnivel REALES (previstos entre paréntesis);
+  media en movimiento y media total; título y vista previa «Resultado · …».
+- Atribución completa de las imágenes de satélite; avatar con texto alternativo.
+
 ## v1.4.0 · 2026-10-09
 - Arreglado: en directo, antes de haber resultado, salía una caja vacía con el
   botón ▶ encima del mapa; y el aviso de salida llevaba un nombre fijo en vez

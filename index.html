@@ -26,7 +26,7 @@
     window.__datos[u] = fetch(u + '?_=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   });
-  window.__datos['live.json'] = fetch('live.json?_=' + Date.now()).catch(function () { return null; });
+  window.__datos['live.json'] = fetch('live.json?_=' + Math.floor(Date.now() / 3000)).catch(function () { return null; });
 </script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1210">
@@ -52,7 +52,7 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
     </button>
     <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
-      <img src="rider.png?v=5" alt=""><span id="ver-ficha-txt">Mi ficha</span>
+      <img src="rider.png?v=5" alt="Avatar del corredor"><span id="ver-ficha-txt">Mi ficha</span>
     </button>
   </div>
   <div class="cd-ruta">
@@ -63,7 +63,7 @@
 </header>
 
 <section class="ficha" id="ficha" hidden>
-  <img class="ficha-foto" src="rider.png?v=5" alt="">
+  <img class="ficha-foto" src="rider.png?v=5" alt="Avatar del corredor">
   <div class="ficha-datos">
     <h2 id="ficha-nombre">Corredor</h2>
     <p class="ficha-dorsal" id="ficha-dorsal"></p>
@@ -117,7 +117,8 @@
     <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo</span></div>
   </div>
   <div class="metricas-sec">
-    <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> km/h media</span>
+    <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> <span id="m-speed-avg-txt">km/h media</span></span>
+    <span class="chip" data-tile="speed-total" hidden><b id="m-speed-total">—</b> km/h media total</span>
     <span class="chip chip-nivel" data-tile="grad">pendiente <b id="m-grad">—</b>
       <i class="nivel"><u id="nivel-marca"></u></i>
     </span>
@@ -138,12 +139,12 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.4.0</p>
-  <p class="creditos">Imágenes de satélite © Esri · Relieve © Mapzen/AWS · Mapa con MapLibre</p>
+  <p><span id="pie-carrera"></span><a href="admin.html">admin</a> · Sígueme CC v1.5.0</p>
+  <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=70"></script>
+<script src="app.js?v=71"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

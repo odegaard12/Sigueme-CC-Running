@@ -11,11 +11,14 @@ import time
 import urllib.request
 from curl_cffi import requests as cffi_requests
 from datetime import datetime, timezone
+import base64
 import hashlib
+import ipaddress
+import secrets
 import hmac
 from hmac import compare_digest
 import posixpath
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 LIVE_PATH = os.path.join(ROOT, "live.json")
@@ -110,7 +113,8 @@ def segundos_de_castigo(ip):
         fallos, ultimo = intentos.get(ip, (0, 0))
     if fallos < 5:
         return 0
-    castigo = 5 if fallos < 10 else 30
+    # del 5º al 9º fallo, frenazo; desde el 10º, 15 min bloqueada esa IP
+    castigo = 5 if fallos < 10 else 900
     restante = castigo - (time.time() - ultimo)
     return int(restante) + 1 if restante > 0 else 0
 
@@ -124,6 +128,57 @@ def fallo_de(ip):
 def acierto_de(ip):
     with intentos_lock:
         intentos.pop(ip, None)
+
+# --- live.json público -------------------------------------------------------
+# ⚠️ live.json guarda TODO el estado (enlace de iGPSPORT, batería del móvil,
+# avisos, contadores internos). Al público solo va lo que pinta la web.
+CAMPOS_PUBLICOS = ("status_label", "started_at", "finished_at", "data_at", "updated", "lat", "lon",
+                   "dist_km", "elapsed", "speed_kmh", "speed_kmh_avg", "hr", "hr_avg", "hr_at",
+                   "cadence", "cadence_avg", "igpsport_at", "fuente_posicion")
+
+
+def live_publico():
+    d = read_live()
+    p = {k: d[k] for k in CAMPOS_PUBLICOS if k in d}
+    p["en_seguimiento"] = bool(d.get("livetrack_url"))
+    # carrera.json "ocultar_m": si la salida o la meta son en casa, la posición
+    # no se publica a menos de esos metros de ellas
+    ocultar = carrera().get("ocultar_m") or 0
+    if ocultar and p.get("lat") is not None and p.get("lon") is not None:
+        try:
+            ruta = puntos_de_la_ruta()
+            cerca = min(km_entre((p["lat"], p["lon"]), ruta[0]), km_entre((p["lat"], p["lon"]), ruta[-1]))
+            if cerca * 1000 < ocultar:
+                p["lat"] = p["lon"] = None
+        except (OSError, ValueError, KeyError, IndexError):
+            pass
+    return p
+
+
+_csp = {"mtime": None, "valor": ""}
+
+
+def csp_web():
+    """CSP de la web pública. Los dos <script> en línea de index.html van por
+    su hash (sin 'unsafe-inline'); teselas de Esri (imagen) y AWS (relieve)."""
+    ruta = os.path.join(ROOT, "index.html")
+    try:
+        mtime = os.path.getmtime(ruta)
+        if mtime != _csp["mtime"]:
+            with open(ruta, encoding="utf-8") as f:
+                scripts = re.findall(r"<script>(.*?)</script>", f.read(), re.S)
+            hashes = " ".join("'sha256-" + base64.b64encode(hashlib.sha256(x.encode()).digest()).decode() + "'"
+                              for x in scripts)
+            teselas = "https://server.arcgisonline.com https://s3.amazonaws.com"
+            _csp.update(mtime=mtime, valor=(
+                f"default-src 'self'; script-src 'self' {hashes}; style-src 'self' 'unsafe-inline'; "
+                f"img-src 'self' data: blob: {teselas}; connect-src 'self' {teselas}; "
+                "worker-src 'self' blob:; child-src blob:; font-src 'self'; object-src 'none'; "
+                "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"))
+    except OSError:
+        pass
+    return _csp["valor"]
+
 
 # --- sesión del panel --------------------------------------------------------
 # Antes el panel guardaba la CLAVE en el navegador (sessionStorage) y la mandaba
@@ -531,6 +586,8 @@ def puntos_traccar(query, cuerpo):
         # todos los puntos buenos siguientes se descartaban por "viejos": la
         # foto se quedaba clavada hasta que el reloj real alcanzaba esa hora.
         p["t"] = min(p["t"], ahora)
+        if p["t"] < ahora - 86400:
+            continue                     # de hace más de un día: no es de esta carrera
         hr = _numero(p.get("hr"))
         hr = hr if hr is not None and 30 <= hr <= 240 else None
         bateria = _numero(p["bateria"])
@@ -837,7 +894,54 @@ EXTENSIONES_PUBLICAS = {
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
-    timeout = 20    # una conexión que no manda nada no se queda un hilo para siempre
+    server_version = "SiguemeCC"   # antes "SimpleHTTP/0.6 Python/3.x"
+    sys_version = ""
+    timeout = 20
+
+    def send_error(self, code, message=None, explain=None):
+        """Errores en español y con la cara de la web (la página por defecto,
+        en inglés, delataba http.server)."""
+        textos = {400: ("Petición no válida", "Algo en la dirección no está bien."),
+                  404: ("No encontrado", "Esta página no existe."),
+                  405: ("No permitido", "Esta acción no está permitida."),
+                  500: ("Error del servidor", "Algo ha fallado. Prueba otra vez en un momento.")}
+        titulo, texto = textos.get(code, ("Error", "No se ha podido atender la petición."))
+        cuerpo = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
+                  '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                  f'<title>{code} · {titulo} · Sígueme CC</title><style>body{{background:#0b1210;color:#eef2ee;'
+                  'font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;'
+                  'text-align:center}h1{font-size:3rem;margin:0}a{color:#7fd46a}</style></head><body><main>'
+                  f'<h1>{code}</h1><p>{texto}</p><p><a href="/">Volver a Sígueme CC</a></p></main></body></html>').encode()
+        self.send_response(code, titulo)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.end_headers()
+        if getattr(self, "command", None) != "HEAD":
+            self.wfile.write(cuerpo)
+
+    def ip_cliente(self):
+        """IP real: detrás del túnel de Cloudflare todas llegan desde una IP
+        privada; ahí (y solo ahí) se cree a CF-Connecting-IP. Así el freno a la
+        fuerza bruta es por persona y un atacante no bloquea al dueño."""
+        directa = self.client_address[0]
+        try:
+            privada = ipaddress.ip_address(directa).is_private
+            real = self.headers.get("CF-Connecting-IP", "").strip()
+            if privada and real:
+                ipaddress.ip_address(real)
+                return real
+        except ValueError:
+            pass
+        return directa
+
+    def mismo_origen(self):
+        """Protección CSRF: un navegador siempre manda Origin (o Referer) en un
+        POST; si viene de otra web, fuera."""
+        origen = self.headers.get("Origin") or self.headers.get("Referer") or ""
+        if not origen:
+            return None                       # sin cabecera: no es un navegador
+        return urlparse(origen).netloc == self.headers.get("Host", "")
+    # una conexión que no manda nada no se queda un hilo para siempre
 
     def _ruta(self):
         """Ruta pedida, decodificada y normalizada ("/./admin.html", "//admin.html"
@@ -891,7 +995,40 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if not self._ruta_publica():
             self.send_error(404, "Not Found")
             return
+        ruta = self._ruta()
+        if ruta == "/live.json":
+            self._send_json(200, live_publico(), cache="public, max-age=3, s-maxage=3")
+            return
+        if ruta in ("/", "/index.html") and os.path.exists(os.path.join(ROOT, "resultado.json")):
+            self._index_resultado()
+            return
         super().do_GET()
+
+    def _index_resultado(self):
+        """Con resultado.json, el título, la descripción y la vista previa del
+        enlace dicen "Resultado" (los buscadores y WhatsApp no ejecutan JS)."""
+        try:
+            with open(os.path.join(ROOT, "resultado.json"), encoding="utf-8") as f:
+                r = json.load(f)
+            nombre = carrera().get("nombre") or r.get("carrera") or "la carrera"
+            h, m = divmod(int(r.get("tiempo_oficial_s", 0)) // 60, 60)
+            desc = f"{nombre}: terminada en {h}h {m:02d}m · {str(r.get('distancia_km', '')).replace('.', ',')} km"
+            with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
+                html = f.read()
+            titulo = f"Resultado · {nombre}"
+            esc = lambda t: t.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+            html = re.sub(r"<title>.*?</title>", f"<title>{esc(titulo)}</title>", html, count=1)
+            html = re.sub(r'(<meta property="og:title" content=")[^"]*', lambda x: x.group(1) + esc(titulo), html, count=1)
+            html = re.sub(r'(<meta property="og:description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
+            html = re.sub(r'(<meta name="description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
+            cuerpo = html.encode("utf-8")
+        except (OSError, ValueError):
+            return super().do_GET()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.end_headers()
+        self.wfile.write(cuerpo)
 
     def do_HEAD(self):
         if not self._ruta_publica():
@@ -926,13 +1063,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                              "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
                              "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
             self.send_header("X-Robots-Tag", "noindex, nofollow")
+        elif csp_web():
+            self.send_header("Content-Security-Policy", csp_web())
         super().end_headers()
 
-    def _send_json(self, status, payload, cookie=None):
+    def _send_json(self, status, payload, cookie=None, cache="no-store"):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
         if cookie is not None:
             # Secure solo si llega por https (Cloudflare); por la red de casa
             # (http) el navegador no guardaría una cookie Secure
@@ -1014,7 +1153,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {"error": "invalid json"})
             return
 
-        ip = self.client_address[0]
+        ip = self.ip_cliente()
         # ⚠️ Detrás de Cloudflare TODAS las visitas llegan con la misma IP, así
         # que castigar por IP dejaba fuera también a Odegaard12 si alguien probaba
         # claves. Ahora el castigo NO rechaza de entrada: frena el intento un
@@ -1025,7 +1164,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # dejaba a Odegaard12 sin poder pulsar "Finalizar" en plena carrera.
         # Sin cola infinita: si ya hay uno esperando, 429.
         pide_clave = self.path == "/api/login" or (isinstance(data, dict) and "password" in data)
-        if pide_clave and segundos_de_castigo(ip):
+        espera = segundos_de_castigo(ip) if pide_clave else 0
+        if espera > 5:
+            # 10 fallos desde esta IP: bloqueada un rato (solo ella)
+            self.send_response(429)
+            self.send_header("Retry-After", str(espera))
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"error": "demasiados intentos: espera unos minutos"}')
+            return
+        if espera:
             if not castigo_lock.acquire(timeout=5):
                 self._send_json(429, {"error": "demasiados intentos: espera un poco"})
                 return
@@ -1053,6 +1201,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
         con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))
+        # con sesión de navegador, la petición tiene que venir de esta misma web
+        if not con_clave and self.mismo_origen() is not True:
+            self._send_json(403, {"error": "origen no permitido"})
+            return
         if not con_clave and not sesion_valida(self.headers.get("Cookie")):
             if "password" in data:
                 fallo_de(ip)
@@ -1063,6 +1215,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
 
         accion = data.get("action")
+
+        if accion == "rotar_gps":
+            # identificador nuevo (32 caracteres al azar) para cada carrera: el
+            # viejo deja de valer al momento; hay que ponerlo en Traccar/reloj
+            nueva = "odg-" + secrets.token_urlsafe(24)
+            with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
+                f.write(nueva + "\n")
+            apuntar_historial("gps_rotado")
+            self._send_json(200, {"ok": True, "gps_id": nueva, "live": read_live()})
+            return
 
         if accion == "gps_info":
             self._send_json(200, {"ok": True, "gps_id": clave_gps(), "live": read_live()})
