@@ -12,7 +12,7 @@ Escribe en la raíz del proyecto:
 los km de la ruta para que la meta caiga en esa cifra).
 
 Después: pon los avituallamientos en aid_stations.json y revisa carrera.json.
-Solo usa la biblioteca estándar."""
+El panel web hace lo mismo al subir el GPX. Solo usa la biblioteca estándar."""
 import argparse, json, math, pathlib, sys
 import xml.etree.ElementTree as ET
 
@@ -27,15 +27,20 @@ def km_entre(a, b):
     return 2 * 6371 * math.asin(math.sqrt(h))
 
 
-def leer_gpx(ruta):
+def leer_gpx(raiz):
     """[(lat, lon, ele|None)] de los <trkpt> (o <rtept> si no hay track)."""
-    raiz = ET.parse(ruta).getroot()
     puntos = [e for e in raiz.iter() if e.tag.rsplit('}', 1)[-1] == 'trkpt'] or \
              [e for e in raiz.iter() if e.tag.rsplit('}', 1)[-1] == 'rtept']
     salida = []
     for p in puntos:
         ele = next((h.text for h in p if h.tag.rsplit('}', 1)[-1] == 'ele'), None)
-        salida.append((float(p.get('lat')), float(p.get('lon')), float(ele) if ele else None))
+        try:
+            lat, lon, e = float(p.get('lat')), float(p.get('lon')), float(ele) if ele else None
+        except (TypeError, ValueError):
+            continue                  # punto roto: se salta
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            continue
+        salida.append((lat, lon, e if e is not None and math.isfinite(e) else None))
     return salida
 
 
@@ -51,21 +56,29 @@ def desnivel(eles):
     return round(sube), round(baja)
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('gpx')
-    ap.add_argument('--nombre', default='Ruta')
-    ap.add_argument('--distancia', type=float, help='km oficiales (si no, los del GPX)')
-    a = ap.parse_args()
-
-    pts = leer_gpx(a.gpx)
+def preparar(gpx, nombre='Ruta', distancia=None):
+    """GPX (ruta o bytes) → (route.geojson, elevation.json, resumen). Lo usa
+    también el panel web al subir el GPX."""
+    if isinstance(gpx, bytes):
+        # nada de entidades XML en un fichero subido (bomba de entidades)
+        if b'<!ENTITY' in gpx or b'<!DOCTYPE' in gpx:
+            raise ValueError('El GPX trae declaraciones DOCTYPE/ENTITY: no se admite.')
+        try:
+            raiz = ET.fromstring(gpx)
+        except ET.ParseError as exc:
+            raise ValueError(f'No es un GPX válido ({exc}).')
+    else:
+        raiz = ET.parse(gpx).getroot()
+    pts = leer_gpx(raiz)
     if len(pts) < 2:
-        sys.exit('El GPX no tiene puntos de track ni de ruta.')
+        raise ValueError('El GPX no tiene puntos de track ni de ruta.')
     cum = [0.0]
     for p, q in zip(pts, pts[1:]):
         cum.append(cum[-1] + km_entre(p, q))
     largo = cum[-1]
-    oficial = a.distancia or round(largo, 2)
+    if largo < 0.1:
+        raise ValueError('El GPX mide menos de 100 m.')
+    oficial = round(distancia, 2) if distancia else round(largo, 2)
     factor = oficial / largo
 
     # elevación: si faltan datos en algún punto, se rellena con el anterior
@@ -83,10 +96,9 @@ def main():
     m = min(len(pts), MAX_PUNTOS)
     idx = sorted({round(i * (len(pts) - 1) / (m - 1)) for i in range(m)})
     ruta = {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {
-        'name': a.nombre, 'distance_km': oficial, 'elevation_gain_m': sube, 'elevation_loss_m': baja,
+        'name': nombre, 'distance_km': oficial, 'elevation_gain_m': sube, 'elevation_loss_m': baja,
         'points_original': len(pts), 'points_simplified': len(idx)},
         'geometry': {'type': 'LineString', 'coordinates': [[round(pts[i][1], 6), round(pts[i][0], 6)] for i in idx]}}]}
-    (RAIZ / 'route.geojson').write_text(json.dumps(ruta, ensure_ascii=False), encoding='utf-8')
 
     perfil, grads = [], []
     if con_ele:
@@ -107,13 +119,29 @@ def main():
             'avg_up_grad_pct': round(sum(subidas) / len(subidas), 1) if subidas else 0,
             'min_ele_m': round(min(eles), 0) if con_ele else 0, 'max_ele_m': round(max(eles), 0) if con_ele else 0,
             'profile': perfil}
-    (RAIZ / 'elevation.json').write_text(json.dumps(elev, ensure_ascii=False), encoding='utf-8')
+    resumen = {'puntos_gpx': len(pts), 'km_medidos': round(largo, 2), 'distancia_km': oficial,
+               'puntos_ruta': len(idx), 'puntos_perfil': len(perfil), 'desnivel_m': sube, 'bajada_m': baja,
+               'con_elevacion': con_ele}
+    return ruta, elev, resumen
 
-    print(f'{len(pts)} puntos en el GPX · {largo:.2f} km medidos · {oficial} km oficiales')
-    print(f'route.geojson: {len(idx)} puntos · elevation.json: {len(perfil)} puntos de perfil, +{sube} m / -{baja} m')
-    if not con_ele:
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('gpx')
+    ap.add_argument('--nombre', default='Ruta')
+    ap.add_argument('--distancia', type=float, help='km oficiales (si no, los del GPX)')
+    a = ap.parse_args()
+    try:
+        ruta, elev, r = preparar(a.gpx, a.nombre, a.distancia)
+    except ValueError as exc:
+        sys.exit(str(exc))
+    (RAIZ / 'route.geojson').write_text(json.dumps(ruta, ensure_ascii=False), encoding='utf-8')
+    (RAIZ / 'elevation.json').write_text(json.dumps(elev, ensure_ascii=False), encoding='utf-8')
+    print(f"{r['puntos_gpx']} puntos en el GPX · {r['km_medidos']:.2f} km medidos · {r['distancia_km']} km oficiales")
+    print(f"route.geojson: {r['puntos_ruta']} puntos · elevation.json: {r['puntos_perfil']} puntos de perfil, +{r['desnivel_m']} m / -{r['bajada_m']} m")
+    if not r['con_elevacion']:
         print('⚠ El GPX no trae elevación: el perfil saldrá plano.')
-    print(f'Pon en carrera.json: "distancia_km": {oficial}, "desnivel_m": {sube}')
+    print(f'Pon en carrera.json: "distancia_km": {r["distancia_km"]}, "desnivel_m": {r["desnivel_m"]}')
 
 
 if __name__ == '__main__':

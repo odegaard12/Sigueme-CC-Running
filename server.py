@@ -16,6 +16,8 @@ import mimetypes
 import shutil
 import unicodedata
 import hashlib
+import importlib
+from zoneinfo import ZoneInfo
 import ipaddress
 import secrets
 import hmac
@@ -199,131 +201,169 @@ def carreras_archivadas():
     return sorted(salida, key=lambda x: (x[1].get("fecha") or x[0]), reverse=True)
 
 
-# --- avisos a la pulsera ----------------------------------------------------
-# avisos.json (herramientas/plan_avisos.py) dice «en el km X, este texto». En
-# carrera, con cada posición nueva se calcula el km de ruta y se manda por ntfy
-# el aviso que toca (el móvil lo enseña y Mi Fitness lo pasa a la pulsera).
-# ⚠️ Por ESTADO, no por eventos: si sin cobertura llegan de golpe muchos puntos,
-# no se mandan los avisos atrasados; se manda uno, el de ahora, y si ya no vale
-# (p. ej. «subida en 300 m» cuando ya vas subiendo), el estado actual.
-NTFY_URL = os.environ.get("SIGUEME_NTFY", "")          # p. ej. https://ntfy.sh/tema-secreto
-NTFY_TOKEN = os.environ.get("SIGUEME_NTFY_TOKEN", "")
+# --- preparar la carrera desde el panel ------------------------------------
+# GPX → ruta y perfil, datos de la carrera, avituallamientos y plan de avisos
+# se hacen desde el panel (las mismas funciones que herramientas/*.py). El plan
+# de avisos NO lo manda el servidor: lo baja la app del móvil antes de salir y
+# lo lanza ella, sin cobertura (el móvil enseña la notificación y Mi Fitness la
+# pasa a la pulsera).
 AVISOS_PATH = os.path.join(ROOT, "avisos.json")
-AVISO_SEPARACION = int(os.environ.get("SIGUEME_AVISO_SEP", "90"))   # s como mínimo entre avisos
-_ruta_km = {"mtime": None, "pts": [], "cum": []}
+HERRAMIENTAS = os.path.join(ROOT, "herramientas")
+MAX_GPX = 20_000_000          # bytes: un GPX de 100 km con 1 punto/s ronda 5 MB
 
 
-def km_txt(km):
-    return f"{round(km * 1000 / 50) * 50:.0f}m" if km < 1 else f"{km:.1f}".replace(".", ",") + "km"
+def herramienta(nombre):
+    """Importa herramientas/<nombre>.py al usarla: si falta la carpeta, el
+    servidor arranca igual y solo falla esa acción."""
+    if HERRAMIENTAS not in sys.path:
+        sys.path.insert(0, HERRAMIENTAS)
+    # recargado cada vez (son ms): al desplegar una herramienta nueva no hace
+    # falta reiniciar el servidor
+    return importlib.reload(importlib.import_module(nombre))
+
+
+def leer_json(nombre, defecto=None):
+    try:
+        with open(os.path.join(ROOT, nombre), encoding="utf-8-sig") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return defecto
+
+
+def escribir_json(nombre, datos):
+    """Atómico, como live.json: o el fichero viejo entero o el nuevo entero."""
+    tmp = os.path.join(ROOT, "." + nombre + ".tmp")     # con punto: no se sirve
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, os.path.join(ROOT, nombre))
 
 
 def plan_avisos():
-    try:
-        with open(AVISOS_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
+    return leer_json("avisos.json")
+
+
+def generar_plan(antes=None, cada=None):
+    """Rehace avisos.json con el perfil, los avituallamientos y el D+ oficial.
+    Sin antes/cada, los del plan anterior. Devuelve el plan, o None sin perfil.
+    ⚠️ Los textos cambiados a mano se pierden: el panel lo avisa."""
+    perfil = (leer_json("elevation.json") or {}).get("profile") or []
+    if len(perfil) < 10:
         return None
+    viejo = plan_avisos() or {}
+    antes = antes if antes is not None else viejo.get("antes_km", 0.3)
+    cada = cada if cada is not None else viejo.get("cada_fijo")      # None = según la distancia
+    plan = herramienta("plan_avisos").calcular(
+        perfil, leer_json("aid_stations.json") or [], carrera().get("desnivel_m"), antes, cada)
+    plan["cada_fijo"] = cada
+    escribir_json("avisos.json", plan)
+    return plan
 
 
-def ruta_con_km():
-    """Puntos de la ruta con su km (escalado a la distancia oficial)."""
-    ruta = os.path.join(ROOT, "route.geojson")
-    try:
-        mtime = os.path.getmtime(ruta)
-    except OSError:
-        return [], []
-    if mtime != _ruta_km["mtime"]:
-        pts = puntos_de_la_ruta()
-        cum = [0.0]
-        for p, q in zip(pts, pts[1:]):
-            cum.append(cum[-1] + km_entre(p, q))
-        factor = (carrera().get("distancia_km") or cum[-1]) / (cum[-1] or 1)
-        _ruta_km.update(mtime=mtime, pts=pts, cum=[c * factor for c in cum])
-    return _ruta_km["pts"], _ruta_km["cum"]
+def _texto(valor, largo):
+    return re.sub(r"[\x00-\x1f\x7f]", "", str(valor or "")).strip()[:largo]
 
 
-def km_en_ruta(lat, lon, ultimo):
-    """Km de ruta del punto, siempre hacia delante (la salida y la meta suelen
-    estar juntas: buscar en toda la ruta saltaría a la meta en la salida)."""
-    pts, cum = ruta_con_km()
-    mejor, km = 0.15, None                     # a más de 150 m de la ruta: no se sabe
-    for ventana in (5, 40):
-        for p, c in zip(pts, cum):
-            if ultimo - 0.5 <= c <= ultimo + ventana:
-                d = km_entre((lat, lon), p)
-                if d < mejor:
-                    mejor, km = d, c
-        if km is not None:
-            return km
-    return None
-
-
-def texto_estado(plan, km):
-    for s in plan.get("subidas", []):
-        if s["inicio"] <= km < s["fin"]:
-            queda = s["fin"] - km
-            return f"EN SUBIDA · quedan {km_txt(queda)} · +{round(s['desnivel_m'] * queda / (s['largo_km'] or 1))}m"
-    total = plan.get("distancia_km") or 0
-    resto = next((r for k, r in plan.get("restante", []) if k >= km), 0)
-    return f"KM {km:.0f} · faltan {km_txt(max(0, total - km))} · +{resto}m"
-
-
-def aviso_que_toca(plan, km, enviado):
-    pendientes = [a for a in plan.get("avisos", []) if a["km"] <= km and a["id"] > enviado]
-    if not pendientes:
+def _numero_en(valor, minimo, maximo):
+    """Número dentro de [minimo, maximo], None si viene vacío; ValueError si no vale."""
+    if valor is None or valor == "":
         return None
-    a = pendientes[-1]
-    if km > a["valido_hasta"]:
-        return a["id"], texto_estado(plan, km)
-    # {dist}: lo que falta hasta el avituallamiento, calculado al enviar
-    falta = (a.get("objetivo_km") or km) - km
-    return a["id"], a["texto"].replace("{dist}", "en " + km_txt(falta) if falta > 0.05 else "AQUÍ")
+    n = float(valor)
+    if not (minimo <= n <= maximo):          # también descarta NaN
+        raise ValueError
+    return n
 
 
-def enviar_ntfy(texto, prueba=False):
-    """En un hilo aparte: el GPS nunca espera a ntfy. Devuelve el hilo."""
-    def mandar():
-        cab = {"Title": "Sígueme CC".encode("utf-8").decode("latin-1"), "Tags": "mountain", "Priority": "high"}
-        if NTFY_TOKEN:
-            cab["Authorization"] = "Bearer " + NTFY_TOKEN
-        try:
-            urllib.request.urlopen(urllib.request.Request(NTFY_URL, texto.encode("utf-8"), cab), timeout=15)
-            apuntar_historial("aviso", texto=texto, prueba=prueba)
-        except Exception as exc:
-            apuntar_historial("aviso_fallido", texto=texto, error=str(exc)[:120])
-    hilo = threading.Thread(target=mandar, daemon=True)
-    hilo.start()
-    return hilo
+def limpiar_carrera(d):
+    """Valida lo que manda el formulario del panel. Devuelve (carrera, error)."""
+    c = dict(carrera())
+    try:
+        for k, largo in (("nombre", 80), ("lugar", 80), ("modalidad", 40)):
+            if k in d:
+                c[k] = _texto(d[k], largo)
+        if "fecha" in d:
+            c["fecha"] = _texto(d["fecha"], 10)
+            if c["fecha"]:
+                datetime.strptime(c["fecha"], "%Y-%m-%d")
+        if "hora_salida" in d:
+            c["hora_salida"] = _texto(d["hora_salida"], 5)
+            if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", c["hora_salida"]):
+                return None, "hora de salida no válida (HH:MM)"
+        if "zona_horaria" in d:
+            c["zona_horaria"] = _texto(d["zona_horaria"], 40) or "Europe/Madrid"
+            ZoneInfo(c["zona_horaria"])
+        for k, lo, hi in (("limite_h", 0.5, 200), ("distancia_km", 0.1, 2000), ("desnivel_m", 0, 50000),
+                          ("km_minimos_meta", 0, 2000), ("ocultar_m", 0, 5000)):
+            if k in d:
+                c[k] = _numero_en(d[k], lo, hi)
+                if c[k] is not None and k in ("desnivel_m", "ocultar_m"):
+                    c[k] = int(c[k])
+        if "slug" in d:
+            c["slug"] = _texto(d["slug"], 65).lower()
+            if c["slug"] and not re.fullmatch(r"\d{4}-[a-z0-9-]{1,60}", c["slug"]):
+                return None, "dirección del archivo no válida: año-nombre, p. ej. 2027-mi-trail"
+        if isinstance(d.get("corredor"), dict):
+            c["corredor"] = {"nombre": _texto(d["corredor"].get("nombre"), 60),
+                             "dorsal": _texto(d["corredor"].get("dorsal"), 12)}
+        if isinstance(d.get("bici"), dict):
+            piezas = d["bici"].get("piezas") or {}
+            if not isinstance(piezas, dict) or len(piezas) > 30:
+                return None, "piezas de la bici no válidas"
+            c["bici"] = {"modelo": _texto(d["bici"].get("modelo"), 80),
+                         "piezas": {_texto(k, 30): _texto(v, 60) for k, v in piezas.items() if _texto(k, 30)}}
+            if not c["bici"]["modelo"] and not c["bici"]["piezas"]:
+                c["bici"] = None
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return None, "algún dato no es válido (revisa fecha, números y zona horaria)"
+    except Exception:                       # ZoneInfoNotFoundError y compañía
+        return None, "zona horaria desconocida (p. ej. Europe/Madrid)"
+    c = {k: v for k, v in c.items() if v is not None and v != ""}
+    if c.get("km_minimos_meta") and c.get("distancia_km") and c["km_minimos_meta"] >= c["distancia_km"]:
+        return None, "los km mínimos para dar meta tienen que ser menos que la distancia (vacío = el 80 %)"
+    if not c.get("nombre"):
+        return None, "falta el nombre de la carrera"
+    return c, None
 
 
-def revisar_avisos(lat, lon):
-    """Con cada posición nueva en carrera: km de ruta y, si toca, aviso."""
-    if lat is None or lon is None:
-        return
-    live = read_live()
-    if not live.get("started_at") or live.get("finished_at"):
-        return
-    plan = plan_avisos()
-    km = km_en_ruta(lat, lon, live.get("ruta_km") or 0) if plan else None
-    if km is None:
-        return
-    patch = {"ruta_km": round(km, 3)}
-    toca = aviso_que_toca(plan, km, live.get("aviso_id") or 0)
-    if toca and NTFY_URL and time.time() - (live.get("aviso_t") or 0) >= AVISO_SEPARACION:
-        enviar_ntfy(toca[1])
-        patch.update(aviso_id=toca[0], aviso_t=time.time(), aviso_texto=toca[1], aviso_km=round(km, 2))
-    merge_live(patch)
+def limpiar_avituallamientos(lista):
+    if not isinstance(lista, list) or len(lista) > 60:
+        return None, "lista de avituallamientos no válida"
+    total = carrera().get("distancia_km") or 2000
+    salida = []
+    try:
+        for a in lista:
+            nombre, km = _texto(a.get("name"), 40), _numero_en(a.get("km"), 0, total + 1)
+            if not nombre or km is None:
+                raise ValueError
+            fila = {"name": nombre, "km": round(km, 2)}
+            if a.get("principal"):
+                fila["principal"] = True
+            salida.append(fila)
+    except (AttributeError, TypeError, ValueError):
+        return None, f"cada avituallamiento necesita nombre y km (entre 0 y {total:g})"
+    return sorted(salida, key=lambda a: a["km"]), None
+
+
+def plan_para_la_app():
+    """Todo lo que la app del móvil baja antes de salir para funcionar sin
+    cobertura: carrera, ruta, perfil, avituallamientos y avisos."""
+    ruta = leer_json("route.geojson") or {}
+    try:
+        coords = ruta["features"][0]["geometry"]["coordinates"]
+    except (KeyError, IndexError, TypeError):
+        coords = []
+    plan = plan_avisos() or {}
+    return {"carrera": carrera(), "ruta": coords,
+            "perfil": [[p["d"], p["ele"]] for p in (leer_json("elevation.json") or {}).get("profile", [])],
+            "avituallamientos": leer_json("aid_stations.json") or [],
+            "avisos": plan.get("avisos", []), "subidas": plan.get("subidas", []),
+            "restante": plan.get("restante", []), "generado": plan.get("generado")}
 
 
 def preparacion():
     """Lista de comprobación de la carrera para el panel."""
     c, plan = carrera(), plan_avisos()
-    def leer_json(n):
-        try:
-            with open(os.path.join(ROOT, n), encoding="utf-8-sig") as f:
-                return json.load(f)
-        except (OSError, ValueError):
-            return None
     ruta = leer_json("route.geojson") or {}
     avit = leer_json("aid_stations.json") or []
     try:
@@ -335,8 +375,8 @@ def preparacion():
             "distancia_km": c.get("distancia_km"), "ruta_km": props.get("distance_km"),
             "avituallamientos": len(avit), "avisos": len((plan or {}).get("avisos", [])),
             "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,
-            "ntfy": bool(NTFY_URL), "resultado_pendiente": os.path.exists(os.path.join(ROOT, "resultado.json")),
-            "aviso_ultimo": {k: live.get(k) for k in ("aviso_texto", "aviso_km", "aviso_t")} if live.get("aviso_texto") else None}
+            "resultado_pendiente": os.path.exists(os.path.join(ROOT, "resultado.json")),
+            "app_at": live.get("app_at")}
 
 
 def hay_carrera_en_marcha():
@@ -871,7 +911,6 @@ def recibir_gps(puntos):
         patch["speed_kmh"] = round(velocidad, 1) if velocidad is not None else None
     patch.update(extra)
     merge_live(patch)
-    revisar_avisos(ultimo["lat"], ultimo["lon"])
 
 
 def huella(t):
@@ -946,8 +985,6 @@ def poll_loop(url, stop_event):
                         and estado.get("started_at"):
                     patch["finished_at"] = datetime.now(timezone.utc).isoformat()
                 merge_live(patch)
-                if "lat" in patch:
-                    revisar_avisos(patch.get("lat"), patch.get("lon"))
                 fallos = 0
                 sin_datos = False
             else:
@@ -1403,6 +1440,127 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 pass
         return datetime.now(timezone.utc).isoformat()
 
+    def _sesion_panel(self):
+        """Peticiones del panel que no son JSON (subir el GPX): solo con sesión
+        y desde esta misma web."""
+        return self.mismo_origen() is True and sesion_valida(self.headers.get("Cookie"))
+
+    def _en_carrera(self):
+        live = read_live()
+        return bool(live.get("started_at") and not live.get("finished_at"))
+
+    def _subir_gpx(self):
+        if not self._sesion_panel():
+            self._send_json(403, {"error": "sesión caducada"})
+            return
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= MAX_GPX:
+            self._send_json(413, {"error": "el GPX tiene que pesar menos de 20 MB"})
+            return
+        cuerpo = self.rfile.read(largo)
+        if self._en_carrera():
+            self._send_json(409, {"error": "hay una carrera en marcha: termínala antes de cambiar la ruta"})
+            return
+        consulta = parse_qs(urlparse(self.path).query)
+        try:
+            distancia = _numero_en((consulta.get("distancia") or [""])[0], 0.1, 2000)
+        except ValueError:
+            self._send_json(400, {"error": "distancia oficial no válida"})
+            return
+        c = carrera()
+        try:
+            ruta, elev, resumen = herramienta("preparar_ruta").preparar(cuerpo, c.get("nombre") or "Ruta", distancia)
+        except ValueError as exc:
+            self._send_json(400, {"error": str(exc)})
+            return
+        escribir_json("route.geojson", ruta)
+        escribir_json("elevation.json", elev)
+        # la distancia y el D+ de la carrera pasan a ser los de esta ruta
+        c.update(distancia_km=resumen["distancia_km"], desnivel_m=resumen["desnivel_m"] or c.get("desnivel_m"))
+        # ⚠️ km mínimos de la carrera anterior (80 en una de 21 km): la llegada
+        # no se detectaría nunca. Fuera, y vale el 80 % de la ruta nueva.
+        if (c.get("km_minimos_meta") or 0) >= resumen["distancia_km"]:
+            c.pop("km_minimos_meta", None)
+        escribir_json("carrera.json", c)
+        plan = generar_plan()
+        apuntar_historial("gpx", km=resumen["distancia_km"], puntos=resumen["puntos_gpx"])
+        self._send_json(200, {"ok": True, "resumen": resumen, "carrera": c, "plan": plan, "preparacion": preparacion()})
+
+    def _preparar(self, accion, data):
+        if accion in ("guardar_carrera", "guardar_avituallamientos") and self._en_carrera():
+            self._send_json(409, {"error": "hay una carrera en marcha: termínala antes de cambiar sus datos"})
+            return
+        if accion == "guardar_carrera":
+            c, error = limpiar_carrera(data.get("carrera") if isinstance(data.get("carrera"), dict) else {})
+            if error:
+                self._send_json(400, {"error": error})
+                return
+            antes = carrera()
+            escribir_json("carrera.json", c)
+            # el D+ oficial escala el "quedan +X m" de los avisos
+            plan = generar_plan() if c.get("desnivel_m") != antes.get("desnivel_m") else plan_avisos()
+            self._send_json(200, {"ok": True, "carrera": c, "plan": plan, "preparacion": preparacion()})
+            return
+        if accion == "guardar_avituallamientos":
+            lista, error = limpiar_avituallamientos(data.get("avituallamientos"))
+            if error:
+                self._send_json(400, {"error": error})
+                return
+            escribir_json("aid_stations.json", lista)
+            self._send_json(200, {"ok": True, "avituallamientos": lista, "plan": generar_plan(), "preparacion": preparacion()})
+            return
+        if accion == "generar_avisos":
+            try:
+                antes = _numero_en(data.get("antes_m"), 50, 2000)
+                cada = _numero_en(data.get("cada_km"), 1, 100)
+            except (TypeError, ValueError):
+                self._send_json(400, {"error": "ajustes no válidos: aviso entre 50 y 2000 m antes, resumen cada 1–100 km"})
+                return
+            plan = generar_plan(antes / 1000 if antes else None, cada or None)
+            if plan is None:
+                self._send_json(400, {"error": "falta la ruta con perfil: sube antes el GPX"})
+                return
+            self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
+            return
+        # guardar_avisos: textos cambiados a mano; vacío = ese aviso se quita
+        plan = plan_avisos()
+        cambios = data.get("avisos")
+        if not plan or not isinstance(cambios, list) or len(cambios) > 1000:
+            self._send_json(400, {"error": "no hay plan de avisos que cambiar"})
+            return
+        textos = {}
+        for x in cambios:
+            if isinstance(x, dict) and isinstance(x.get("id"), int):
+                textos[x["id"]] = _texto(x.get("texto"), 120)
+        plan["avisos"] = [dict(a, texto=textos.get(a["id"], a["texto"])) for a in plan["avisos"]
+                          if textos.get(a["id"], a["texto"])]
+        escribir_json("avisos.json", plan)
+        self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
+
+    def _plan_app(self):
+        """La app del móvil baja aquí el plan, con el mismo identificador que
+        usa para mandar la posición (no hace falta la clave del panel)."""
+        ip = self.ip_cliente()
+        if segundos_de_castigo(ip) > 5:
+            self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+            return
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+            ident = str(json.loads(self.rfile.read(largo) if 0 < largo <= 4096 else b"{}").get("device_id") or "")
+        except (ValueError, AttributeError):
+            ident = ""
+        clave = clave_gps()
+        if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
+            fallo_de(ip)
+            self._send_json(403, {"error": "identificador incorrecto"})
+            return
+        acierto_de(ip)
+        merge_live({"app_at": datetime.now(timezone.utc).isoformat()})
+        self._send_json(200, plan_para_la_app())
+
     def do_POST(self):
         if self.path.startswith("/api/gps"):
             try:
@@ -1416,19 +1574,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
+        if self.path.startswith("/api/gpx"):
+            self._subir_gpx()
+            return
+        if self.path == "/api/plan":
+            self._plan_app()
+            return
         if self.path == "/api/logout":
             self._send_json(200, {"ok": True}, cookie="")
             return
         if self.path not in ("/api/live", "/api/login"):
             self._send_json(404, {"error": "not found"})
             return
-        # el panel manda unos pocos cientos de bytes; sin tope, cualquiera
+        # el panel manda pocos KB (formularios, avisos); sin tope, cualquiera
         # podía hacer que el servidor leyera en memoria lo que quisiera
         try:
             length = int(self.headers.get("Content-Length", 0))
         except ValueError:
             length = -1
-        if not 0 <= length <= 16_384:
+        if not 0 <= length <= 65_536:
             self._send_json(413, {"error": "petición demasiado grande"})
             return
         try:
@@ -1510,21 +1674,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(200, {"ok": True, "gps_id": nueva, "live": read_live()})
             return
 
-        if accion == "aviso_prueba":
-            if not NTFY_URL:
-                self._send_json(400, {"error": "falta SIGUEME_NTFY en la configuración del servicio"})
-                return
-            enviar_ntfy("Prueba de Sígueme CC · si lo ves en la pulsera, los avisos funcionan", prueba=True).join(16)
-            ultimo = ""
-            try:
-                with open(HISTORIAL_PATH, encoding="utf-8") as f:
-                    ultimo = f.readlines()[-1]
-            except (OSError, IndexError):
-                pass
-            if '"aviso_fallido"' in ultimo:
-                self._send_json(502, {"error": "ntfy no contestó: " + json.loads(ultimo).get("error", "")})
-            else:
-                self._send_json(200, {"ok": True})
+        if accion == "config":
+            # lo que el panel necesita para los formularios de preparación
+            self._send_json(200, {"ok": True, "carrera": carrera(), "avituallamientos": leer_json("aid_stations.json") or [],
+                                  "plan": plan_avisos(), "preparacion": preparacion()})
+            return
+
+        if accion in ("guardar_carrera", "guardar_avituallamientos", "generar_avisos", "guardar_avisos"):
+            self._preparar(accion, data)
             return
 
         if accion == "gps_info":

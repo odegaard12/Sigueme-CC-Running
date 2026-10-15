@@ -1,122 +1,110 @@
 # Preparar una carrera, paso a paso
 
-Guía para dejar lista una carrera nueva. El panel enseña en todo momento qué
-está listo y qué falta:
+Todo se hace desde el **panel** (`/admin.html`), con cobertura y antes de la
+carrera. Arriba, la lista «Preparar la carrera» enseña en todo momento qué está
+listo y qué falta:
 
 <p align="center"><img src="capturas/preparacion.jpg" width="380" alt="Lista «Preparar la carrera» del panel"></p>
 
 ```
- ┌────────────┐   ┌──────────────┐   ┌──────────────┐   ┌───────────┐   ┌──────────┐
- │ 1. GPX     │ → │ 2. carrera   │ → │ 3. plan de   │ → │ 4. panel  │ → │ 5. día de│
- │ → ruta     │   │   .json      │   │    avisos    │   │  y móvil  │   │  carrera │
- └────────────┘   └──────────────┘   └──────────────┘   └───────────┘   └──────────┘
-                                                                              ↓
-                                         ┌──────────────┐   ┌──────────────────────┐
-                                         │ 7. archivar  │ ← │ 6. resultado (FIT)   │
-                                         └──────────────┘   └──────────────────────┘
+ ┌────────────┐   ┌──────────┐   ┌──────────────┐   ┌───────────┐   ┌──────────────┐
+ │ 1. datos   │ → │ 2. GPX   │ → │ 3. avitualla-│ → │ 4. avisos │ → │ 5. app del   │
+ │  carrera   │   │  → ruta  │   │    mientos   │   │ (revisar) │   │ móvil (QR)   │
+ └────────────┘   └──────────┘   └──────────────┘   └───────────┘   └──────────────┘
+                                                                           ↓
+          ┌──────────────┐   ┌──────────────────────┐   ┌────────────────────────┐
+          │ 8. archivar  │ ← │ 7. resultado (FIT)   │ ← │ 6. día de la carrera   │
+          └──────────────┘   └──────────────────────┘   └────────────────────────┘
 ```
+
+> Con una carrera en marcha el panel no deja cambiar la ruta, los datos ni los
+> avituallamientos: así un toque sin querer no la rompe a mitad.
 
 ---
 
-## 1 · La ruta, desde el GPX
+## 1 · Datos de la carrera
 
-```bash
-python herramientas/preparar_ruta.py ruta.gpx --nombre "Mi carrera" --distancia 21.1
-```
+Nombre, lugar, fecha, hora de salida, tiempo límite, corredor y dorsal. En
+«Más datos»: la bici para la ficha, los metros alrededor de salida y meta en
+los que no se publica tu posición (si salen de tu casa), la zona horaria y la
+dirección que tendrá al archivarla.
 
-| Sale | Para qué |
-|---|---|
-| `route.geojson` | el trazado del mapa |
-| `elevation.json` | el perfil y las pendientes |
+<p align="center"><img src="capturas/carrera.jpg" width="380" alt="Formulario de datos de la carrera"></p>
 
-`--distancia` = km **oficiales** si no coinciden con los que mide el GPX. Al
-terminar te dice qué poner en `carrera.json` (distancia y desnivel).
+## 2 · La ruta, desde el GPX
 
-✅ En el panel: **Ruta: 21,1 km**
+El GPX de la organización o el que exportas de Strava, Komoot o Wikiloc. Si la
+organización da otra distancia oficial, ponla en «Km oficiales»: la web escala
+los km para que la meta caiga ahí.
 
-## 2 · Los datos de la carrera
+<p align="center"><img src="capturas/ruta.jpg" width="380" alt="Subir el GPX"></p>
 
-`carrera.json` (todos los campos, en la tabla del README):
+Salen el trazado del mapa y el perfil; la distancia y el desnivel pasan a los
+datos de la carrera (si el desnivel oficial es otro, cámbialo en el paso 1).
+Hasta 20 MB.
 
-```json
-{
-  "nombre": "Mi trail 2026", "lugar": "Mi pueblo", "fecha": "2026-11-22",
-  "hora_salida": "09:00", "modalidad": "Trail", "distancia_km": 21.1, "desnivel_m": 850,
-  "limite_h": 5, "km_minimos_meta": 17, "slug": "2026-mi-trail",
-  "corredor": {"nombre": "Odegaard12", "dorsal": "27"}
-}
-```
+## 3 · Avituallamientos
 
-`aid_stations.json` (avituallamientos):
+Nombre y km de cada uno. «grande» lo marca como principal en el mapa.
 
-```json
-[{"name": "Avituallamiento 1", "km": 7.5}, {"name": "Meta", "km": 21.1, "principal": true}]
-```
+<p align="center"><img src="capturas/avit.jpg" width="380" alt="Avituallamientos"></p>
 
-✅ En el panel: **Carrera** y **Avituallamientos**
+## 4 · Los avisos para la pulsera
 
-## 3 · El plan de avisos para la pulsera
+Se calculan solos del perfil al subir la ruta (y se rehacen al cambiar los
+avituallamientos o el desnivel). Revísalos en casa:
 
-```bash
-python herramientas/plan_avisos.py
-```
-
-Lee el perfil y escribe `avisos.json`: **en el km X → este texto**. Te enseña
-las subidas y los avisos para revisarlos en casa (si alguno no te gusta,
-cambia su texto en `avisos.json`):
-
-```
-SUBIDAS
-   1. km   4.20–  5.60    1,4km  + 112 m   8.0%  máx 19%  larga
-   2. km   9.10–  9.50     400m  +  58 m  14.5%  máx 22%  corta_dura
-AVISOS
-  km   3.90  SUBIDA LARGA · 1,4km · 8% · +112m · rampa 19%
-  km   7.20  AVITUALLAMIENTO en 300m · Avituallamiento 1
-  km   8.80  CORTA DURA · 400m · 15% · +58m · rampa 22%
-  km   9.50  CIMA · bajada 1,2km · -90m · quedan +310m
-  km  20.10  ÚLTIMO KM · ¡a por ello!
-```
+<p align="center"><img src="capturas/avisos.jpg" width="380" alt="Plan de avisos"></p>
 
 | Aviso | Cuándo |
 |---|---|
-| SUBIDA / SUBIDA LARGA / CORTA DURA / RAMPA | 300 m antes de cada subida (tipo, largo, %, D+, rampa) |
+| SUBIDA / SUBIDA LARGA / CORTA DURA / RAMPA | antes de cada subida (tipo, largo, %, D+, rampa) |
 | MITAD | a mitad de las subidas de más de 1,5 km |
 | CIMA | arriba: cómo es la bajada y el D+ que queda |
-| AVITUALLAMIENTO | 300 m antes (la distancia se calcula al enviarlo) |
+| AVITUALLAMIENTO | antes de cada uno (lo que falta se calcula al avisar) |
 | KM X | resumen cada 3 km (5 o 10 en carreras largas) |
 | ÚLTIMA SUBIDA · ÚLTIMO KM | al final |
 
-Repechos de menos de 30 m y falsos llanos (< 3 %) no avisan. Dos avisos a
-menos de 400 m se juntan.
+- **Avisar antes** (300 m) y **Resumen cada** se cambian arriba y se pulsa
+  «Rehacer el plan».
+- Los textos se cambian a mano; un texto vacío quita ese aviso.
+- Repechos de menos de 30 m y falsos llanos (< 3 %) no avisan; dos avisos a
+  menos de 400 m se juntan en uno.
 
-✅ En el panel: **Plan de avisos: N avisos**
+Los avisos **no dependen de la cobertura**: los lanza el móvil, que los tiene
+guardados (paso 5).
 
-## 4 · Panel y móvil (la víspera)
+## 5 · La app del móvil
 
-1. **Avisos a la pulsera:** en la configuración del servicio,
-   `SIGUEME_NTFY=https://tu-ntfy/tema` (y `SIGUEME_NTFY_TOKEN` si hace falta).
-   En el móvil, la app **ntfy** suscrita a ese tema y, en Mi Fitness,
-   notificaciones de ntfy activadas. Pulsa **Enviar aviso de prueba** con una
-   actividad en marcha en la pulsera: tiene que vibrar y verse el texto.
-2. **Generar identificador nuevo** en el panel y ponlo en Traccar (y en el reloj
-   si lo usas).
-3. Si usas iGPSPORT, pega su enlace de seguimiento en el panel.
+*(La app Android llega en la siguiente versión.)* En casa, abre la app y
+escanea el código QR del panel: baja la ruta, el perfil y los avisos. En
+carrera, con la pantalla apagada y sin cobertura:
 
-✅ En el panel: todo en verde
+- sigue tu km con el GPS del propio móvil y lanza cada aviso como notificación;
+  **Mi Fitness** (o la app de tu reloj) la pasa a la pulsera;
+- guarda tu posición y la manda a la web en cuanto vuelve la cobertura.
 
-## 5 · El día de la carrera
+Si cambias algo en el panel después, pulsa «Actualizar plan» en la app. Si
+generas un identificador nuevo, vuelve a escanear el código.
+
+Mientras no tengas la app, la posición se puede mandar con **Traccar Client**
+(Android e iPhone) o el reloj Amazfit: en el README, «Elegir cómo se manda tu
+posición».
+
+## 6 · El día de la carrera
 
 1. Panel → revisa la hora de salida → **Guardar y empezar a seguir**.
-2. Traccar (y/o la miniapp del reloj) en marcha antes de salir. En el panel,
-   «GPS del móvil: ahora mismo».
+2. La app (o Traccar, o la miniapp del reloj) en marcha antes de salir. En el
+   panel, «GPS del móvil: ahora mismo».
 3. Comparte el enlace con el botón de la web.
-4. Los avisos llegan solos. **Por estado:** si te quedas sin cobertura, al
-   volver no llegan los avisos atrasados, llega uno con lo de ahora
-   («EN SUBIDA · quedan 600m · +60m»).
+4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
+   y una marca transparente avanza por la ruta a tu ritmo medio. También
+   enseña la hora prevista al próximo avituallamiento y a meta. Al volver la
+   cobertura llegan los puntos guardados y manda otra vez tu posición real.
 5. La llegada se detecta sola (si el directo se cortó, pon la hora en el panel
    y **Finalizar seguimiento**).
 
-## 6 · El resultado
+## 7 · El resultado
 
 ```bash
 python herramientas/generar_resultado.py actividad.fit
@@ -124,7 +112,13 @@ python herramientas/generar_resultado.py actividad.fit
 
 La web pasa a modo resultado: tiempo, paso por avituallamientos, repetición.
 
-## 7 · Archivar
+## 8 · Archivar
 
-Panel → **Archivar la carrera terminada**. Queda en `/2026-mi-trail/`, sale en
+Panel → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
 `/carreras/` y la portada queda a cero para la siguiente.
+
+---
+
+**Sin panel**, desde la consola, hacen lo mismo:
+`python herramientas/preparar_ruta.py ruta.gpx --distancia 21.1` (paso 2) y
+`python herramientas/plan_avisos.py [--antes 0.3] [--cada 3]` (paso 4).

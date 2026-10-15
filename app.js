@@ -447,6 +447,7 @@ function rehacerMapa(motivo) {
   chinchetasPuestas = false;
   marcadoresConPopup.length = 0;
   riderMarkerEl = null;
+  fantasmaEl = null;
   tamanoCorredorActual = 0;
   kmPintado = null;
   objetivo = null;      // si no, el siguiente poll no repinta la línea azul
@@ -871,6 +872,39 @@ function fmtTime(iso) {
 let desfaseReloj = 0;
 function ahoraServidor() { return Date.now() - desfaseReloj; }
 
+// ---------- Sin cobertura: por dónde irá y a qué hora llega ----------------
+// Con el ritmo medio desde la salida hasta el último dato (paradas incluidas:
+// mejor un poco prudente que prometer de más). Sin datos nuevos, una marca
+// transparente avanza por la ruta a ese ritmo; al volver la cobertura llegan
+// los puntos guardados en el móvil y manda otra vez la posición real.
+let fantasmaEl = null;
+function previsiones(km, datoIso) {
+  if (!lastStartedAt || !datoIso || !totalRouteKm || km == null || km < 1) return null;
+  const t = new Date(datoIso).getTime();
+  const v = km / ((t - new Date(lastStartedAt)) / 3600000);       // km/h
+  if (!(v > 0.5 && v < 80)) return null;
+  const est = Math.min(totalRouteKm, km + v * Math.max(0, ahoraServidor() - t) / 3600000);
+  const hora = k => fmtTime(new Date(t + (k - km) / v * 3600000).toISOString());
+  const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
+  return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
+}
+
+function pintarFantasma(km) {
+  const p = km != null && mapReady ? pointAtKm(km / (factorKm || 1)) : null;
+  if (!p) {
+    if (fantasmaEl) { fantasmaEl.remove(); fantasmaEl = null; }
+    return;
+  }
+  if (!fantasmaEl) {
+    const el = document.createElement('div');
+    el.className = 'map3d-fantasma';
+    el.title = 'Posición estimada (sin cobertura)';
+    fantasmaEl = new maplibregl.Marker({ element: el, opacityWhenCovered: '0.99' }).setLngLat([p[1], p[0]]).addTo(map3d);
+  } else {
+    fantasmaEl.setLngLat([p[1], p[0]]);
+  }
+}
+
 function fmtElapsedSince(iso) {
   const s = Math.floor((ahoraServidor() - new Date(iso).getTime()) / 1000);
   if (s < 0) return '00:00';
@@ -1243,7 +1277,9 @@ function pollLive() {
           estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
           estado.classList.add('previo');
         } else {
-          estado.textContent = '';
+          const pr = previsiones(doneKm, data.data_at);
+          estado.textContent = pr ? (pr.prox ? 'Próximo avituallamiento: ' + pr.prox.name + ' (km ' + num(pr.prox.km) + ') ~' + pr.horaProx + ' · ' : '') +
+            'Meta ~' + pr.horaMeta : '';
         }
       }
 
@@ -1251,7 +1287,13 @@ function pollLive() {
       const pie = document.getElementById('live-updated');
       const hueco = ultimoDato ? (ahoraServidor() - new Date(ultimoDato)) : 0;
       {
-        if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
+        const pr = haArrancado && !enMeta && hueco > 240000 && data.status_label === 'En carrera'
+          ? previsiones(doneKm, data.data_at) : null;
+        pintarFantasma(pr ? pr.est : null);
+        if (pr) {
+          pie.textContent = '📡 Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
+            ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
+        } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
         } else if (ultimoDato && data.lat != null) {

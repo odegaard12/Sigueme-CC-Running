@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin · Sígueme CC</title>
 <link rel="icon" type="image/png" href="favicon.png?v=3">
-<link rel="stylesheet" href="style.css?v=58">
+<link rel="stylesheet" href="style.css?v=60">
 <style>
   .admin-wrap { max-width: 520px; margin: 0 auto; padding: 18px 16px 60px; }
   .tarjeta {
@@ -76,6 +76,21 @@
   .save-btn { background: #f1f3f1; color: #0c0f0e; border: none; font-weight: 600; }
   .btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
   .stop-btn { background: #3a1f1f; border-color: #5a2c2c; width: 100%; margin-top: 12px; }
+  .field textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font: inherit; font-size: 0.9rem; resize: vertical; }
+  .tarjeta .save-btn { margin-top: 4px; }
+  .lista-avit, .lista-avisos { display: grid; gap: 6px; margin-top: 10px; }
+  .fila-avit { display: grid; grid-template-columns: 1fr 76px auto 40px; gap: 6px; align-items: center; }
+  .fila-aviso { display: grid; grid-template-columns: 58px 1fr; gap: 6px; align-items: center; }
+  .fila-avit input, .fila-aviso textarea { width: 100%; min-width: 0; padding: 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text); font-size: 0.88rem; }
+  .fila-aviso textarea { font: inherit; font-size: 0.85rem; resize: vertical; }
+  .fila-aviso span { font-size: 0.75rem; color: var(--muted); text-align: right; }
+  .fila-avit label { font-size: 0.7rem; color: var(--muted); display: flex; gap: 4px; align-items: center; }
+  .fila-avit .btn { min-height: 40px; padding: 0; }
+  .qr { background: #fff; border-radius: 12px; padding: 12px; width: min(240px, 100%); margin: 12px auto; }
+  .qr svg { display: block; width: 100%; height: auto; }
+  .qr:empty { display: none; }
   #login-screen { max-width: 340px; margin: 50px auto 0; padding: 0 16px; }
   #panel { display: none; }
 </style>
@@ -182,17 +197,85 @@
   <div class="tarjeta">
     <h2>Preparar la carrera</h2>
     <ul class="lista-prep" id="lista-prep"><li>Cargando…</li></ul>
-    <div class="howto" style="margin-top:8px">Cómo hacer cada paso: guía «Preparar una carrera» en el README del proyecto.</div>
+    <div class="howto" style="margin-top:8px">Todo se prepara aquí abajo, en orden, con cobertura
+      y antes de la carrera. Con una carrera en marcha no se pueden cambiar la ruta ni los datos.</div>
+  </div>
+
+  <div class="tarjeta" id="t-carrera">
+    <h2>1 · Datos de la carrera</h2>
+    <div class="field"><label for="c-nombre">Nombre</label><input id="c-nombre" maxlength="80" placeholder="Mi trail 2027"></div>
+    <div class="row2">
+      <div class="field"><label for="c-lugar">Lugar</label><input id="c-lugar" maxlength="80"></div>
+      <div class="field"><label for="c-modalidad">Modalidad</label><input id="c-modalidad" maxlength="40" placeholder="Trail, MTB…"></div>
+      <div class="field"><label for="c-fecha">Fecha</label><input type="date" id="c-fecha"></div>
+      <div class="field"><label for="c-hora">Hora de salida</label><input type="time" id="c-hora"></div>
+      <div class="field"><label for="c-limite">Tiempo límite (h)</label><input type="number" step="0.5" min="0.5" id="c-limite"></div>
+      <div class="field"><label for="c-kmmin">Km mínimos para dar meta</label><input type="number" step="0.1" min="0" id="c-kmmin" placeholder="80 % de la ruta"></div>
+      <div class="field"><label for="c-dist">Distancia oficial (km)</label><input type="number" step="0.01" min="0.1" id="c-dist"></div>
+      <div class="field"><label for="c-desnivel">Desnivel + oficial (m)</label><input type="number" step="1" min="0" id="c-desnivel"></div>
+      <div class="field"><label for="c-corredor">Corredor</label><input id="c-corredor" maxlength="60"></div>
+      <div class="field"><label for="c-dorsal">Dorsal</label><input id="c-dorsal" maxlength="12"></div>
+    </div>
+    <details>
+      <summary>Más datos (bici, privacidad, archivo)</summary>
+      <div class="field"><label for="c-bici">Bici (modelo, opcional)</label><input id="c-bici" maxlength="80"></div>
+      <div class="field"><label for="c-piezas">Piezas de la bici, una por línea: «Cuadro: carbono»</label><textarea id="c-piezas" rows="4"></textarea></div>
+      <div class="row2">
+        <div class="field"><label for="c-ocultar">Ocultar posición cerca de salida/meta (m)</label><input type="number" min="0" max="5000" id="c-ocultar" placeholder="0"></div>
+        <div class="field"><label for="c-zona">Zona horaria</label><input id="c-zona" maxlength="40" placeholder="Europe/Madrid"></div>
+      </div>
+      <div class="field"><label for="c-slug">Dirección al archivarla</label><input id="c-slug" maxlength="65" placeholder="2027-mi-trail (vacío = automática)"></div>
+    </details>
+    <button class="save-btn" id="guardar-carrera" type="button">Guardar datos de la carrera</button>
   </div>
 
   <div class="tarjeta">
-    <h2>Avisos a la pulsera</h2>
-    <div class="howto">Subidas, avituallamientos y lo que queda, como notificación en el móvil
-      (app ntfy) que Mi Fitness pasa a la pulsera. Se manda solo el aviso que toca ahora.</div>
-    <p class="estado-fila" style="margin-top:8px"><span id="avisos-text">—</span></p>
+    <h2>2 · Ruta (GPX)</h2>
+    <div class="howto">El GPX de la organización, o el que exportas de Strava, Komoot o Wikiloc. Salen
+      el trazado del mapa y el perfil, y se rehace el plan de avisos.</div>
+    <p class="estado-fila" style="margin-top:8px"><span id="ruta-text">—</span></p>
+    <div class="field" style="margin-top:8px"><label for="gpx">Fichero GPX</label><input type="file" id="gpx" accept=".gpx,application/gpx+xml"></div>
+    <div class="field"><label for="gpx-dist">Km oficiales (opcional, si no coinciden con los del GPX)</label><input type="number" step="0.01" min="0.1" id="gpx-dist"></div>
+    <button class="save-btn" id="subir-gpx" type="button">Subir ruta</button>
+  </div>
+
+  <div class="tarjeta">
+    <h2>3 · Avituallamientos</h2>
+    <div class="howto">Nombre y km de cada uno (la meta también, si quieres que salga en el mapa).</div>
+    <div id="lista-avit" class="lista-avit"></div>
     <div class="quick-actions" style="margin-top:8px">
-      <button class="btn" id="aviso-prueba" type="button">Enviar aviso de prueba</button>
+      <button class="btn" id="mas-avit" type="button">+ Añadir</button>
+      <button class="save-btn" id="guardar-avit" type="button">Guardar</button>
     </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>4 · Avisos a la pulsera</h2>
+    <div class="howto">Salen solos del perfil: antes de cada subida (tipo, largo, %, D+, rampa), a mitad
+      de las largas, en la cima, antes de cada avituallamiento, un resumen cada pocos km y el último km.
+      La app del móvil los baja y los lanza <b>sin cobertura</b>; Mi Fitness los pasa a la pulsera.</div>
+    <div class="row2" style="margin-top:10px">
+      <div class="field"><label for="av-antes">Avisar antes (m)</label><input type="number" min="50" max="2000" step="50" id="av-antes" placeholder="300"></div>
+      <div class="field"><label for="av-cada">Resumen cada (km)</label><input type="number" min="1" max="100" id="av-cada" placeholder="según la distancia"></div>
+    </div>
+    <button class="btn" id="generar-avisos" type="button" style="width:100%">Rehacer el plan con estos ajustes</button>
+    <p class="estado-fila" style="margin-top:10px"><span id="avisos-text">—</span></p>
+    <details id="det-avisos">
+      <summary>Ver y cambiar los textos</summary>
+      <div class="howto">Texto vacío = ese aviso se quita. «{dist}» se cambia por lo que falta al avituallamiento.
+        Rehacer el plan (o cambiar la ruta o los avituallamientos) vuelve a los textos automáticos.</div>
+      <div id="lista-avisos" class="lista-avisos"></div>
+      <button class="save-btn" id="guardar-avisos" type="button" style="margin-top:8px">Guardar textos</button>
+    </details>
+  </div>
+
+  <div class="tarjeta">
+    <h2>5 · App del móvil (Android)</h2>
+    <div class="howto">Abre la app Sígueme CC y escanea este código en casa: baja la ruta y los avisos, y en
+      carrera manda tu posición cuando hay cobertura. Si luego cambias algo aquí arriba, pulsa «Actualizar plan»
+      en la app; si generas un identificador nuevo, vuelve a escanearlo.</div>
+    <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
+    <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
   </div>
 
   <div class="tarjeta">
@@ -254,6 +337,7 @@
   </div>
 </div>
 
+<script src="lib/qrcode-generator-1.4.4.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 // La clave ya no se guarda en el navegador: el servidor da una cookie de
@@ -361,6 +445,7 @@ async function cargarGps() {
     if (res.status === 403) { sesionCaducada(); return; }
     const d = await res.json();
     $('gps-id').value = d.gps_id || '(falta generar la clave en el servidor)';
+    pintarQR(d.gps_id);
   } catch (e) {
     // sin conexión al abrir el panel: se reintenta (antes se quedaba en blanco)
     setTimeout(cargarGps, 10000);
@@ -370,12 +455,12 @@ async function cargarGps() {
 // identificador nuevo para cada carrera (el de antes deja de valer)
 document.addEventListener('click', async e => {
   if (e.target.id !== 'rotar-gps') return;
-  if (!confirm('¿Generar un identificador nuevo?\n\nEl actual deja de valer al momento: tendrás que ponerlo en Traccar y en el reloj.')) return;
+  if (!confirm('¿Generar un identificador nuevo?\n\nEl actual deja de valer al momento: tendrás que ponerlo en Traccar y en el reloj, y volver a escanear el código en la app.')) return;
   const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'rotar_gps' }) });
   if (res.status === 403) { sesionCaducada(); return; }
   const d = await res.json();
-  if (d.gps_id) { $('gps-id').value = d.gps_id; $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
+  if (d.gps_id) { $('gps-id').value = d.gps_id; pintarQR(d.gps_id); $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
 });
 
 document.addEventListener('click', async e => {
@@ -397,28 +482,140 @@ function pintarPreparacion(p) {
     m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '⚠'; li.append(m, ' ' + texto); return li; };
   const km = v => v != null ? String(v).replace('.', ',') : '—';
   const l = $('lista-prep'); l.textContent = '';
+  const app = p.app_at ? 'la app bajó el plan el ' + new Date(p.app_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   l.append(
-    fila(p.nombre && p.fecha, 'Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—') + ' (carrera.json)'),
-    fila(p.ruta_km, 'Ruta: ' + km(p.ruta_km) + ' km' + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (carrera.json dice ' + km(p.distancia_km) + ')' : '') + ' (preparar_ruta.py)'),
-    fila(p.avituallamientos > 0, 'Avituallamientos: ' + p.avituallamientos + ' (aid_stations.json)'),
-    fila(p.avisos > 0, 'Plan de avisos: ' + p.avisos + ' avisos, ' + p.subidas + ' subidas (plan_avisos.py)'),
-    fila(p.ntfy, p.ntfy ? 'Avisos a la pulsera: configurados (pulsa «Enviar aviso de prueba»)' : 'Avisos a la pulsera: sin configurar (SIGUEME_NTFY)'),
+    fila(p.nombre && p.fecha, '1 · Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—')),
+    fila(p.ruta_km, '2 · Ruta: ' + (p.ruta_km ? km(p.ruta_km) + ' km' : 'falta subir el GPX') + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (la carrera dice ' + km(p.distancia_km) + ')' : '')),
+    fila(p.avituallamientos > 0, '3 · Avituallamientos: ' + p.avituallamientos),
+    fila(p.avisos > 0, '4 · Avisos a la pulsera: ' + (p.avisos ? p.avisos + ' avisos, ' + p.subidas + ' subidas' : 'falta la ruta')),
+    fila(!!p.app_at, '5 · App del móvil: ' + (app || 'aún no ha bajado el plan (escanea el código)')),
     fila(p.id_largo, p.id_largo ? 'Identificador GPS largo' : 'Identificador GPS corto o viejo: pulsa «Generar identificador nuevo»'),
     fila(!p.resultado_pendiente, p.resultado_pendiente ? 'Hay un resultado sin archivar: archívalo antes de empezar' : 'Sin resultados pendientes de archivar'));
-  $('avisos-text').textContent = !p.ntfy ? 'Sin configurar' : p.aviso_ultimo
-    ? 'Último: km ' + km(p.aviso_ultimo.aviso_km) + ' · ' + p.aviso_ultimo.aviso_texto
-    : (p.avisos ? p.avisos + ' avisos listos' : 'Falta el plan de avisos');
+  $('app-text').textContent = app ? app[0].toUpperCase() + app.slice(1) : 'La app aún no ha bajado el plan';
 }
 
-document.addEventListener('click', async e => {
-  if (e.target.id !== 'aviso-prueba') return;
-  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'aviso_prueba' }) });
-  if (res.status === 403) { sesionCaducada(); return; }
-  const d = await res.json();
-  $('msg').textContent = res.ok ? 'Aviso de prueba enviado: mira el móvil y la pulsera' : (d.error || 'No se pudo enviar');
-  $('msg').className = res.ok ? 'msg ok' : 'msg err';
+// ---------- preparar la carrera (formularios) ----------
+// Acciones de preparación: no tocan el directo, así que no pasan por post()
+async function accion(cuerpo, url = '/api/live', opciones = {}) {
+  const msg = $('msg');
+  msg.textContent = 'Guardando…'; msg.className = 'msg';
+  try {
+    const res = await fetch(url, Object.assign({ method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo), signal: AbortSignal.timeout ? AbortSignal.timeout(60000) : undefined }, opciones));
+    if (res.status === 403) { sesionCaducada(); return null; }
+    const d = await res.json();
+    if (!res.ok) { msg.textContent = d.error || 'No se pudo guardar'; msg.className = 'msg err'; return null; }
+    msg.textContent = 'Guardado ✓'; msg.className = 'msg ok';
+    if (d.carrera) pintarFormCarrera(d.carrera);
+    if (d.avituallamientos) pintarAvituallamientos(d.avituallamientos);
+    if ('plan' in d) pintarAvisos(d.plan);
+    if (d.preparacion) pintarPreparacion(d.preparacion);
+    return d;
+  } catch (e) {
+    msg.textContent = 'No se pudo conectar con el servidor.'; msg.className = 'msg err';
+    return null;
+  }
+}
+
+const CAMPOS = { nombre: 'c-nombre', lugar: 'c-lugar', modalidad: 'c-modalidad', fecha: 'c-fecha', hora_salida: 'c-hora',
+  limite_h: 'c-limite', km_minimos_meta: 'c-kmmin', distancia_km: 'c-dist', desnivel_m: 'c-desnivel',
+  ocultar_m: 'c-ocultar', zona_horaria: 'c-zona', slug: 'c-slug' };
+function pintarFormCarrera(c) {
+  for (const [k, id] of Object.entries(CAMPOS)) $(id).value = c[k] ?? '';
+  $('c-corredor').value = (c.corredor || {}).nombre || '';
+  $('c-dorsal').value = (c.corredor || {}).dorsal || '';
+  $('c-bici').value = (c.bici || {}).modelo || '';
+  $('c-piezas').value = Object.entries((c.bici || {}).piezas || {}).map(([k, v]) => k + ': ' + v).join('\n');
+  const r = c.distancia_km ? km(c.distancia_km) + ' km' + (c.desnivel_m ? ' · +' + c.desnivel_m + ' m' : '') : '';
+  $('ruta-text').textContent = r ? 'Ruta actual: ' + r : 'Sin ruta';
+}
+const km = v => v != null ? String(v).replace('.', ',') : '—';
+$('guardar-carrera').addEventListener('click', () => {
+  const c = {};
+  for (const [k, id] of Object.entries(CAMPOS)) c[k] = $(id).value.trim();
+  c.corredor = { nombre: $('c-corredor').value.trim(), dorsal: $('c-dorsal').value.trim() };
+  const piezas = {};
+  $('c-piezas').value.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) piezas[l.slice(0, i).trim()] = l.slice(i + 1).trim(); });
+  c.bici = { modelo: $('c-bici').value.trim(), piezas };
+  accion({ action: 'guardar_carrera', carrera: c });
 });
+
+$('subir-gpx').addEventListener('click', async () => {
+  const f = $('gpx').files[0];
+  if (!f) { $('msg').textContent = 'Elige antes el fichero GPX'; $('msg').className = 'msg err'; return; }
+  if (f.size > 20e6) { $('msg').textContent = 'El GPX tiene que pesar menos de 20 MB'; $('msg').className = 'msg err'; return; }
+  const dist = $('gpx-dist').value.trim();
+  const d = await accion(null, '/api/gpx' + (dist ? '?distancia=' + encodeURIComponent(dist) : ''),
+    { headers: { 'Content-Type': 'application/gpx+xml' }, body: f });
+  if (d) {
+    const r = d.resumen;
+    $('msg').textContent = 'Ruta lista ✓ ' + km(r.distancia_km) + ' km · +' + r.desnivel_m + ' m · ' + r.puntos_gpx + ' puntos' +
+      (r.con_elevacion ? '' : ' · ⚠ el GPX no trae altura: perfil plano y sin avisos de subidas');
+    $('gpx').value = '';
+  }
+});
+
+function filaAvit(a = {}) {
+  const fila = document.createElement('div'); fila.className = 'fila-avit';
+  fila.innerHTML = '<input class="a-nombre" maxlength="40" placeholder="Nombre" aria-label="Nombre">' +
+    '<input class="a-km" type="number" step="0.1" min="0" placeholder="km" aria-label="Km">' +
+    '<label><input class="a-principal" type="checkbox"> grande</label>' +
+    '<button class="btn" type="button" aria-label="Quitar">✕</button>';
+  fila.querySelector('.a-nombre').value = a.name || '';
+  fila.querySelector('.a-km').value = a.km ?? '';
+  fila.querySelector('.a-principal').checked = !!a.principal;
+  fila.querySelector('button').addEventListener('click', () => fila.remove());
+  return fila;
+}
+function pintarAvituallamientos(lista) {
+  $('lista-avit').replaceChildren(...lista.map(filaAvit));
+}
+$('mas-avit').addEventListener('click', () => { const f = filaAvit(); $('lista-avit').append(f); f.querySelector('input').focus(); });
+$('guardar-avit').addEventListener('click', () => accion({ action: 'guardar_avituallamientos',
+  avituallamientos: [...document.querySelectorAll('.fila-avit')].map(f => ({
+    name: f.querySelector('.a-nombre').value.trim(), km: f.querySelector('.a-km').value,
+    principal: f.querySelector('.a-principal').checked })) }));
+
+function pintarAvisos(plan) {
+  const avisos = (plan && plan.avisos) || [];
+  $('avisos-text').textContent = avisos.length ? avisos.length + ' avisos · ' + plan.subidas.length + ' subidas · avisa ' +
+    Math.round((plan.antes_km || 0.3) * 1000) + ' m antes · resumen cada ' + plan.cada_km + ' km' : 'Falta la ruta (paso 2)';
+  if (plan && !$('av-antes').value) $('av-antes').value = Math.round((plan.antes_km || 0.3) * 1000);
+  if (plan && plan.cada_fijo && !$('av-cada').value) $('av-cada').value = plan.cada_fijo;
+  $('lista-avisos').replaceChildren(...avisos.map(a => {
+    const fila = document.createElement('div'); fila.className = 'fila-aviso';
+    fila.innerHTML = '<span></span><textarea rows="2" maxlength="120"></textarea>';
+    fila.querySelector('span').textContent = 'km ' + km(a.km.toFixed(1));
+    const inp = fila.querySelector('textarea');
+    inp.value = a.texto; inp.dataset.id = a.id; inp.setAttribute('aria-label', 'Aviso del km ' + a.km);
+    return fila;
+  }));
+}
+$('generar-avisos').addEventListener('click', () => {
+  if (!confirm('¿Rehacer el plan de avisos?\n\nLos textos cambiados a mano vuelven a los automáticos.')) return;
+  accion({ action: 'generar_avisos', antes_m: $('av-antes').value, cada_km: $('av-cada').value });
+});
+$('guardar-avisos').addEventListener('click', () => accion({ action: 'guardar_avisos',
+  avisos: [...document.querySelectorAll('.fila-aviso textarea')].map(i => ({ id: +i.dataset.id, texto: i.value.trim() })) }));
+
+// código QR para la app: dirección del servidor + identificador
+function pintarQR(id) {
+  if (!id || typeof qrcode !== 'function') { $('qr').textContent = ''; return; }
+  const q = qrcode(0, 'M');
+  q.addData('siguemecc://config?u=' + encodeURIComponent(location.origin) + '&id=' + encodeURIComponent(id));
+  q.make();
+  $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+}
+
+async function cargarConfig() {
+  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'config' }) }).catch(() => null);
+  if (!res || !res.ok) return;
+  const d = await res.json();
+  pintarFormCarrera(d.carrera || {});
+  pintarAvituallamientos(d.avituallamientos || []);
+  pintarAvisos(d.plan);
+}
 
 async function pollStatus() {
   try {
@@ -439,6 +636,7 @@ function entrar() {
   $('panel').style.display = 'block';
   pollStatus();
   cargarGps();
+  cargarConfig();
   if (!sondeo) sondeo = setInterval(pollStatus, 5000);
 }
 

@@ -68,6 +68,14 @@ def subidas(d, e):
                 res.append((imin, imax)); estado, imin = "busca", i
     if estado == "sube":
         res.append((imin, imax))
+    # ⚠️ El mínimo es el PRIMER punto más bajo: con un llano antes, la subida
+    # empezaba al principio del llano (una rampa de 400 m al 17 % medía 3 km
+    # al 2 % y se descartaba por falso llano). Se recorta lo que no sube (< 1 %).
+    def recorta(a, b):
+        while a < b and (e[a + 1] - e[a]) / ((d[a + 1] - d[a]) * 1000 or 1) < 0.01:
+            a += 1
+        return a, b
+    res = [recorta(a, b) for a, b in res]
     return [(a, b) for a, b in res
             if e[b] - e[a] >= D_MIN and (e[b] - e[a]) / ((d[b] - d[a]) * 1000 or 1) * 100 >= PEND_MIN]
 
@@ -83,26 +91,14 @@ def rampa_max(d, e, a, b, tramo=0.1):
     return mejor
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--antes', type=float, default=0.3, help='km antes de subidas y avituallamientos (0,3)')
-    ap.add_argument('--cada', type=float, help='resumen cada tantos km (por defecto según la distancia)')
-    a = ap.parse_args()
-
-    perfil = json.loads((RAIZ / 'elevation.json').read_text(encoding='utf-8')).get('profile') or []
+def calcular(perfil, avitus=(), oficial=None, antes=0.3, cada=None):
+    """Perfil (elevation.json["profile"]) → plan de avisos (lo que va en
+    avisos.json). Lo usan este script y el panel web."""
     if len(perfil) < 10:
-        sys.exit('elevation.json no tiene perfil: créalo antes con preparar_ruta.py')
-    try:
-        avitus = json.loads((RAIZ / 'aid_stations.json').read_text(encoding='utf-8-sig'))
-    except (OSError, ValueError):
-        avitus = []
+        raise ValueError('elevation.json no tiene perfil: créalo antes con preparar_ruta.py')
     d, e = suavizar(perfil)
     total = d[-1]
-    try:
-        oficial = json.loads((RAIZ / 'carrera.json').read_text(encoding='utf-8')).get('desnivel_m')
-    except (OSError, ValueError):
-        oficial = None
-    cada = a.cada or (3 if total <= 30 else 5 if total <= 60 else 10)
+    cada = cada or (3 if total <= 30 else 5 if total <= 60 else 10)
 
     # D+ que queda desde cada punto (con el perfil suavizado)
     restante = [0.0] * len(e)
@@ -125,6 +121,8 @@ def main():
         k = j
         while k + 1 < len(e) and e[k + 1] <= e[k] + 2:
             k += 1
+        while k > j and (e[k - 1] - e[k]) / ((d[k] - d[k - 1]) * 1000 or 1) < 0.01:
+            k -= 1                                   # sin el llano del final
         lista_subidas.append({"n": n + 1, "inicio": round(d[i], 2), "fin": round(d[j], 2), "largo_km": round(largo, 2),
                               "desnivel_m": round(gan), "pendiente": round(pend, 1), "rampa_max": round(rmax),
                               "tipo": tipo, "bajada_km": round(d[k] - d[j], 2), "bajada_m": round(e[j] - e[k])})
@@ -148,7 +146,7 @@ def main():
                 txt += f" · rampa {s['rampa_max']}%"
         if ultima:
             txt = "ÚLTIMA " + txt
-        poner(s["inicio"] - a.antes, "subida", txt, s["inicio"] + 0.3, 1)
+        poner(max(0, s["inicio"] - antes), "subida", txt, s["inicio"] + 0.3, 1)   # la que empieza en la salida avisa en el km 0
         if s["largo_km"] >= 1.5:
             mitad = (s["inicio"] + s["fin"]) / 2
             poner(mitad, "mitad", f"MITAD · quedan {km_txt(s['fin'] - mitad)} · +{round(s['desnivel_m'] / 2)}m", s["fin"], 2)
@@ -156,7 +154,7 @@ def main():
             poner(s["fin"], "cima", f"CIMA · bajada {km_txt(s['bajada_km'])} · -{s['bajada_m']}m · quedan +{round(dplus_desde(s['fin']))}m",
                   s["fin"] + 0.3, 2)
     for av in avitus:
-        poner(av["km"] - a.antes, "avituallamiento", f"AVITUALLAMIENTO {{dist}} · {av['name']}", av["km"] + 0.2, 1, av["km"])
+        poner(max(0, av["km"] - antes), "avituallamiento", f"AVITUALLAMIENTO {{dist}} · {av['name']}", av["km"] + 0.2, 1, av["km"])
     k = cada
     while k < total - 1.5:
         poner(k, "resumen", f"KM {k:.0f} · faltan {km_txt(total - k)} · +{round(dplus_desde(k))}m", k + 0.8, 3)
@@ -184,8 +182,31 @@ def main():
         av.pop("prio", None)
 
     salida = {"generado": datetime.now(timezone.utc).isoformat(), "distancia_km": round(total, 2),
-              "antes_km": a.antes, "subidas": lista_subidas, "avisos": final,
+              "antes_km": antes, "subidas": lista_subidas, "avisos": final,
               "restante": [[round(d[i], 2), round(restante[i])] for i in range(0, len(d), max(1, len(d) // 200))]}
+    salida["cada_km"] = cada
+    return salida
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--antes', type=float, default=0.3, help='km antes de subidas y avituallamientos (0,3)')
+    ap.add_argument('--cada', type=float, help='resumen cada tantos km (por defecto según la distancia)')
+    a = ap.parse_args()
+    perfil = json.loads((RAIZ / 'elevation.json').read_text(encoding='utf-8')).get('profile') or []
+    try:
+        avitus = json.loads((RAIZ / 'aid_stations.json').read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError):
+        avitus = []
+    try:
+        oficial = json.loads((RAIZ / 'carrera.json').read_text(encoding='utf-8')).get('desnivel_m')
+    except (OSError, ValueError):
+        oficial = None
+    try:
+        salida = calcular(perfil, avitus, oficial, a.antes, a.cada)
+    except ValueError as exc:
+        sys.exit(str(exc))
+    lista_subidas, final, cada = salida["subidas"], salida["avisos"], salida["cada_km"]
     (RAIZ / 'avisos.json').write_text(json.dumps(salida, ensure_ascii=False, indent=1), encoding='utf-8')
 
     print(f"{len(lista_subidas)} subidas · {len(final)} avisos · resumen cada {cada:g} km → avisos.json\n")

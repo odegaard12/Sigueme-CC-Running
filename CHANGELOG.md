@@ -4,6 +4,26 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.8.0 · 2026-10-16
+- **La carrera se prepara entera desde el panel**, sin consola: datos de la
+  carrera, subir el GPX (trazado y perfil), avituallamientos y plan de avisos
+  (ajustes «avisar antes» y «resumen cada», textos editables). Todo validado en
+  el servidor y bloqueado con una carrera en marcha.
+- **Avisos sin cobertura:** el servidor ya no los manda (fuera ntfy). El plan
+  lo baja la app del móvil por `/api/plan` con el identificador del GPS, y el
+  panel enseña el código QR para configurarla. La app Android, en la siguiente
+  versión.
+- **Web sin cobertura:** «Sin cobertura desde las HH:MM (km X)», marca
+  transparente con la posición estimada a su ritmo medio, y hora prevista al
+  próximo avituallamiento y a meta.
+- Avisos: una subida con un llano delante empezaba en el llano y se descartaba
+  por falso llano (una rampa de 400 m al 17 % medía 3 km al 2 %); la bajada ya
+  no cuenta el llano del final; la subida que empieza en la salida avisa en el
+  km 0.
+- Al subir una ruta más corta se quitan los «km mínimos para dar meta» de la
+  carrera anterior (la llegada no se habría detectado nunca).
+- `desplegar.sh` copia también carpetas (`herramientas/`, `lib/`).
+
 ## v1.7.0 · 2026-10-16
 - **Avisos de desnivel a la pulsera:** `herramientas/plan_avisos.py` calcula
   desde el perfil las subidas (larga, corta y dura, rampa), su mitad, la cima con

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.7.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.8.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -36,8 +36,8 @@
 > **¿Primera carrera?** Sigue la guía visual [Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md).
 
 1. [Qué necesitas](#1-qué-necesitas)
-2. [Preparar tu carrera](#2-preparar-tu-carrera)
-3. [Arrancar el servidor](#3-arrancar-el-servidor)
+2. [Arrancar el servidor](#2-arrancar-el-servidor)
+3. [Preparar tu carrera](#3-preparar-tu-carrera)
 4. [Elegir cómo se manda tu posición](#4-elegir-cómo-se-manda-tu-posición)
 5. [El día de la carrera](#5-el-día-de-la-carrera)
 6. [Después de la carrera](#6-después-de-la-carrera)
@@ -54,31 +54,34 @@
 - Al menos una forma de mandar tu posición: el **móvil con Traccar Client**
   (gratis), un **reloj Amazfit** o el directo de un ciclocomputador **iGPSPORT**.
 
-## 2. Preparar tu carrera
-
-Todo lo propio de una carrera está en cuatro ficheros de la raíz. El código no
-nombra ninguna carrera.
-
-**a) La ruta y el perfil, desde el GPX:**
+## 2. Arrancar el servidor
 
 ```bash
-python herramientas/preparar_ruta.py ruta.gpx --nombre "Mi carrera" --distancia 103.4
+pip install curl_cffi                      # solo hace falta para iGPSPORT
+python3 server.py --hash-clave             # pide una clave y escribe ADMIN_HASH=…
+ADMIN_USER=tu_usuario ADMIN_HASH='scrypt:…' python3 server.py 8710
 ```
 
-Crea `route.geojson` (trazado) y `elevation.json` (perfil y pendientes).
-`--distancia` son los km oficiales, si no coinciden con los que mide el GPX.
+- La web queda en `http://localhost:8710` y el **panel** en `/admin.html`
+  (usuario y clave del paso anterior; el servidor solo guarda el hash).
+- Para dejarlo como servicio, y para tener **dos Raspberry** con una de
+  respaldo, sigue [`despliegue/README.md`](despliegue/README.md).
 
-**b) Los avituallamientos**, en `aid_stations.json` (km de la ruta en que están):
+## 3. Preparar tu carrera
 
-```json
-[
-  {"name": "Avituallamiento 1", "km": 10.3},
-  {"name": "Asistencia mecánica", "km": 46, "taller": true},
-  {"name": "Comida", "km": 72.4, "principal": true}
-]
-```
+Todo desde el **panel**, en cinco pasos y con una lista que dice qué falta. La
+guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md)**.
 
-**c) Los datos de la carrera y del corredor**, en `carrera.json`:
+1. **Datos de la carrera:** nombre, fecha, hora de salida, límite, corredor…
+2. **Ruta:** subes el GPX y salen el trazado y el perfil.
+3. **Avituallamientos:** nombre y km de cada uno.
+4. **Avisos a la pulsera:** salen solos del perfil (subidas, cimas,
+   avituallamientos, lo que queda); los revisas y cambias los textos.
+5. **App del móvil:** escaneas el código QR y baja todo para ir sin cobertura.
+
+Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
+(`carrera.json`, `route.geojson`, `elevation.json`, `aid_stations.json`,
+`avisos.json`); el código no nombra ninguna carrera. Campos de `carrera.json`:
 
 | Campo | Qué es | Ejemplo |
 |---|---|---|
@@ -94,32 +97,11 @@ Crea `route.geojson` (trazado) y `elevation.json` (perfil y pendientes).
 | `ocultar_m` | Si la salida o la meta son en tu casa: a menos de estos metros no se publica tu posición | `500` |
 | `slug` | Dirección de la carrera al archivarla (opcional) | `"2026-mi-carrera"` |
 
-**d) Tu avatar**, en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
+Tu **avatar** va en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
 
-**e) El plan de avisos para la pulsera** (opcional):
-
-```bash
-python herramientas/plan_avisos.py
-```
-
-Crea `avisos.json` desde el perfil: 300 m antes de cada subida (tipo, largo, %, D+ y
-rampa), mitad de las largas, cima con la bajada y el D+ que queda, avituallamientos,
-resumen cada pocos km, última subida y último km. En carrera el servidor manda por
-**ntfy** el aviso que toca según tu km (`SIGUEME_NTFY`); el móvil lo enseña y Mi
-Fitness lo pasa a la pulsera. Por estado: sin cobertura no llegan avisos viejos.
-
-## 3. Arrancar el servidor
-
-```bash
-pip install curl_cffi                      # solo hace falta para iGPSPORT
-python3 server.py --hash-clave             # pide una clave y escribe ADMIN_HASH=…
-ADMIN_USER=tu_usuario ADMIN_HASH='scrypt:…' python3 server.py 8710
-```
-
-- La web queda en `http://localhost:8710` y el **panel** en `/admin.html`
-  (usuario y clave del paso anterior; el servidor solo guarda el hash).
-- Para dejarlo como servicio, y para tener **dos Raspberry** con una de
-  respaldo, sigue [`despliegue/README.md`](despliegue/README.md).
+Sin panel, las mismas herramientas desde la consola:
+`python herramientas/preparar_ruta.py ruta.gpx --distancia 21.1` y
+`python herramientas/plan_avisos.py`.
 
 ## 4. Elegir cómo se manda tu posición
 
@@ -144,7 +126,11 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
    «GPS del móvil» tiene que decir «ahora mismo».
 3. Comparte el enlace con el botón de la cabecera de la web: en WhatsApp sale
    con su vista previa.
-4. La **llegada se detecta sola**. Si el directo se cortó antes de meta, pon la
+4. **Sin cobertura** la web lo dice («Sin cobertura desde las 12:03, km 44»),
+   una marca transparente avanza por la ruta a tu ritmo medio y salen las horas
+   previstas al próximo avituallamiento y a meta. Al volver la cobertura llegan
+   los puntos guardados en el móvil.
+5. La **llegada se detecta sola**. Si el directo se cortó antes de meta, pon la
    hora de llegada en el panel y pulsa **Finalizar seguimiento**.
 
 Si algo falla, el panel lo dice: identificador mal copiado, enlace de iGPSPORT
@@ -183,7 +169,7 @@ La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar
 | `index.html` · `app.js` · `style.css` | La web pública (MapLibre servido desde `lib/`) |
 | `admin.html` | Panel de control |
 | `carrera.json` · `route.geojson` · `elevation.json` · `aid_stations.json` | Tu carrera (paso 2) |
-| `herramientas/` | `preparar_ruta.py` (GPX → ruta) y `generar_resultado.py` (FIT → resultado) |
+| `herramientas/` | `preparar_ruta.py` (GPX → ruta), `plan_avisos.py` (perfil → avisos; los dos los usa también el panel) y `generar_resultado.py` (FIT → resultado) |
 | `amazfit/` | Miniapp para relojes Zepp OS |
 | `despliegue/` | systemd, keepalived, réplica entre dos Pis y despliegue |
 

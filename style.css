@@ -360,6 +360,9 @@ body {
 /* OJO: MapLibre posiciona el marcador con transform en ESTE elemento.
    Animar transform aquí lo manda a la esquina del mapa; el pulso va en el hijo. */
 .map3d-rider { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)); }
+/* posición estimada sin cobertura: transparente y punteada, que no se confunda con la real */
+.map3d-fantasma { width: 30px; height: 30px; border-radius: 50%; border: 3px dashed #fff;
+  background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
 .map3d-rider span { display: block; animation: pulse-rider 1.6s ease-in-out infinite; }
 .map3d-rider img {
   display: block;
