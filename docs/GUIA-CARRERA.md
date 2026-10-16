@@ -76,9 +76,18 @@ guardados (paso 5).
 
 ## 5 · La app del móvil
 
-*(La app Android llega en la siguiente versión.)* En casa, abre la app y
-escanea el código QR del panel: baja la ruta, el perfil y los avisos. En
-carrera, con la pantalla apagada y sin cobertura:
+En casa, con cobertura:
+
+1. Escanea el código QR del panel con la cámara del móvil. Se abre una página
+   de tu web: la primera vez, **Descargar la app** (APK de la última release)
+   e instálala.
+2. Vuelve a escanear y pulsa **Abrir en la app**: confirma tu servidor y baja
+   la ruta, el perfil y los avisos.
+3. En la app: **Probar aviso en la pulsera** (con una actividad en marcha en la
+   pulsera, tiene que vibrar y verse el texto) y **Quitar ahorro de batería**.
+
+El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
+apagada y sin cobertura:
 
 - sigue tu km con el GPS del propio móvil y lanza cada aviso como notificación;
   **Mi Fitness** (o la app de tu reloj) la pasa a la pulsera;

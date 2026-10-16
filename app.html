@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>App · Sígueme CC</title>
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<link rel="stylesheet" href="style.css?v=60">
+<style>
+  .app-wrap { max-width: 460px; margin: 0 auto; padding: 24px 16px 60px; }
+  .app-wrap h1 { font-size: 1.4rem; margin: 0 0 12px; }
+  .app-wrap p, .app-wrap li { color: var(--muted); line-height: 1.55; font-size: 0.95rem; }
+  .app-wrap b { color: var(--text); }
+  .app-btn { display: flex; align-items: center; justify-content: center; min-height: 52px; margin: 14px 0;
+    border-radius: 12px; font-weight: 700; text-decoration: none; background: #f1f3f1; color: #0c0f0e; }
+  .app-btn.sec { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  code { word-break: break-all; color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app-wrap">
+  <h1>App Sígueme CC</h1>
+  <p id="sin-id" hidden>Este enlace no trae identificador: escanea el código QR del panel.</p>
+  <div id="con-id" hidden>
+    <a class="app-btn" id="abrir" href="#">Abrir en la app y configurarla</a>
+    <p>¿No se abre? Instala antes la app:</p>
+  </div>
+  <a class="app-btn sec" href="https://github.com/odegaard12/Sigueme-CC-Running/releases/latest" rel="noopener">Descargar la app (APK para Android)</a>
+  <ol>
+    <li>Abre el fichero <b>sigueme-cc.apk</b> y permite instalar apps de este origen.</li>
+    <li>Vuelve a escanear el código del panel y pulsa <b>Abrir en la app</b>.</li>
+    <li>En la app: <b>Probar aviso en la pulsera</b> y <b>Quitar ahorro de batería</b>.</li>
+  </ol>
+  <p>Configurar a mano: dirección <code id="dir"></code> y el identificador del panel.</p>
+</div>
+<script src="app-enlace.js"></script>
+</body>
+</html>

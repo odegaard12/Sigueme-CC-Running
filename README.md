@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.8.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.9.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -109,6 +109,7 @@ Puedes usar una sola o varias a la vez; la web decide sola cuál usar.
 
 | Opción | Ventaja | Cómo |
 |---|---|---|
+| **App Sígueme CC** (Android, recomendada) | Lanza los avisos a la pulsera **sin cobertura** y guarda tu posición hasta que vuelve | APK en la [última release](../../releases/latest). En el panel, «5 · App del móvil»: escanea el código con la cámara y pulsa «Abrir en la app». |
 | **Traccar Client** (Android/iPhone, gratis) | Sin cobertura guarda los puntos y los manda al volver | En la app: dirección `https://tu-dominio/api/gps`, identificador = el que enseña el panel, frecuencia 10 s, precisión alta. En Android, quítale el ahorro de batería. |
 | **Reloj Amazfit** (Zepp OS 3) | No dependes del móvil en la mano; manda también el pulso | Miniapp de [`amazfit/`](amazfit/README.md) (de momento se instala en modo desarrollador, no está en la tienda). |
 | **iGPSPORT LiveTrack** | Pulso, cadencia y distancia del ciclocomputador | En la app de iGPSPORT, compartir el seguimiento en vivo y pegar el enlace en el panel. |
@@ -170,6 +171,8 @@ La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar
 | `admin.html` | Panel de control |
 | `carrera.json` · `route.geojson` · `elevation.json` · `aid_stations.json` | Tu carrera (paso 2) |
 | `herramientas/` | `preparar_ruta.py` (GPX → ruta), `plan_avisos.py` (perfil → avisos; los dos los usa también el panel) y `generar_resultado.py` (FIT → resultado) |
+| `android/` | App Android (Kotlin, sin librerías): GPS con la pantalla apagada, avisos locales y cola de posiciones. La compila GitHub Actions y sube el APK a cada release |
+| `app.html` | Página del código QR: instala y configura la app |
 | `amazfit/` | Miniapp para relojes Zepp OS |
 | `despliegue/` | systemd, keepalived, réplica entre dos Pis y despliegue |
 

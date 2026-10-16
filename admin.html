@@ -271,7 +271,8 @@
 
   <div class="tarjeta">
     <h2>5 · App del móvil (Android)</h2>
-    <div class="howto">Abre la app Sígueme CC y escanea este código en casa: baja la ruta y los avisos, y en
+    <div class="howto">En casa, escanea este código con la cámara del móvil: abre la página de la app (para
+      instalarla la primera vez) y la configura. Baja la ruta y los avisos, y en
       carrera manda tu posición cuando hay cobertura. Si luego cambias algo aquí arriba, pulsa «Actualizar plan»
       en la app; si generas un identificador nuevo, vuelve a escanearlo.</div>
     <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
@@ -602,7 +603,9 @@ $('guardar-avisos').addEventListener('click', () => accion({ action: 'guardar_av
 function pintarQR(id) {
   if (!id || typeof qrcode !== 'function') { $('qr').textContent = ''; return; }
   const q = qrcode(0, 'M');
-  q.addData('siguemecc://config?u=' + encodeURIComponent(location.origin) + '&id=' + encodeURIComponent(id));
+  // a una página de esta web (la cámara del móvil abre https; siguemecc:// no siempre):
+  // el identificador va tras «#», que no llega al servidor
+  q.addData(location.origin + '/app.html#id=' + encodeURIComponent(id));
   q.make();
   $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
 }

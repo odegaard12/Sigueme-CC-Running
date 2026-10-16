@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.9.0 · 2026-10-16
+- **App Android Sígueme CC** (`android/`, Kotlin sin librerías, Android 8 o
+  superior): sigue tu km con el GPS del móvil con la pantalla apagada, lanza los
+  avisos del plan como notificaciones (Mi Fitness las pasa a la pulsera) **sin
+  cobertura**, y guarda cada posición para mandarla a la web cuando vuelve. Po
+  estado: tras un rato sin GPS sale el aviso de ahora, no los atrasados.
+  Botones para probar un aviso y quitar el ahorro de batería.
+- GitHub Actions compila la app, pasa sus pruebas y sube el APK firmado a cada
+  release (firma fija: las versiones nuevas se instalan encima).
+- El QR del panel lleva a `app.html` de tu web, que instala la app y la abre ya
+  configurada; el identificador va tras «#» y no llega a ningún registro.
+
 ## v1.8.0 · 2026-10-16
 - **La carrera se prepara entera desde el panel**, sin consola: datos de la
   carrera, subir el GPX (trazado y perfil), avituallamientos y plan de avisos
