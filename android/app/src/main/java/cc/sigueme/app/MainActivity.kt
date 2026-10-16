@@ -43,6 +43,7 @@ class MainActivity : Activity() {
     private val ambarC = Color.rgb(243, 201, 105)
 
     private val prefs by lazy { Seguimiento.prefs(this) }
+    private var sinAvisosOk = false
     private val reloj = Handler(Looper.getMainLooper())
     private val repintar = object : Runnable { override fun run() { pintar(); reloj.postDelayed(this, 2000) } }
 
@@ -119,7 +120,9 @@ class MainActivity : Activity() {
         caja.addView(texto(13f, apagadoC).apply {
             setPadding(4.px(), 18.px(), 4.px(), 0)
             text = "Con la pantalla apagada y sin cobertura, la app sigue tu km con el GPS, lanza los avisos " +
-                "(Mi Fitness los pasa a la pulsera) y guarda tu posición hasta que vuelve la cobertura."
+                "(Mi Fitness los pasa a la pulsera) y guarda tu posición hasta que vuelve la cobertura.\n\n" +
+                "En Samsung, para que no la duerma: Ajustes → Batería → Límites de uso en segundo plano → " +
+                "«Apps que nunca se suspenden» → añade Sígueme CC."
         })
         caja.addView(texto(14f, verdeC).apply {
             text = "Configurar a mano"; typeface = Typeface.DEFAULT_BOLD
@@ -248,7 +251,7 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("¿Usar este servidor?")
             .setMessage("Tu posición se mandará a:\n\n$host")
             .setPositiveButton("Sí") { _, _ ->
-                prefs.edit().putString("url", u).putString("id", id).apply()
+                prefs.edit().putString("url", u).putString("id", id).remove("bloqueado_hasta").apply()
                 bajarPlan()
             }.setNegativeButton("No", null).show()
     }
@@ -267,7 +270,7 @@ class MainActivity : Activity() {
                 when (codigo) {
                     200 -> {
                         val plan = Plan(txt)                      // si no se entiende, no se guarda
-                        File(filesDir, "plan.json").writeText(txt)
+                        Seguimiento.escribirSeguro(File(filesDir, "plan.json"), txt)
                         if (!Seguimiento.corriendo) prefs.edit().putFloat("km", 0f).putInt("aviso", 0).apply()
                         "Plan listo: ${plan.nombre}\n${plan.avisos.size} avisos guardados. Ya puedes ir sin cobertura."
                     }
@@ -276,7 +279,7 @@ class MainActivity : Activity() {
                     else -> "El servidor contestó $codigo"
                 }
             } catch (e: Exception) { "Sin conexión con el servidor. Prueba otra vez con cobertura." }
-            runOnUiThread { pintar(); dialogo(msg) }
+            runOnUiThread { if (!isFinishing && !isDestroyed) { pintar(); dialogo(msg) } }
         }
     }
 
@@ -292,13 +295,27 @@ class MainActivity : Activity() {
         val servicio = Intent(this, Seguimiento::class.java)
         if (Seguimiento.corriendo) {
             AlertDialog.Builder(this).setMessage("¿Parar el seguimiento?\n\nLa web deja de recibir tu posición.")
-                .setPositiveButton("Parar") { _, _ -> stopService(servicio); reloj.postDelayed({ pintar() }, 300) }
+                .setPositiveButton("Parar") { _, _ ->
+                    stopService(servicio)
+                    prefs.edit().remove("km_t").apply()      // la próxima vez, carrera nueva desde el km 0
+                    reloj.postDelayed({ pintar() }, 300)
+                }
                 .setNegativeButton("Seguir", null).show()
             return
         }
         if (!tiene(Manifest.permission.ACCESS_FINE_LOCATION)) {
             pedirPermisos()
             dialogo("Hace falta la ubicación precisa")
+            return
+        }
+        // sin notificaciones no llega nada a la pulsera: mejor saberlo en casa
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val avisosOn = nm.areNotificationsEnabled() &&
+            (nm.getNotificationChannel(Seguimiento.CANAL_AVISOS)?.importance ?: 0) >= NotificationManager.IMPORTANCE_DEFAULT
+        if (!avisosOn && !sinAvisosOk) {
+            AlertDialog.Builder(this).setMessage("Las notificaciones de avisos están apagadas: no llegará ningún aviso a la pulsera.")
+                .setPositiveButton("Arreglar") { _, _ -> ajustesAvisos() }
+                .setNegativeButton("Empezar igual") { _, _ -> sinAvisosOk = true; carrera() }.show()
             return
         }
         if (Seguimiento.cargarPlan(this) == null) {
@@ -316,7 +333,7 @@ class MainActivity : Activity() {
         // más de 6 h del último km.
         val retomar = System.currentTimeMillis() - prefs.getLong("km_t", 0) < 6 * 3600_000L
         val e = prefs.edit().putBoolean("empezar_pendiente", true).remove("web_estado")
-        if (!retomar) e.putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km")
+        if (!retomar) e.putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km").remove("meta_t")
         e.apply()
         startForegroundService(servicio)
         reloj.postDelayed({ pintar() }, 500)
@@ -364,6 +381,8 @@ class MainActivity : Activity() {
     }
 
     private fun dialogo(t: String) {
+        // la respuesta del servidor puede llegar con la pantalla ya cerrada: sin esto, la app se caía
+        if (isFinishing || isDestroyed) return
         AlertDialog.Builder(this).setMessage(t).setPositiveButton("Vale", null).show()
     }
 }

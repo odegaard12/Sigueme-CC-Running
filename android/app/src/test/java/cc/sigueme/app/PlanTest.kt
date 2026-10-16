@@ -77,6 +77,12 @@ class PlanTest {
         assertEquals(1 to "SUBIDA LARGA en 300m · 1,2km · 7%", p.avisoQueToca(2.0, 0))
     }
 
+    @Test fun horaSinCero() {
+        val p = Plan("""{"carrera": {"fecha": "2027-05-16", "hora_salida": "9:00"}, "ruta": []}""")
+        assertEquals("09:00", p.horaSalida)
+        assertEquals(true, p.salida != null)
+    }
+
     @Test fun textos() {
         assertEquals("250m", Plan.kmTxt(0.26))
         assertEquals("2,3km", Plan.kmTxt(2.34))

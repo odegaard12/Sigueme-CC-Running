@@ -4,6 +4,31 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.4 · 2026-10-16
+- **Meta falsa con un lote repetido:** si la app reenviaba un lote que ya había
+  llegado (se perdió la respuesta) y traía los puntos de la salida, junto a la
+  meta, la carrera se daba por terminada con tiempo 0. Ahora solo cuentan los
+  puntos nuevos. Lo destapó una medición de la web en un móvil simulado.
+- **App, carreras largas:** un plan a medio escribir ya no deja la app sin
+  avisos toda la carrera (se escribe entero o nada y, si falla, se queda el
+  anterior); ante «identificador no válido» o «demasiados intentos» deja de
+  insistir en vez de alargar el bloqueo; en meta avisa y se para sola a los
+  15 min; avisa si se apaga el GPS o falta el permiso; los envíos no se
+  amontonan con mala cobertura y la cola se reescribe sin riesgo; avisa antes
+  de empezar si las notificaciones están apagadas; no se cierra si una
+  respuesta llega con la pantalla cerrada; consejo para Samsung («Apps que
+  nunca se suspenden»); hora de salida «9:00» aceptada.
+- **Web, carreras largas:** el directo ya no se puede quedar congelado si una
+  respuesta se corta a medias; un dato vacío pasajero no borra lo pintado; el
+  aviso de «no se pudo cargar el mapa» vuelve a salir y el mapa recupera sus
+  reintentos tras un rato funcionando; los lectores de pantalla no repiten el
+  estado cada 5 s; el resultado sin traza o sin pasos no rompe la vista; la
+  repetición no se clava tras un hueco largo; el perfil no se repinta al mover
+  la barra del navegador; en meta sin hora del servidor el tiempo final no
+  sigue creciendo; píldora «Antes de salir» con la carrera preparada.
+- Sin errores en la consola del navegador (antes, un 404 de resultado.json en
+  cada visita).
+
 ## v1.12.3 · 2026-10-16
 - **Llegada a meta más fiable:** tras un corte de cobertura, la cola trae el
   paso por meta y lo de después; ahora se mira punto a punto y vale la hora del

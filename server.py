@@ -977,7 +977,12 @@ def recibir_gps(puntos):
         salida_t = None
     # ⚠️ antes de la salida no cuenta nada: con EMPEZAR a las 09:45 y la salida
     # junto a la meta, llegar a la salida «desde lejos» se daba por llegada
-    en_carrera = [q for q in puntos if salida_t is not None and q["t"] >= salida_t and q.get("lat") is not None]
+    # ⚠️ y solo los NUEVOS: si la app reenvía un lote que ya había llegado (se
+    # perdió la respuesta), los puntos de la salida, junto a la meta, daban la
+    # carrera por terminada con tiempo 0
+    previo_t = live.get("gps_t") or 0
+    en_carrera = [q for q in puntos if salida_t is not None and q["t"] >= salida_t and q["t"] > previo_t
+                  and q.get("lat") is not None]
     # punto a punto y en orden: «se alejó de meta» solo cuenta lo que pasó ANTES
     # de cada punto (mirando el lote entero, el de la salida ya era «llegada»)
     lejos = bool(live.get("lejos_de_meta"))
@@ -1333,6 +1338,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ruta = self._ruta()
         if ruta == "/live.json":
             self._send_json(200, live_publico(), cache="public, max-age=3, s-maxage=3")
+            return
+        if ruta == "/resultado.json" and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+            # sin resultado todavía: «null», no un 404 (que salía en rojo en la consola de cada visitante)
+            self._send_json(200, None, cache="public, max-age=30, s-maxage=30")
             return
         if ruta in ("/", "/index.html") and os.path.exists(os.path.join(ROOT, "resultado.json")):
             self._index_resultado()

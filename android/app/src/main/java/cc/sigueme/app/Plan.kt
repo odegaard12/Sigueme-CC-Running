@@ -29,7 +29,7 @@ class Plan(json: String) {
         val j = JSONObject(json)
         val c = j.optJSONObject("carrera") ?: JSONObject()
         nombre = c.optString("nombre", "Carrera")
-        horaSalida = c.optString("hora_salida", "")
+        horaSalida = c.optString("hora_salida", "").let { if (Regex("^\\d:\\d\\d$").matches(it)) "0$it" else it }   // «9:00» → «09:00»
         salida = try {
             java.time.LocalDateTime.parse(c.getString("fecha") + "T" + horaSalida)
                 .atZone(java.time.ZoneId.of(c.optString("zona_horaria", "Europe/Madrid"))).toInstant().toEpochMilli()
