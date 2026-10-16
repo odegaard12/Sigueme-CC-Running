@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
 """resultado.json a partir del FIT de la carrera: tiempos, pasos por
 avituallamiento y la traza real recortada a salida-meta. La fecha, la hora
-de salida, la distancia y el nombre salen de carrera.json."""
-import json, math, pathlib, sys
+de salida, la distancia y el nombre salen de carrera.json.
+
+    python herramientas/generar_resultado.py actividad.fit
+
+El panel hace lo mismo al subir el FIT (pestaña «Más»). Necesita fitdecode
+(pip install fitdecode)."""
+import io, json, math, pathlib, sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import fitdecode
 
 # la web (route.geojson, aid_stations.json, resultado.json) está en la raíz del repo
-AQUI = pathlib.Path(__file__).resolve().parent.parent
-if len(sys.argv) != 2:
-    sys.exit('uso: python herramientas/generar_resultado.py actividad.fit')
-FIT = pathlib.Path(sys.argv[1])
+RAIZ = pathlib.Path(__file__).resolve().parent.parent
 SC = 180 / 2 ** 31
-CARRERA = json.loads((AQUI / 'carrera.json').read_text(encoding='utf-8'))
-SALIDA_OFICIAL = datetime.fromisoformat(f"{CARRERA['fecha']}T{CARRERA['hora_salida']}").replace(
-    tzinfo=ZoneInfo(CARRERA.get('zona_horaria', 'Europe/Madrid')))
 
 
 def hav(a, b):
@@ -24,101 +22,133 @@ def hav(a, b):
     return 2 * 6371 * math.asin(math.sqrt(h))
 
 
-# ruta tal como la usa la web (route.geojson) y avituallamientos
-ruta = [(c[1], c[0]) for c in json.loads((AQUI / 'route.geojson').read_text(encoding='utf-8'))['features'][0]['geometry']['coordinates']]
-cum = [0.0]
-for a, b in zip(ruta, ruta[1:]):
-    cum.append(cum[-1] + hav(a, b))
-TOTAL_OFICIAL = CARRERA['distancia_km']
-factor = TOTAL_OFICIAL / cum[-1]
-avis = json.loads((AQUI / 'aid_stations.json').read_text(encoding='utf-8-sig'))
+def generar(fit, raiz=RAIZ):
+    """FIT (ruta o bytes) → diccionario de resultado.json. ValueError con el
+    motivo en castellano si el FIT no vale para esta carrera."""
+    import fitdecode
+    carrera = json.loads((raiz / 'carrera.json').read_text(encoding='utf-8'))
+    try:
+        salida_oficial = datetime.fromisoformat(f"{carrera['fecha']}T{carrera['hora_salida']}").replace(
+            tzinfo=ZoneInfo(carrera.get('zona_horaria', 'Europe/Madrid')))
+    except (KeyError, ValueError):
+        raise ValueError('falta la fecha o la hora de salida en los datos de la carrera')
 
+    # ruta tal como la usa la web (route.geojson) y avituallamientos
+    ruta = [(c[1], c[0]) for c in json.loads((raiz / 'route.geojson').read_text(encoding='utf-8'))['features'][0]['geometry']['coordinates']]
+    cum = [0.0]
+    for a, b in zip(ruta, ruta[1:]):
+        cum.append(cum[-1] + hav(a, b))
+    total_oficial = carrera.get('distancia_km') or cum[-1]
+    try:
+        avis = json.loads((raiz / 'aid_stations.json').read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError):
+        avis = []
 
-def punto_en_km(k):
-    for i in range(len(cum) - 1):
-        if cum[i + 1] >= k:
-            t = (k - cum[i]) / ((cum[i + 1] - cum[i]) or 1e-9)
-            return (ruta[i][0] + t * (ruta[i + 1][0] - ruta[i][0]), ruta[i][1] + t * (ruta[i + 1][1] - ruta[i][1]))
-    return ruta[-1]
+    def punto_en_km(k):
+        for i in range(len(cum) - 1):
+            if cum[i + 1] >= k:
+                t = (k - cum[i]) / ((cum[i + 1] - cum[i]) or 1e-9)
+                return (ruta[i][0] + t * (ruta[i + 1][0] - ruta[i][0]), ruta[i][1] + t * (ruta[i + 1][1] - ruta[i][1]))
+        return ruta[-1]
 
+    recs, sesion = [], {}
+    try:
+        with fitdecode.FitReader(io.BytesIO(fit) if isinstance(fit, bytes) else str(fit)) as fr:
+            for f in fr:
+                if isinstance(f, fitdecode.FitDataMessage):
+                    d = {x.name: x.value for x in f.fields}
+                    if f.name == 'record' and d.get('position_lat') is not None and d.get('timestamp'):
+                        recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
+                    elif f.name == 'session':
+                        sesion = d
+    except Exception as exc:
+        raise ValueError(f'no se pudo leer el FIT ({exc.__class__.__name__})')
+    if len(recs) < 10:
+        raise ValueError('el FIT no trae posiciones GPS')
 
-recs, sesion = [], {}
-with fitdecode.FitReader(str(FIT)) as fr:
-    for f in fr:
-        if isinstance(f, fitdecode.FitDataMessage):
-            d = {x.name: x.value for x in f.fields}
-            if f.name == 'record' and d.get('position_lat') is not None:
-                recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
-            elif f.name == 'session':
-                sesion = d
+    # km de ruta de cada punto, siempre hacia delante (como la web), en km oficiales
+    km, kms = 0.0, []
+    for _, la, lo in recs:
+        mejor, mk = 1e9, km
+        for j in range(len(ruta)):
+            if cum[j] < km - 0.5 or cum[j] > km + 8:
+                continue
+            dd = hav((la, lo), ruta[j])
+            if dd < mejor:
+                mejor, mk = dd, cum[j]
+        if mejor < 0.15:
+            km = max(km, mk)
+        kms.append(km)
+    kms = [k * total_oficial / cum[-1] for k in kms]
 
-# km de ruta de cada punto, siempre hacia delante (como la web)
-km, kms = 0.0, []
-for _, la, lo in recs:
-    mejor, mk = 1e9, km
-    for j in range(len(ruta)):
-        if cum[j] < km - 0.5 or cum[j] > km + 8:
+    meta_pt = ruta[-1]
+    # salida: primer punto desde la hora oficial de salida
+    i0 = next((i for i, (t, la, lo) in enumerate(recs) if t >= salida_oficial), None)
+    if i0 is None:
+        raise ValueError(f'el FIT termina antes de la salida oficial ({salida_oficial:%d/%m %H:%M}): ¿es de otra carrera?')
+    # meta: punto más cercano a meta en el último tramo (últimos 3,5 km de ruta)
+    finales = [i for i in range(i0, len(recs)) if kms[i] > total_oficial - 3.5]
+    if not finales:
+        raise ValueError(f'el FIT no llega a meta (se queda en el km {kms[-1]:.1f} de {total_oficial:g})')
+    i1 = min(finales, key=lambda i: hav(recs[i][1:], meta_pt))
+    llegada = recs[i1][0]
+
+    tramo = recs[i0:i1 + 1]
+    dist = sum(hav(a[1:], b[1:]) for a, b in zip(tramo, tramo[1:]))
+
+    # pasos por avituallamiento: momento de máxima cercanía a la chincheta
+    pasos, desde = [], i0
+    for s in avis:
+        pin = punto_en_km(s['km'] * cum[-1] / total_oficial)
+        candidatos = [i for i in range(desde, i1 + 1) if abs(kms[i] - s['km']) < 3]
+        if not candidatos:
             continue
-        dd = hav((la, lo), ruta[j])
-        if dd < mejor:
-            mejor, mk = dd, cum[j]
-    if mejor < 0.15:
-        km = max(km, mk)
-    kms.append(km)
+        i = min(candidatos, key=lambda k: hav(recs[k][1:], pin))
+        if hav(recs[i][1:], pin) > 0.3:
+            continue
+        pasos.append({'nombre': s['name'], 'km': s['km'], 'hora': recs[i][0].isoformat(),
+                      'principal': bool(s.get('principal')), 'taller': bool(s.get('taller'))})
+        desde = i
 
-salida_pt, meta_pt = ruta[0], ruta[-1]
-# salida: primer punto desde la hora oficial de salida
-i0 = next(i for i, (t, la, lo) in enumerate(recs) if t >= SALIDA_OFICIAL)
-# meta: punto más cercano a meta en el último tramo (últimos 3,5 km de ruta)
-finales = [i for i in range(len(recs)) if kms[i] > TOTAL_OFICIAL - 3.5]
-i1 = min(finales, key=lambda i: hav(recs[i][1:], meta_pt))
-llegada = recs[i1][0]
-print('salida', recs[i0][0], '· llegada', llegada, f'a {hav(recs[i1][1:], meta_pt) * 1000:.0f} m de meta')
+    # traza cada 20 s (hora relativa a la salida oficial)
+    traza, ultimo = [], None
+    for t, la, lo in tramo:
+        if ultimo is None or (t - ultimo).total_seconds() >= 20:
+            traza.append([round(la, 5), round(lo, 5), int((t - salida_oficial).total_seconds())])
+            ultimo = t
+    traza.append([round(meta_pt[0], 5), round(meta_pt[1], 5), int((llegada - salida_oficial).total_seconds())])
 
-tramo = recs[i0:i1 + 1]
-dist = sum(hav(a[1:], b[1:]) for a, b in zip(tramo, tramo[1:]))
+    mov = sesion.get('total_timer_time') or 0
+    return {
+        'carrera': carrera.get('nombre', ''),
+        'salida': salida_oficial.isoformat(),
+        'llegada': llegada.isoformat(),
+        'tiempo_oficial_s': int((llegada - salida_oficial).total_seconds()),
+        'tiempo_movimiento_s': int(mov),
+        'distancia_km': round(dist, 1),
+        'desnivel_m': sesion.get('total_ascent'),
+        'pulso_medio': sesion.get('avg_heart_rate'),
+        'cadencia_media': sesion.get('avg_cadence'),
+        'velocidad_media_mov': round(dist / (mov / 3600), 1) if mov else None,
+        'pasos': pasos,
+        'traza': traza,
+    }
 
-# pasos por avituallamiento: momento de máxima cercanía a la chincheta
-pasos, desde = [], i0
-for s in avis:
-    pin = punto_en_km(s['km'])
-    candidatos = [i for i in range(desde, i1 + 1) if abs(kms[i] - s['km']) < 3]
-    if not candidatos:
-        continue
-    i = min(candidatos, key=lambda k: hav(recs[k][1:], pin))
-    if hav(recs[i][1:], pin) > 0.3:
-        continue
-    pasos.append({'nombre': s['name'], 'km': s['km'], 'hora': recs[i][0].isoformat(),
-                  'principal': bool(s.get('principal')), 'taller': bool(s.get('taller'))})
-    desde = i
 
-# traza cada 20 s (hora relativa a la salida oficial)
-traza, ultimo = [], None
-for t, la, lo in tramo:
-    if ultimo is None or (t - ultimo).total_seconds() >= 20:
-        traza.append([round(la, 5), round(lo, 5), int((t - SALIDA_OFICIAL).total_seconds())])
-        ultimo = t
-traza.append([round(meta_pt[0], 5), round(meta_pt[1], 5), int((llegada - SALIDA_OFICIAL).total_seconds())])
+def main():
+    if len(sys.argv) != 2:
+        sys.exit('uso: python herramientas/generar_resultado.py actividad.fit')
+    try:
+        res = generar(pathlib.Path(sys.argv[1]))
+    except ValueError as exc:
+        sys.exit(str(exc))
+    (RAIZ / 'resultado.json').write_text(json.dumps(res, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    h, m = divmod(res['tiempo_oficial_s'] // 60, 60)
+    print(f"tiempo oficial {h}h {m:02d}m · {res['distancia_km']} km · media en movimiento {res['velocidad_media_mov']} km/h")
+    print(f"pasos por avituallamiento: {len(res['pasos'])} · traza {len(res['traza'])} puntos")
+    for p in res['pasos']:
+        print(f"   {p['hora'][11:16]} UTC  km {p['km']:5}  {p['nombre']}")
 
-mov = sesion.get('total_timer_time') or 0
-res = {
-    'carrera': CARRERA.get('nombre', ''),
-    'salida': SALIDA_OFICIAL.isoformat(),
-    'llegada': llegada.isoformat(),
-    'tiempo_oficial_s': int((llegada - SALIDA_OFICIAL).total_seconds()),
-    'tiempo_movimiento_s': int(mov),
-    'distancia_km': round(dist, 1),
-    'desnivel_m': sesion.get('total_ascent'),
-    'pulso_medio': sesion.get('avg_heart_rate'),
-    'cadencia_media': sesion.get('avg_cadence'),
-    'velocidad_media_mov': round(dist / (mov / 3600), 1) if mov else None,
-    'pasos': pasos,
-    'traza': traza,
-}
-(AQUI / 'resultado.json').write_text(json.dumps(res, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-h, m = divmod(res['tiempo_oficial_s'] // 60, 60)
-print(f"tiempo oficial {h}h {m:02d}m · {res['distancia_km']} km · media en movimiento {res['velocidad_media_mov']} km/h")
-print(f"pasos por avituallamiento: {len(pasos)} de {len(avis)} · traza {len(traza)} puntos · "
-      f"{(AQUI / 'resultado.json').stat().st_size // 1024} KB")
-for p in pasos:
-    print(f"   {p['hora'][11:16]} UTC  km {p['km']:5}  {p['nombre']}")
+
+if __name__ == '__main__':
+    main()

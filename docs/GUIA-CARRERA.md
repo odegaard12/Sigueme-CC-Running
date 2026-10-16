@@ -24,7 +24,9 @@ listo y qué falta:
 
 ## 1 · Datos de la carrera
 
-Nombre, lugar, fecha, hora de salida, tiempo límite, corredor y dorsal. En
+Nombre, lugar, fecha, hora de salida (la única: el crono y la app cuentan
+desde ella), tiempo límite, corredor, dorsal, club, categoría y **tu foto** (se
+recorta cuadrada y sale en el mapa y en la ficha). En
 «Más datos»: la bici para la ficha, los metros alrededor de salida y meta en
 los que no se publica tu posición (si salen de tu casa), la zona horaria y la
 dirección que tendrá al archivarla.
@@ -120,11 +122,10 @@ posición».
 
 ## 7 · El resultado
 
-```bash
-python herramientas/generar_resultado.py actividad.fit
-```
-
-La web pasa a modo resultado: tiempo, paso por avituallamientos, repetición.
+Panel → **Más** → **Resultado de la carrera**: sube el FIT de tu reloj o
+ciclocomputador. La web pasa a modo resultado: tiempo oficial, paso por cada
+avituallamiento y la repetición. Si el FIT no vale (no llega a meta, es de otra
+carrera…), el panel dice por qué.
 
 ## 8 · Archivar
 

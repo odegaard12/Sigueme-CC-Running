@@ -43,15 +43,30 @@ function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
-  document.querySelectorAll('img[src^="rider.png"]').forEach(i => { i.alt = 'Avatar de ' + (corredor.nombre || 'corredor'); });
+  // ?v= cambia al subir otra foto desde el panel: así nadie ve la vieja
+  document.querySelectorAll('img[src^="rider.png"]').forEach(i => {
+    i.src = 'rider.png?v=' + (Number(c.avatar_v) || 5);
+    i.alt = 'Foto de ' + (corredor.nombre || 'corredor');
+  });
   const nombre = document.getElementById('ficha-nombre');
   if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
+  const sub = document.getElementById('ficha-sub');
+  if (sub) sub.textContent = [corredor.club, corredor.categoria].filter(Boolean).join(' · ') || c.nombre || '';
   const dorsal = document.getElementById('ficha-dorsal');
-  if (dorsal) {
-    dorsal.textContent = '';
-    if (corredor.dorsal) { dorsal.append('Dorsal '); const n = document.createElement('b'); n.textContent = corredor.dorsal; dorsal.append(n); }
-    const resto = [c.modalidad, c.nombre].filter(Boolean).join(' · ');
-    if (resto) dorsal.append((corredor.dorsal ? ' · ' : '') + resto);
+  if (dorsal && corredor.dorsal) { document.getElementById('ficha-dorsal-n').textContent = corredor.dorsal; dorsal.hidden = false; }
+  // la carrera, en casillas: solo las que tienen dato
+  const datos = document.getElementById('ficha-carrera');
+  if (datos) {
+    const fecha = c.fecha ? new Date(c.fecha + 'T12:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+    const casillas = [['Carrera', c.nombre], ['Modalidad', c.modalidad],
+      ['Distancia', c.distancia_km ? num(c.distancia_km, c.distancia_km % 1 ? 1 : 0) + ' km' : ''],
+      ['Desnivel', c.desnivel_m ? '+' + Math.round(c.desnivel_m).toLocaleString('es-ES') + ' m' : ''],
+      ['Salida', [fecha, c.hora_salida].filter(Boolean).join(' · ')], ['Límite', c.limite_h ? c.limite_h + ' h' : '']];
+    datos.textContent = '';
+    casillas.filter(([, v]) => v).forEach(([k, v]) => {
+      const fila = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = k; dd.textContent = v; fila.append(dt, dd); datos.append(fila);
+    });
   }
   const bici = document.getElementById('ficha-bici');
   if (bici && c.bici && c.bici.modelo) {
@@ -780,7 +795,7 @@ function placeRiderMarker(lat, lon) {
     el.style.zIndex = '6';
     // ?v= para que el móvil no siga enseñando la foto cacheada
     const corredor = CARRERA.corredor || {};
-    el.innerHTML = '<span><img src="rider.png?v=5" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
+    el.innerHTML = '<span><img src="rider.png?v=' + (Number(CARRERA.avatar_v) || 5) + '" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
     // opacityWhenCovered: con terreno 3D MapLibre da por "tapado" todo lo que
     // está pegado al suelo y lo deja casi invisible al acercar. Aquí no
     // interesa: el corredor tiene que verse siempre.
@@ -1402,7 +1417,12 @@ function cabeceraReal(r) {
 function pintarResultado() {
   const r = resultado;
   ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
-  ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, true));
+  ['dist', 'time', 'speed-avg'].forEach(n => verCasilla(n, true));
+  // pulso y cadencia solo si el FIT los trae (si no, salían casillas con «—»)
+  verCasilla('hr-avg', r.pulso_medio != null);
+  verCasilla('cad', r.cadencia_media != null);
+  const barra = document.getElementById('progreso-barra');
+  if (barra) barra.style.width = '100%';
   document.querySelector('.metricas').classList.remove('sin-datos');
   ponerTexto('m-dist', num(r.distancia_km));
   ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));

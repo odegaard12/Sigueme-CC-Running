@@ -819,3 +819,27 @@ footer { opacity: 0.85; }
   .panel-pc .metricas-top .metrica { flex: 1 1 calc(50% - 5px); }
 }
 @media (prefers-reduced-motion: reduce) { .pill-estado.vivo::before { animation: none; } }
+
+
+/* ===================== v1.12: ficha del corredor ===================== */
+.ficha { display: grid; grid-template-columns: 1fr; grid-template-areas: none; gap: 14px; padding: 16px; }
+.ficha-cab { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.ficha-foto { grid-area: auto; width: 76px; height: 76px; border: 3px solid var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 13, 12, 0.9); }
+.ficha-datos { grid-area: auto; }   /* la regla vieja la mandaba a otra casilla */
+.ficha-datos h2 { font-size: 1.25rem; letter-spacing: -0.02em; }
+.ficha-sub { margin: 3px 0 0; color: var(--muted); font-size: 0.9rem; }
+/* el dorsal, como un dorsal de verdad */
+.ficha-dorsal { display: grid; justify-items: center; background: #f4f5f2; color: #0a0d0c; border-radius: 10px;
+  padding: 4px 12px 6px; min-width: 64px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+.ficha-dorsal span { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
+.ficha-dorsal { margin: 0; }
+.ficha-dorsal b { color: #0a0d0c; font-size: 1.6rem; line-height: 1; font-weight: 900; letter-spacing: -0.02em; }
+.ficha-carrera { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ficha-carrera > div { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.ficha-carrera dt { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.ficha-carrera dd { margin: 2px 0 0; font-weight: 700; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ficha-bici-bloque { grid-area: auto; }
+@media (max-width: 560px) { .ficha-carrera { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ficha-foto { width: 64px; height: 64px; } }
+@media (min-width: 900px) { .ficha { margin: 14px auto 0; width: calc(100% - 48px); max-width: 1232px; }
+  .ficha-carrera { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

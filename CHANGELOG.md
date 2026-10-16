@@ -4,6 +4,21 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.0 · 2026-10-16
+- **Resultado desde el panel:** se sube el FIT (pestaña «Más») y la web pasa a
+  modo resultado; si el FIT no vale (no llega a meta, es de otra carrera), dice
+  por qué. Ya no hace falta la consola en ningún paso.
+- **Ficha del corredor nueva:** foto, dorsal como un dorsal de carrera, club y
+  categoría, y la carrera en casillas (modalidad, distancia, desnivel, salida,
+  límite).
+- **Foto del corredor desde el panel:** se recorta y se reduce en el navegador
+  (sin datos EXIF) y la web la refresca sola.
+- **Panel coherente:** la hora de salida está en un solo sitio (los datos de la
+  carrera); en «Hoy» sale primero lo que toca (empezar, o el estado en carrera);
+  Traccar y Amazfit quedan plegados como alternativa a la app.
+- Modo resultado sin casillas vacías de pulso o cadencia, y la barra llena.
+- Capturas nuevas en el README (móvil, PC y panel).
+
 ## v1.11.0 · 2026-10-16
 - **Todo desde la app:** EMPEZAR pone también la carrera en marcha en la web
   (sin abrir el panel) y baja el plan al día. Sin cobertura en ese momento, lo

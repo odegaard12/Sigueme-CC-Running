@@ -123,6 +123,10 @@
     font-size: 0.75rem; font-weight: 900; color: #0a0d0c; flex: 0 0 auto; }
   .lista-prep .si { background: #7fd46a; } .lista-prep .no { background: #f3c969; }
   .estado-fila { font-size: 0.88rem; }
+  .foto-fila { display: flex; gap: 14px; align-items: center; margin: 4px 0 14px; }
+  .foto-fila img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #7fd46a; flex: 0 0 auto; }
+  .foto-fila .btn { display: inline-flex; width: auto; padding: 0 16px; cursor: pointer; }
+  .foto-fila .howto { margin-top: 6px; }
   /* en cada pestaña, lo importante primero (estado en «Hoy», la app en «Móvil») */
   .admin-wrap { display: flex; flex-direction: column; }
   .pestanas { order: -2; }
@@ -161,7 +165,7 @@
     <button type="button" role="tab" data-tab="mas">Más</button>
   </nav>
 
-  <div class="tarjeta" data-tab="hoy">
+  <div class="tarjeta" id="t-empezar" data-tab="hoy">
     <h2>Empezar la carrera</h2>
     <div class="howto"><b>Lo normal:</b> pulsa <b>EMPEZAR</b> en la app del móvil (aunque sea un rato
       antes de la salida) y la carrera se pone en marcha aquí sola. Este botón es para
@@ -173,20 +177,13 @@
       <label for="livetrack">Enlace LiveTrack</label>
       <input type="url" id="livetrack" placeholder="https://...">
     </div>
-    <div class="field" style="margin-top:12px">
-      <label for="hora-salida">Hora oficial de salida</label>
-      <input type="time" id="hora-salida" value="08:30">
-    </div>
-    <div class="howto" style="margin-top:8px">
-      El cronómetro de la web cuenta desde esta hora, no desde que pegas el
-      enlace. Si enciendes el GPS a las 08:15 y salís a las 08:30, déjalo en
-      08:30 y el tiempo empezará a correr a las 08:30.
-    </div>
-    <button class="save-btn" id="save">Guardar y empezar a seguir</button>
-    <button class="btn" id="save-hora" style="margin-top:8px">Guardar solo la hora de salida</button>
+    <input type="hidden" id="hora-salida">
+    <p class="estado-fila" style="margin:4px 0 12px"><span>Salida oficial: <b id="hora-txt">—</b>
+      · el crono cuenta desde ahí (se cambia en Preparar → Datos)</span></p>
+    <button class="save-btn" id="save">Empezar a seguir</button>
   </div>
 
-  <div class="tarjeta primero" data-tab="hoy">
+  <div class="tarjeta primero" id="t-estado" data-tab="hoy">
     <h2>Estado</h2>
     <div class="estado-fila" id="status-line">
       <span>Estado: <b id="status-text">—</b></span>
@@ -212,7 +209,11 @@
   </div>
 
   <div class="tarjeta" data-tab="movil">
-    <h2>GPS del móvil (Traccar Client)</h2>
+    <h2>Sin la app: iPhone, Traccar o reloj</h2>
+    <div class="howto">Con la app Android no hace falta nada de esto. Para iPhone (Traccar Client)
+      o el reloj Amazfit, y para generar un identificador nuevo:</div>
+    <details>
+    <summary>Ver la configuración</summary>
     <div class="howto">
       Posición directa desde el móvil, más fiable que la de iGPSPORT con mala
       cobertura: sin señal guarda los puntos y los manda al volver. Instala
@@ -237,6 +238,7 @@
       la misma dirección y el mismo identificador. Manda posición y pulso; si
       llevas móvil con Traccar y reloj a la vez, la posición la da uno solo.
     </div>
+    </details>
   </div>
 
   <div class="tarjeta" data-tab="preparar">
@@ -260,6 +262,14 @@
       <div class="field"><label for="c-desnivel">Desnivel + oficial (m)</label><input type="number" step="1" min="0" id="c-desnivel"></div>
       <div class="field"><label for="c-corredor">Corredor</label><input id="c-corredor" maxlength="60"></div>
       <div class="field"><label for="c-dorsal">Dorsal</label><input id="c-dorsal" maxlength="12"></div>
+      <div class="field"><label for="c-club">Club o equipo (opcional)</label><input id="c-club" maxlength="60"></div>
+      <div class="field"><label for="c-categoria">Categoría (opcional)</label><input id="c-categoria" maxlength="40" placeholder="Absoluta, Veterano A…"></div>
+    </div>
+    <div class="foto-fila">
+      <img id="foto-ver" src="rider.png" alt="Foto del corredor">
+      <div><label class="btn" for="foto">Cambiar la foto</label>
+        <input type="file" id="foto" accept="image/*" hidden>
+        <div class="howto">Sale en el mapa y en la ficha. Se recorta cuadrada.</div></div>
     </div>
     <details>
       <summary>Más datos (bici, privacidad, archivo)</summary>
@@ -325,11 +335,21 @@
     <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
   </div>
 
+  <div class="tarjeta primero" data-tab="mas">
+    <h2>Resultado de la carrera</h2>
+    <div class="howto">Después de meta, sube el fichero FIT de tu reloj o ciclocomputador (en Garmin
+      Connect, Strava o la app del reloj: exportar o descargar el original). La web pasa a modo
+      resultado: tiempo oficial, paso por cada avituallamiento y la repetición de la carrera.</div>
+    <div class="field" style="margin-top:10px"><label for="fit">Fichero FIT</label><input type="file" id="fit" accept=".fit"></div>
+    <button class="save-btn" id="subir-fit" type="button">Subir y generar el resultado</button>
+  </div>
+
   <div class="tarjeta" data-tab="mas">
+    <h2>Archivar</h2>
     <!-- archivar: la carrera terminada pasa a su carpeta y la portada queda libre -->
     <div class="howto"><b>Archivar la carrera terminada</b>: pasa a su propia
       dirección (por ejemplo /2027-mi-carrera/) y sale en «Todas las carreras».
-      Necesita el resultado (generar_resultado.py) y deja todo a cero para la siguiente.</div>
+      Necesita el resultado (arriba) y deja todo a cero para la siguiente.</div>
     <div class="quick-actions" style="margin:10px 0 14px">
       <button class="btn" id="archivar" type="button">Archivar la carrera terminada</button>
     </div>
@@ -444,7 +464,9 @@ function refreshStatus(live) {
   const pill = $('pill-panel');
   pill.textContent = live.finished_at ? 'En meta' : live.started_at ? 'En carrera' : 'Sin empezar';
   pill.className = 'pill-panel ' + (live.finished_at ? '' : live.started_at ? 'vivo' : '');
-  if (!horaTocada && live.hora_salida) $('hora-salida').value = live.hora_salida;
+  // en «Hoy», primero lo que toca: empezar antes de la carrera, el estado durante
+  $('t-estado').classList.toggle('primero', !!live.started_at);
+  $('t-empezar').classList.toggle('primero', !live.started_at);
   const ex = live.extract_status;
   // ⚠️ Si se pega el enlace el día antes "para tenerlo listo", el crono
   // cuenta desde las 08:30 de ESE día y el sábado saldría con +24 h. Aquí se
@@ -574,6 +596,11 @@ function pintarFormCarrera(c) {
   for (const [k, id] of Object.entries(CAMPOS)) $(id).value = c[k] ?? '';
   $('c-corredor').value = (c.corredor || {}).nombre || '';
   $('c-dorsal').value = (c.corredor || {}).dorsal || '';
+  $('c-club').value = (c.corredor || {}).club || '';
+  $('c-categoria').value = (c.corredor || {}).categoria || '';
+  $('foto-ver').src = 'rider.png?v=' + (c.avatar_v || 0);
+  $('hora-salida').value = c.hora_salida || '';
+  $('hora-txt').textContent = c.hora_salida ? c.hora_salida + (c.fecha ? ' del ' + c.fecha.split('-').reverse().join('/') : '') : 'sin poner';
   $('c-bici').value = (c.bici || {}).modelo || '';
   $('c-piezas').value = Object.entries((c.bici || {}).piezas || {}).map(([k, v]) => k + ': ' + v).join('\n');
   const r = c.distancia_km ? km(c.distancia_km) + ' km' + (c.desnivel_m ? ' · +' + c.desnivel_m + ' m' : '') : '';
@@ -583,7 +610,8 @@ const km = v => v != null ? String(v).replace('.', ',') : '—';
 $('guardar-carrera').addEventListener('click', () => {
   const c = {};
   for (const [k, id] of Object.entries(CAMPOS)) c[k] = $(id).value.trim();
-  c.corredor = { nombre: $('c-corredor').value.trim(), dorsal: $('c-dorsal').value.trim() };
+  c.corredor = { nombre: $('c-corredor').value.trim(), dorsal: $('c-dorsal').value.trim(),
+    club: $('c-club').value.trim(), categoria: $('c-categoria').value.trim() };
   const piezas = {};
   $('c-piezas').value.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) piezas[l.slice(0, i).trim()] = l.slice(i + 1).trim(); });
   c.bici = { modelo: $('c-bici').value.trim(), piezas };
@@ -658,6 +686,36 @@ function pintarQR(id) {
   q.make();
   $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
 }
+
+// la foto se recorta cuadrada y se reduce a 256 px aquí, en el navegador: al
+// servidor solo llega un PNG pequeño (y sin los datos EXIF de la cámara)
+$('foto').addEventListener('change', () => {
+  const f = $('foto').files[0];
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const lado = Math.min(img.width, img.height), cv = document.createElement('canvas');
+    cv.width = cv.height = 256;
+    cv.getContext('2d').drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256);
+    URL.revokeObjectURL(img.src);
+    cv.toBlob(b => accion(null, '/api/avatar', { headers: { 'Content-Type': 'image/png' }, body: b }), 'image/png');
+  };
+  img.onerror = () => { $('msg').textContent = 'No se pudo abrir esa imagen'; $('msg').className = 'msg err'; };
+  img.src = URL.createObjectURL(f);
+  $('foto').value = '';
+});
+
+$('subir-fit').addEventListener('click', async () => {
+  const f = $('fit').files[0];
+  if (!f) { $('msg').textContent = 'Elige antes el fichero FIT'; $('msg').className = 'msg err'; return; }
+  const d = await accion(null, '/api/fit', { headers: { 'Content-Type': 'application/octet-stream' }, body: f });
+  if (d) {
+    const s = d.resultado.tiempo_oficial_s;
+    $('msg').textContent = 'Resultado listo ✓ ' + Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') +
+      'm · ' + String(d.resultado.distancia_km).replace('.', ',') + ' km · ' + d.pasos + ' avituallamientos. Ahora puedes archivarla.';
+    $('fit').value = '';
+  }
+});
 
 async function cargarConfig() {
   const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -750,7 +808,6 @@ $('save').addEventListener('click', () => {
   post({ livetrack_url: url, hora_salida: $('hora-salida').value });
 });
 
-$('save-hora').addEventListener('click', () => post({ hora_salida: $('hora-salida').value }));
 
 // En plena carrera, un toque sin querer en el móvil (con guantes) borraba el
 // enlace y la hora de salida, o daba la carrera por terminada delante de

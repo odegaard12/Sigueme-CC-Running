@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.11.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.12.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -19,14 +19,13 @@
 </p>
 
 <p align="center">
-  <img src="docs/capturas/movil.jpg" width="230" alt="Web en el móvil">
-  &nbsp;
-  <img src="docs/capturas/ficha.jpg" width="230" alt="Ficha del corredor">
-  &nbsp;
-  <img src="docs/capturas/panel.jpg" width="230" alt="Panel de administración">
+  <img src="docs/capturas/portada.png" width="900" alt="En directo, sin cobertura, ficha del corredor y resultado, en el móvil">
 </p>
 <p align="center">
-  <img src="docs/capturas/pc.jpg" width="720" alt="Web en el ordenador">
+  <img src="docs/capturas/pc.jpg" width="900" alt="La web en el ordenador">
+</p>
+<p align="center">
+  <img src="docs/capturas/panel.png" width="820" alt="Panel en pestañas: Hoy, Preparar, Móvil y Más">
 </p>
 
 ---
@@ -57,7 +56,7 @@
 ## 2. Arrancar el servidor
 
 ```bash
-pip install curl_cffi                      # solo hace falta para iGPSPORT
+pip install curl_cffi fitdecode            # iGPSPORT y el resultado desde el FIT
 python3 server.py --hash-clave             # pide una clave y escribe ADMIN_HASH=…
 ADMIN_USER=tu_usuario ADMIN_HASH='scrypt:…' python3 server.py 8710
 ```
@@ -142,13 +141,11 @@ caducado, sin datos desde hace X minutos…
 
 ## 6. Después de la carrera
 
-Con el FIT de tu ciclocomputador o reloj, la web pasa a **modo resultado**:
-tiempo oficial, paso por cada avituallamiento y repetición de la carrera.
-
-```bash
-pip install fitdecode
-python herramientas/generar_resultado.py actividad.fit
-```
+En el panel, pestaña **Más**, sube el **FIT** de tu reloj o ciclocomputador (en
+Garmin Connect, Strava o la app del reloj: exportar el original). La web pasa a
+**modo resultado**: tiempo oficial, paso por cada avituallamiento y repetición de
+la carrera. Desde la consola hace lo mismo
+`python herramientas/generar_resultado.py actividad.fit`.
 
 Después, en el panel, **Archivar la carrera terminada**: se guarda en
 `carreras/<año-nombre>/` y queda en su propia dirección (`/2026-mi-carrera/`),

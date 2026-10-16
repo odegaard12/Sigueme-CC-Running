@@ -22,6 +22,7 @@ import ipaddress
 import secrets
 import hmac
 from hmac import compare_digest
+import pathlib
 import posixpath
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -304,8 +305,9 @@ def limpiar_carrera(d):
             if c["slug"] and not re.fullmatch(r"\d{4}-[a-z0-9-]{1,60}", c["slug"]):
                 return None, "dirección del archivo no válida: año-nombre, p. ej. 2027-mi-trail"
         if isinstance(d.get("corredor"), dict):
-            c["corredor"] = {"nombre": _texto(d["corredor"].get("nombre"), 60),
-                             "dorsal": _texto(d["corredor"].get("dorsal"), 12)}
+            c["corredor"] = {k: _texto(d["corredor"].get(k), n) for k, n in
+                             (("nombre", 60), ("dorsal", 12), ("club", 60), ("categoria", 40))
+                             if _texto(d["corredor"].get(k), n)}
         if isinstance(d.get("bici"), dict):
             piezas = d["bici"].get("piezas") or {}
             if not isinstance(piezas, dict) or len(piezas) > 30:
@@ -1381,7 +1383,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # el panel solo habla con su propio servidor y no sale en Google
             self.send_header("Content-Security-Policy",
                              "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                             "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                             "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
                              "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
             self.send_header("X-Robots-Tag", "noindex, nofollow")
         elif csp_web():
@@ -1488,6 +1490,59 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         plan = generar_plan()
         apuntar_historial("gpx", km=resumen["distancia_km"], puntos=resumen["puntos_gpx"])
         self._send_json(200, {"ok": True, "resumen": resumen, "carrera": c, "plan": plan, "preparacion": preparacion()})
+
+    def _subida(self, maximo, que):
+        """Cuerpo de una subida del panel (con sesión), o None si ya se contestó."""
+        if not self._sesion_panel():
+            self._send_json(403, {"error": "sesión caducada"})
+            return None
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= maximo:
+            self._send_json(413, {"error": f"{que} tiene que pesar menos de {maximo // 1_000_000} MB"})
+            return None
+        return self.rfile.read(largo)
+
+    def _subir_fit(self):
+        """El FIT del reloj o del ciclocomputador → resultado.json (modo resultado)."""
+        cuerpo = self._subida(40_000_000, "el FIT")
+        if cuerpo is None:
+            return
+        if self._en_carrera():
+            self._send_json(409, {"error": "la carrera sigue en marcha: pulsa antes «Finalizar seguimiento»"})
+            return
+        try:
+            res = herramienta("generar_resultado").generar(cuerpo, pathlib.Path(ROOT))
+        except ImportError:
+            self._send_json(500, {"error": "falta fitdecode en el servidor (pip install fitdecode)"})
+            return
+        except (ValueError, OSError, KeyError, IndexError) as exc:
+            self._send_json(400, {"error": str(exc)})
+            return
+        escribir_json("resultado.json", res)
+        apuntar_historial("resultado", tiempo_s=res["tiempo_oficial_s"])
+        self._send_json(200, {"ok": True, "resultado": {k: res[k] for k in
+                              ("tiempo_oficial_s", "distancia_km", "llegada", "velocidad_media_mov")},
+                              "pasos": len(res["pasos"]), "preparacion": preparacion()})
+
+    def _subir_avatar(self):
+        """Foto del corredor: el panel la recorta a 256×256 y la manda en PNG."""
+        cuerpo = self._subida(2_000_000, "la foto")
+        if cuerpo is None:
+            return
+        if not cuerpo.startswith(b"\x89PNG\r\n\x1a\n"):
+            self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
+            return
+        tmp = os.path.join(ROOT, ".rider.png.tmp")
+        with open(tmp, "wb") as f:
+            f.write(cuerpo)
+        os.replace(tmp, os.path.join(ROOT, "rider.png"))
+        c = carrera()
+        c["avatar_v"] = int(time.time())        # la web pide rider.png?v=… y no enseña la vieja
+        escribir_json("carrera.json", c)
+        self._send_json(200, {"ok": True, "carrera": c})
 
     def _preparar(self, accion, data):
         if accion in ("guardar_carrera", "guardar_avituallamientos") and self._en_carrera():
@@ -1622,6 +1677,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if self.path.startswith("/api/gpx"):
             self._subir_gpx()
+            return
+        if self.path == "/api/fit":
+            self._subir_fit()
+            return
+        if self.path == "/api/avatar":
+            self._subir_avatar()
             return
         if self.path == "/api/plan":
             self._plan_app()

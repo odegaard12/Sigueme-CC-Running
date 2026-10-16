@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=61">
+<link rel="stylesheet" href="style.css?v=62">
 </head>
 <body>
 <header class="topbar">
@@ -64,11 +64,15 @@
 </header>
 
 <section class="ficha" id="ficha" hidden>
-  <img class="ficha-foto" src="rider.png?v=5" alt="Avatar del corredor">
-  <div class="ficha-datos">
-    <h2 id="ficha-nombre">Corredor</h2>
-    <p class="ficha-dorsal" id="ficha-dorsal"></p>
+  <div class="ficha-cab">
+    <img class="ficha-foto" src="rider.png?v=5" alt="Avatar del corredor">
+    <div class="ficha-datos">
+      <h2 id="ficha-nombre">Corredor</h2>
+      <p class="ficha-sub" id="ficha-sub"></p>
+    </div>
+    <div class="ficha-dorsal" id="ficha-dorsal" hidden><span>dorsal</span><b id="ficha-dorsal-n"></b></div>
   </div>
+  <dl class="ficha-carrera" id="ficha-carrera"></dl>
 
   <div class="ficha-bici-bloque" id="ficha-bici" hidden>
     <h3 id="ficha-bici-modelo"></h3>
@@ -141,12 +145,12 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.11.0</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.12.0</p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=74"></script>
+<script src="app.js?v=75"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla
