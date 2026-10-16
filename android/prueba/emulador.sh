@@ -22,6 +22,6 @@ adb exec-out screencap -p > capturas/3-siguiendo.png
 adb shell cmd statusbar expand-notifications; sleep 2
 adb exec-out screencap -p > capturas/4-avisos.png
 adb shell dumpsys notification --noredact > capturas/notificaciones.txt
-grep -c "SUBIDA LARGA" capturas/notificaciones.txt; grep -c "AVITUALLAMIENTO" capturas/notificaciones.txt
-grep -q "SUBIDA LARGA" capturas/notificaciones.txt && grep -q "AVITUALLAMIENTO" capturas/notificaciones.txt && echo AVISOS_OK > capturas/resultado.txt || echo AVISOS_MAL > capturas/resultado.txt
+grep -ci "SUBIDA LARGA" capturas/notificaciones.txt; grep -ci "AVITUALLAMIENTO" capturas/notificaciones.txt
+grep -qi "SUBIDA LARGA en" capturas/notificaciones.txt && grep -qi "AVITUALLAMIENTO en" capturas/notificaciones.txt && echo AVISOS_OK > capturas/resultado.txt || echo AVISOS_MAL > capturas/resultado.txt
 cat capturas/resultado.txt

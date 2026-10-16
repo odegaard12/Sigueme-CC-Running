@@ -99,7 +99,7 @@ class Seguimiento : Service(), LocationListener {
         } else plan?.let { pl ->
             val ultimo = p.getFloat("km", 0f).toDouble()
             val k = pl.kmEnRuta(l.latitude, l.longitude, ultimo)
-            texto = if (k == null) "Fuera de la ruta (más de 150 m)" else "Km ${Plan.kmTxt(k)} de ${Plan.kmTxt(pl.distancia)}"
+            texto = if (k == null) "Fuera de la ruta (más de 150 m)" else String.format(Locale("es", "ES"), "Km %.1f de %.1f km", k, pl.distancia)
             if (k != null) {
                 p.edit().putFloat("km", k.toFloat()).putLong("km_t", System.currentTimeMillis()).apply()
                 val toca = pl.avisoQueToca(k, p.getInt("aviso", 0))
@@ -159,10 +159,13 @@ class Seguimiento : Service(), LocationListener {
             })
         }
 
-        /** Notificación normal y nueva cada vez: es lo que Mi Fitness pasa a la pulsera. */
+        /** Notificación normal y nueva cada vez: es lo que Mi Fitness pasa a la pulsera.
+         *  Título = lo importante; cuerpo = los números (Plan.notificacion). */
         fun avisar(c: Context, texto: String) {
-            val n = Notification.Builder(c, CANAL_AVISOS).setSmallIcon(R.drawable.ic_noti).setContentTitle("Sígueme CC")
-                .setContentText(texto).setStyle(Notification.BigTextStyle().bigText(texto))
+            val (titulo, cuerpo) = Plan.notificacion(texto)
+            val n = Notification.Builder(c, CANAL_AVISOS).setSmallIcon(R.drawable.ic_noti).setContentTitle(titulo)
+                .setContentText(cuerpo.replace('\n', ' ')).setStyle(Notification.BigTextStyle().bigText(cuerpo))
+                .setSubText("Sígueme CC")
                 .setCategory(Notification.CATEGORY_MESSAGE).setAutoCancel(true).setTimeoutAfter(10 * 60 * 1000L).build()
             (c.getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(nAviso++, n)
         }

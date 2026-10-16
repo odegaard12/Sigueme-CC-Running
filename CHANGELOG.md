@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.2 · 2026-10-16
+- **Avisos legibles en la pulsera** (Xiaomi Band con Mi Fitness, relojes
+  Amazfit con Zepp): el título dice lo importante («Subida larga en 300 m»,
+  «Avituallamiento en 200 m», «Cima», «Km 12») en vez de repetir «Sígueme CC»;
+  el cuerpo lleva los números con espacio («1,2 km · 7 % · +84 m») y lo de
+  «rampa» o «quedan +X m» en su propia línea. La distancia a la subida se
+  calcula al avisar, como la del avituallamiento.
+- La app enseña el último aviso con el mismo formato, y el km como «1,5 de 5,0 km».
+- Historial del repositorio limpio de datos de la carrera real (ruta,
+  avituallamientos y capturas viejas), sin cambiar el código.
+
 ## v1.12.1 · 2026-10-16
 - **Ejemplo sin datos reales:** la ruta, el perfil y los avituallamientos de
   ejemplo son ahora un bucle inventado de 21 km; el código ya no nombra ningún

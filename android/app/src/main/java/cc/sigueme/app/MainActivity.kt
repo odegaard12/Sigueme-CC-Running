@@ -178,15 +178,15 @@ class MainActivity : Activity() {
         deTxt.text = when {
             plan == null -> "km"
             // el estado solo si dice algo que no sea el km (fuera de la ruta, sin GPS)
-            activo -> "de ${Plan.kmTxt(plan.distancia)}" + (prefs.getString("estado_km", null)
+            activo -> String.format(Locale("es", "ES"), "de %.1f km", plan.distancia) + (prefs.getString("estado_km", null)
                 ?.takeUnless { it.startsWith("Km ") }?.let { " · $it" } ?: if (prefs.contains("estado_km")) "" else " · buscando GPS…")
-            else -> "de ${Plan.kmTxt(plan.distancia)}"
+            else -> String.format(Locale("es", "ES"), "de %.1f km", plan.distancia)
         }
         barra.progress = if (plan != null && plan.distancia > 0) (km / plan.distancia * 1000).toInt() else 0
 
         val ultimo = prefs.getString("ultimo_aviso", null)
         avisoTxt.text = when {
-            activo && ultimo != null -> "Último aviso: $ultimo"
+            activo && ultimo != null -> Plan.notificacion(ultimo).let { (t, c) -> "Último aviso: $t" + (if (c.isEmpty()) "" else " · " + c.replace('\n', ' ')) }
             activo -> "Esperando el primer aviso…"
             plan != null -> "${plan.avisos.size} avisos guardados en el móvil"
             else -> "Sin avisos"
@@ -281,7 +281,7 @@ class MainActivity : Activity() {
     }
 
     private fun probarAviso() {
-        Seguimiento.avisar(this, "Prueba de Sígueme CC · si lo ves en la pulsera, los avisos funcionan")
+        Seguimiento.avisar(this, "Prueba de Sígueme CC · si lo ves en la pulsera · los avisos funcionan")
         prefs.edit().putLong("prueba_t", System.currentTimeMillis()).apply()
         pintar()
         dialogo("Aviso enviado: tiene que vibrar el móvil y salir en la pulsera.\n\nSi no sale en la pulsera: en Mi Fitness → " +

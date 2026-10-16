@@ -61,6 +61,22 @@ class PlanTest {
         assertEquals(false, p.antesDeSalir(diez - 3 * 86400_000L))    // tres días antes: una prueba, sin esperar
     }
 
+    @Test fun formatoParaLaPulsera() {
+        assertEquals("Subida larga" to "1,2 km · 7 %\n+84 m\nRampa 19 %", Plan.notificacion("SUBIDA LARGA · 1,2km · 7% · +84m · rampa 19%"))
+        assertEquals("Cima" to "Bajada 2,9 km · −215 m\nQuedan +185 m", Plan.notificacion("CIMA · bajada 2,9km · -215m · quedan +185m"))
+        assertEquals("Avituallamiento en 300 m" to "Fuente del Pinar", Plan.notificacion("AVITUALLAMIENTO en 300m · Fuente del Pinar"))
+        assertEquals("Último km" to "¡a por ello!", Plan.notificacion("ÚLTIMO KM · ¡a por ello!"))
+        assertEquals("Prueba de Sígueme CC" to "Si lo ves en la pulsera · Los avisos funcionan",
+            Plan.notificacion("Prueba de Sígueme CC · si lo ves en la pulsera · los avisos funcionan"))
+    }
+
+    @Test fun subidaConDistancia() {
+        val p = Plan("""{"carrera": {"distancia_km": 10}, "ruta": [${(0..100).joinToString(",") { "[-4.0, ${40.0 + it * 0.1 * gradoKm}]" }}],
+          "avisos": [{"id": 1, "km": 2.0, "tipo": "subida", "texto": "SUBIDA LARGA · 1,2km · 7%", "valido_hasta": 2.6}],
+          "subidas": [{"inicio": 2.3, "fin": 3.5, "desnivel_m": 84, "largo_km": 1.2}]}""")
+        assertEquals(1 to "SUBIDA LARGA en 300m · 1,2km · 7%", p.avisoQueToca(2.0, 0))
+    }
+
     @Test fun textos() {
         assertEquals("250m", Plan.kmTxt(0.26))
         assertEquals("2,3km", Plan.kmTxt(2.34))
