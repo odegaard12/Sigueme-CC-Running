@@ -4,6 +4,21 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.10.0 · 2026-10-16
+- **App rediseñada** con los colores de la web: tarjeta con el km, la barra de
+  progreso y el último aviso; botón grande para empezar o parar; lista «Listo
+  para salir» (servidor, plan, ubicación, notificaciones, batería, aviso de
+  prueba) en la que cada fila lleva a arreglarlo. Se refresca sola.
+- **Ida y vuelta por el mismo camino:** el km podía saltar a la vuelta y se
+  perdían los avisos de en medio; ahora vale la primera pasada.
+- La pantalla ya no dice «Siguiendo» si Android cerró la app; el servicio se
+  relanza solo si lo matan y sale limpio si Android no le deja arrancar.
+- Un plan actualizado en plena carrera se usa al momento.
+- La notificación fija se actualiza una vez por minuto (antes cada 5 s).
+- Solo servidores https; avisa si las notificaciones están apagadas.
+- Prueba en un emulador Android 14 en GitHub Actions: instala la app, simula
+  el GPS por una ruta y comprueba que los avisos salen de verdad.
+
 ## v1.9.0 · 2026-10-16
 - **App Android Sígueme CC** (`android/`, Kotlin sin librerías, Android 8 o
   superior): sigue tu km con el GPS del móvil con la pantalla apagada, lanza los

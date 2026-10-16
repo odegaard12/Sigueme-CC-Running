@@ -25,6 +25,17 @@ class PlanTest {
         assertNull(plan.kmEnRuta(punto(4.0), -3.99, 3.5))                // a 850 m de la ruta
     }
 
+    @Test fun idaYVueltaPorElMismoCamino() {
+        // 3 km al norte y vuelta por un camino a 40 m (0.0005° de longitud)
+        val ida = (0..30).map { "[-4.0, ${40.0 + it * 0.1 * gradoKm}]" }
+        val vuelta = (30 downTo 0).map { "[-3.9995, ${40.0 + it * 0.1 * gradoKm}]" }
+        val p = Plan("""{"carrera": {"distancia_km": 6.2}, "ruta": [${(ida + vuelta).joinToString(",")}]}""")
+        // en la ida (km 1) con el GPS desviado hacia la vuelta: sigue siendo el km 1, no el 5
+        assertEquals(1.0, p.kmEnRuta(punto(1.0), -3.9996, 0.8)!!, 0.1)
+        // ya en la vuelta, la ida queda detrás y vale la vuelta
+        assertEquals(5.2, p.kmEnRuta(punto(1.0), -3.9996, 4.9)!!, 0.15)
+    }
+
     @Test fun avisoPorEstado() {
         assertEquals(1 to "SUBIDA · 1,2km", plan.avisoQueToca(2.1, 0))
         // llega tarde (sin GPS un rato): el estado de ahora, no el aviso viejo

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.9.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.10.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -104,6 +104,8 @@ Sin panel, las mismas herramientas desde la consola:
 `python herramientas/plan_avisos.py`.
 
 ## 4. Elegir cómo se manda tu posición
+
+<p align="center"><img src="docs/capturas/app.jpg" width="640" alt="App Android: plan listo, siguiendo la carrera y avisos"></p>
 
 Puedes usar una sola o varias a la vez; la web decide sola cuál usar.
 

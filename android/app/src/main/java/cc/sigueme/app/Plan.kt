@@ -52,7 +52,10 @@ class Plan(json: String) {
 
     /** Km de ruta del punto, siempre hacia delante (salida y meta suelen estar
      *  juntas: buscar en toda la ruta saltaría a la meta en la salida). null si
-     *  está a más de 150 m de la ruta. */
+     *  está a más de 150 m de la ruta.
+     *  ⚠️ Ida y vuelta por el mismo camino: el punto MÁS cercano podía ser el de
+     *  la vuelta y, como solo se avanza, se perdían los avisos de en medio. Vale
+     *  la PRIMERA pasada por ese sitio (y dentro de ella, el punto más cercano). */
     fun kmEnRuta(la: Double, lo: Double, ultimo: Double): Double? {
         for (ventana in doubleArrayOf(5.0, 40.0)) {
             var mejor = 0.15
@@ -61,6 +64,7 @@ class Plan(json: String) {
                 if (km[i] < ultimo - 0.5 || km[i] > ultimo + ventana) continue
                 val d = kmEntre(la, lo, lat[i], lon[i])
                 if (d < mejor) { mejor = d; res = km[i] }
+                else if (res != null && d > 0.3) break        // se alejó: fin de la primera pasada
             }
             if (res != null) return res
         }

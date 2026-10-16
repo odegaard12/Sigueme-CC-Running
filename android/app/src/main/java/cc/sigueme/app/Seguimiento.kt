@@ -36,16 +36,25 @@ class Seguimiento : Service(), LocationListener {
     private val red = Executors.newSingleThreadExecutor()
     private var ultimoEnvio = 0L
     private var ultimoAviso = 0L
+    private var ultimaFija = 0L
+    private var planCargado = 0L          // fecha de plan.json: si cambia, se recarga en marcha
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         canales(this)
-        plan = cargarPlan(this)
+        recargarPlan()
         val n = fija("Siguiendo la carrera", plan?.nombre ?: "Sin plan: solo se manda la posición")
-        if (Build.VERSION.SDK_INT >= 29) startForeground(FIJA, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
-        else startForeground(FIJA, n)
+        // ⚠️ Si Android relanza el servicio desde segundo plano (lo mató por memoria),
+        // en Android 14 puede no dejar arrancarlo: fuera limpio, sin bucle de cierres
+        try {
+            if (Build.VERSION.SDK_INT >= 29) startForeground(FIJA, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            else startForeground(FIJA, n)
+        } catch (e: Exception) {
+            stopSelf(); return
+        }
+        corriendo = true
         // con la pantalla apagada Android duerme la CPU: sin esto la cola no salía
         cierre = (getSystemService(POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sigueme:carrera").apply { acquire(16 * 3600 * 1000L) }
@@ -55,13 +64,21 @@ class Seguimiento : Service(), LocationListener {
         } catch (e: SecurityException) {
             stopSelf()
         }
-        prefs(this).edit().putBoolean("activo", true).apply()
+    }
+
+    // si Android mata el proceso, que lo vuelva a arrancar en cuanto pueda
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int) = START_STICKY
+
+    private fun recargarPlan() {
+        val f = File(filesDir, "plan.json")
+        if (f.lastModified() != planCargado) { planCargado = f.lastModified(); plan = cargarPlan(this) }
     }
 
     override fun onDestroy() {
+        corriendo = false
+        if (!::lm.isInitialized) { super.onDestroy(); return }
         try { lm.removeUpdates(this) } catch (_: Exception) {}
         cierre?.let { if (it.isHeld) it.release() }
-        prefs(this).edit().putBoolean("activo", false).apply()
         val c = applicationContext
         red.execute { enviarCola(c) }        // lo que quede, si hay red
         red.shutdown()
@@ -72,6 +89,7 @@ class Seguimiento : Service(), LocationListener {
         if (l.hasAccuracy() && l.accuracy > 100) return          // arranque en frío, túneles
         val p = prefs(this)
         apuntar(this, l, bateria())
+        recargarPlan()
         var texto = "Sin plan de avisos"
         plan?.let { pl ->
             val ultimo = p.getFloat("km", 0f).toDouble()
@@ -88,8 +106,14 @@ class Seguimiento : Service(), LocationListener {
                 }
             }
         }
-        val pendientes = pendientes(this)
-        nm().notify(FIJA, fija(texto, if (pendientes > 0) "$pendientes posiciones esperando cobertura" else "Posición enviada"))
+        // la notificación fija, una vez por minuto: cada 5 s gastaba y alguna app de
+        // pulsera la podía reenviar
+        if (System.currentTimeMillis() - ultimaFija > 60_000) {
+            ultimaFija = System.currentTimeMillis()
+            val pendientes = pendientes(this)
+            nm().notify(FIJA, fija(texto, if (pendientes > 0) "$pendientes posiciones esperando cobertura" else "Posición enviada"))
+        }
+        p.edit().putString("estado_km", texto).putLong("dato_t", System.currentTimeMillis()).apply()
         if (System.currentTimeMillis() - ultimoEnvio > 20_000) {
             ultimoEnvio = System.currentTimeMillis()
             val c = applicationContext
@@ -115,6 +139,8 @@ class Seguimiento : Service(), LocationListener {
         const val CANAL_FIJO = "seguimiento"
         const val CANAL_AVISOS = "avisos"
         private val cola = Any()
+        /** De verdad en marcha en este proceso (si Android lo mata, vuelve a false). */
+        @Volatile var corriendo = false
         private var nAviso = 100
 
         fun prefs(c: Context) = c.getSharedPreferences("sigueme", MODE_PRIVATE)
