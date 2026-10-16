@@ -1540,6 +1540,48 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         escribir_json("avisos.json", plan)
         self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
 
+    def _empezar(self, hora, origen="panel"):
+        """Carrera en marcha: el crono cuenta desde la hora OFICIAL (si se empieza
+        a las 09:45 para salir a las 10:00, la web dice «en la salida» hasta las
+        10:00 y luego cuenta desde las 10:00, no desde las 09:45)."""
+        inicio = self.hora_a_iso(hora) if hora else None
+        parar_simulacion()
+        stop_previous_poller()
+        apuntar_historial("empezar", hora_salida=hora, origen=origen)
+        return merge_live({
+            "status_label": "En carrera", "livetrack_url": None, "extract_status": None,
+            "started_at": inicio or datetime.now(timezone.utc).isoformat(),
+            "hora_salida": hora or None, "finished_at": None, "elapsed": None,
+            "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
+            "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
+            "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
+            "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
+            "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None,
+            "gps_origen": None, "gps_rechazado_at": None,
+        })
+
+    def _empezar_desde_app(self):
+        """EMPEZAR en la app = carrera en marcha en la web, sin abrir el panel.
+        Solo el día de la carrera (otro día es una prueba: no toca la web) y una
+        vez: si ya está en marcha hoy, no se reinicia."""
+        c = carrera()
+        zona = ZoneInfo(c.get("zona_horaria") or "Europe/Madrid")
+        hoy = datetime.now(zona).date().isoformat()
+        if c.get("fecha") and c["fecha"] != hoy:
+            return "otro_dia", f"La carrera es el {c['fecha']}: hoy es solo una prueba (la web no cambia)"
+        live = read_live()
+        empezada = live.get("started_at")
+        try:
+            de_hoy = bool(empezada) and datetime.fromisoformat(empezada).astimezone(zona).date().isoformat() == hoy
+        except ValueError:
+            de_hoy = False
+        if de_hoy and live.get("finished_at"):
+            return "terminada", "La carrera de hoy ya está terminada en la web"
+        if de_hoy:
+            return "ya_estaba", "La carrera ya estaba en marcha en la web"
+        self._empezar(c.get("hora_salida") or "", origen="app")
+        return "empezada", f"Carrera en marcha en la web (salida a las {c.get('hora_salida') or 'ya'})"
+
     def _plan_app(self):
         """La app del móvil baja aquí el plan, con el mismo identificador que
         usa para mandar la posición (no hace falta la clave del panel)."""
@@ -1549,9 +1591,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             largo = int(self.headers.get("Content-Length", 0))
-            ident = str(json.loads(self.rfile.read(largo) if 0 < largo <= 4096 else b"{}").get("device_id") or "")
+            cuerpo = json.loads(self.rfile.read(largo) if 0 < largo <= 4096 else b"{}")
+            ident = str(cuerpo.get("device_id") or "")
         except (ValueError, AttributeError):
-            ident = ""
+            cuerpo, ident = {}, ""
         clave = clave_gps()
         if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
             fallo_de(ip)
@@ -1559,7 +1602,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         acierto_de(ip)
         merge_live({"app_at": datetime.now(timezone.utc).isoformat()})
-        self._send_json(200, plan_para_la_app())
+        respuesta = plan_para_la_app()
+        if cuerpo.get("accion") == "empezar":
+            respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app()
+        self._send_json(200, respuesta)
 
     def do_POST(self):
         if self.path.startswith("/api/gps"):
@@ -1741,20 +1787,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Carrera solo con Traccar: sin enlace de iGPSPORT el crono no
             # arrancaba nunca (se ponía en marcha al pegar el enlace).
             hora = str(data.get("hora_salida") or read_live().get("hora_salida") or "").strip()
-            inicio = self.hora_a_iso(hora) if hora else None
-            parar_simulacion()
-            stop_previous_poller()
-            apuntar_historial("empezar", hora_salida=hora)
-            current = merge_live({
-                "status_label": "En carrera", "livetrack_url": None, "extract_status": None,
-                "started_at": inicio or datetime.now(timezone.utc).isoformat(),
-                "hora_salida": hora or None, "finished_at": None, "elapsed": None,
-                "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
-                "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
-                "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-                "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None, "gps_origen": None, "gps_rechazado_at": None,
-            })
-            self._send_json(200, {"ok": True, "live": current})
+            self._send_json(200, {"ok": True, "live": self._empezar(hora)})
             return
 
         if accion == "stop":

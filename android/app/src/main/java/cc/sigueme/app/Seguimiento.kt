@@ -91,7 +91,10 @@ class Seguimiento : Service(), LocationListener {
         apuntar(this, l, bateria())
         recargarPlan()
         var texto = "Sin plan de avisos"
-        plan?.let { pl ->
+        val pl0 = plan
+        if (pl0 != null && pl0.antesDeSalir(System.currentTimeMillis())) {
+            texto = "En la salida · empieza a las ${pl0.horaSalida}"
+        } else plan?.let { pl ->
             val ultimo = p.getFloat("km", 0f).toDouble()
             val k = pl.kmEnRuta(l.latitude, l.longitude, ultimo)
             texto = if (k == null) "Fuera de la ruta (más de 150 m)" else "Km ${Plan.kmTxt(k)} de ${Plan.kmTxt(pl.distancia)}"
@@ -180,11 +183,28 @@ class Seguimiento : Service(), LocationListener {
             File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.useLines { it.count() } ?: 0
         }
 
+        /** EMPEZAR pone en marcha la carrera en la web; sin cobertura en ese
+         *  momento, se reintenta con cada envío hasta que llega. Baja también el
+         *  plan al día. */
+        fun empezarEnLaWeb(c: Context): String? {
+            val p = prefs(c)
+            val url = p.getString("url", null) ?: return null
+            val id = p.getString("id", null) ?: return null
+            val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").toString()) }
+                                catch (e: Exception) { return null }
+            if (codigo != 200) return null
+            try { Plan(txt); File(c.filesDir, "plan.json").writeText(txt) } catch (e: Exception) {}
+            val msg = try { JSONObject(txt).optString("mensaje", "") } catch (e: Exception) { "" }
+            p.edit().putBoolean("empezar_pendiente", false).putString("web_estado", msg).apply()
+            return msg
+        }
+
         /** Manda la cola en lotes de 300; solo borra lo que el servidor confirmó (200). */
         fun enviarCola(c: Context) {
             val p = prefs(c)
             val url = p.getString("url", null) ?: return
             val id = p.getString("id", null) ?: return
+            if (p.getBoolean("empezar_pendiente", false)) empezarEnLaWeb(c)
             while (true) {
                 val lote = synchronized(cola) {
                     File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.useLines { it.take(300).toList() } ?: emptyList()

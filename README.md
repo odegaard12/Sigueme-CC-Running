@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.10.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.11.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -122,11 +122,12 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
 
 ## 5. El día de la carrera
 
-1. En el **panel**: revisa la hora oficial de salida, y si usas iGPSPORT pega el
-   enlace. Pulsa **Guardar y empezar a seguir**. Recomendado: **Generar
-   identificador nuevo** para cada carrera y ponerlo en Traccar y en el reloj.
-2. Arranca Traccar o la miniapp del reloj antes de salir. En el panel, la línea
-   «GPS del móvil» tiene que decir «ahora mismo».
+1. Con la **app**: pulsa **EMPEZAR SEGUIMIENTO** cuando quieras, aunque sea una
+   hora antes. Baja el plan al día y pone la carrera en marcha en la web; hasta
+   la hora oficial la web dice «En la salida», el crono no corre y no hay
+   avisos. Guarda el móvil: sigue solo con la pantalla apagada.
+2. Sin la app (Traccar, reloj o iGPSPORT): en el panel, pestaña **Hoy**, pulsa
+   **Guardar y empezar a seguir** y arranca Traccar o el reloj antes de salir.
 3. Comparte el enlace con el botón de la cabecera de la web: en WhatsApp sale
    con su vista previa.
 4. **Sin cobertura** la web lo dice («Sin cobertura desde las 12:03, km 44»),

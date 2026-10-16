@@ -725,3 +725,97 @@ body.indice { min-height: 100vh; }
 .indice-lista b { font-size: 1.05rem; }
 .indice-lista span { color: var(--muted); font-size: 0.85rem; }
 .indice-vivo a { display: inline-block; margin-bottom: 12px; color: #7fd46a; font-weight: 700; }
+
+
+/* ===================== v1.11: rediseño ======================================
+   Más aire, números grandes y legibles al sol, un solo verde, tarjetas con
+   el mismo radio, y el estado de la carrera arriba de un vistazo. */
+:root {
+  --bg: #0a0d0c;
+  --panel: rgba(22, 28, 25, 0.86);
+  --panel-2: #1a211e;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #8a968f;
+  --accent: #7fd46a;
+  --radio: 16px;
+}
+body {
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(127, 212, 106, 0.07), transparent 60%), var(--bg);
+  background-attachment: fixed;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+.topbar { border-bottom: 0; background: transparent; padding-bottom: 4px; }
+.topbar h1 { font-size: clamp(1.25rem, 5.4vw, 1.55rem); letter-spacing: -0.02em; }
+.topbar h1 span { color: var(--accent); }
+.cd-ruta { border-top: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0; }
+.cd-ruta b { font-size: 0.95rem; }
+
+/* píldora de estado */
+.pill-estado {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  padding: 6px 12px; border-radius: 999px; font-size: 0.74rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+}
+.pill-estado::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill-estado.vivo { color: #0a0d0c; background: var(--accent); border-color: var(--accent); }
+.pill-estado.vivo::before { animation: latido 1.4s ease-in-out infinite; background: #0a0d0c; }
+.pill-estado.previo { color: #f3c969; border-color: rgba(243, 201, 105, 0.35); background: rgba(243, 201, 105, 0.08); }
+.pill-estado.sin { color: #ff9a8a; border-color: rgba(255, 138, 122, 0.4); background: rgba(255, 138, 122, 0.08); }
+.pill-estado.meta { color: var(--text); border-color: rgba(255, 255, 255, 0.25); }
+@keyframes latido { 50% { opacity: 0.25; } }
+.topbar-fila .pill-estado { margin-left: auto; margin-right: 8px; }
+.topbar-fila .compartir { margin-left: 0; }
+/* móvil estrecho: título, estado, compartir y la foto en una línea sin cortarse */
+@media (max-width: 480px) {
+  .ver-ficha span { display: none; }
+  .ver-ficha { padding: 4px; }
+  .pill-estado { padding: 5px 10px; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .topbar-fila { gap: 8px; }
+}
+
+/* mapa: de borde a borde en el móvil, redondeado en pantallas anchas */
+.map-wrap { margin: 10px 0 0; border-radius: 0; border-left: 0; border-right: 0; }
+@media (min-width: 620px) { .map-wrap { margin: 12px 12px 0; border-radius: var(--radio); border: 1px solid var(--border); } }
+
+/* métricas: tarjetas grandes, número arriba y etiqueta debajo */
+.metricas { padding: 12px 12px 0; gap: 10px; }
+.metricas-top { gap: 10px; }
+.metricas-top .metrica { flex: 1 1 calc(50% - 5px); }
+.metrica { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radio);
+  padding: 14px 10px 12px; text-align: left; backdrop-filter: blur(8px); }
+.metrica.destacada { padding: 14px 14px 12px; }
+.metrica.destacada .m-val { font-size: 2rem; font-weight: 750; letter-spacing: -0.03em; }
+.m-tag { margin-top: 6px; color: var(--muted); }
+.progreso { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--border); }
+.progreso i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4fb350, var(--accent)); border-radius: inherit; transition: width 0.8s ease-out; }
+.metricas.sin-datos .progreso { display: none; }
+.metricas-sec { justify-content: flex-start; gap: 8px; }
+.chip { background: var(--panel); padding: 8px 12px; border-radius: 12px; }
+.chip b { font-size: 0.95rem; }
+
+/* estado y previsiones, como una tarjeta */
+.estado-carrera:not(:empty) { text-align: left; font-size: 0.9rem; color: var(--text); background: var(--panel);
+  border: 1px solid var(--border); border-radius: var(--radio); padding: 12px 14px; line-height: 1.45; }
+.estado-carrera.previo { text-align: center; }
+.live-updated { font-size: 0.8rem; }
+.live-updated:not(:empty) { margin: 10px 12px 0; }
+
+.leyenda { gap: 14px; font-size: 0.78rem; }
+.ver-ficha, .compartir { background: var(--panel); border-color: var(--border); }
+.ficha, .aviso-resultado { background: var(--panel); border-radius: var(--radio); }
+.pasos li { border-radius: 12px; background: var(--panel); }
+footer { opacity: 0.85; }
+
+@media (min-width: 620px) {
+  .topbar .pill-estado { order: 1; margin: 0 4px 0 auto; }
+  .cd-ruta { order: 1; flex: 0 1 auto; background: transparent; border: 0; padding: 0; }
+}
+@media (min-width: 900px) {
+  .panel-pc { grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 0 24px; }
+  .panel-pc .map-wrap { border-radius: var(--radio); }
+  .panel-pc .destacada .m-val { font-size: 2.1rem; }
+  .panel-pc .metricas-top .metrica { flex: 1 1 calc(50% - 5px); }
+}
+@media (prefers-reduced-motion: reduce) { .pill-estado.vivo::before { animation: none; } }

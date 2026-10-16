@@ -81,8 +81,10 @@ En casa, con cobertura:
 1. Escanea el código QR del panel con la cámara del móvil. Se abre una página
    de tu web: la primera vez, **Descargar la app** (APK de la última release)
    e instálala.
-2. Vuelve a escanear y pulsa **Abrir en la app**: confirma tu servidor y baja
-   la ruta, el perfil y los avisos.
+2. Vuelve a **esa misma página** (sin escanear otra vez) y pulsa **Abrir en la
+   app**: confirma tu servidor y baja la ruta, el perfil y los avisos. No hay
+   que volver a escanear nada en las siguientes carreras (salvo si generas un
+   identificador nuevo).
 3. En la app: **Probar aviso en la pulsera** (con una actividad en marcha en la
    pulsera, tiene que vibrar y verse el texto) y **Quitar ahorro de batería**.
 
@@ -102,9 +104,12 @@ posición».
 
 ## 6 · El día de la carrera
 
-1. Panel → revisa la hora de salida → **Guardar y empezar a seguir**.
-2. La app (o Traccar, o la miniapp del reloj) en marcha antes de salir. En el
-   panel, «GPS del móvil: ahora mismo».
+1. En la app, **EMPEZAR SEGUIMIENTO** cuando quieras, aunque sea una hora antes
+   de la salida: baja el plan al día y pone la carrera en marcha en la web (sin
+   cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
+   oficial la web dice «En la salida», el crono no corre y no salen avisos.
+   Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
+2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Guardar y empezar a seguir**.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También

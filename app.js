@@ -501,8 +501,8 @@ function onMapReady() {
     const pos = pointAtKm(s.km);
     if (!pos) return;
     const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
-    const tipo = s.principal ? 'Comida caliente · bolsa de vida'
-      : s.taller ? 'Avituallamiento + taller MTB'
+    const tipo = s.principal ? 'Avituallamiento principal'
+      : s.taller ? 'Avituallamiento + asistencia mecánica'
       : 'Avituallamiento';
     const el = document.createElement('div');
     el.className = 'aid-pin';
@@ -566,6 +566,9 @@ function loadAidStations() {
   precargado('aid_stations.json', () => fetch('aid_stations.json').then(r => r.ok ? r.json() : []))
     .then(stations => {
       aidStations = stations || [];
+      const hay = { normal: aidStations.some(s => !s.principal && !s.taller), principal: aidStations.some(s => s.principal),
+                    taller: aidStations.some(s => s.taller) };
+      document.querySelectorAll('.leyenda [data-tipo]').forEach(el => { el.hidden = !hay[el.dataset.tipo]; });
       drawElevationMarkers();
       onMapReady();
     })
@@ -939,6 +942,15 @@ let objetivo = null;        // [km, lat, lon] hacia donde va la animación
 // enteraba. Tras un hueco se pone al día en 2,5 s.
 let ponerseAlDia = false;
 
+// el estado de un vistazo, arriba: en directo, en la salida, sin cobertura, en meta
+function pildora(texto, clase) {
+  const p = document.getElementById('pill-estado');
+  if (!p) return;
+  p.hidden = !texto;
+  if (p.textContent !== texto) p.textContent = texto;
+  p.className = 'pill-estado ' + (clase || '');
+}
+
 function ponerTexto(id, texto) {
   const el = document.getElementById(id);
   if (el && el.textContent !== texto) el.textContent = texto;
@@ -948,6 +960,8 @@ function pintarProgreso(km, pos) {
   currentKm = km;
   ponerTexto('m-dist', num(km));
   ponerTexto('m-left', num(Math.max(0, totalRouteKm - km)));
+  const barra = document.getElementById('progreso-barra');
+  if (barra && totalRouteKm) barra.style.width = Math.min(100, km / totalRouteKm * 100).toFixed(1) + '%';
   if (pos) placeRiderMarker(pos[0], pos[1]);
   seguirCorredor(pos);
   // la línea recorrida y el perfil son caros de repintar (miles de puntos):
@@ -1151,6 +1165,7 @@ function pollLive() {
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
       if (resultado && !data.started_at && !data.livetrack_url && !data.en_seguimiento) {
         if (!repitiendo) pintarResultado();
+        pildora('Resultado', 'meta');
         ritmoSondeo(60000);
         return;
       }
@@ -1289,6 +1304,11 @@ function pollLive() {
       {
         const pr = haArrancado && !enMeta && hueco > 240000 && data.status_label === 'En carrera'
           ? previsiones(doneKm, data.data_at) : null;
+        if (enMeta) pildora('En meta', 'meta');
+        else if (data.status_label !== 'En carrera') pildora('');
+        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de la salida', 'previo');
+        else if (hueco > 240000) pildora('Sin cobertura', 'sin');
+        else pildora('En directo', 'vivo');
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
           pie.textContent = '📡 Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +

@@ -9,5 +9,6 @@
   const datos = 'config?u=' + encodeURIComponent(location.origin) + '&id=' + encodeURIComponent(id);
   document.getElementById('abrir').href = 'intent://' + datos + '#Intent;scheme=siguemecc;package=cc.sigueme.app;' +
     'S.browser_fallback_url=' + encodeURIComponent('https://github.com/odegaard12/Sigueme-CC-Running/releases/latest') + ';end';
-  history.replaceState(null, '', location.pathname);   // que no quede en el historial
+  // el identificador se queda en esta pestaña: tras instalar la app, se vuelve
+  // aquí y se pulsa «Abrir» sin escanear otra vez el código
 })();

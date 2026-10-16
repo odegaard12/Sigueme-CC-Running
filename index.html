@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=60">
+<link rel="stylesheet" href="style.css?v=61">
 </head>
 <body>
 <header class="topbar">
@@ -48,6 +48,7 @@
       <h1>Sígueme <span>CC</span></h1>
       <p class="marca-sub">by <b>Odegaard12</b></p>
     </div>
+    <span class="pill-estado" id="pill-estado" hidden></span>
     <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
     </button>
@@ -101,9 +102,9 @@
 </section>
 
 <div class="leyenda">
-  <span><i style="background:#8fe06a"></i>avituallamiento</span>
-  <span><i style="background:#e08a3a"></i>comida caliente</span>
-  <span><i style="background:#5cc2e8"></i>taller MTB</span>
+  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
+  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
+  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
 </div>
 
 <div class="lateral">
@@ -116,6 +117,7 @@
     <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
     <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo</span></div>
   </div>
+  <div class="progreso" data-tile="dist" aria-hidden="true"><i id="progreso-barra"></i></div>
   <div class="metricas-sec">
     <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> <span id="m-speed-avg-txt">km/h media</span></span>
     <span class="chip" data-tile="speed-total" hidden><b id="m-speed-total">—</b> km/h media total</span>
@@ -139,12 +141,12 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.8.0</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.11.0</p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=73"></script>
+<script src="app.js?v=74"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

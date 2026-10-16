@@ -14,6 +14,9 @@ class Plan(json: String) {
     data class Subida(val inicio: Double, val fin: Double, val desnivel: Int, val largo: Double)
 
     val nombre: String
+    val horaSalida: String
+    /** Hora oficial de salida (ms), o null si la carrera no la tiene. */
+    val salida: Long?
     val distancia: Double
     val lat: DoubleArray
     val lon: DoubleArray
@@ -26,6 +29,11 @@ class Plan(json: String) {
         val j = JSONObject(json)
         val c = j.optJSONObject("carrera") ?: JSONObject()
         nombre = c.optString("nombre", "Carrera")
+        horaSalida = c.optString("hora_salida", "")
+        salida = try {
+            java.time.LocalDateTime.parse(c.getString("fecha") + "T" + horaSalida)
+                .atZone(java.time.ZoneId.of(c.optString("zona_horaria", "Europe/Madrid"))).toInstant().toEpochMilli()
+        } catch (e: Exception) { null }
         val r = j.getJSONArray("ruta")
         lat = DoubleArray(r.length()) { r.getJSONArray(it).getDouble(1) }
         lon = DoubleArray(r.length()) { r.getJSONArray(it).getDouble(0) }
@@ -49,6 +57,11 @@ class Plan(json: String) {
         val re = j.optJSONArray("restante")
         restante = (0 until (re?.length() ?: 0)).map { re!!.getJSONArray(it).let { p -> p.getDouble(0) to p.getInt(1) } }
     }
+
+    /** ¿Esperando en la salida? Se puede dar a EMPEZAR antes de la hora (a las
+     *  09:45 para salir a las 10:00): hasta la hora oficial ni km ni avisos. Otro
+     *  día (una prueba) no espera. */
+    fun antesDeSalir(ahora: Long): Boolean = salida != null && ahora < salida && salida - ahora < 12 * 3600_000L
 
     /** Km de ruta del punto, siempre hacia delante (salida y meta suelen estar
      *  juntas: buscar en toda la ruta saltaría a la meta en la salida). null si

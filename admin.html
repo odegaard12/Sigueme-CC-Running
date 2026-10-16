@@ -92,6 +92,43 @@
   .qr svg { display: block; width: 100%; height: auto; }
   .qr:empty { display: none; }
   #login-screen { max-width: 340px; margin: 50px auto 0; padding: 0 16px; }
+  /* --- v1.11: diseño nuevo --- */
+  body { background: radial-gradient(900px 500px at 10% -10%, rgba(127,212,106,0.08), transparent 60%), #0a0d0c; }
+  .topbar { border-bottom: 0; padding: 16px 16px 6px; }
+  .topbar h1 { font-size: 1.4rem; letter-spacing: -0.02em; }
+  .cabecera-datos { gap: 12px; }
+  .cd-linea { font-size: 0.85rem; color: #7fd46a; text-decoration: none; font-weight: 600; }
+  .pill-panel { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 5px 11px; border-radius: 999px; background: #1a211e; color: #8a968f; border: 1px solid rgba(255,255,255,0.08); }
+  .pill-panel:empty { display: none; }
+  .pill-panel.vivo { background: #7fd46a; color: #0a0d0c; border-color: #7fd46a; }
+  .admin-wrap { max-width: 560px; padding-top: 6px; }
+  .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.92); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
+  .pestanas button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
+    font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+  .pestanas button[aria-selected="true"] { background: #7fd46a; color: #0a0d0c; }
+  .tarjeta { background: rgba(22,28,25,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+    padding: 18px; margin-bottom: 14px; }
+  .tarjeta h2 { font-size: 1.05rem; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 12px; }
+  .howto { font-size: 0.86rem; line-height: 1.55; }
+  .field label { font-size: 0.8rem; }
+  .field input, .field select, .field textarea { border-radius: 12px; background: #111614; border-color: rgba(255,255,255,0.1); }
+  .save-btn { background: #7fd46a; color: #0a0d0c; border-radius: 12px; font-weight: 800; }
+  .btn { border-radius: 12px; background: #1a211e; border-color: rgba(255,255,255,0.1); }
+  .stop-btn { background: rgba(255,138,122,0.08); border-color: rgba(255,138,122,0.45); color: #ff9a8a; }
+  .lista-prep { gap: 10px; font-size: 0.92rem; }
+  .lista-prep .si, .lista-prep .no { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+    font-size: 0.75rem; font-weight: 900; color: #0a0d0c; flex: 0 0 auto; }
+  .lista-prep .si { background: #7fd46a; } .lista-prep .no { background: #f3c969; }
+  .estado-fila { font-size: 0.88rem; }
+  /* en cada pestaña, lo importante primero (estado en «Hoy», la app en «Móvil») */
+  .admin-wrap { display: flex; flex-direction: column; }
+  .pestanas { order: -2; }
+  .tarjeta.primero { order: -1; }
+  .tarjeta .btn, .tarjeta .save-btn { width: 100%; }
+  .quick-actions .btn, .quick-actions .save-btn { width: auto; }
   #panel { display: none; }
 </style>
 </head>
@@ -99,7 +136,7 @@
 <header class="topbar">
   <h1>Panel admin</h1>
   <div class="cabecera-datos">
-    <a class="cd-linea" href="index.html">← Volver a la web</a>
+    <span class="pill-panel" id="pill-panel"></span><a class="cd-linea" href="index.html">Ver la web ›</a>
   </div>
 </header>
 
@@ -117,12 +154,20 @@
 </div>
 
 <div class="admin-wrap" id="panel">
+  <nav class="pestanas" role="tablist" aria-label="Secciones del panel">
+    <button type="button" role="tab" data-tab="hoy">Hoy</button>
+    <button type="button" role="tab" data-tab="preparar">Preparar</button>
+    <button type="button" role="tab" data-tab="movil">Móvil</button>
+    <button type="button" role="tab" data-tab="mas">Más</button>
+  </nav>
 
-  <div class="tarjeta">
-    <h2>Enlace de iGPSPORT (opcional)</h2>
-    <div class="howto">
-      App iGPSPORT → compartir seguimiento en vivo → pega el enlace aquí.
-      Si solo usas Traccar (GPS del móvil), déjalo vacío y pulsa el botón.
+  <div class="tarjeta" data-tab="hoy">
+    <h2>Empezar la carrera</h2>
+    <div class="howto"><b>Lo normal:</b> pulsa <b>EMPEZAR</b> en la app del móvil (aunque sea un rato
+      antes de la salida) y la carrera se pone en marcha aquí sola. Este botón es para
+      cuando no usas la app.</div>
+    <div class="howto" style="margin-top:8px">
+      Con iGPSPORT: en su app, compartir seguimiento en vivo, y pega el enlace aquí.
     </div>
     <div class="field link-field" style="margin-top:12px">
       <label for="livetrack">Enlace LiveTrack</label>
@@ -141,7 +186,7 @@
     <button class="btn" id="save-hora" style="margin-top:8px">Guardar solo la hora de salida</button>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta primero" data-tab="hoy">
     <h2>Estado</h2>
     <div class="estado-fila" id="status-line">
       <span>Estado: <b id="status-text">—</b></span>
@@ -166,7 +211,7 @@
     <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="movil">
     <h2>GPS del móvil (Traccar Client)</h2>
     <div class="howto">
       Posición directa desde el móvil, más fiable que la de iGPSPORT con mala
@@ -194,14 +239,14 @@
     </div>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="preparar">
     <h2>Preparar la carrera</h2>
     <ul class="lista-prep" id="lista-prep"><li>Cargando…</li></ul>
     <div class="howto" style="margin-top:8px">Todo se prepara aquí abajo, en orden, con cobertura
       y antes de la carrera. Con una carrera en marcha no se pueden cambiar la ruta ni los datos.</div>
   </div>
 
-  <div class="tarjeta" id="t-carrera">
+  <div class="tarjeta" id="t-carrera" data-tab="preparar">
     <h2>1 · Datos de la carrera</h2>
     <div class="field"><label for="c-nombre">Nombre</label><input id="c-nombre" maxlength="80" placeholder="Mi trail 2027"></div>
     <div class="row2">
@@ -229,7 +274,7 @@
     <button class="save-btn" id="guardar-carrera" type="button">Guardar datos de la carrera</button>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="preparar">
     <h2>2 · Ruta (GPX)</h2>
     <div class="howto">El GPX de la organización, o el que exportas de Strava, Komoot o Wikiloc. Salen
       el trazado del mapa y el perfil, y se rehace el plan de avisos.</div>
@@ -239,7 +284,7 @@
     <button class="save-btn" id="subir-gpx" type="button">Subir ruta</button>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="preparar">
     <h2>3 · Avituallamientos</h2>
     <div class="howto">Nombre y km de cada uno (la meta también, si quieres que salga en el mapa).</div>
     <div id="lista-avit" class="lista-avit"></div>
@@ -249,7 +294,7 @@
     </div>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="preparar">
     <h2>4 · Avisos a la pulsera</h2>
     <div class="howto">Salen solos del perfil: antes de cada subida (tipo, largo, %, D+, rampa), a mitad
       de las largas, en la cima, antes de cada avituallamiento, un resumen cada pocos km y el último km.
@@ -269,17 +314,18 @@
     </details>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta primero" data-tab="movil">
     <h2>5 · App del móvil (Android)</h2>
-    <div class="howto">En casa, escanea este código con la cámara del móvil: abre la página de la app (para
-      instalarla la primera vez) y la configura. Baja la ruta y los avisos, y en
-      carrera manda tu posición cuando hay cobertura. Si luego cambias algo aquí arriba, pulsa «Actualizar plan»
-      en la app; si generas un identificador nuevo, vuelve a escanearlo.</div>
+    <div class="howto">Una sola vez, en casa: escanea este código con la cámara del móvil. Se abre la página
+      de la app: instálala (la primera vez), vuelve a esa misma página y pulsa «Abrir en la app».
+      Después ya no hace falta escanear nada: el día de la carrera pulsa <b>EMPEZAR</b> en la app
+      (aunque sea un rato antes de la salida) y baja el plan al día y pone la carrera en marcha aquí.
+      Solo si generas un identificador nuevo hay que volver a escanear.</div>
     <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
     <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="mas">
     <!-- archivar: la carrera terminada pasa a su carpeta y la portada queda libre -->
     <div class="howto"><b>Archivar la carrera terminada</b>: pasa a su propia
       dirección (por ejemplo /2027-mi-carrera/) y sale en «Todas las carreras».
@@ -300,7 +346,7 @@
     </details>
   </div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" data-tab="mas">
     <h2>Avanzado</h2>
     <details>
       <summary>Meter los datos a mano</summary>
@@ -395,6 +441,9 @@ $('hora-salida').addEventListener('input', () => { horaTocada = true; });
 
 function refreshStatus(live) {
   $('status-text').textContent = live.status_label || '—';
+  const pill = $('pill-panel');
+  pill.textContent = live.finished_at ? 'En meta' : live.started_at ? 'En carrera' : 'Sin empezar';
+  pill.className = 'pill-panel ' + (live.finished_at ? '' : live.started_at ? 'vivo' : '');
   if (!horaTocada && live.hora_salida) $('hora-salida').value = live.hora_salida;
   const ex = live.extract_status;
   // ⚠️ Si se pega el enlace el día antes "para tenerlo listo", el crono
@@ -480,7 +529,7 @@ document.addEventListener('click', async e => {
 function pintarPreparacion(p) {
   if (!p) return;
   const fila = (ok, texto) => { const li = document.createElement('li'); const m = document.createElement('span');
-    m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '⚠'; li.append(m, ' ' + texto); return li; };
+    m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '!'; li.append(m, ' ' + texto); return li; };
   const km = v => v != null ? String(v).replace('.', ',') : '—';
   const l = $('lista-prep'); l.textContent = '';
   const app = p.app_at ? 'la app bajó el plan el ' + new Date(p.app_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -633,10 +682,21 @@ async function pollStatus() {
 
 // ⚠️ Antes cada entrada (sesión al cargar, login, volver a entrar tras caducar)
 // añadía otro setInterval: el panel acababa preguntando varias veces cada 5 s.
+// pestañas: se recuerda la última (solo en este navegador)
+function verPestana(t) {
+  document.querySelectorAll('.pestanas button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  document.querySelectorAll('.tarjeta[data-tab]').forEach(c => { c.hidden = c.dataset.tab !== t; });
+  try { localStorage.setItem('pestana', t); } catch (e) {}
+}
+document.querySelectorAll('.pestanas button').forEach(b => b.addEventListener('click', () => verPestana(b.dataset.tab)));
+let inicial = 'hoy';
+try { inicial = localStorage.getItem('pestana') || 'hoy'; } catch (e) {}
+verPestana(['hoy', 'preparar', 'movil', 'mas'].includes(inicial) ? inicial : 'hoy');
+
 let sondeo = null;
 function entrar() {
   $('login-screen').style.display = 'none';
-  $('panel').style.display = 'block';
+  $('panel').style.display = 'flex';
   pollStatus();
   cargarGps();
   cargarConfig();

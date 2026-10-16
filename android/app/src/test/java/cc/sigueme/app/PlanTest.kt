@@ -46,6 +46,15 @@ class PlanTest {
         assertEquals(2 to "KM 6 · faltan 4,0km · +0m", plan.avisoQueToca(6.0, 1))
     }
 
+    @Test fun esperaALaHoraDeSalida() {
+        val p = Plan("""{"carrera": {"fecha": "2027-05-16", "hora_salida": "10:00", "zona_horaria": "Europe/Madrid"}, "ruta": []}""")
+        val diez = java.time.ZonedDateTime.of(2027, 5, 16, 10, 0, 0, 0, java.time.ZoneId.of("Europe/Madrid")).toInstant().toEpochMilli()
+        assertEquals(diez, p.salida)
+        assertEquals(true, p.antesDeSalir(diez - 15 * 60_000))        // 09:45: esperando en la salida
+        assertEquals(false, p.antesDeSalir(diez + 1))                 // ya salió
+        assertEquals(false, p.antesDeSalir(diez - 3 * 86400_000L))    // tres días antes: una prueba, sin esperar
+    }
+
     @Test fun textos() {
         assertEquals("250m", Plan.kmTxt(0.26))
         assertEquals("2,3km", Plan.kmTxt(2.34))

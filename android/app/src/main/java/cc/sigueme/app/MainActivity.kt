@@ -201,7 +201,11 @@ class MainActivity : Activity() {
                 else -> null
             },
             if (enviado > 0) "última enviada hace ${(System.currentTimeMillis() - enviado) / 60000} min" else null
-        ).joinToString(" · ")
+        ).joinToString(" · ") + when {
+            !activo -> ""
+            prefs.getBoolean("empezar_pendiente", false) -> "\nWeb: se pondrá en marcha en cuanto haya cobertura"
+            else -> prefs.getString("web_estado", null)?.takeIf { it.isNotBlank() }?.let { "\nWeb: $it" } ?: ""
+        }
 
         botonGrande.text = if (activo) "PARAR SEGUIMIENTO" else "EMPEZAR SEGUIMIENTO"
         botonGrande.setTextColor(if (activo) rojoC else fondoC)
@@ -307,9 +311,19 @@ class MainActivity : Activity() {
 
     private fun arrancar(servicio: Intent) {
         // carrera nueva: desde el km 0 y sin avisos dados
-        prefs.edit().putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km").apply()
+        prefs.edit().putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km")
+            .putBoolean("empezar_pendiente", true).remove("web_estado").apply()
         startForegroundService(servicio)
         reloj.postDelayed({ pintar() }, 500)
+        // la carrera también en la web, sin abrir el panel (y el plan al día)
+        thread {
+            val msg = Seguimiento.empezarEnLaWeb(this)
+            runOnUiThread {
+                pintar()
+                dialogo((msg ?: "Sin cobertura ahora mismo: la web se pondrá en marcha sola en cuanto la haya.") +
+                    "\n\nYa puedes guardar el móvil: la app sigue sola con la pantalla apagada.")
+            }
+        }
     }
 
     private fun sinAhorro() {

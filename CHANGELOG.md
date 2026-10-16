@@ -4,6 +4,24 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.11.0 · 2026-10-16
+- **Todo desde la app:** EMPEZAR pone también la carrera en marcha en la web
+  (sin abrir el panel) y baja el plan al día. Sin cobertura en ese momento, lo
+  reintenta sola con cada envío. Solo el día de la carrera (otro día es una
+  prueba y la web no cambia) y una vez (pulsar otra vez no la reinicia).
+- **Empezar antes de la hora:** si se pulsa a las 09:45 para salir a las 10:00,
+  la web dice «En la salida» y el crono cuenta desde las 10:00; la app no da
+  km ni avisos hasta la hora oficial. Se activa y se deja en el bolsillo.
+- **Menos códigos QR:** tras instalar la app se vuelve a la misma página para
+  abrirla (sin escanear otra vez), y no hace falta volver a escanear en cada
+  carrera.
+- **Web rediseñada:** estado arriba de un vistazo (En directo, En la salida,
+  Sin cobertura, En meta), números grandes, barra de progreso, mapa de borde a
+  borde en el móvil, previsiones en tarjeta; leyenda solo con los tipos de
+  avituallamiento que tiene la carrera, sin textos propios de MTB.
+- **Panel rediseñado** en pestañas (Hoy · Preparar · Móvil · Más), con el
+  estado de la carrera arriba y lo importante primero en cada pestaña.
+
 ## v1.10.0 · 2026-10-16
 - **App rediseñada** con los colores de la web: tarjeta con el km, la barra de
   progreso y el último aviso; botón grande para empezar o parar; lista «Listo
@@ -23,7 +41,7 @@ release en GitHub.
 - **App Android Sígueme CC** (`android/`, Kotlin sin librerías, Android 8 o
   superior): sigue tu km con el GPS del móvil con la pantalla apagada, lanza los
   avisos del plan como notificaciones (Mi Fitness las pasa a la pulsera) **sin
-  cobertura**, y guarda cada posición para mandarla a la web cuando vuelve. Po
+  cobertura**, y guarda cada posición para mandarla a la web cuando vuelve. Por
   estado: tras un rato sin GPS sale el aviso de ahora, no los atrasados.
   Botones para probar un aviso y quitar el ahorro de batería.
 - GitHub Actions compila la app, pasa sus pruebas y sube el APK firmado a cada
