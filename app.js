@@ -19,6 +19,15 @@ const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.ro
 // quien pide menos movimiento en el sistema no ve animaciones de cámara
 const QUIETO = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+let relojSondeo = null, ritmoActual = 0;
+const ARCHIVADA = !!document.querySelector('meta[name="archivo"]');
+function ritmoSondeo(ms) {
+  if (ARCHIVADA || ms === ritmoActual) return;
+  clearInterval(relojSondeo);
+  relojSondeo = setInterval(pollLive, ms);
+  ritmoActual = ms;
+}
+
 let CARRERA = {
   nombre: '', lugar: '', fecha: '', modalidad: '', hora_salida: '08:30', limite_h: 12,
   zona_horaria: 'Europe/Madrid', km_minimos_meta: null, corredor: { nombre: '', dorsal: '' }, bici: null,
@@ -34,6 +43,7 @@ function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  document.querySelectorAll('img[src^="rider.png"]').forEach(i => { i.alt = 'Avatar de ' + (corredor.nombre || 'corredor'); });
   const nombre = document.getElementById('ficha-nombre');
   if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
   const dorsal = document.getElementById('ficha-dorsal');
@@ -225,7 +235,7 @@ const geoHint = document.getElementById('geo-hint');
 const botonCompartir = document.getElementById('compartir');
 if (botonCompartir) {
   botonCompartir.addEventListener('click', async () => {
-    const datos = { title: 'Sígueme CC', text: 'Sígueme en directo', url: location.origin + '/' };
+    const datos = { title: document.title, text: ARCHIVADA ? 'Mira mi carrera' : 'Sígueme en directo', url: location.href.split('#')[0] };
     try {
       if (navigator.share) { await navigator.share(datos); return; }
       await navigator.clipboard.writeText(datos.url);
@@ -269,7 +279,7 @@ function buildMap3D() {
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Imágenes © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS'
         },
         terrain: {
           type: 'raster-dem',
@@ -437,6 +447,7 @@ function rehacerMapa(motivo) {
   chinchetasPuestas = false;
   marcadoresConPopup.length = 0;
   riderMarkerEl = null;
+  fantasmaEl = null;
   tamanoCorredorActual = 0;
   kmPintado = null;
   objetivo = null;      // si no, el siguiente poll no repinta la línea azul
@@ -490,8 +501,8 @@ function onMapReady() {
     const pos = pointAtKm(s.km);
     if (!pos) return;
     const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
-    const tipo = s.principal ? 'Comida caliente · bolsa de vida'
-      : s.taller ? 'Avituallamiento + taller MTB'
+    const tipo = s.principal ? 'Avituallamiento principal'
+      : s.taller ? 'Avituallamiento + asistencia mecánica'
       : 'Avituallamiento';
     const el = document.createElement('div');
     el.className = 'aid-pin';
@@ -518,8 +529,8 @@ precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
-    document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
-    document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
+    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
+    if (!document.getElementById('stat-gain').dataset.real) document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
     totalRouteKm = props.distance_km;
 
     const coords = geojson.features[0].geometry.coordinates;
@@ -555,6 +566,9 @@ function loadAidStations() {
   precargado('aid_stations.json', () => fetch('aid_stations.json').then(r => r.ok ? r.json() : []))
     .then(stations => {
       aidStations = stations || [];
+      const hay = { normal: aidStations.some(s => !s.principal && !s.taller), principal: aidStations.some(s => s.principal),
+                    taller: aidStations.some(s => s.taller) };
+      document.querySelectorAll('.leyenda [data-tipo]').forEach(el => { el.hidden = !hay[el.dataset.tipo]; });
       drawElevationMarkers();
       onMapReady();
     })
@@ -861,6 +875,39 @@ function fmtTime(iso) {
 let desfaseReloj = 0;
 function ahoraServidor() { return Date.now() - desfaseReloj; }
 
+// ---------- Sin cobertura: por dónde irá y a qué hora llega ----------------
+// Con el ritmo medio desde la salida hasta el último dato (paradas incluidas:
+// mejor un poco prudente que prometer de más). Sin datos nuevos, una marca
+// transparente avanza por la ruta a ese ritmo; al volver la cobertura llegan
+// los puntos guardados en el móvil y manda otra vez la posición real.
+let fantasmaEl = null;
+function previsiones(km, datoIso) {
+  if (!lastStartedAt || !datoIso || !totalRouteKm || km == null || km < 1) return null;
+  const t = new Date(datoIso).getTime();
+  const v = km / ((t - new Date(lastStartedAt)) / 3600000);       // km/h
+  if (!(v > 0.5 && v < 80)) return null;
+  const est = Math.min(totalRouteKm, km + v * Math.max(0, ahoraServidor() - t) / 3600000);
+  const hora = k => fmtTime(new Date(t + (k - km) / v * 3600000).toISOString());
+  const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
+  return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
+}
+
+function pintarFantasma(km) {
+  const p = km != null && mapReady ? pointAtKm(km / (factorKm || 1)) : null;
+  if (!p) {
+    if (fantasmaEl) { fantasmaEl.remove(); fantasmaEl = null; }
+    return;
+  }
+  if (!fantasmaEl) {
+    const el = document.createElement('div');
+    el.className = 'map3d-fantasma';
+    el.title = 'Posición estimada (sin cobertura)';
+    fantasmaEl = new maplibregl.Marker({ element: el, opacityWhenCovered: '0.99' }).setLngLat([p[1], p[0]]).addTo(map3d);
+  } else {
+    fantasmaEl.setLngLat([p[1], p[0]]);
+  }
+}
+
 function fmtElapsedSince(iso) {
   const s = Math.floor((ahoraServidor() - new Date(iso).getTime()) / 1000);
   if (s < 0) return '00:00';
@@ -895,6 +942,15 @@ let objetivo = null;        // [km, lat, lon] hacia donde va la animación
 // enteraba. Tras un hueco se pone al día en 2,5 s.
 let ponerseAlDia = false;
 
+// el estado de un vistazo, arriba: en directo, en la salida, sin cobertura, en meta
+function pildora(texto, clase) {
+  const p = document.getElementById('pill-estado');
+  if (!p) return;
+  p.hidden = !texto;
+  if (p.textContent !== texto) p.textContent = texto;
+  p.className = 'pill-estado ' + (clase || '');
+}
+
 function ponerTexto(id, texto) {
   const el = document.getElementById(id);
   if (el && el.textContent !== texto) el.textContent = texto;
@@ -904,6 +960,8 @@ function pintarProgreso(km, pos) {
   currentKm = km;
   ponerTexto('m-dist', num(km));
   ponerTexto('m-left', num(Math.max(0, totalRouteKm - km)));
+  const barra = document.getElementById('progreso-barra');
+  if (barra && totalRouteKm) barra.style.width = Math.min(100, km / totalRouteKm * 100).toFixed(1) + '%';
   if (pos) placeRiderMarker(pos[0], pos[1]);
   seguirCorredor(pos);
   // la línea recorrida y el perfil son caros de repintar (miles de puntos):
@@ -1087,7 +1145,8 @@ function pollLive() {
   if (!resultadoConsultado) return;
   if (pidiendo) return;          // la anterior aún no ha vuelto: no amontonar
   pidiendo = true;
-  precargado('live.json', () => fetchConTiempo('live.json?_=' + Date.now()))
+  // tramos de 3 s: quien mira a la vez comparte la misma copia en la caché del borde
+  precargado('live.json', () => fetchConTiempo('live.json?_=' + Math.floor(Date.now() / 3000)))
     .then(r => {
       if (!r || !r.ok) throw new Error('HTTP ' + (r ? r.status : 'sin respuesta'));
       // la hora del servidor sale de la cabecera Date de la respuesta, no de
@@ -1104,10 +1163,15 @@ function pollLive() {
       document.querySelector('.metricas').classList.remove('cargando');
 
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
-      if (resultado && !data.started_at && !data.livetrack_url) {
+      if (resultado && !data.started_at && !data.livetrack_url && !data.en_seguimiento) {
         if (!repitiendo) pintarResultado();
+        pildora('Resultado', 'meta');
+        ritmoSondeo(60000);
         return;
       }
+      ritmoSondeo(5000);
+      verCasilla('speed-total', false);
+      ponerTexto('m-speed-avg-txt', 'km/h media');
       document.getElementById('resultado').hidden = true;
       document.getElementById('aviso-resultado').hidden = true;
 
@@ -1228,7 +1292,9 @@ function pollLive() {
           estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
           estado.classList.add('previo');
         } else {
-          estado.textContent = '';
+          const pr = previsiones(doneKm, data.data_at);
+          estado.textContent = pr ? (pr.prox ? 'Próximo avituallamiento: ' + pr.prox.name + ' (km ' + num(pr.prox.km) + ') ~' + pr.horaProx + ' · ' : '') +
+            'Meta ~' + pr.horaMeta : '';
         }
       }
 
@@ -1236,7 +1302,18 @@ function pollLive() {
       const pie = document.getElementById('live-updated');
       const hueco = ultimoDato ? (ahoraServidor() - new Date(ultimoDato)) : 0;
       {
-        if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
+        const pr = haArrancado && !enMeta && hueco > 240000 && data.status_label === 'En carrera'
+          ? previsiones(doneKm, data.data_at) : null;
+        if (enMeta) pildora('En meta', 'meta');
+        else if (data.status_label !== 'En carrera') pildora('');
+        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de la salida', 'previo');
+        else if (hueco > 240000) pildora('Sin cobertura', 'sin');
+        else pildora('En directo', 'vivo');
+        pintarFantasma(pr ? pr.est : null);
+        if (pr) {
+          pie.textContent = '📡 Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
+            ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
+        } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
         } else if (ultimoDato && data.lat != null) {
@@ -1308,6 +1385,20 @@ function calcularKmsTraza() {
   });
 }
 
+// cabecera con lo REAL y, entre paréntesis, lo previsto (carrera.json)
+function cabeceraReal(r) {
+  const pon = (id, real, unidad, previsto) => {
+    const b = document.getElementById(id);
+    if (!b || real == null) return;
+    b.textContent = real;
+    b.dataset.real = '1';
+    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' (prev. ' + previsto + ')' : '');
+  };
+  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
+  pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
+      CARRERA.desnivel_m ? Number(CARRERA.desnivel_m).toLocaleString('es-ES') : '');
+}
+
 function pintarResultado() {
   const r = resultado;
   ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
@@ -1316,6 +1407,9 @@ function pintarResultado() {
   ponerTexto('m-dist', num(r.distancia_km));
   ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));
   ponerTexto('m-speed-avg', num(r.velocidad_media_mov));
+  ponerTexto('m-speed-avg-txt', 'km/h en movimiento');
+  if (r.tiempo_oficial_s) { ponerTexto('m-speed-total', num(r.distancia_km / (r.tiempo_oficial_s / 3600))); verCasilla('speed-total', true); }
+  cabeceraReal(r);
   ponerTexto('m-hr-avg', entero(r.pulso_medio));
   ponerTexto('m-cad-avg', entero(r.cadencia_media));
   // el resultado va arriba, antes del mapa: era lo primero que había que ver
@@ -1412,7 +1506,8 @@ precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(
   .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
 
 pollLive();
-setInterval(pollLive, 5000);
+// con resultado (carrera terminada) basta con mirar cada minuto si empieza otra
+ritmoSondeo(5000);
 // al desbloquear el móvil o volver a la pestaña, datos al momento (antes había
 // que esperar al siguiente turno, y en segundo plano el navegador los frena)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });

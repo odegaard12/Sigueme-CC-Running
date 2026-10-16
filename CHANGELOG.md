@@ -4,6 +4,111 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.11.0 · 2026-10-16
+- **Todo desde la app:** EMPEZAR pone también la carrera en marcha en la web
+  (sin abrir el panel) y baja el plan al día. Sin cobertura en ese momento, lo
+  reintenta sola con cada envío. Solo el día de la carrera (otro día es una
+  prueba y la web no cambia) y una vez (pulsar otra vez no la reinicia).
+- **Empezar antes de la hora:** si se pulsa a las 09:45 para salir a las 10:00,
+  la web dice «En la salida» y el crono cuenta desde las 10:00; la app no da
+  km ni avisos hasta la hora oficial. Se activa y se deja en el bolsillo.
+- **Menos códigos QR:** tras instalar la app se vuelve a la misma página para
+  abrirla (sin escanear otra vez), y no hace falta volver a escanear en cada
+  carrera.
+- **Web rediseñada:** estado arriba de un vistazo (En directo, En la salida,
+  Sin cobertura, En meta), números grandes, barra de progreso, mapa de borde a
+  borde en el móvil, previsiones en tarjeta; leyenda solo con los tipos de
+  avituallamiento que tiene la carrera, sin textos propios de MTB.
+- **Panel rediseñado** en pestañas (Hoy · Preparar · Móvil · Más), con el
+  estado de la carrera arriba y lo importante primero en cada pestaña.
+
+## v1.10.0 · 2026-10-16
+- **App rediseñada** con los colores de la web: tarjeta con el km, la barra de
+  progreso y el último aviso; botón grande para empezar o parar; lista «Listo
+  para salir» (servidor, plan, ubicación, notificaciones, batería, aviso de
+  prueba) en la que cada fila lleva a arreglarlo. Se refresca sola.
+- **Ida y vuelta por el mismo camino:** el km podía saltar a la vuelta y se
+  perdían los avisos de en medio; ahora vale la primera pasada.
+- La pantalla ya no dice «Siguiendo» si Android cerró la app; el servicio se
+  relanza solo si lo matan y sale limpio si Android no le deja arrancar.
+- Un plan actualizado en plena carrera se usa al momento.
+- La notificación fija se actualiza una vez por minuto (antes cada 5 s).
+- Solo servidores https; avisa si las notificaciones están apagadas.
+- Prueba en un emulador Android 14 en GitHub Actions: instala la app, simula
+  el GPS por una ruta y comprueba que los avisos salen de verdad.
+
+## v1.9.0 · 2026-10-16
+- **App Android Sígueme CC** (`android/`, Kotlin sin librerías, Android 8 o
+  superior): sigue tu km con el GPS del móvil con la pantalla apagada, lanza los
+  avisos del plan como notificaciones (Mi Fitness las pasa a la pulsera) **sin
+  cobertura**, y guarda cada posición para mandarla a la web cuando vuelve. Por
+  estado: tras un rato sin GPS sale el aviso de ahora, no los atrasados.
+  Botones para probar un aviso y quitar el ahorro de batería.
+- GitHub Actions compila la app, pasa sus pruebas y sube el APK firmado a cada
+  release (firma fija: las versiones nuevas se instalan encima).
+- El QR del panel lleva a `app.html` de tu web, que instala la app y la abre ya
+  configurada; el identificador va tras «#» y no llega a ningún registro.
+
+## v1.8.0 · 2026-10-16
+- **La carrera se prepara entera desde el panel**, sin consola: datos de la
+  carrera, subir el GPX (trazado y perfil), avituallamientos y plan de avisos
+  (ajustes «avisar antes» y «resumen cada», textos editables). Todo validado en
+  el servidor y bloqueado con una carrera en marcha.
+- **Avisos sin cobertura:** el servidor ya no los manda (fuera ntfy). El plan
+  lo baja la app del móvil por `/api/plan` con el identificador del GPS, y el
+  panel enseña el código QR para configurarla. La app Android, en la siguiente
+  versión.
+- **Web sin cobertura:** «Sin cobertura desde las HH:MM (km X)», marca
+  transparente con la posición estimada a su ritmo medio, y hora prevista al
+  próximo avituallamiento y a meta.
+- Avisos: una subida con un llano delante empezaba en el llano y se descartaba
+  por falso llano (una rampa de 400 m al 17 % medía 3 km al 2 %); la bajada ya
+  no cuenta el llano del final; la subida que empieza en la salida avisa en el
+  km 0.
+- Al subir una ruta más corta se quitan los «km mínimos para dar meta» de la
+  carrera anterior (la llegada no se habría detectado nunca).
+- `desplegar.sh` copia también carpetas (`herramientas/`, `lib/`).
+
+## v1.7.0 · 2026-10-16
+- **Avisos de desnivel a la pulsera:** `herramientas/plan_avisos.py` calcula
+  desde el perfil las subidas (larga, corta y dura, rampa), su mitad, la cima con
+  la bajada y el D+ que queda, los avituallamientos, resúmenes, la última subida
+  y el último km. En carrera el servidor sigue tu km de ruta y manda por ntfy el
+  aviso que toca; tras un corte de cobertura manda el estado de ahora, nunca
+  avisos atrasados. La distancia al avituallamiento se calcula al enviarlo.
+- Panel: lista «Preparar la carrera» (qué está listo y qué falta) y tarjeta
+  «Avisos a la pulsera» con aviso de prueba.
+- Guía visual `docs/GUIA-CARRERA.md` para preparar una carrera, comprobada con
+  un ensayo completo (GPX → plan → carrera simulada con corte → meta → archivo).
+- Las carreras archivadas guardan también su plan de avisos.
+
+## v1.6.0 · 2026-10-15
+- **Carreras por carpetas:** cada carrera terminada se archiva (botón en el
+  panel) en `carreras/<año-nombre>/` y se ve en `/<año-nombre>/` con la misma
+  web en modo resultado, sin sondear nada.
+- Índice de todas las carreras en `/carreras/` (fecha, lugar, tiempo,
+  distancia y desnivel) y enlace «Todas las carreras» al pie.
+- Sin carrera en marcha, la portada redirige (302) al último resultado: los
+  enlaces viejos siguen sirviendo y la portada vuelve a ser la carrera en
+  cuanto empieza la siguiente.
+- Compartir comparte la página en la que estás; cada carrera archivada tiene su
+  título y su vista previa.
+
+## v1.5.0 · 2026-10-15
+Auditoría externa:
+- Panel: bloqueo de 15 min por IP real tras 10 fallos (sin bloquear al dueño),
+  comprobación de origen (CSRF) y robots.txt sin anunciar rutas.
+- GPS: identificador nuevo de 32 caracteres desde el panel; puntos de hace más
+  de un día descartados.
+- Errores en español con página propia; el servidor ya no se anuncia.
+- CSP en la web (scripts por hash; teselas de Esri y AWS).
+- `live.json` público sin enlace de iGPSPORT, batería ni datos internos;
+  `ocultar_m` en carrera.json para no publicar la posición junto a casa.
+- Con resultado: sondeo cada minuto en vez de cada 5 s y live.json cacheable
+  3 s; cabecera con distancia y desnivel REALES (previstos entre paréntesis);
+  media en movimiento y media total; título y vista previa «Resultado · …».
+- Atribución completa de las imágenes de satélite; avatar con texto alternativo.
+
 ## v1.4.0 · 2026-10-09
 - Arreglado: en directo, antes de haber resultado, salía una caja vacía con el
   botón ▶ encima del mapa; y el aviso de salida llevaba un nombre fijo en vez
