@@ -317,7 +317,7 @@ function buildMap3D() {
     // salía el cartel de "mapa no disponible". Con este tope nunca se pasa de
     // donde hay imagen.
     maxZoom: 17.5,
-    center: [-3.7, 40.4],
+    center: [-3.7, 40.4],          // la península; enseguida encuadra la ruta
     zoom: 11,
     // con un dedo se desliza la página y con dos se mueve el mapa: si no, en
     // el móvil es imposible bajar a ver las métricas sin arrastrar el mapa
@@ -408,7 +408,7 @@ function montarMapa() {
   try {
     buildMap3D();
   } catch (e) {
-    map3dDiv.innerHTML = '<p style="color:#eef2ee;text-align:center;padding:40px 16px">No se pudo cargar el mapa 3D: ' + e.message + '</p>';
+    map3dDiv.innerHTML = '<p style="color:#eef2ee;text-align:center;padding:40px 16px">No se pudo cargar el mapa 3D: ' + esc(e.message) + '</p>';
     return;
   }
   // si el contexto gráfico se pierde (cambiar de app, memoria baja), rehacer.
@@ -485,7 +485,7 @@ function onMapReady() {
     if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
     return;
   }
-  if (!aidStations.length) return;
+  if (!avitusCargados) return;      // hasta saber si hay avituallamientos
   chinchetasPuestas = true;
 
   map3d.fitBounds(
@@ -493,27 +493,30 @@ function onMapReady() {
     { padding: 30, pitch: 50, bearing: -20, duration: 0 }
   );
 
-  // salida y meta son el mismo punto (recorrido circular)
-  const startPos = routeLatLon[0];
-  if (startPos) {
+  // salida y meta: una bandera si es un recorrido circular, dos si no
+  const startPos = routeLatLon[0], endPos = routeLatLon[routeLatLon.length - 1];
+  const circular = startPos && endPos && haversineKm(startPos, endPos) < 0.3;
+  const bandera = (pos, tipo, km) => {
     const el = document.createElement('div');
     el.className = 'aid-pin';
     el.innerHTML = aidPinSVG('#f3f6f2', '🏁');
     pulsarAbrePopup(
       new maplibregl.Marker({ element: el, anchor: 'bottom', opacityWhenCovered: '0.99' })
-        .setLngLat([startPos[1], startPos[0]])
+        .setLngLat([pos[1], pos[0]])
         .setPopup(nuevoPopup(30).setHTML(
-          '<div class="globo"><span class="globo-tipo">Salida y meta</span>' +
-          '<b>Salida y meta</b>' +
-          '<span class="globo-km">km 0 · km ' + num(totalRouteKm) + '</span></div>'))
+          '<div class="globo"><span class="globo-tipo">' + tipo + '</span>' +
+          '<b>' + esc(CARRERA.lugar || CARRERA.nombre || tipo) + '</b>' +
+          '<span class="globo-km">' + km + '</span></div>'))
         .addTo(map3d),
       el);
-  }
+  };
+  if (startPos) bandera(startPos, circular ? 'Salida y meta' : 'Salida', circular ? 'km 0 · km ' + num(totalRouteKm) : 'km 0');
+  if (endPos && !circular) bandera(endPos, 'Meta', 'km ' + num(totalRouteKm));
 
   // avituallamientos como chinchetas numeradas: verde normal, naranja el
   // principal (comida caliente), azul los talleres MTB, igual que la guía
   aidStations.forEach((s, i) => {
-    const pos = pointAtKm(s.km);
+    const pos = pointAtKm(s.km / (factorKm || 1));
     if (!pos) return;
     const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
     const tipo = s.principal ? 'Avituallamiento principal'
@@ -527,7 +530,7 @@ function onMapReady() {
         .setLngLat([pos[1], pos[0]])
         .setPopup(nuevoPopup(30).setHTML(
           '<div class="globo"><span class="globo-tipo" style="color:' + color + '">' + tipo + '</span>' +
-          '<b>' + (i + 1) + '. ' + s.name + '</b>' +
+          '<b>' + (i + 1) + '. ' + esc(s.name) + '</b>' +
           '<span class="globo-km">km ' + num(s.km) + ' · faltan ' +
           num(totalRouteKm - s.km) + ' km para meta</span></div>'))
         .addTo(map3d),
@@ -535,6 +538,8 @@ function onMapReady() {
   });
 
   if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
+  idxRecorridoPintado = -1;
+  drawTraveledLine(currentKm || 0);
 }
 
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
@@ -577,17 +582,20 @@ precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
 
 // Se editan a mano en aid_stations.json ([{ "name": "...", "km": 0 }, ...]) —
 // no hay forma de sacarlos del GPX, así que se rellenan antes de la carrera.
+let avitusCargados = false;
 function loadAidStations() {
   precargado('aid_stations.json', () => fetch('aid_stations.json').then(r => r.ok ? r.json() : []))
     .then(stations => {
       aidStations = stations || [];
+      avitusCargados = true;
+      document.querySelector('.leyenda').hidden = !aidStations.length;
       const hay = { normal: aidStations.some(s => !s.principal && !s.taller), principal: aidStations.some(s => s.principal),
                     taller: aidStations.some(s => s.taller) };
       document.querySelectorAll('.leyenda [data-tipo]').forEach(el => { el.hidden = !hay[el.dataset.tipo]; });
       drawElevationMarkers();
       onMapReady();
     })
-    .catch(() => {});
+    .catch(() => { avitusCargados = true; onMapReady(); });
 }
 
 // ---------- Perfil de altimetría ----------
@@ -1175,7 +1183,7 @@ function pollLive() {
       fallosSeguidos = 0;
       avisoConexion(false);
       lastStartedAt = data.started_at || null;
-      document.querySelector('.metricas').classList.remove('cargando');
+      document.querySelector('.metricas').classList.remove('esqueleto');
 
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
       if (resultado && !data.started_at && !data.livetrack_url && !data.en_seguimiento) {
@@ -1321,7 +1329,7 @@ function pollLive() {
           ? previsiones(doneKm, data.data_at) : null;
         if (enMeta) pildora('En meta', 'meta');
         else if (data.status_label !== 'En carrera') pildora('');
-        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de la salida', 'previo');
+        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de salir', 'previo');
         else if (hueco > 240000) pildora('Sin cobertura', 'sin');
         else pildora('En directo', 'vivo');
         pintarFantasma(pr ? pr.est : null);

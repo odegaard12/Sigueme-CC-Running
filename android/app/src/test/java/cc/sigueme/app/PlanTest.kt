@@ -25,6 +25,12 @@ class PlanTest {
         assertNull(plan.kmEnRuta(punto(4.0), -3.99, 3.5))                // a 850 m de la ruta
     }
 
+    @Test fun retomarAMitadDeCarrera() {
+        // 60 km rectos; la app vuelve a empezar (km 0) estando en el km 50
+        val largo = Plan("""{"carrera": {"distancia_km": 60}, "ruta": [${(0..600).joinToString(",") { "[-4.0, ${40.0 + it * 0.1 * gradoKm}]" }}]}""")
+        assertEquals(50.0, largo.kmEnRuta(punto(50.0), -4.0, 0.0)!!, 0.1)
+    }
+
     @Test fun idaYVueltaPorElMismoCamino() {
         // 3 km al norte y vuelta por un camino a 40 m (0.0005° de longitud)
         val ida = (0..30).map { "[-4.0, ${40.0 + it * 0.1 * gradoKm}]" }

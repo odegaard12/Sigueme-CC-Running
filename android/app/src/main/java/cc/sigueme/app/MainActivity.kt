@@ -310,9 +310,14 @@ class MainActivity : Activity() {
     }
 
     private fun arrancar(servicio: Intent) {
-        // carrera nueva: desde el km 0 y sin avisos dados
-        prefs.edit().putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km")
-            .putBoolean("empezar_pendiente", true).remove("web_estado").apply()
+        // ⚠️ Si se vuelve a pulsar EMPEZAR a mitad de carrera (se paró sin querer o
+        // Android cerró la app) se sigue donde iba: con el km a 0, desde el km 40
+        // la app no encontraba la ruta y no daba más avisos. Carrera nueva si hace
+        // más de 6 h del último km.
+        val retomar = System.currentTimeMillis() - prefs.getLong("km_t", 0) < 6 * 3600_000L
+        val e = prefs.edit().putBoolean("empezar_pendiente", true).remove("web_estado")
+        if (!retomar) e.putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km")
+        e.apply()
         startForegroundService(servicio)
         reloj.postDelayed({ pintar() }, 500)
         // la carrera también en la web, sin abrir el panel (y el plan al día)

@@ -4,6 +4,30 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.1 · 2026-10-16
+- **Ejemplo sin datos reales:** la ruta, el perfil y los avituallamientos de
+  ejemplo son ahora un bucle inventado de 21 km; el código ya no nombra ningún
+  sitio (el popup de salida usa el lugar de cada carrera) ni centra el mapa en
+  una zona concreta.
+- Salida y meta: dos banderas si no son el mismo sitio.
+- Servidor: un GPX sin altura deja el plan de avisos vacío (antes quedaba el
+  de la carrera anterior y la app lo bajaba) y quita el D+ viejo; carrera.json
+  con BOM se lee bien y uno roto ya no se sobrescribe; guardados simultáneos
+  sin pisarse; la fecha se guarda siempre como AAAA-MM-DD; la hora oficial, en
+  la zona de la carrera; EMPEZAR repetido pasada la medianoche no reinicia la
+  carrera; /api/plan con su propio contador de fallos; el marcado de taller y
+  los textos de avisos cambiados a mano se conservan al guardar.
+- Resultado: FIT con datos raros no da error mudo, y los largos se procesan
+  mucho más rápido.
+- Web: la línea recorrida sale aunque no llegue un dato nuevo; sin
+  avituallamientos el mapa encuadra la ruta; las métricas ya no tapan la
+  pantalla mientras cargan; cabecera sin cortes en móviles estrechos.
+- Panel: el sondeo se para al caducar la sesión.
+- App: volver a pulsar EMPEZAR a mitad de carrera sigue donde iba (antes, desde
+  el km 40, dejaba de dar avisos); una línea rota en la cola ya no la tumba;
+  girar el móvil no la cierra; un identificador viejo no se reintenta sin fin;
+  PARAR no pone después la carrera en marcha; avisa si Android la detiene.
+
 ## v1.12.0 · 2026-10-16
 - **Resultado desde el panel:** se sube el FIT (pestaña «Más») y la web pasa a
   modo resultado; si el FIT no vale (no llega a meta, es de otra carrera), dice

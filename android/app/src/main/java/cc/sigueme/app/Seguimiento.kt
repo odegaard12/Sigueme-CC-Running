@@ -52,6 +52,7 @@ class Seguimiento : Service(), LocationListener {
             if (Build.VERSION.SDK_INT >= 29) startForeground(FIJA, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
             else startForeground(FIJA, n)
         } catch (e: Exception) {
+            avisar(this, "Seguimiento detenido: abre Sígueme CC y pulsa EMPEZAR")
             stopSelf(); return
         }
         corriendo = true
@@ -76,6 +77,7 @@ class Seguimiento : Service(), LocationListener {
 
     override fun onDestroy() {
         corriendo = false
+        prefs(this).edit().putBoolean("empezar_pendiente", false).apply()     // PARAR: la web ya no se pone en marcha
         if (!::lm.isInitialized) { super.onDestroy(); return }
         try { lm.removeUpdates(this) } catch (_: Exception) {}
         cierre?.let { if (it.isHeld) it.release() }
@@ -99,7 +101,7 @@ class Seguimiento : Service(), LocationListener {
             val k = pl.kmEnRuta(l.latitude, l.longitude, ultimo)
             texto = if (k == null) "Fuera de la ruta (más de 150 m)" else "Km ${Plan.kmTxt(k)} de ${Plan.kmTxt(pl.distancia)}"
             if (k != null) {
-                p.edit().putFloat("km", k.toFloat()).apply()
+                p.edit().putFloat("km", k.toFloat()).putLong("km_t", System.currentTimeMillis()).apply()
                 val toca = pl.avisoQueToca(k, p.getInt("aviso", 0))
                 // dos avisos seguidos se pisan en la pulsera: 20 s entre uno y otro
                 if (toca != null && System.currentTimeMillis() - ultimoAviso > 20_000) {
@@ -192,6 +194,11 @@ class Seguimiento : Service(), LocationListener {
             val id = p.getString("id", null) ?: return null
             val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").toString()) }
                                 catch (e: Exception) { return null }
+            if (codigo == 403) {      // identificador viejo: reintentar solo bloquearía la IP
+                p.edit().putBoolean("empezar_pendiente", false)
+                    .putString("web_estado", "identificador no válido: vuelve a escanear el código del panel").apply()
+                return "El servidor no reconoce el identificador: vuelve a escanear el código del panel (pestaña Móvil)."
+            }
             if (codigo != 200) return null
             try { Plan(txt); File(c.filesDir, "plan.json").writeText(txt) } catch (e: Exception) {}
             val msg = try { JSONObject(txt).optString("mensaje", "") } catch (e: Exception) { "" }
@@ -210,16 +217,21 @@ class Seguimiento : Service(), LocationListener {
                     File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.useLines { it.take(300).toList() } ?: emptyList()
                 }
                 if (lote.isEmpty()) return
-                val cuerpo = JSONObject().put("device_id", id).put("location", JSONArray(lote.map { JSONObject(it) }))
+                // una línea rota (proceso cortado a mitad de escribir) se salta: antes tumbaba la app y bloqueaba la cola
+                val puntos = lote.mapNotNull { try { JSONObject(it) } catch (e: Exception) { null } }
+                if (puntos.isEmpty()) { quitar(c, lote.size); continue }
+                val cuerpo = JSONObject().put("device_id", id).put("location", JSONArray(puntos))
                 val codigo = try { post("$url/api/gps", cuerpo.toString()).first } catch (e: Exception) { return }
                 if (codigo != 200) return
-                synchronized(cola) {
-                    val f = File(c.filesDir, "cola.jsonl")
-                    val resto = f.readLines().drop(lote.size)
-                    f.writeText(if (resto.isEmpty()) "" else resto.joinToString("\n", postfix = "\n"))
-                }
+                quitar(c, lote.size)
                 p.edit().putLong("enviado_t", System.currentTimeMillis()).apply()
             }
+        }
+
+        private fun quitar(c: Context, n: Int) = synchronized(cola) {
+            val f = File(c.filesDir, "cola.jsonl")
+            val resto = f.readLines().drop(n)
+            f.writeText(if (resto.isEmpty()) "" else resto.joinToString("\n", postfix = "\n"))
         }
 
         fun post(url: String, cuerpo: String): Pair<Int, String> {

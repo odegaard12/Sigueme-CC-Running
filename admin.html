@@ -411,6 +411,7 @@ const $ = id => document.getElementById(id);
 // sesión HttpOnly (12 h) al entrar. Se borra lo que dejaron versiones viejas.
 try { sessionStorage.removeItem('adminToken'); } catch (e) {}
 function sesionCaducada() {
+  clearInterval(sondeo); sondeo = null;
   $('panel').style.display = 'none';
   $('login-screen').style.display = 'block';
   $('login-msg').textContent = 'La sesión ha caducado: vuelve a entrar.';
@@ -642,6 +643,7 @@ function filaAvit(a = {}) {
   fila.querySelector('.a-nombre').value = a.name || '';
   fila.querySelector('.a-km').value = a.km ?? '';
   fila.querySelector('.a-principal').checked = !!a.principal;
+  fila.dataset.taller = a.taller ? '1' : '';
   fila.querySelector('button').addEventListener('click', () => fila.remove());
   return fila;
 }
@@ -652,7 +654,7 @@ $('mas-avit').addEventListener('click', () => { const f = filaAvit(); $('lista-a
 $('guardar-avit').addEventListener('click', () => accion({ action: 'guardar_avituallamientos',
   avituallamientos: [...document.querySelectorAll('.fila-avit')].map(f => ({
     name: f.querySelector('.a-nombre').value.trim(), km: f.querySelector('.a-km').value,
-    principal: f.querySelector('.a-principal').checked })) }));
+    principal: f.querySelector('.a-principal').checked, taller: !!f.dataset.taller })) }));
 
 function pintarAvisos(plan) {
   const avisos = (plan && plan.avisos) || [];

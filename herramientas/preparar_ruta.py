@@ -61,6 +61,8 @@ def preparar(gpx, nombre='Ruta', distancia=None):
     también el panel web al subir el GPX."""
     if isinstance(gpx, bytes):
         # nada de entidades XML en un fichero subido (bomba de entidades)
+        if gpx[:2] in (bytes([0xFF, 0xFE]), bytes([0xFE, 0xFF])):
+            raise ValueError('El GPX está en UTF-16: expórtalo en UTF-8.')
         if b'<!ENTITY' in gpx or b'<!DOCTYPE' in gpx:
             raise ValueError('El GPX trae declaraciones DOCTYPE/ENTITY: no se admite.')
         try:

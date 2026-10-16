@@ -665,7 +665,7 @@ footer a { color: var(--muted); }
 }
 
 /* --- esqueleto mientras llegan los datos (antes: huecos vacíos y, de golpe, todo) --- */
-.metricas.cargando .m-val, .metricas.cargando .chip b {
+.metricas.esqueleto .m-val, .metricas.esqueleto .chip b {
   color: transparent; border-radius: 6px;
   background: linear-gradient(90deg, #1a201d 0%, #232a26 50%, #1a201d 100%);
   background-size: 200% 100%; animation: esqueleto 1.2s ease-in-out infinite;
@@ -773,7 +773,10 @@ body {
   .ver-ficha { padding: 4px; }
   .pill-estado { padding: 5px 10px; font-size: 0.68rem; letter-spacing: 0.04em; }
   .topbar-fila { gap: 8px; }
+  .marca { min-width: 0; flex-shrink: 1; }
+  .pill-estado { min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
 }
+@media (max-width: 380px) { .marca-sub { display: none; } }
 
 /* mapa: de borde a borde en el móvil, redondeado en pantallas anchas */
 .map-wrap { margin: 10px 0 0; border-radius: 0; border-left: 0; border-right: 0; }

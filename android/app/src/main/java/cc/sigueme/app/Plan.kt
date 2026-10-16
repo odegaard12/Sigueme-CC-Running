@@ -70,7 +70,8 @@ class Plan(json: String) {
      *  la vuelta y, como solo se avanza, se perdían los avisos de en medio. Vale
      *  la PRIMERA pasada por ese sitio (y dentro de ella, el punto más cercano). */
     fun kmEnRuta(la: Double, lo: Double, ultimo: Double): Double? {
-        for (ventana in doubleArrayOf(5.0, 40.0)) {
+        // la última ventana, sin tope: tras un corte muy largo o un reinicio a mitad de carrera
+        for (ventana in doubleArrayOf(5.0, 40.0, Double.MAX_VALUE)) {
             var mejor = 0.15
             var res: Double? = null
             for (i in km.indices) {

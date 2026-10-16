@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=62">
+<link rel="stylesheet" href="style.css?v=63">
 </head>
 <body>
 <header class="topbar">
@@ -114,7 +114,7 @@
 <div class="lateral">
 <p class="map-hint" id="geo-hint"></p>
 
-<section class="metricas cargando">
+<section class="metricas esqueleto">
   <div class="metricas-top">
     <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
     <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
@@ -145,12 +145,12 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.12.0</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.12.1</p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
 <script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=75"></script>
+<script src="app.js?v=76"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

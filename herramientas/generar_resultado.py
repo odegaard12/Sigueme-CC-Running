@@ -35,6 +35,8 @@ def generar(fit, raiz=RAIZ):
 
     # ruta tal como la usa la web (route.geojson) y avituallamientos
     ruta = [(c[1], c[0]) for c in json.loads((raiz / 'route.geojson').read_text(encoding='utf-8'))['features'][0]['geometry']['coordinates']]
+    if len(ruta) < 2:
+        raise ValueError('falta la ruta de la carrera (sube antes el GPX)')
     cum = [0.0]
     for a, b in zip(ruta, ruta[1:]):
         cum.append(cum[-1] + hav(a, b))
@@ -57,7 +59,8 @@ def generar(fit, raiz=RAIZ):
             for f in fr:
                 if isinstance(f, fitdecode.FitDataMessage):
                     d = {x.name: x.value for x in f.fields}
-                    if f.name == 'record' and d.get('position_lat') is not None and d.get('timestamp'):
+                    if (f.name == 'record' and d.get('position_lat') is not None
+                            and d.get('position_long') is not None and d.get('timestamp')):
                         recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
                     elif f.name == 'session':
                         sesion = d
@@ -67,12 +70,16 @@ def generar(fit, raiz=RAIZ):
         raise ValueError('el FIT no trae posiciones GPS')
 
     # km de ruta de cada punto, siempre hacia delante (como la web), en km oficiales
-    km, kms = 0.0, []
+    # ventana que solo avanza: antes recorría la ruta entera por cada punto y un
+    # FIT largo tenía el servidor minutos ocupado
+    km, kms, j0 = 0.0, [], 0
     for _, la, lo in recs:
         mejor, mk = 1e9, km
-        for j in range(len(ruta)):
-            if cum[j] < km - 0.5 or cum[j] > km + 8:
-                continue
+        while j0 < len(ruta) - 1 and cum[j0] < km - 0.5:
+            j0 += 1
+        for j in range(j0, len(ruta)):
+            if cum[j] > km + 8:
+                break
             dd = hav((la, lo), ruta[j])
             if dd < mejor:
                 mejor, mk = dd, cum[j]
