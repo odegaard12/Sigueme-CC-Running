@@ -12,14 +12,29 @@ corre en la que tiene la IP).
 | `replicar.sh` + `sigueme-replica.{service,timer}` | `~/` y systemd (las dos) | Cada 20 s copia la carpeta de la web a la otra Pi, **solo desde la que tiene la IP**. |
 | `desplegar.sh` | `~/` de una de ellas | Copia los ficheros nuevos a las dos y reinicia si cambió `server.py`. |
 
-Rellenar en las plantillas: `IP_FLOTANTE`, `IP_OTRA_PI`, `USUARIO`, `CLAVE_VRRP`.
+Rellenar en las plantillas: `IP_FLOTANTE` (con su `/24`), `IP_OTRA_PI`, `USUARIO`,
+`CLAVE_VRRP` y la interfaz de red (`interface eth0`).
+
+## Paso a paso (en las dos Pis)
+
+1. `sudo apt install rsync keepalived` y, para iGPSPORT y el resultado desde el
+   FIT: `pip install --user --break-system-packages curl_cffi fitdecode`.
+2. Claves SSH entre las dos Pis (la réplica entra sin contraseña) y `sudo` sin
+   contraseña para `systemctl restart sigueme` (la réplica y `desplegar.sh`
+   reinician la otra).
+3. `python3 server.py --hash-clave` y, en `/etc/sigueme/secreto.env` (de root,
+   permisos 600): `ADMIN_USER=tu_usuario` y `ADMIN_HASH=scrypt:…`.
+4. Copiar las plantillas a su sitio y `sudo systemctl enable --now sigueme
+   sigueme-replica.timer keepalived`.
+5. `BIND_HOST` se queda en `0.0.0.0`: el chequeo de keepalived pregunta a
+   `localhost:8710`.
 
 ## Por qué así (lecciones aprendidas)
 
 - **`nopreempt` y `state BACKUP` en las dos.** Con una MASTER que recupera la IP
   al volver, volvía con su `live.json` viejo y la réplica lo copiaba encima de
   los datos buenos de la otra: se perdían distancia, pulso y la llegada a meta.
-- **`chk_leguas weight 0`.** Con `nopreempt`, bajar la prioridad no hace ceder
+- **`chk_sigueme weight 0`.** Con `nopreempt`, bajar la prioridad no hace ceder
   la IP; un fallo del servidor tiene que pasar la instancia a FAULT.
 - **Réplica en las dos direcciones**, siempre desde la que tiene la IP.
 - **Desplegar en las dos a la vez**: si solo se copia a una y la IP está en la

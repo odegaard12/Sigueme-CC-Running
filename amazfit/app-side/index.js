@@ -3,9 +3,8 @@
 // móvil y se suben todos al volver, igual que hace Traccar.
 import { BaseSideService } from '@zeppos/zml/base-side'
 
-const MAX_PENDIENTES = 3000
+const MAX_PENDIENTES = 1500      // lo mismo que se guarda: más, se perdían al cerrar Zepp
 const POR_SUBIDA = 150
-const URL_DEFECTO = 'https://odegaard12.online/api/gps'
 let pendientes = []
 let subiendo = false
 
@@ -37,12 +36,11 @@ AppSideService(BaseSideService({
 
   async subir() {
     if (subiendo || !pendientes.length) return
-    // ⚠️ Ajustes enseña esta dirección de entrada pero, si no se toca, no se
-    // guarda: sin esto el móvil nunca subía nada ("falta la dirección")
-    const url = (this.settings.getItem('url') || URL_DEFECTO).trim()
+    // sin dirección por defecto: cada uno pone la de SU web (antes iba a la del autor)
+    const url = (this.settings.getItem('url') || '').trim()
     const id = (this.settings.getItem('id') || '').trim()
     if (!url || !id) {
-      this.settings.setItem('ultimo_error', 'Falta la dirección o el identificador en Ajustes')
+      this.settings.setItem('ultimo_error', 'Falta la dirección de tu web o el identificador en Ajustes')
       return
     }
     subiendo = true

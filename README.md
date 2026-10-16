@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.12.2-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.12.3-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -50,19 +50,27 @@
   va de sobra) y una forma de publicarlo en internet con **https**: un túnel de
   Cloudflare (gratis) es lo más sencillo.
 - El **GPX** de la ruta.
-- Al menos una forma de mandar tu posición: el **móvil con Traccar Client**
-  (gratis), un **reloj Amazfit** o el directo de un ciclocomputador **iGPSPORT**.
+- Al menos una forma de mandar tu posición: la **app Sígueme CC** (Android,
+  recomendada: avisos sin cobertura), **Traccar Client** (iPhone), un **reloj
+  Amazfit** o el directo de un ciclocomputador **iGPSPORT**.
 
 ## 2. Arrancar el servidor
 
 ```bash
-pip install curl_cffi fitdecode            # iGPSPORT y el resultado desde el FIT
+pip install curl_cffi fitdecode            # opcionales: iGPSPORT y el resultado desde el FIT
 python3 server.py --hash-clave             # pide una clave y escribe ADMIN_HASH=…
 ADMIN_USER=tu_usuario ADMIN_HASH='scrypt:…' python3 server.py 8710
 ```
 
 - La web queda en `http://localhost:8710` y el **panel** en `/admin.html`
   (usuario y clave del paso anterior; el servidor solo guarda el hash).
+- Sin `curl_cffi` funciona todo menos iGPSPORT; sin `fitdecode`, todo menos el
+  resultado desde el FIT. En Raspberry Pi OS:
+  `pip install --user --break-system-packages curl_cffi fitdecode`.
+- El **identificador** de los móviles y relojes se crea solo al primer arranque.
+  Para cambiarlo (recomendable en cada carrera): panel → **Móvil** → «Sin la app:
+  iPhone, Traccar o reloj» → **Ver la configuración** → **Generar identificador
+  nuevo**, y vuelve a escanear el código en la app.
 - Para dejarlo como servicio, y para tener **dos Raspberry** con una de
   respaldo, sigue [`despliegue/README.md`](despliegue/README.md).
 
@@ -85,18 +93,19 @@ Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
 | Campo | Qué es | Ejemplo |
 |---|---|---|
 | `nombre`, `lugar` | Salen en la ficha y al pie de la web | `"Mi carrera MTB"` |
-| `fecha`, `hora_salida` | Día y hora oficial de salida (el cronómetro cuenta desde ahí) | `"2026-09-26"`, `"08:30"` |
+| `fecha`, `hora_salida` | Día y hora oficial de salida (el cronómetro y la app cuentan desde ahí) | `"2027-05-16"`, `"09:00"` |
 | `zona_horaria` | Para enseñar las horas bien aunque quien mira esté en otro país | `"Europe/Madrid"` |
-| `distancia_km`, `desnivel_m` | Lo que dice el paso a) | `103.36`, `2629` |
-| `limite_h` | Horas para terminar | `12` |
-| `km_minimos_meta` | Km hechos para que pasar por meta cuente como llegada (si la salida está junto a la meta). Si falta, el 80 % | `80` |
-| `modalidad` | MTB, trail… | `"MTB"` |
-| `corredor` | `nombre` y `dorsal` | `{"nombre": "Ana", "dorsal": "27"}` |
+| `distancia_km`, `desnivel_m` | Las rellena la ruta (paso 2); cámbialas si la organización da otras | `21.1`, `309` |
+| `limite_h` | Horas para terminar | `5` |
+| `km_minimos_meta` | Km hechos para que pasar por meta cuente como llegada (si la salida está junto a la meta). Si falta, el 80 % | `17` |
+| `modalidad` | MTB, trail… | `"Trail"` |
+| `corredor` | `nombre`, `dorsal`, `club` y `categoria` | `{"nombre": "Ana", "dorsal": "27"}` |
 | `bici` | `modelo` y `piezas` para la ficha (opcional) | ver el ejemplo |
 | `ocultar_m` | Si la salida o la meta son en tu casa: a menos de estos metros no se publica tu posición | `500` |
-| `slug` | Dirección de la carrera al archivarla (opcional) | `"2026-mi-carrera"` |
+| `slug` | Dirección de la carrera al archivarla (opcional) | `"2027-mi-carrera"` |
 
-Tu **avatar** va en `rider.png` (cuadrado, 256 px): sale en el mapa y en la ficha.
+Tu **foto** se sube en el panel (Preparar → 1 · Datos → «Cambiar la foto»): se
+recorta cuadrada en el navegador y sale en el mapa y en la ficha (`rider.png`).
 
 Sin panel, las mismas herramientas desde la consola:
 `python herramientas/preparar_ruta.py ruta.gpx --distancia 21.1` y
@@ -111,7 +120,7 @@ Puedes usar una sola o varias a la vez; la web decide sola cuál usar.
 | Opción | Ventaja | Cómo |
 |---|---|---|
 | **App Sígueme CC** (Android, recomendada) | Lanza los avisos a la pulsera **sin cobertura** y guarda tu posición hasta que vuelve | APK en la [última release](../../releases/latest). En el panel, «5 · App del móvil»: escanea el código con la cámara y pulsa «Abrir en la app». |
-| **Traccar Client** (Android/iPhone, gratis) | Sin cobertura guarda los puntos y los manda al volver | En la app: dirección `https://tu-dominio/api/gps`, identificador = el que enseña el panel, frecuencia 10 s, precisión alta. En Android, quítale el ahorro de batería. |
+| **Traccar Client** (Android/iPhone, gratis) | Sin cobertura guarda los puntos y los manda al volver | En la app: dirección `https://tu-dominio/api/gps`, identificador = el del panel (Móvil → «Sin la app…» → Ver la configuración), frecuencia 10 s, precisión alta. En Android, quítale el ahorro de batería. |
 | **Reloj Amazfit** (Zepp OS 3) | No dependes del móvil en la mano; manda también el pulso | Miniapp de [`amazfit/`](amazfit/README.md) (de momento se instala en modo desarrollador, no está en la tienda). |
 | **iGPSPORT LiveTrack** | Pulso, cadencia y distancia del ciclocomputador | En la app de iGPSPORT, compartir el seguimiento en vivo y pegar el enlace en el panel. |
 
@@ -126,9 +135,10 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
    la hora oficial la web dice «En la salida», el crono no corre y no hay
    avisos. Guarda el móvil: sigue solo con la pantalla apagada.
 2. Sin la app (Traccar, reloj o iGPSPORT): en el panel, pestaña **Hoy**, pulsa
-   **Guardar y empezar a seguir** y arranca Traccar o el reloj antes de salir.
+   **Empezar a seguir** y arranca Traccar o el reloj antes de salir.
 3. Comparte el enlace con el botón de la cabecera de la web: en WhatsApp sale
-   con su vista previa.
+   con su vista previa (con tu dominio; la imagen es `og.jpg`, cámbiala por la tuya).
+   Con la carrera preparada para hoy, la portada ya es esa carrera.
 4. **Sin cobertura** la web lo dice («Sin cobertura desde las 12:03, km 44»),
    una marca transparente avanza por la ruta a tu ritmo medio y salen las horas
    previstas al próximo avituallamiento y a meta. Al volver la cobertura llegan
@@ -147,26 +157,28 @@ Garmin Connect, Strava o la app del reloj: exportar el original). La web pasa a
 la carrera. Desde la consola hace lo mismo
 `python herramientas/generar_resultado.py actividad.fit`.
 
-Después, en el panel, **Archivar la carrera terminada**: se guarda en
+Después, en el panel (pestaña **Más**), **Archivar la carrera terminada**: se guarda en
 `carreras/<año-nombre>/` y queda en su propia dirección (`/2026-mi-carrera/`),
 con el mismo diseño en modo resultado, y en el índice **`/carreras/`**. La
 portada queda a cero para la siguiente: mientras no haya otra en marcha, lleva
 al último resultado (así los enlaces que ya compartiste siguen sirviendo).
-La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar.
+La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar
+(o el nombre).
 
 ---
 
 ## Cómo funciona por dentro
 
 ```
- Ciclocomputador ── app iGPSPORT ── nube iGPSPORT ─┐  (el servidor lo consulta cada 15 s)
- Móvil con Traccar Client ─────────────────────────┼──► server.py ──► live.json ──► web (app.js)
- Reloj Amazfit ── app Zepp del móvil ──────────────┘    (/api/gps)                 └► panel (admin.html)
+ App Sígueme CC (Android) ──── /api/plan + /api/gps ─┐
+ Ciclocomputador ── app iGPSPORT ── nube iGPSPORT ───┤  (el servidor lo consulta cada 15 s)
+ Móvil con Traccar Client ───────────────────────────┼──► server.py ──► live.json ──► web (app.js)
+ Reloj Amazfit ── app Zepp del móvil ────────────────┘    (/api/gps)                 └► panel (admin.html)
 ```
 
 | Fichero | Qué es |
 |---|---|
-| `server.py` | Servidor (biblioteca estándar): web, `/api/gps`, panel, login, lector de iGPSPORT |
+| `server.py` | Servidor (biblioteca estándar; `curl_cffi` solo para iGPSPORT): web, `/api/gps`, `/api/plan`, panel, login, lector de iGPSPORT |
 | `index.html` · `app.js` · `style.css` | La web pública (MapLibre servido desde `lib/`) |
 | `admin.html` | Panel de control |
 | `carrera.json` · `route.geojson` · `elevation.json` · `aid_stations.json` | Tu carrera (paso 2) |
@@ -177,8 +189,9 @@ La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar
 | `despliegue/` | systemd, keepalived, réplica entre dos Pis y despliegue |
 
 **No van al repo** (`.gitignore`): `live.json` (estado), `gps.clave`
-(identificador de Traccar/reloj), `historial.jsonl` (registro de todo lo
-recibido), `resultado.json` y los FIT.
+(identificador de la app, Traccar y el reloj), `historial.jsonl` (registro de
+todo lo recibido), `avisos.json`, `resultado.json`, `carreras/` (el archivo) y
+los FIT.
 
 ## Seguridad
 
@@ -187,8 +200,8 @@ recibido), `resultado.json` y los FIT.
 - `live.json` público recortado a lo que pinta la web: nada de enlace de
   iGPSPORT, batería del móvil ni datos internos (el panel pide el estado completo
   con su sesión). Con `ocultar_m`, sin posición cerca de salida y meta.
-- Identificador de Traccar/reloj de 32 caracteres, nuevo en cada carrera desde
-  el panel; el servidor no guarda registros de peticiones y descarta puntos de
+- Identificador de la app, Traccar y el reloj de 36 caracteres al azar (se crea
+  al primer arranque y se cambia desde el panel); el servidor no guarda registros de peticiones y descarta puntos de
   hace más de un día.
 - Panel con usuario y clave (hash scrypt), sesión en cookie HttpOnly +
   SameSite=Strict (+ Secure por https), comprobación de origen (CSRF), freno a

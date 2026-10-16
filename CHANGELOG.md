@@ -4,6 +4,29 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.3 · 2026-10-16
+- **Llegada a meta más fiable:** tras un corte de cobertura, la cola trae el
+  paso por meta y lo de después; ahora se mira punto a punto y vale la hora del
+  paso real. Nunca hay «llegada» antes de la salida oficial (con EMPEZAR antes
+  de la hora y la salida junto a la meta, llegar a la salida contaba como meta).
+  El punto de meta se vuelve a leer si cambia la ruta (antes quedaba el de la
+  carrera anterior hasta reiniciar).
+- **Seguridad:** las claves falsas sin cabecera Origin no sumaban al bloqueo
+  por fuerza bruta; ahora sí.
+- **Portada:** con una carrera preparada para hoy o más adelante, la portada es
+  esa carrera (antes llevaba al último resultado hasta pulsar EMPEZAR).
+- La vista previa al compartir (WhatsApp) sale con el dominio de cada uno.
+- El servidor arranca sin `curl_cffi` (solo lo necesita iGPSPORT) y crea el
+  identificador de los móviles al primer arranque.
+- Miniapp de Amazfit: sin dirección por defecto (cada uno pone la de su web) y
+  sin perder puntos pendientes al cerrar Zepp.
+- Más robusto: el lector de iGPSPORT no escribe después de pararlo ni arranca
+  dos veces; «Simular» no machaca una carrera en marcha; sin ruta no se
+  publica la posición si hay zona privada; nombres con «\» o tiempos vacíos ya
+  no rompen el archivo; entradas raras (horas NaN, cookies absurdas) no dan error.
+- Documentación al día: requisitos, cómo crear y cambiar el identificador,
+  nombres de botones, la app como opción principal, despliegue paso a paso.
+
 ## v1.12.2 · 2026-10-16
 - **Avisos legibles en la pulsera** (Xiaomi Band con Mi Fitness, relojes
   Amazfit con Zepp): el título dice lo importante («Subida larga en 300 m»,

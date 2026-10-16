@@ -1,5 +1,5 @@
 // Ajustes, en la app Zepp del móvil: dónde mandar los datos. Son los mismos
-// que se ponen en Traccar (panel admin → tarjeta "GPS del móvil").
+// que enseña el panel (pestaña Móvil → «Sin la app…» → Ver la configuración).
 AppSettingsPage({
   build(props) {
     const s = props.settingsStorage
@@ -13,12 +13,12 @@ AppSettingsPage({
       fila([Text({ bold: true, paragraph: true }, 'Sígueme · reloj → web')]),
       fila([TextInput({
         label: 'Dirección del servidor',
-        placeholder: 'https://odegaard12.online/api/gps',
-        value: s.getItem('url') || 'https://odegaard12.online/api/gps',
+        placeholder: 'https://tu-dominio/api/gps',
+        value: s.getItem('url') || '',
         onChange: v => s.setItem('url', v),
       })]),
       fila([TextInput({
-        label: 'Identificador (el de la tarjeta "GPS del móvil" del panel)',
+        label: 'Identificador (panel: Móvil → Ver la configuración)',
         placeholder: 'odg-…',
         value: s.getItem('id') || '',
         onChange: v => s.setItem('id', v),

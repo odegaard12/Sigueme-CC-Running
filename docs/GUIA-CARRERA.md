@@ -87,8 +87,10 @@ En casa, con cobertura:
    app**: confirma tu servidor y baja la ruta, el perfil y los avisos. No hay
    que volver a escanear nada en las siguientes carreras (salvo si generas un
    identificador nuevo).
-3. En la app: **Probar aviso en la pulsera** (con una actividad en marcha en la
-   pulsera, tiene que vibrar y verse el texto) y **Quitar ahorro de batería**.
+3. En la app: **Probar aviso** (con una actividad en marcha en la pulsera,
+   tiene que vibrar y verse el texto; si no sale, en Mi Fitness activa Sígueme CC
+   en las notificaciones de apps) y, en «Listo para salir», **Arreglar** en todo
+   lo que no esté en verde (ubicación, notificaciones, sin ahorro de batería).
 
 El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
 apagada y sin cobertura:
@@ -111,7 +113,7 @@ posición».
    cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
    oficial la web dice «En la salida», el crono no corre y no salen avisos.
    Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Guardar y empezar a seguir**.
+2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Empezar a seguir**.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También
@@ -129,7 +131,7 @@ carrera…), el panel dice por qué.
 
 ## 8 · Archivar
 
-Panel → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
+Panel → **Más** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
 `/carreras/` y la portada queda a cero para la siguiente.
 
 ---

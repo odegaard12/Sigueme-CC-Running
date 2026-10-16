@@ -9,7 +9,10 @@ import sys
 import threading
 import time
 import urllib.request
-from curl_cffi import requests as cffi_requests
+try:
+    from curl_cffi import requests as cffi_requests      # solo para iGPSPORT
+except ImportError:
+    cffi_requests = None
 from datetime import datetime, timedelta, timezone
 import base64
 import mimetypes
@@ -178,8 +181,8 @@ def live_publico():
             cerca = min(km_entre((p["lat"], p["lon"]), ruta[0]), km_entre((p["lat"], p["lon"]), ruta[-1]))
             if cerca * 1000 < ocultar:
                 p["lat"] = p["lon"] = None
-        except (OSError, ValueError, KeyError, IndexError):
-            pass
+        except Exception:
+            p["lat"] = p["lon"] = None        # sin poder comprobarlo, mejor no publicarla
     return p
 
 
@@ -427,8 +430,17 @@ def preparacion():
 
 
 def hay_carrera_en_marcha():
+    """En marcha, o preparada para hoy o más adelante: la portada es esa carrera
+    (antes, quien entraba a las 08:00 iba al resultado de la anterior)."""
     d = read_live()
-    return bool(d.get("started_at") or d.get("livetrack_url"))
+    if d.get("started_at") or d.get("livetrack_url"):
+        return True
+    fecha = carrera().get("fecha") or ""
+    try:
+        return fecha >= datetime.now(zona_carrera()).date().isoformat() and \
+            slug_de(carrera()) not in {a[0] for a in carreras_archivadas()}
+    except Exception:
+        return False
 
 
 _csp = {"mtime": None, "valor": ""}
@@ -482,7 +494,7 @@ def sesion_valida(cabecera_cookie):
         nombre, _, valor = trozo.strip().partition("=")
         if nombre == "adm":
             exp, _, firma = valor.partition(".")
-            if exp.isascii() and exp.isdigit() and int(exp) > time.time() \
+            if exp.isascii() and exp.isdigit() and len(exp) < 15 and int(exp) > time.time() \
                     and compare_digest(firma.encode(), _firma(int(exp)).encode()):
                 return True
     return False
@@ -615,6 +627,8 @@ def fetch_page(url):
     # sec-ch-ua de Chrome de verdad. curl_cffi reproduce la huella TLS real
     # de Chrome (BoringSSL) y con eso Cloudflare deja pasar la petición.
     if "igpsport.com" in url:
+        if cffi_requests is None:
+            raise RuntimeError("falta curl_cffi en el servidor (pip install curl_cffi) para leer iGPSPORT")
         r = cffi_requests.get(url, impersonate="chrome120", timeout=10)
         # curl_cffi no lanza excepción con los errores HTTP (urllib sí), así que
         # el freno ante 403/429 no saltaba nunca. OJO: iGPSPORT contesta 403
@@ -702,9 +716,11 @@ _meta = []
 
 
 def punto_de_meta():
-    if not _meta:
-        _meta.append(puntos_de_la_ruta()[-1])
-    return _meta[0]
+    """Último punto de la ruta; se vuelve a leer si cambia route.geojson."""
+    mtime = os.path.getmtime(os.path.join(ROOT, "route.geojson"))
+    if not _meta or _meta[0] != mtime:
+        _meta[:] = [mtime, puntos_de_la_ruta()[-1]]
+    return _meta[1]
 
 
 def km_entre(a, b):
@@ -725,11 +741,17 @@ def ha_llegado(t, se_alejo=False):
         return False
     if (t.get("dist_km") or 0) < km_minimos_meta() and not se_alejo:
         return False
-    return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
+    try:
+        return km_entre((t["lat"], t["lon"]), punto_de_meta()) < 0.2
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        return False                      # sin ruta no hay meta, pero la posición se publica
 
 
 def alejado_de_meta(lat, lon):
-    return lat is not None and lon is not None and km_entre((lat, lon), punto_de_meta()) > 5
+    try:
+        return lat is not None and lon is not None and km_entre((lat, lon), punto_de_meta()) > 5
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        return False
 
 
 # --- GPS del móvil (Traccar Client) --------------------------------------
@@ -790,7 +812,9 @@ def _segundos(valor):
         return time.time()
     try:
         n = float(valor)
-        return n / 1000 if n > 1e11 else n
+        if math.isfinite(n):
+            return n / 1000 if n > 1e11 else n
+        return time.time()
     except (TypeError, ValueError):
         pass
     try:
@@ -941,17 +965,29 @@ def recibir_gps(puntos):
                 continue
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
+        p["_dist"] = dist                 # km hechos en este punto (meta dentro del lote)
     hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
     patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
              "gps_at": hora, "data_at": hora, "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
     distancia = max(live.get("dist_km") or 0, dist)
-    se_alejo = live.get("lejos_de_meta") or any(alejado_de_meta(p["lat"], p["lon"]) for p in puntos)
-    if se_alejo and not live.get("lejos_de_meta"):
+    try:
+        salida_t = datetime.fromisoformat(live["started_at"]).timestamp() if live.get("started_at") else None
+    except ValueError:
+        salida_t = None
+    # ⚠️ antes de la salida no cuenta nada: con EMPEZAR a las 09:45 y la salida
+    # junto a la meta, llegar a la salida «desde lejos» se daba por llegada
+    en_carrera = [q for q in puntos if salida_t is not None and q["t"] >= salida_t and q.get("lat") is not None]
+    # punto a punto y en orden: «se alejó de meta» solo cuenta lo que pasó ANTES
+    # de cada punto (mirando el lote entero, el de la salida ya era «llegada»)
+    lejos = bool(live.get("lejos_de_meta"))
+    base = live.get("dist_km") or 0
+    for q in en_carrera:
+        if not live.get("finished_at") and "finished_at" not in patch and                 ha_llegado({"lat": q["lat"], "lon": q["lon"], "dist_km": max(base, q.get("_dist", dist))}, lejos):
+            patch["finished_at"] = datetime.fromtimestamp(q["t"], timezone.utc).isoformat()
+        lejos = lejos or alejado_de_meta(q["lat"], q["lon"])
+    if lejos and not live.get("lejos_de_meta"):
         patch["lejos_de_meta"] = True
-    if not live.get("finished_at") and live.get("started_at") and \
-            ha_llegado({"lat": ultimo["lat"], "lon": ultimo["lon"], "dist_km": distancia}, se_alejo):
-        patch["finished_at"] = hora
     if ultimo["kmh"] is not None:
         patch["speed_kmh"] = round(ultimo["kmh"], 1)
     else:
@@ -977,6 +1013,8 @@ def poll_loop(url, stop_event):
     while not stop_event.is_set():
         try:
             telemetry, via = leer_telemetria(url)
+            if stop_event.is_set():
+                break                     # lo pararon mientras preguntaba: no escribir datos viejos
             if telemetry:
                 patch = dict(telemetry)
                 # iGPSPORT ya da sus propias medias; solo las calculamos
@@ -1142,22 +1180,27 @@ def arrancar_simulacion(segundos=120):
     hilo.start()
 
 
+poller_lock = threading.RLock()     # el panel y el vigilante no arrancan dos a la vez
+
+
 def start_poller(url):
-    stop_previous_poller()
-    stop_event = threading.Event()
-    thread = threading.Thread(target=poll_loop, args=(url, stop_event), daemon=True)
-    poller["thread"] = thread
-    poller["stop"] = stop_event
-    poller["url"] = url
-    thread.start()
+    with poller_lock:
+        stop_previous_poller()
+        stop_event = threading.Event()
+        thread = threading.Thread(target=poll_loop, args=(url, stop_event), daemon=True)
+        poller["thread"] = thread
+        poller["stop"] = stop_event
+        poller["url"] = url
+        thread.start()
 
 
 def stop_previous_poller():
-    if poller["stop"] is not None:
-        poller["stop"].set()
-    poller["thread"] = None
-    poller["stop"] = None
-    poller["url"] = None
+    with poller_lock:
+        if poller["stop"] is not None:
+            poller["stop"].set()
+        poller["thread"] = None
+        poller["stop"] = None
+        poller["url"] = None
 
 
 # Lista blanca: cualquier otra cosa (server.py, los .sh de réplica, las
@@ -1294,7 +1337,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if ruta in ("/", "/index.html") and os.path.exists(os.path.join(ROOT, "resultado.json")):
             self._index_resultado()
             return
+        if ruta in ("/", "/index.html"):
+            self._index_vivo()
+            return
         super().do_GET()
+
+    def _index_vivo(self):
+        """index.html con og:url y og:image del dominio de quien la sirve: la
+        vista previa de WhatsApp sale con TU dominio, no con uno escrito a mano."""
+        with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        host = self.headers.get("Host", "")
+        if re.fullmatch(r"[A-Za-z0-9.-]+(:\d{1,5})?", host):
+            html = re.sub(r'(<meta property="og:url" content=")[^"]*', lambda m: m.group(1) + f"https://{host}/", html, count=1)
+            html = re.sub(r'(<meta property="og:image" content=")[^"]*', lambda m: m.group(1) + f"https://{host}/og.jpg", html, count=1)
+        cuerpo = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
 
     def _redirigir(self, destino, codigo):
         self.send_response(codigo)
@@ -1338,7 +1401,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;").replace('"', "&quot;")
         filas = []
         for slug, c, r in carreras_archivadas():
-            h, m = divmod(int(r.get("tiempo_oficial_s", 0)) // 60, 60)
+            h, m = divmod(int(r.get("tiempo_oficial_s") or 0) // 60, 60)
             f = c.get("fecha", "")
             fecha = "/".join(reversed(f.split("-"))) if re.match(r"^\d{4}-\d{2}-\d{2}$", f) else f
             datos = " · ".join(x for x in (
@@ -1375,13 +1438,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except (OSError, ValueError):
                 c = {}
             nombre = c.get("nombre") or r.get("carrera") or "la carrera"
-            h, m = divmod(int(r.get("tiempo_oficial_s", 0)) // 60, 60)
+            h, m = divmod(int(r.get("tiempo_oficial_s") or 0) // 60, 60)
             desc = f"{nombre}: terminada en {h}h {m:02d}m · {str(r.get('distancia_km', '')).replace('.', ',')} km"
             with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
                 html = f.read()
             titulo = f"Resultado · {nombre}"
             esc = lambda t: t.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
-            html = re.sub(r"<title>.*?</title>", f"<title>{esc(titulo)}</title>", html, count=1)
+            html = re.sub(r"<title>.*?</title>", lambda _: f"<title>{esc(titulo)}</title>", html, count=1)
             html = re.sub(r'(<meta property="og:title" content=")[^"]*', lambda x: x.group(1) + esc(titulo), html, count=1)
             html = re.sub(r'(<meta property="og:description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
             html = re.sub(r'(<meta name="description" content=")[^"]*', lambda x: x.group(1) + esc(desc), html, count=1)
@@ -1686,7 +1749,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
             "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
             "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
-            "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
+            "gps_t": None, "gps_at": None, "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
             "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None,
             "gps_origen": None, "gps_rechazado_at": None,
         })
@@ -1775,7 +1838,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             self._send_json(400, {"error": "invalid json"})
             return
 
@@ -1827,14 +1890,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
         con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))
+        # ⚠️ el fallo se cuenta ANTES de mirar el origen: sin Origin (curl) cada
+        # clave falsa se iba por «origen no permitido» sin sumar al bloqueo
+        if "password" in data and not con_clave:
+            fallo_de(ip)
+            print(f"[admin] clave incorrecta desde {ip}", flush=True)
+            self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
+            return
         # con sesión de navegador, la petición tiene que venir de esta misma web
         if not con_clave and self.mismo_origen() is not True:
             self._send_json(403, {"error": "origen no permitido"})
             return
         if not con_clave and not sesion_valida(self.headers.get("Cookie")):
-            if "password" in data:
-                fallo_de(ip)
-                print(f"[admin] clave incorrecta desde {ip}", flush=True)
             self._send_json(403, {"error": "sesión caducada o clave incorrecta"})
             return
         if con_clave:
@@ -1868,6 +1935,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if accion == "simular":
+            if self._en_carrera() and read_live().get("status_label") != "SIMULACIÓN":
+                self._send_json(409, {"error": "hay una carrera en marcha: no se puede simular encima"})
+                return
             try:
                 segundos = min(3600, max(10, int(data.get("segundos", 120))))
             except (TypeError, ValueError):
@@ -1885,6 +1955,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(400, {"error": "falta resultado.json: genéralo antes con el FIT"})
                 return
             archivada = slug_de(carrera())
+            if not re.fullmatch(r"\d{4}-[a-z0-9-]{1,60}", archivada or ""):
+                self._send_json(400, {"error": "la dirección del archivo no vale: pon «Dirección al archivarla» en los datos (año-nombre)"})
+                return
             destino = os.path.join(ARCHIVO_DIR, archivada)
             if os.path.exists(destino):
                 self._send_json(409, {"error": f"ya hay una carrera archivada en /{archivada}/ (pon otro \"slug\" en carrera.json)"})
@@ -2041,23 +2114,32 @@ def watch_live_file():
                     stop_previous_poller()
                 threading.Event().wait(20)
                 continue
-            url = read_live().get("livetrack_url")
-            # ⚠️ si el hilo del poller muere por algo imprevisto (p. ej. un
-            # error al guardar dentro de su propio except), nadie lo relanzaba:
-            # el seguimiento se paraba en silencio hasta reiniciar el servicio
-            muerto = poller["thread"] is not None and not poller["thread"].is_alive()
-            if url and (url != poller["url"] or muerto):
-                if muerto:
-                    print("[poller] el hilo había muerto: relanzado", flush=True)
-                start_poller(url)
-            elif not url and poller["url"]:
-                stop_previous_poller()
+            with poller_lock:
+                url = read_live().get("livetrack_url")
+                # ⚠️ si el hilo del poller muere por algo imprevisto (p. ej. un
+                # error al guardar dentro de su propio except), nadie lo relanzaba:
+                # el seguimiento se paraba en silencio hasta reiniciar el servicio
+                muerto = poller["thread"] is not None and not poller["thread"].is_alive()
+                if url and (url != poller["url"] or muerto):
+                    if muerto:
+                        print("[poller] el hilo había muerto: relanzado", flush=True)
+                    start_poller(url)
+                elif not url and poller["url"]:
+                    stop_previous_poller()
         except Exception:
             pass
         threading.Event().wait(20)
 
 
+def asegurar_clave_gps():
+    if not clave_gps():
+        with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
+            f.write("odg-" + secrets.token_urlsafe(24) + "\n")
+        print("[gps] identificador nuevo creado (se cambia en el panel: Móvil → Ver la configuración)", flush=True)
+
+
 if __name__ == "__main__":
+    asegurar_clave_gps()
     live = read_live()
     if live.get("livetrack_url") and tengo_la_vip():
         start_poller(live["livetrack_url"])
