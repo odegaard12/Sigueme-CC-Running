@@ -35,7 +35,7 @@ jobs:
           VERSION_CODE: '${{ github.run_number }}'
         run: gradle -p android --no-daemon test assembleRelease
       - run: cp android/app/build/outputs/apk/release/app-release.apk sigueme-cc.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: sigueme-cc-apk, path: sigueme-cc.apk }
       - name: Subir a la release
         if: github.ref_type == 'tag'
@@ -74,7 +74,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: bash android/prueba/emulador.sh && bash android/prueba/carrera.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: capturas-emulador, path: capturas }
       - run: grep -q AVISOS_OK capturas/resultado.txt
