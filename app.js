@@ -508,7 +508,7 @@ function onMapReady() {
   const bandera = (pos, tipo, km) => {
     const el = document.createElement('div');
     el.className = 'aid-pin';
-    el.innerHTML = aidPinSVG('#f3f6f2', '🏁');
+    el.innerHTML = aidPinSVG('#f3f6f2', 'M');
     pulsarAbrePopup(
       new maplibregl.Marker({ element: el, anchor: 'bottom', opacityWhenCovered: '0.99' })
         .setLngLat([pos[1], pos[0]])
@@ -533,7 +533,7 @@ function onMapReady() {
       : 'Avituallamiento';
     const el = document.createElement('div');
     el.className = 'aid-pin';
-    el.innerHTML = aidPinSVG(color, s.taller ? '🔧' : String(i + 1));
+    el.innerHTML = aidPinSVG(color, s.taller ? 'T' : String(i + 1));
     pulsarAbrePopup(
       new maplibregl.Marker({ element: el, anchor: 'bottom', opacityWhenCovered: '0.99' })
         .setLngLat([pos[1], pos[0]])
@@ -1118,7 +1118,9 @@ function pintarNivel(texto) {
   const pct = isNaN(n) ? 50 : Math.max(0, Math.min(100, 50 + (n / 15) * 50));
   marca.style.left = pct + '%';
   const hueco = document.getElementById('m-grad');
-  if (hueco) hueco.style.color = isNaN(n) ? '' : gradColor(n);
+  // el color de la rampa, aclarado: las bajadas (azul oscuro) no se leían sobre el fondo
+  const aclarar = c => c.replace(/[0-9a-f]{2}/gi, h => Math.round(parseInt(h, 16) + (255 - parseInt(h, 16)) * 0.45).toString(16).padStart(2, '0'));
+  if (hueco) hueco.style.color = isNaN(n) ? '' : aclarar(gradColor(n));
 }
 
 function esMeta(data, km) {
@@ -1318,7 +1320,7 @@ function pollLive() {
       const estado = document.getElementById('estado-carrera');
       if (enMeta) {
         estado.classList.remove('previo');
-        ponerTexto('estado-carrera', '🏁 En meta · tiempo final ' +
+        ponerTexto('estado-carrera', 'En meta · tiempo final ' +
           document.getElementById('m-time').textContent);
         estado.classList.add('meta');
       } else {
@@ -1357,7 +1359,7 @@ function pollLive() {
         else pildora('En directo', 'vivo');
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
-          pie.textContent = '📡 Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
+          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
             ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
         } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
@@ -1471,7 +1473,7 @@ function pintarResultado() {
   const estado = document.getElementById('estado-carrera');
   estado.classList.remove('previo', 'meta');
   estado.textContent = '';
-  ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
+  ponerTexto('aviso-titulo', 'Terminada en ' + fmtHM(r.tiempo_oficial_s));
   // corto a propósito: en el móvil pequeño partía en dos líneas (el "de 12 h"
   // ya sale en la cabecera)
   ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));

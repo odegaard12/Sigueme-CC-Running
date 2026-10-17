@@ -4,6 +4,23 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.3 · 2026-10-17
+- **Revisión de diseño con un inspector en navegador real** (tasteskill): de
+  28 fallos a 0 en el código y de 6 a 3 en la página (los 3 que quedan son de
+  una web de presentación, no de una pantalla de seguimiento: fotos, vídeo y
+  tamaño de párrafo).
+- Fuera los adornos sin función: el halo verde del fondo, el degradado de la
+  barra de progreso, el desenfoque de las casillas, las rayas finas y los
+  bordes de 1 px (las superficies se separan por tono), la sombra del dorsal
+  y el resplandor de la foto del corredor.
+- Sin emojis en la interfaz: meta «M» y asistencia «T» en las chinchetas,
+  «pulso» en vez de ♥ y textos sin 🏁/📡.
+- **Más legible:** nada por debajo de 13 px (leyenda, datos de la ruta,
+  créditos), la pendiente aclarada (las bajadas, azul oscuro sobre negro, se
+  leían a 2,2:1) y los créditos a un ancho de lectura.
+- Se mantiene lo que flota sobre el mapa (sombras de chinchetas, botones y
+  el velo del perfil) y la escala de color de la pendiente, que es un dato.
+
 ## v1.13.2 · 2026-10-17
 - **Diseño más limpio en la web:** las cifras se separan por tono de fondo y
   no por bordes finos; las etiquetas y títulos van en frase normal, no en

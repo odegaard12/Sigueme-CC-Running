@@ -48,7 +48,7 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=64">
+<link rel="stylesheet" href="style.css?v=66">
 </head>
 <body>
 <header class="topbar">
@@ -100,7 +100,7 @@
   <div id="map3d"></div>
 
   <div class="mapa-botones">
-    <button class="btn-flotante" id="btn-recenter" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false">🎯</button>
+    <button class="btn-flotante" id="btn-recenter" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false"></button>
     <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D" aria-label="Ver el mapa en 2D">2D</button>
   </div>
 
@@ -137,7 +137,7 @@
     <span class="chip chip-nivel" data-tile="grad">pendiente <b id="m-grad">—</b>
       <i class="nivel"><u id="nivel-marca"></u></i>
     </span>
-    <span class="chip chip-pulso" data-tile="hr">♥ <b id="m-hr">—</b> ppm</span>
+    <span class="chip chip-pulso" data-tile="hr">pulso <b id="m-hr">—</b> ppm</span>
     <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
     <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
   </div>
@@ -154,11 +154,11 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.13.2</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.13.3</p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=79"></script>
+<script src="app.js?v=80"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

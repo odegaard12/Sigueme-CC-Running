@@ -42,7 +42,7 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: calc(9px + env(safe-area-inset-top)) 14px 9px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
   background: var(--bg);
 }
 .marca { flex: 0 0 auto; min-width: 0; }
@@ -83,7 +83,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0;
-  border-top: 1px solid var(--border);
+  border-top: 0;
   padding-top: 7px;
 }
 .cd-ruta span {
@@ -93,7 +93,7 @@ body {
   color: var(--muted);
   white-space: nowrap;
   padding: 0 10px;
-  border-right: 1px solid var(--border);
+  border-right: 0;
   line-height: 1.1;
   text-align: center;
 }
@@ -107,9 +107,8 @@ body {
   position: relative;
   margin: 14px 10px 0;
   border-radius: 12px;
-  border: 1px solid var(--border);
+  border: 0;
   overflow: hidden;
-  box-shadow: none;
 }
 #map3d {
   height: 60dvh;
@@ -141,7 +140,7 @@ body {
   color: var(--text);
   font-size: 1.05rem;
   cursor: pointer;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px); /* taste-skill-ignore: botón que flota sobre el mapa */
 }
 .btn-flotante:active { transform: scale(0.94); }
 /* 🎯 encendido: la cámara va siguiendo al corredor */
@@ -158,7 +157,7 @@ body {
   height: 108px;
   /* degradado de transparente a oscuro: así la gráfica se funde con el mapa
      en vez de quedar como una tira pegada encima */
-  background: linear-gradient(to bottom,
+  background: linear-gradient(to bottom, /* taste-skill-ignore: velo neutro del perfil sobre la foto de satélite */
       rgba(8, 14, 12, 0) 0%,
       rgba(8, 14, 12, 0.35) 28%,
       rgba(8, 14, 12, 0.72) 60%,
@@ -173,8 +172,8 @@ body {
   width: 100%;
   height: 84px;
   display: block;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%); /* taste-skill-ignore: velo neutro del perfil sobre la foto de satélite */
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%); /* taste-skill-ignore: velo neutro del perfil sobre la foto de satélite */
 }
 
 /* pantalla de carga: el mapa tarda en montarse y antes se veía el hueco negro
@@ -197,7 +196,7 @@ body {
   margin-top: 12px;
   background: var(--panel-2);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 999px;
   padding: 10px 18px;
   font-size: 0.8rem;
@@ -227,7 +226,7 @@ body {
 .metricas-sec { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .metrica {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 10px;
   padding: 7px 2px;
   text-align: center;
@@ -263,7 +262,7 @@ body {
   align-items: center;
   gap: 5px;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 999px;
   padding: 5px 11px;
   font-size: 0.64rem;
@@ -284,7 +283,7 @@ body {
   width: 46px;
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #4a92ae 0%, #3a6d82 26%, #4b5a52 48%,
+  background: linear-gradient(90deg, #4a92ae 0%, #3a6d82 26%, #4b5a52 48%, /* taste-skill-ignore: escala de color de la pendiente: es un dato */
       #4fb350 56%, #e0c341 70%, #e08a3a 84%, #e0473a 100%);
   opacity: 0.9;
 }
@@ -295,7 +294,7 @@ body {
   width: 3px;
   height: 12px;
   background: var(--text);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6); /* taste-skill-ignore: marca de la escala, sobre la barra de color */
   border-radius: 1px;
   transform: translateX(-50%);
   transition: left 0.4s ease-out;
@@ -355,14 +354,14 @@ body {
   vertical-align: middle;
 }
 
-.aid-pin { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
+.aid-pin { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); } /* taste-skill-ignore: chincheta o corredor que flota sobre el satélite */
 
 /* OJO: MapLibre posiciona el marcador con transform en ESTE elemento.
    Animar transform aquí lo manda a la esquina del mapa; el pulso va en el hijo. */
-.map3d-rider { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)); }
+.map3d-rider { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)); } /* taste-skill-ignore: chincheta o corredor que flota sobre el satélite */
 /* posición estimada sin cobertura: transparente y punteada, que no se confunda con la real */
 .map3d-fantasma { width: 30px; height: 30px; border-radius: 50%; border: 3px dashed #fff;
-  background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
+  background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); } /* taste-skill-ignore: chincheta o corredor que flota sobre el satélite */
 .map3d-rider span { display: block; animation: pulse-rider 1.6s ease-in-out infinite; }
 .map3d-rider img {
   display: block;
@@ -372,7 +371,7 @@ body {
   object-fit: cover;
   border: 3px solid var(--accent);
   /* doble halo: sobre satélite verde, sin esto la foto se camuflaba */
-  box-shadow: 0 0 0 3px rgba(11,18,16,0.9), 0 0 14px 4px rgba(143,224,106,0.55);
+  outline: 3px solid rgba(11,18,16,0.9);
 }
 @keyframes pulse-rider {
   0%, 100% { transform: scale(1); }
@@ -382,11 +381,11 @@ body {
 .maplibregl-popup-content {
   background: var(--panel);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 0.82rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45); /* taste-skill-ignore: flota encima (globo / aviso) */
 }
 .maplibregl-popup-close-button { color: var(--muted); font-size: 16px; }
 /* contenido de los globos: tipo arriba en pequeño, nombre, y el km debajo */
@@ -481,7 +480,7 @@ footer a { color: var(--muted); }
   align-items: center;
   gap: 6px;
   background: var(--panel-2);
-  border: 1px solid var(--border);
+  border: 0;
   color: var(--text);
   border-radius: 999px;
   padding: 4px 12px 4px 4px;
@@ -508,7 +507,7 @@ footer a { color: var(--muted); }
   margin: 10px auto 0;
   padding: 12px 14px;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 14px;
 }
 .ficha[hidden] { display: none; }
@@ -528,7 +527,7 @@ footer a { color: var(--muted); }
 /* la bici, como ficha técnica: etiqueta arriba y valor debajo, en columnas */
 .ficha-bici-bloque {
   grid-area: bici;
-  border-top: 1px solid var(--border);
+  border-top: 0; padding-top: 4px;
   padding-top: 9px;
 }
 .ficha-bici-bloque h3 {
@@ -548,7 +547,7 @@ footer a { color: var(--muted); }
 }
 .ficha-specs > div {
   background: var(--panel-2);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 8px;
   padding: 5px 7px;
   min-width: 0;
@@ -614,7 +613,7 @@ footer a { color: var(--muted); }
 .pasos li {
   display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 1px;
   grid-template-areas: "n nombre hora" "n km hora"; align-items: center;
-  padding: 7px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 10px; background: var(--panel); border: 0; border-radius: 10px;
   font-size: 0.85rem;
 }
 .pasos .nombre { grid-area: nombre; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -629,7 +628,7 @@ footer a { color: var(--muted); }
    tercio de la pantalla. */
 .aviso-resultado {
   margin: 10px 10px 0; padding: 10px 12px;
-  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--panel); border: 0; border-radius: 14px;
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1px 12px;
 }
 .aviso-titulo { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
@@ -667,7 +666,7 @@ footer a { color: var(--muted); }
 /* --- esqueleto mientras llegan los datos (antes: huecos vacíos y, de golpe, todo) --- */
 .metricas.esqueleto .m-val, .metricas.esqueleto .chip b {
   color: transparent; border-radius: 6px;
-  background: linear-gradient(90deg, #1a201d 0%, #232a26 50%, #1a201d 100%);
+  background: #1f2622;
   background-size: 200% 100%; animation: esqueleto 1.2s ease-in-out infinite;
 }
 @keyframes esqueleto { from { background-position: 100% 0; } to { background-position: -100% 0; } }
@@ -678,7 +677,7 @@ footer a { color: var(--muted); }
   top: calc(env(safe-area-inset-top, 0px) + 8px);
   padding: 7px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
   background: #3a2320; color: #f3d6d2; border: 1px solid #5a2c2c;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); /* taste-skill-ignore: flota encima (globo / aviso) */
 }
 
 /* --- compartir el enlace --- */
@@ -687,7 +686,7 @@ footer a { color: var(--muted); }
   display: grid; place-items: center;
   width: 36px; height: 36px; margin-left: auto; margin-right: 6px;
   background: var(--panel-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 50%;
+  border: 0; border-radius: 50%;
   cursor: pointer;
 }
 .compartir:hover { border-color: rgba(255,255,255,0.28); }
@@ -716,11 +715,11 @@ footer a, .pie a { display: inline-block; padding: 10px 4px; }
 }
 
 /* --- índice de carreras (/carreras/) --- */
-body.indice { min-height: 100vh; }
+body.indice { min-height: 100svh; }
 .indice-main { max-width: 720px; margin: 0 auto; padding: 16px; }
 .indice-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .indice-lista a { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; text-decoration: none;
-  background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+  background: var(--panel); border: 0; color: var(--text); }
 .indice-lista a:hover { border-color: rgba(255,255,255,0.28); }
 .indice-lista b { font-size: 1.05rem; }
 .indice-lista span { color: var(--muted); font-size: 0.85rem; }
@@ -740,7 +739,7 @@ body.indice { min-height: 100vh; }
   --radio: 16px;
 }
 body {
-  background: radial-gradient(1200px 600px at 20% -10%, rgba(127, 212, 106, 0.07), transparent 60%), var(--bg);
+  background: var(--bg);
   background-attachment: fixed;
   font-feature-settings: "tnum" 1;
   -webkit-font-smoothing: antialiased;
@@ -748,7 +747,7 @@ body {
 .topbar { border-bottom: 0; background: transparent; padding-bottom: 4px; }
 .topbar h1 { font-size: clamp(1.25rem, 5.4vw, 1.55rem); letter-spacing: -0.02em; }
 .topbar h1 span { color: var(--accent); }
-.cd-ruta { border-top: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0; }
+.cd-ruta { border-top: 0; background: var(--panel); border: 0; border-radius: 12px; padding: 8px 0; }
 .cd-ruta b { font-size: 0.95rem; }
 
 /* píldora de estado */
@@ -756,7 +755,7 @@ body {
   display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
   padding: 6px 12px; border-radius: 999px; font-size: 0.74rem; font-weight: 800;
   letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
-  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  background: var(--panel-2); color: var(--muted); border: 0;
 }
 .pill-estado::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .pill-estado.vivo { color: #0a0d0c; background: var(--accent); border-color: var(--accent); }
@@ -780,19 +779,19 @@ body {
 
 /* mapa: de borde a borde en el móvil, redondeado en pantallas anchas */
 .map-wrap { margin: 10px 0 0; border-radius: 0; border-left: 0; border-right: 0; }
-@media (min-width: 620px) { .map-wrap { margin: 12px 12px 0; border-radius: var(--radio); border: 1px solid var(--border); } }
+@media (min-width: 620px) { .map-wrap { margin: 12px 12px 0; border-radius: var(--radio); border: 0; } }
 
 /* métricas: tarjetas grandes, número arriba y etiqueta debajo */
 .metricas { padding: 12px 12px 0; gap: 10px; }
 .metricas-top { gap: 10px; }
 .metricas-top .metrica { flex: 1 1 calc(50% - 5px); }
-.metrica { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radio);
-  padding: 14px 10px 12px; text-align: left; backdrop-filter: blur(8px); }
+.metrica { background: var(--panel); border: 0; border-radius: var(--radio);
+  padding: 14px 10px 12px; text-align: left; }
 .metrica.destacada { padding: 14px 14px 12px; }
 .metrica.destacada .m-val { font-size: 2rem; font-weight: 750; letter-spacing: -0.03em; }
 .m-tag { margin-top: 6px; color: var(--muted); }
-.progreso { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--border); }
-.progreso i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4fb350, var(--accent)); border-radius: inherit; transition: width 0.8s ease-out; }
+.progreso { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 0; }
+.progreso i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width 0.8s ease-out; }
 .metricas.sin-datos .progreso { display: none; }
 .metricas-sec { justify-content: flex-start; gap: 8px; }
 .chip { background: var(--panel); padding: 8px 12px; border-radius: 12px; }
@@ -800,7 +799,7 @@ body {
 
 /* estado y previsiones, como una tarjeta */
 .estado-carrera:not(:empty) { text-align: left; font-size: 0.9rem; color: var(--text); background: var(--panel);
-  border: 1px solid var(--border); border-radius: var(--radio); padding: 12px 14px; line-height: 1.45; }
+  border: 0; border-radius: var(--radio); padding: 12px 14px; line-height: 1.45; }
 .estado-carrera.previo { text-align: center; }
 .live-updated { font-size: 0.8rem; }
 .live-updated:not(:empty) { margin: 10px 12px 0; }
@@ -828,18 +827,18 @@ footer { opacity: 0.85; }
 .ficha { display: grid; grid-template-columns: 1fr; grid-template-areas: none; gap: 14px; padding: 16px; }
 .ficha-cab { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
 .ficha-foto { grid-area: auto; width: 76px; height: 76px; border: 3px solid var(--accent);
-  box-shadow: 0 0 0 3px rgba(10, 13, 12, 0.9); }
+  box-shadow: 0 0 0 3px rgba(10, 13, 12, 0.9); } /* taste-skill-ignore: chincheta o corredor que flota sobre el satélite */
 .ficha-datos { grid-area: auto; }   /* la regla vieja la mandaba a otra casilla */
 .ficha-datos h2 { font-size: 1.25rem; letter-spacing: -0.02em; }
 .ficha-sub { margin: 3px 0 0; color: var(--muted); font-size: 0.9rem; }
 /* el dorsal, como un dorsal de verdad */
 .ficha-dorsal { display: grid; justify-items: center; background: #f4f5f2; color: #0a0d0c; border-radius: 10px;
-  padding: 4px 12px 6px; min-width: 64px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+  padding: 4px 12px 6px; min-width: 64px; }
 .ficha-dorsal span { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
 .ficha-dorsal { margin: 0; }
 .ficha-dorsal b { color: #0a0d0c; font-size: 1.6rem; line-height: 1; font-weight: 900; letter-spacing: -0.02em; }
 .ficha-carrera { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.ficha-carrera > div { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.ficha-carrera > div { background: var(--panel-2); border: 0; border-radius: 12px; padding: 8px 10px; min-width: 0; }
 .ficha-carrera dt { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .ficha-carrera dd { margin: 2px 0 0; font-weight: 700; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ficha-bici-bloque { grid-area: auto; }
@@ -874,3 +873,11 @@ footer { opacity: 0.85; }
 .globo-tipo, .ficha-specs dt, .ficha-carrera dt, .ficha-dorsal span { text-transform: none; letter-spacing: 0; }
 /* antes de salir, lo primero que se quiere saber (cuándo sale) en grande */
 .estado-carrera.previo { font-size: clamp(1.15rem, 4.2vw, 1.5rem); letter-spacing: -0.01em; border-color: transparent; padding: 18px 14px; }
+
+/* nada que se lea por debajo de 13 px; la pendiente, con su color de rampa
+   pero aclarado (las bajadas, azul oscuro sobre negro, no se leían: 2,2:1) */
+.leyenda, footer, .creditos, .chip, .cd-ruta span, .estado-carrera, .m-tag { font-size: max(0.8125rem, 1em); }
+.leyenda, footer, .creditos { font-size: 0.8125rem; }
+.cd-ruta span { font-size: 0.8125rem; }
+.chip { font-size: 0.8125rem; }
+.creditos { max-width: 70ch; margin-left: auto; margin-right: auto; }
