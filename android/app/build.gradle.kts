@@ -44,5 +44,5 @@ android {
 dependencies {
     // org.json va dentro de Android, pero en las pruebas de la JVM no: la real
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
 }
