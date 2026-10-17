@@ -2176,6 +2176,9 @@ if __name__ == "__main__":
     # 15 s, eso llegó a tumbar el chequeo de keepalived y a mover la VIP.
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
+    # cola de conexiones: con 5 (lo de serie), una oleada de espectadores (todos
+    # sondean a la vez) recibía conexiones rechazadas; medido con f1/carga.py
+    http.server.ThreadingHTTPServer.request_queue_size = 128
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
         print(f"Sígueme CC en http://127.0.0.1:{PORT}"
           + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")

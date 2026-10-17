@@ -4,6 +4,22 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.1 · 2026-10-17
+- **Banco de pruebas con el servidor real:** en cada cambio de la app, el
+  emulador corre una carrera de 3 km contra el servidor de verdad: baja el plan
+  solo al abrirse, EMPEZAR pone en marcha la web, la mitad del recorrido va en
+  modo avión y, al volver la red, la cola se vacía, la web da la meta y sale el
+  aviso del avituallamiento (`android/prueba/carrera.sh`). La versión de
+  pruebas habla por http con el servidor del banco; la APK publicada no.
+- **App sin cobertura:** la cola de posiciones se lee una vez y se limpia de
+  golpe (antes, tras horas sin red, se reescribía entera por cada lote y podía
+  congelar la pantalla); sin red, la espera entre intentos crece de 20 s a
+  5 min (batería y radio) y, en cuanto Android avisa de que vuelve la
+  cobertura, la cola sale al momento.
+- **Servidor con muchos espectadores:** con una simulación de ~1000 personas
+  mirando a la vez rechazaba conexiones (solo admitía 5 en espera); ahora 128
+  y ningún error.
+
 ## v1.13.0 · 2026-10-17
 - **La web carga antes:** la librería del mapa (800 KB) ya no frena el resto.
   Medido en un móvil lento con 4G floja, la primera visita enseña los datos a

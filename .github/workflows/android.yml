@@ -70,8 +70,9 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: bash android/prueba/emulador.sh
+          script: bash android/prueba/emulador.sh && bash android/prueba/carrera.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: capturas-emulador, path: capturas }
       - run: grep -q AVISOS_OK capturas/resultado.txt
+      - run: grep -q CARRERA_OK capturas/carrera.txt

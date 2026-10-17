@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.location.Location
+import android.net.ConnectivityManager
+import android.net.Network
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.BatteryManager
@@ -39,6 +41,14 @@ class Seguimiento : Service(), LocationListener {
     private var ultimoAviso = 0L
     private var ultimaFija = 0L
     private var planCargado = 0L          // fecha de plan.json: si cambia, se recarga en marcha
+    // vuelve la cobertura: fuera la espera y la cola sale ya, sin esperar al siguiente intento
+    private val alVolverLaRed = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            hayRed()
+            val c = applicationContext
+            try { red.execute { enviarCola(c) } } catch (_: Exception) {}
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -62,6 +72,7 @@ class Seguimiento : Service(), LocationListener {
         // de batería; se prefiere a que la familia no vea la posición.
         cierre = (getSystemService(POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sigueme:carrera").apply { acquire(16 * 3600 * 1000L) }
+        try { (getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager).registerDefaultNetworkCallback(alVolverLaRed) } catch (_: Exception) {}
         lm = getSystemService(LOCATION_SERVICE) as LocationManager
         try {
             lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000L, 0f, this, Looper.getMainLooper())
@@ -85,6 +96,7 @@ class Seguimiento : Service(), LocationListener {
     override fun onDestroy() {
         corriendo = false
         prefs(this).edit().putBoolean("empezar_pendiente", false).apply()     // PARAR: la web ya no se pone en marcha
+        try { (getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager).unregisterNetworkCallback(alVolverLaRed) } catch (_: Exception) {}
         if (!::lm.isInitialized) { super.onDestroy(); return }
         try { lm.removeUpdates(this) } catch (_: Exception) {}
         cierre?.let { if (it.isHeld) it.release() }
@@ -140,7 +152,7 @@ class Seguimiento : Service(), LocationListener {
             nm().notify(FIJA, fija(texto, if (pendientes > 0) "$pendientes posiciones esperando cobertura" else "Posición enviada"))
         }
         // un envío cada vez: con mala cobertura cada intento tarda; sin esto se amontonaban
-        if (ahora - ultimoEnvio > 20_000 && !enviando.get()) {
+        if (ahora - ultimoEnvio > 20_000 && ahora >= esperaHasta && !enviando.get()) {
             ultimoEnvio = ahora
             val c = applicationContext
             red.execute { enviarCola(c) }
@@ -261,6 +273,17 @@ class Seguimiento : Service(), LocationListener {
             }
         }
 
+        /** Sin cobertura, cada intento fallido dobla la espera (20 s → 5 min): antes
+         *  se probaba cada 20 s durante horas con la radio y la CPU despiertas. En
+         *  cuanto Android avisa de que hay red, la espera se olvida. */
+        @Volatile var esperaHasta = 0L
+        @Volatile private var espera = 20_000L
+        private fun fallo() {
+            espera = minOf(espera * 2, 5 * 60_000L)
+            esperaHasta = System.currentTimeMillis() + espera
+        }
+        fun hayRed() { espera = 20_000L; esperaHasta = 0L }
+
         /** Manda la cola en lotes de 300; solo borra lo que el servidor confirmó (200). */
         fun enviarCola(c: Context) {
             if (!enviando.compareAndSet(false, true)) return
@@ -270,20 +293,28 @@ class Seguimiento : Service(), LocationListener {
                 val id = p.getString("id", null) ?: return
                 if (bloqueado(c)) return
                 if (p.getBoolean("empezar_pendiente", false)) empezarEnLaWeb(c)
-                while (true) {
-                    val lote = synchronized(cola) {
-                        File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.useLines { it.take(300).toList() } ?: emptyList()
+                // ⚠️ Se lee UNA vez y se quita lo enviado de golpe al final: quitar tras
+                // cada lote reescribía el fichero entero (horas sin cobertura = miles de
+                // líneas) y bloqueaba la pantalla, que espera al mismo cerrojo
+                val todas = synchronized(cola) {
+                    File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.readLines() ?: emptyList()
+                }
+                var hechas = 0
+                try {
+                    for (lote in todas.chunked(300)) {
+                        // una línea rota (proceso cortado a mitad de escribir) se salta: antes tumbaba la app y bloqueaba la cola
+                        val puntos = lote.mapNotNull { try { JSONObject(it) } catch (e: Exception) { null } }
+                        if (puntos.isNotEmpty()) {
+                            val cuerpo = JSONObject().put("device_id", id).put("location", JSONArray(puntos))
+                            val codigo = try { post("$url/api/gps", cuerpo.toString()).first } catch (e: Exception) { fallo(); return }
+                            if (codigo == 403 || codigo == 429) { bloquear(c, codigo); return }
+                            if (codigo != 200) { fallo(); return }
+                        }
+                        hechas += lote.size
                     }
-                    if (lote.isEmpty()) return
-                    // una línea rota (proceso cortado a mitad de escribir) se salta: antes tumbaba la app y bloqueaba la cola
-                    val puntos = lote.mapNotNull { try { JSONObject(it) } catch (e: Exception) { null } }
-                    if (puntos.isEmpty()) { quitar(c, lote.size); continue }
-                    val cuerpo = JSONObject().put("device_id", id).put("location", JSONArray(puntos))
-                    val codigo = try { post("$url/api/gps", cuerpo.toString()).first } catch (e: Exception) { return }
-                    if (codigo == 403 || codigo == 429) { bloquear(c, codigo); return }
-                    if (codigo != 200) return
-                    quitar(c, lote.size)
-                    p.edit().putLong("enviado_t", System.currentTimeMillis()).apply()
+                    espera = 20_000L; esperaHasta = 0L
+                } finally {
+                    if (hechas > 0) { quitar(c, hechas); p.edit().putLong("enviado_t", System.currentTimeMillis()).apply() }
                 }
             } finally {
                 enviando.set(false)
