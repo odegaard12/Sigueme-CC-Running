@@ -35,9 +35,13 @@ def leer_gpx(raiz):
     for p in puntos:
         ele = next((h.text for h in p if h.tag.rsplit('}', 1)[-1] == 'ele'), None)
         try:
-            lat, lon, e = float(p.get('lat')), float(p.get('lon')), float(ele) if ele else None
+            lat, lon = float(p.get('lat')), float(p.get('lon'))
         except (TypeError, ValueError):
             continue                  # punto roto: se salta
+        try:                          # «12,5» o vacía: se pierde la elevación, no el punto
+            e = float(ele.strip().replace(',', '.')) if ele and ele.strip() else None
+        except ValueError:
+            e = None
         if not (-90 <= lat <= 90 and -180 <= lon <= 180):
             continue
         salida.append((lat, lon, e if e is not None and math.isfinite(e) else None))
@@ -61,7 +65,7 @@ def preparar(gpx, nombre='Ruta', distancia=None):
     también el panel web al subir el GPX."""
     if isinstance(gpx, bytes):
         # nada de entidades XML en un fichero subido (bomba de entidades)
-        if gpx[:2] in (bytes([0xFF, 0xFE]), bytes([0xFE, 0xFF])):
+        if bytes(1) in gpx or gpx[:2] in (bytes([0xFF, 0xFE]), bytes([0xFE, 0xFF])):   # UTF-16, con BOM o sin él
             raise ValueError('El GPX está en UTF-16: expórtalo en UTF-8.')
         if b'<!ENTITY' in gpx or b'<!DOCTYPE' in gpx:
             raise ValueError('El GPX trae declaraciones DOCTYPE/ENTITY: no se admite.')
@@ -92,7 +96,18 @@ def preparar(gpx, nombre='Ruta', distancia=None):
     if con_ele:
         primera = next(e for e in eles if e is not None)
         eles = [primera if e is None else e for e in eles]
-    sube, baja = desnivel(eles) if con_ele else (0, 0)
+    # media de ±50 m antes de contar: con un punto cada 3 m, el ruido del GPS
+    # inflaba el desnivel (300 m reales salían 450 con 1 m de ruido)
+    def suave(v, w=0.05):
+        out, i0, i1, acum = [], 0, 0, 0.0
+        for x in cum:
+            while i1 < len(cum) and cum[i1] <= x + w:
+                acum += v[i1]; i1 += 1
+            while cum[i0] < x - w:
+                acum -= v[i0]; i0 += 1
+            out.append(acum / (i1 - i0))
+        return out
+    sube, baja = desnivel(suave(eles)) if con_ele else (0, 0)
 
     # puntos repartidos por igual, siempre con el primero y el último
     m = min(len(pts), MAX_PUNTOS)

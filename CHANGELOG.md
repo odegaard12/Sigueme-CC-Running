@@ -4,6 +4,15 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.7 · 2026-10-17
+- **Desnivel inflado por el ruido del GPS:** con un punto cada pocos metros, el
+  ruido de la elevación se contaba como subida (300 m reales salían 450 con
+  1 m de ruido, y más de 2000 con 2 m). Ahora se suaviza ±50 m antes de contar.
+- Un GPX con la elevación escrita con coma («12,5») o vacía ya no pierde los
+  puntos: solo se pierde esa elevación. Antes se rechazaba el fichero entero.
+- Un GPX en UTF-16 sin marca de orden de bytes ya no se cuela por el filtro de
+  declaraciones DOCTYPE/ENTITY.
+
 ## v1.12.6 · 2026-10-17
 - **Archivar ya no puede dejar un archivo a medias:** se llena en una carpeta
   oculta y se mueve de golpe. Antes, un fallo a mitad (tarjeta llena) dejaba
