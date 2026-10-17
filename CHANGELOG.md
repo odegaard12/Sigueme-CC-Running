@@ -4,6 +4,20 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.2 · 2026-10-17
+- **Diseño más limpio en la web:** las cifras se separan por tono de fondo y
+  no por bordes finos; las etiquetas y títulos van en frase normal, no en
+  mayúsculas pequeñas espaciadas; las cifras son más grandes y, en el PC, el
+  tiempo ocupa su propia fila (la columna de datos quedaba medio vacía). Antes
+  de la salida, la hora sale en grande: «Sale a las 10:00 · sábado 17/10».
+- **Servidor:** quien cierra la pestaña a mitad de una respuesta ya no deja
+  un error en el registro (tapaba los errores de verdad).
+- **Repositorio más seguro:** escaneo de secretos con bloqueo al subir,
+  alertas y arreglos automáticos de Dependabot (también para las Actions y
+  Gradle), la rama principal sin «force push» ni borrado, las Actions con
+  permisos de solo lectura salvo el paso que publica la APK, y `SECURITY.md`
+  con cómo avisar de un fallo en privado.
+
 ## v1.13.1 · 2026-10-17
 - **Banco de pruebas con el servidor real:** en cada cambio de la app, el
   emulador corre una carrera de 3 km contra el servidor de verdad: baja el plan

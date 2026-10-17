@@ -846,3 +846,31 @@ footer { opacity: 0.85; }
 @media (max-width: 560px) { .ficha-carrera { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ficha-foto { width: 64px; height: 64px; } }
 @media (min-width: 900px) { .ficha { margin: 14px auto 0; width: calc(100% - 48px); max-width: 1232px; }
   .ficha-carrera { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+/* ---- v1.13.2 · pulido ----
+   La jerarquía, por tamaño y por tono de fondo: sin bordes finos entre
+   casillas, sin rótulos en mayúsculas espaciadas y con las cifras grandes
+   (en el PC la columna de datos quedaba medio vacía). */
+.metrica, .chip, .estado-carrera:not(:empty) { border-color: transparent; }
+.m-tag, .metrica.destacada .m-tag, .panel-pc .m-tag {
+  text-transform: none; letter-spacing: 0; font-size: 0.86rem; color: var(--muted); margin-top: 4px;
+}
+.metrica.destacada .m-val { font-size: clamp(1.9rem, 9vw, 2.4rem); letter-spacing: -0.035em; }
+.m-val { font-variant-numeric: tabular-nums; }
+@media (min-width: 900px) {
+  .panel-pc .metrica.destacada { padding: 20px 18px 16px; }
+  .panel-pc .destacada .m-val { font-size: 2.6rem; }
+  /* el tiempo, la cifra que más se mira, con la fila entera */
+  .panel-pc .metricas-top .metrica[data-tile="time"] { flex-basis: 100%; }
+  .panel-pc .metrica[data-tile="time"] .m-val { font-size: 3.6rem; }
+}
+.pill-estado { text-transform: none; letter-spacing: 0; font-size: 0.86rem; font-weight: 700; }
+/* los datos de la ruta: separados por espacio, no por rayas */
+.cd-ruta, .cd-ruta span { border: 0; }
+.cd-ruta { gap: 18px; }
+.cd-ruta span { padding: 0; }
+/* títulos y etiquetas en frase normal, legibles, sin mayúsculas espaciadas */
+.resultado h3 { text-transform: none; letter-spacing: 0; font-size: 1.05rem; color: var(--text); }
+.globo-tipo, .ficha-specs dt, .ficha-carrera dt, .ficha-dorsal span { text-transform: none; letter-spacing: 0; }
+/* antes de salir, lo primero que se quiere saber (cuándo sale) en grande */
+.estado-carrera.previo { font-size: clamp(1.15rem, 4.2vw, 1.5rem); letter-spacing: -0.01em; border-color: transparent; padding: 18px 14px; }

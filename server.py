@@ -2179,6 +2179,13 @@ if __name__ == "__main__":
     # cola de conexiones: con 5 (lo de serie), una oleada de espectadores (todos
     # sondean a la vez) recibía conexiones rechazadas; medido con f1/carga.py
     http.server.ThreadingHTTPServer.request_queue_size = 128
+    # quien cierra la pestaña a mitad de respuesta no es un fallo: sin esto, cada
+    # una dejaba un Traceback en el registro y tapaba los errores de verdad
+    _error_de_serie = http.server.ThreadingHTTPServer.handle_error
+    def _sin_ruido(srv, peticion, cliente):
+        if not isinstance(sys.exc_info()[1], ConnectionError):
+            _error_de_serie(srv, peticion, cliente)
+    http.server.ThreadingHTTPServer.handle_error = _sin_ruido
     with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
         print(f"Sígueme CC en http://127.0.0.1:{PORT}"
           + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")

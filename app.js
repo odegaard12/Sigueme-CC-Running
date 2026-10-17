@@ -37,7 +37,7 @@ const kmMinimosMeta = () => CARRERA.km_minimos_meta || 0.8 * (totalRouteKm || 10
 function diaCarrera() {
   if (!CARRERA.fecha) return '';
   const d = new Date(CARRERA.fecha + 'T12:00:00');
-  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '').toUpperCase();
+  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '');
 }
 function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
@@ -1328,10 +1328,10 @@ function pollLive() {
         if (data.lat != null && !haArrancado) {
           // ya está compartiendo y se le ve en el mapa, pero aún no ha salido
           const quien = (CARRERA.corredor || {}).nombre;
-          ponerTexto('estado-carrera', 'INICIO ' + hora + ' · ' + (quien ? quien + ' ya está' : 'Ya está') + ' en la salida');
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + ' · ' + (quien ? quien + ' ya está' : 'ya está') + ' en la salida');
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          ponerTexto('estado-carrera', 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : ''));
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : ''));
           estado.classList.add('previo');
         } else {
           const pr = previsiones(doneKm, data.data_at);
