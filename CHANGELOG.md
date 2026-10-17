@@ -4,6 +4,25 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.0 · 2026-10-17
+- **La web carga antes:** la librería del mapa (800 KB) ya no frena el resto.
+  Medido en un móvil lento con 4G floja, la primera visita enseña los datos a
+  los 2,7 s en vez de a los 9 s; el mapa llega detrás. Si la librería no
+  carga (sin red), sale el aviso de mapa roto en vez de un recuadro negro.
+- **La app busca la app de la pulsera:** reconoce Zepp (Amazfit), Mi Fitness y
+  Zepp Life (Xiaomi) y Gadgetbridge, comprueba que tenga «Acceso a
+  notificaciones» y dice qué activar y dónde («Listo para salir» → Arreglar).
+  Sin ninguna, ofrece instalar Zepp o Mi Fitness.
+- **Aviso de prueba más realista:** llega a los 5 s, para dar tiempo a
+  bloquear el móvil (muchas apps solo pasan avisos con la pantalla apagada), y
+  ofrece abrir la app de la pulsera.
+- **Sin cobertura en la salida:** el plan se pone al día solo cada vez que se
+  abre la app con red, y la lista dice cuándo se guardó. Volver a abrir la app
+  a mitad de carrera ya no pone el km a 0.
+- La app ya no relee y analiza el plan entero cada 2 s (pantalla más ligera).
+- Página de instalación: el botón baja el APK directamente y explica lo de la
+  pulsera y el iPhone (Traccar).
+
 ## v1.12.7 · 2026-10-17
 - **Desnivel inflado por el ruido del GPS:** con un punto cada pocos metros, el
   ruido de la elevación se contaba como subida (300 m reales salían 450 con

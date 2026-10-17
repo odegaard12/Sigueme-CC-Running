@@ -28,6 +28,15 @@
   });
   window.__datos['live.json'] = fetch('live.json?_=' + Math.floor(Date.now() / 3000)).catch(function () { return null; });
 </script>
+<script>
+  // la librería del mapa, aparte y sin bloquear; con los avisos puestos ANTES de
+  // pedirla, un fallo rápido (sin red) no se pierde aunque app.js llegue después
+  window.__libMapa = new Promise(function (ok, ko) {
+    var s = document.createElement('script');
+    s.src = 'lib/maplibre-gl-4.7.1.js'; s.async = true; s.onload = ok; s.onerror = ko;
+    document.head.appendChild(s);
+  });
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1210">
 <meta name="mobile-web-app-capable" content="yes">
@@ -145,12 +154,11 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.12.4</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.13.0</p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="lib/maplibre-gl-4.7.1.js"></script>
-<script src="app.js?v=77"></script>
+<script src="app.js?v=78"></script>
 <script>
   // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
   // sirviendo código viejo a móviles que ya habían abierto la web (pantalla

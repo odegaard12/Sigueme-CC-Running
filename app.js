@@ -475,7 +475,11 @@ function rehacerMapa(motivo) {
   montarMapa();
 }
 
-montarMapa();
+// La librería del mapa (800 KB) llega aparte (async): las cifras, el perfil y
+// los avituallamientos se pintan sin esperarla. Medido en un móvil lento:
+// antes los datos salían a los 7-9 s, detrás de la librería.
+if (window.__libMapa) window.__libMapa.then(montarMapa, avisoMapaRoto);
+else montarMapa();
 
 
 // Se llama cuando el mapa Y la ruta están listos (llegan async, en cualquier orden).
