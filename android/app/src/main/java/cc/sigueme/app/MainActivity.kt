@@ -307,7 +307,7 @@ class MainActivity : Activity() {
         val url = prefs.getString("url", null)
         val id = prefs.getString("id", null)
         if (url == null || id == null) {
-            if (!callado) dialogo("Escanea antes el código QR del panel (5 · App del móvil)")
+            if (!callado) dialogo("Escanea antes el código QR del panel (pestaña Móvil)")
             return
         }
         if (!callado) { verResultado = true; avisoTxt.text = "Bajando el plan…" }

@@ -881,3 +881,7 @@ footer { opacity: 0.85; }
 .cd-ruta span { font-size: 0.8125rem; }
 .chip { font-size: 0.8125rem; }
 .creditos { max-width: 70ch; margin-left: auto; margin-right: auto; }
+
+/* el resultado es lo primero que se mira al terminar: el titular, grande */
+.aviso-titulo { font-size: clamp(1.35rem, 2.6vw, 2rem); letter-spacing: -0.025em; line-height: 1.1; }
+.aviso-sub { font-size: 0.9rem; }

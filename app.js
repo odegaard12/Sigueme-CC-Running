@@ -1443,7 +1443,7 @@ function cabeceraReal(r) {
     if (!b || real == null) return;
     b.textContent = real;
     b.dataset.real = '1';
-    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' (prev. ' + previsto + ')' : '');
+    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' de ' + previsto : '');   // como «2h 00m de 5 h»
   };
   pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
   pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
@@ -1504,7 +1504,8 @@ function pintarResultado() {
       lista.appendChild(li);
     });
   }
-  document.getElementById('resultado').hidden = false;
+  // sin parciales (FIT sin pasos) no se enseña un título con nada debajo
+  document.getElementById('resultado').hidden = !lista.children.length;
 }
 
 // Repetición: la carrera entera en 60 s, con la foto por la traza real

@@ -4,6 +4,19 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.4 · 2026-10-18
+- **Panel revisado con el mismo inspector** (de 10 fallos a 0): los títulos
+  sin numeración («Datos de la carrera», no «1 · Datos…»; el orden ya lo da
+  la página), la píldora de estado en frase normal, las tarjetas y botones
+  sin borde fino (se separan por tono), el botón de elegir el GPX con la piel
+  del panel, sin halo degradado en el fondo y sin ✓/⚠ en los mensajes.
+- **Pantalla de resultado:** el titular «Terminada en…» bastante más grande
+  (es lo primero que se mira), la cabecera dice «21,1 km de 21,10» en vez de
+  «(prev. 21,10)» y, si el FIT no trae parciales, ya no sale el título «Paso
+  por los avituallamientos» con nada debajo.
+- App y panel hablan ya de Zepp o Mi Fitness (no solo Mi Fitness) y de la
+  pestaña Móvil.
+
 ## v1.13.3 · 2026-10-17
 - **Revisión de diseño con un inspector en navegador real** (tasteskill): de
   28 fallos a 0 en el código y de 6 a 3 en la página (los 3 que quedan son de

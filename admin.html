@@ -10,7 +10,7 @@
   .admin-wrap { max-width: 520px; margin: 0 auto; padding: 18px 16px 60px; }
   .tarjeta {
     background: var(--panel);
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 14px;
     padding: 16px;
     margin-bottom: 12px;
@@ -40,7 +40,7 @@
   .save-btn:active { transform: scale(0.98); }
   .msg { text-align: center; margin-top: 10px; font-size: 0.82rem; min-height: 1.2em; }
   /* el resultado de "Guardar" siempre a la vista (antes quedaba abajo, fuera de pantalla) */
-  #msg:not(:empty) { position: sticky; bottom: 12px; background: var(--panel); border: 1px solid var(--border);
+  #msg:not(:empty) { position: sticky; bottom: 12px; background: var(--panel); border: 0;
     border-radius: 10px; padding: 8px; z-index: 5; }
   .btn:disabled, .save-btn:disabled { opacity: 0.5; }
   .peligro { color: #ff8a7a; font-weight: 600; }
@@ -74,7 +74,7 @@
     flex: 1;
   }
   .save-btn { background: #f1f3f1; color: #0c0f0e; border: none; font-weight: 600; }
-  .btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
+  .btn { background: var(--panel-2); border: 0; color: var(--text); }
   .stop-btn { background: #3a1f1f; border-color: #5a2c2c; width: 100%; margin-top: 12px; }
   .field textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
     background: var(--panel-2); color: var(--text); font: inherit; font-size: 0.9rem; resize: vertical; }
@@ -93,23 +93,23 @@
   .qr:empty { display: none; }
   #login-screen { max-width: 340px; margin: 50px auto 0; padding: 0 16px; }
   /* --- v1.11: diseño nuevo --- */
-  body { background: radial-gradient(900px 500px at 10% -10%, rgba(127,212,106,0.08), transparent 60%), #0a0d0c; }
+  body { background: #0a0d0c; }
   .topbar { border-bottom: 0; padding: 16px 16px 6px; }
   .topbar h1 { font-size: 1.4rem; letter-spacing: -0.02em; }
   .cabecera-datos { gap: 12px; }
   .cd-linea { font-size: 0.85rem; color: #7fd46a; text-decoration: none; font-weight: 600; }
-  .pill-panel { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 5px 11px; border-radius: 999px; background: #1a211e; color: #8a968f; border: 1px solid rgba(255,255,255,0.08); }
+  .pill-panel { font-size: 0.86rem; font-weight: 700;
+    padding: 5px 11px; border-radius: 999px; background: #1a211e; color: #8a968f; border: 0; }
   .pill-panel:empty { display: none; }
   .pill-panel.vivo { background: #7fd46a; color: #0a0d0c; border-color: #7fd46a; }
   .admin-wrap { max-width: 560px; padding-top: 6px; }
   .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-    padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.92); backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
+    padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.96); backdrop-filter: blur(10px); /* taste-skill-ignore: la única barra fija */
+    border: 0; border-radius: 14px; }
   .pestanas button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
     font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
   .pestanas button[aria-selected="true"] { background: #7fd46a; color: #0a0d0c; }
-  .tarjeta { background: rgba(22,28,25,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+  .tarjeta { background: #161c19; border: 0; border-radius: 16px;
     padding: 18px; margin-bottom: 14px; }
   .tarjeta h2 { font-size: 1.05rem; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 12px; }
   .howto { font-size: 0.86rem; line-height: 1.55; }
@@ -134,6 +134,9 @@
   .tarjeta .btn, .tarjeta .save-btn { width: 100%; }
   .quick-actions .btn, .quick-actions .save-btn { width: auto; }
   #panel { display: none; }
+  input[type=file]::file-selector-button { font: inherit; font-weight: 700; color: #f1f3f1; background: #1f2622;
+    border: 0; border-radius: 10px; padding: 10px 14px; margin-right: 12px; cursor: pointer; }
+  input[type=file]::file-selector-button:hover { background: #26302b; }
 </style>
 </head>
 <body>
@@ -249,7 +252,7 @@
   </div>
 
   <div class="tarjeta" id="t-carrera" data-tab="preparar">
-    <h2>1 · Datos de la carrera</h2>
+    <h2>Datos de la carrera</h2>
     <div class="field"><label for="c-nombre">Nombre</label><input id="c-nombre" maxlength="80" placeholder="Mi trail 2027"></div>
     <div class="row2">
       <div class="field"><label for="c-lugar">Lugar</label><input id="c-lugar" maxlength="80"></div>
@@ -285,7 +288,7 @@
   </div>
 
   <div class="tarjeta" data-tab="preparar">
-    <h2>2 · Ruta (GPX)</h2>
+    <h2>Ruta (GPX)</h2>
     <div class="howto">El GPX de la organización, o el que exportas de Strava, Komoot o Wikiloc. Salen
       el trazado del mapa y el perfil, y se rehace el plan de avisos.</div>
     <p class="estado-fila" style="margin-top:8px"><span id="ruta-text">—</span></p>
@@ -295,7 +298,7 @@
   </div>
 
   <div class="tarjeta" data-tab="preparar">
-    <h2>3 · Avituallamientos</h2>
+    <h2>Avituallamientos</h2>
     <div class="howto">Nombre y km de cada uno (la meta también, si quieres que salga en el mapa).</div>
     <div id="lista-avit" class="lista-avit"></div>
     <div class="quick-actions" style="margin-top:8px">
@@ -305,10 +308,10 @@
   </div>
 
   <div class="tarjeta" data-tab="preparar">
-    <h2>4 · Avisos a la pulsera</h2>
+    <h2>Avisos a la pulsera</h2>
     <div class="howto">Salen solos del perfil: antes de cada subida (tipo, largo, %, D+, rampa), a mitad
       de las largas, en la cima, antes de cada avituallamiento, un resumen cada pocos km y el último km.
-      La app del móvil los baja y los lanza <b>sin cobertura</b>; Mi Fitness los pasa a la pulsera.</div>
+      La app del móvil los baja y los lanza <b>sin cobertura</b>; Zepp o Mi Fitness los pasan a la pulsera.</div>
     <div class="row2" style="margin-top:10px">
       <div class="field"><label for="av-antes">Avisar antes (m)</label><input type="number" min="50" max="2000" step="50" id="av-antes" placeholder="300"></div>
       <div class="field"><label for="av-cada">Resumen cada (km)</label><input type="number" min="1" max="100" id="av-cada" placeholder="según la distancia"></div>
@@ -325,7 +328,7 @@
   </div>
 
   <div class="tarjeta primero" data-tab="movil">
-    <h2>5 · App del móvil (Android)</h2>
+    <h2>App del móvil (Android)</h2>
     <div class="howto">Una sola vez, en casa: escanea este código con la cámara del móvil. Se abre la página
       de la app: instálala (la primera vez), vuelve a esa misma página y pulsa «Abrir en la app».
       Después ya no hace falta escanear nada: el día de la carrera pulsa <b>EMPEZAR</b> en la app
@@ -438,7 +441,7 @@ async function post(body) {
     if (res.status === 403) { sesionCaducada(); return; }
     if (res.ok) {
       horaTocada = false;     // lo guardado ya es lo del servidor
-      msg.textContent = 'Guardado ✓';
+      msg.textContent = 'Guardado';
       msg.className = 'msg ok';
       refreshStatus(data.live);
     } else {
@@ -498,11 +501,11 @@ function refreshStatus(live) {
   const idMal = live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
       (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at));
   if (idMal) {
-    $('gps-text').textContent += ' · ⚠ llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
+    $('gps-text').textContent += ' · ojo: llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
   }
   // el único aviso que significa "tu posición no llega": en rojo, que se vea
   $('gps-text').classList.toggle('peligro', !!idMal);
-  $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos ✓'
+  $('extract-text').textContent = ex && ex.startsWith('ok') ? 'recibiendo datos'
     : ex === 'buscando…' ? 'buscando…'
     : ex === 'sin_datos' ? ('iGPSPORT no tiene directo con ese enlace (terminado o sin empezar)' +
         (live.igpsport_aviso ? ' · ' + live.igpsport_aviso : ''))
@@ -544,16 +547,16 @@ document.addEventListener('click', async e => {
 function pintarPreparacion(p) {
   if (!p) return;
   const fila = (ok, texto) => { const li = document.createElement('li'); const m = document.createElement('span');
-    m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '!'; li.append(m, ' ' + texto); return li; };
+    m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '!'; li.append(m, ' ' + texto); return li; };  // taste-skill-ignore: marca de estado de la lista
   const km = v => v != null ? String(v).replace('.', ',') : '—';
   const l = $('lista-prep'); l.textContent = '';
   const app = p.app_at ? 'la app bajó el plan el ' + new Date(p.app_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   l.append(
-    fila(p.nombre && p.fecha, '1 · Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—')),
-    fila(p.ruta_km, '2 · Ruta: ' + (p.ruta_km ? km(p.ruta_km) + ' km' : 'falta subir el GPX') + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (la carrera dice ' + km(p.distancia_km) + ')' : '')),
-    fila(p.avituallamientos > 0, '3 · Avituallamientos: ' + p.avituallamientos),
-    fila(p.avisos > 0, '4 · Avisos a la pulsera: ' + (p.avisos ? p.avisos + ' avisos, ' + p.subidas + ' subidas' : 'falta la ruta')),
-    fila(!!p.app_at, '5 · App del móvil: ' + (app || 'aún no ha bajado el plan (escanea el código)')),
+    fila(p.nombre && p.fecha, 'Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—')),
+    fila(p.ruta_km, 'Ruta: ' + (p.ruta_km ? km(p.ruta_km) + ' km' : 'falta subir el GPX') + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (la carrera dice ' + km(p.distancia_km) + ')' : '')),
+    fila(p.avituallamientos > 0, 'Avituallamientos: ' + p.avituallamientos),
+    fila(p.avisos > 0, 'Avisos a la pulsera: ' + (p.avisos ? p.avisos + ' avisos, ' + p.subidas + ' subidas' : 'falta la ruta')),
+    fila(!!p.app_at, 'App del móvil: ' + (app || 'aún no ha bajado el plan (escanea el código)')),
     fila(p.id_largo, p.id_largo ? 'Identificador GPS largo' : 'Identificador GPS corto o viejo: pulsa «Generar identificador nuevo»'),
     fila(!p.resultado_pendiente, p.resultado_pendiente ? 'Hay un resultado sin archivar: archívalo antes de empezar' : 'Sin resultados pendientes de archivar'));
   $('app-text').textContent = app ? app[0].toUpperCase() + app.slice(1) : 'La app aún no ha bajado el plan';
@@ -573,7 +576,7 @@ async function accion(cuerpo, url = '/api/live', opciones = {}) {
     if (res.status === 403) { sesionCaducada(); return null; }
     const d = await res.json();
     if (!res.ok) { msg.textContent = d.error || 'No se pudo guardar'; msg.className = 'msg err'; return null; }
-    msg.textContent = 'Guardado ✓'; msg.className = 'msg ok';
+    msg.textContent = 'Guardado'; msg.className = 'msg ok';
     if (d.carrera) pintarFormCarrera(d.carrera);
     if (d.avituallamientos) pintarAvituallamientos(d.avituallamientos);
     if ('plan' in d) pintarAvisos(d.plan);
@@ -625,8 +628,8 @@ $('subir-gpx').addEventListener('click', async () => {
     { headers: { 'Content-Type': 'application/gpx+xml' }, body: f });
   if (d) {
     const r = d.resumen;
-    $('msg').textContent = 'Ruta lista ✓ ' + km(r.distancia_km) + ' km · +' + r.desnivel_m + ' m · ' + r.puntos_gpx + ' puntos' +
-      (r.con_elevacion ? '' : ' · ⚠ el GPX no trae altura: perfil plano y sin avisos de subidas');
+    $('msg').textContent = 'Ruta lista: ' + km(r.distancia_km) + ' km · +' + r.desnivel_m + ' m · ' + r.puntos_gpx + ' puntos' +
+      (r.con_elevacion ? '' : ' · ojo: el GPX no trae altura: perfil plano y sin avisos de subidas');
     $('gpx').value = '';
   }
 });
@@ -636,7 +639,7 @@ function filaAvit(a = {}) {
   fila.innerHTML = '<input class="a-nombre" maxlength="40" placeholder="Nombre" aria-label="Nombre">' +
     '<input class="a-km" type="number" step="0.1" min="0" placeholder="km" aria-label="Km">' +
     '<label><input class="a-principal" type="checkbox"> grande</label>' +
-    '<button class="btn" type="button" aria-label="Quitar">✕</button>';
+    '<button class="btn" type="button" aria-label="Quitar"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   fila.querySelector('.a-nombre').value = a.name || '';
   fila.querySelector('.a-km').value = a.km ?? '';
   fila.querySelector('.a-principal').checked = !!a.principal;
@@ -656,7 +659,7 @@ $('guardar-avit').addEventListener('click', () => accion({ action: 'guardar_avit
 function pintarAvisos(plan) {
   const avisos = (plan && plan.avisos) || [];
   $('avisos-text').textContent = avisos.length ? avisos.length + ' avisos · ' + plan.subidas.length + ' subidas · avisa ' +
-    Math.round((plan.antes_km || 0.3) * 1000) + ' m antes · resumen cada ' + plan.cada_km + ' km' : 'Falta la ruta (paso 2)';
+    Math.round((plan.antes_km || 0.3) * 1000) + ' m antes · resumen cada ' + plan.cada_km + ' km' : 'Falta la ruta: súbela en «Ruta (GPX)»';
   if (plan && !$('av-antes').value) $('av-antes').value = Math.round((plan.antes_km || 0.3) * 1000);
   if (plan && plan.cada_fijo && !$('av-cada').value) $('av-cada').value = plan.cada_fijo;
   $('lista-avisos').replaceChildren(...avisos.map(a => {
@@ -710,7 +713,7 @@ $('subir-fit').addEventListener('click', async () => {
   const d = await accion(null, '/api/fit', { headers: { 'Content-Type': 'application/octet-stream' }, body: f });
   if (d) {
     const s = d.resultado.tiempo_oficial_s;
-    $('msg').textContent = 'Resultado listo ✓ ' + Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') +
+    $('msg').textContent = 'Resultado listo: ' + Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') +
       'm · ' + String(d.resultado.distancia_km).replace('.', ',') + ' km · ' + d.pasos + ' avituallamientos. Ahora puedes archivarla.';
     $('fit').value = '';
   }
