@@ -885,3 +885,28 @@ footer { opacity: 0.85; }
 /* el resultado es lo primero que se mira al terminar: el titular, grande */
 .aviso-titulo { font-size: clamp(1.35rem, 2.6vw, 2rem); letter-spacing: -0.025em; line-height: 1.1; }
 .aviso-sub { font-size: 0.9rem; }
+
+/* ---- índice de carreras: título grande y cada carrera con el dibujo de su recorrido ---- */
+.indice-main { max-width: 880px; padding: 24px 16px 64px; }
+.indice-titulo { margin: 8px 0 6px; font-size: clamp(2.3rem, 7vw, 4.4rem); line-height: 1; letter-spacing: -0.04em; }
+.indice-cuenta { margin: 0 0 28px; color: var(--muted); font-size: 1rem; max-width: 60ch; }
+.indice-lista { gap: 12px; }
+.indice-lista a { grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 16px 20px; }
+.indice-lista a:hover { background: var(--panel-2); }
+.indice-traza { width: 72px; height: 72px; color: var(--accent); background: #0f1412; border-radius: 12px; }
+.indice-txt { display: grid; gap: 4px; min-width: 0; }
+.indice-lista b { font-size: 1.15rem; }
+.indice-lista .indice-txt { color: var(--text); font-size: 1rem; }
+.indice-lista .indice-txt > span { font-size: 0.9rem; color: var(--muted); }
+.indice-lista span.indice-traza { display: block; }
+.indice-tiempo { font-size: clamp(1.3rem, 3vw, 1.9rem); font-weight: 750; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 520px) {
+  .indice-lista a { grid-template-columns: 56px minmax(0, 1fr); gap: 14px; padding: 14px; }
+  .indice-traza { width: 56px; height: 56px; }
+  .indice-tiempo { grid-column: 2; font-size: 1.25rem; }
+}
+.indice-lista li { animation: entra-fila 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.indice-lista a { transition: background 0.15s, transform 0.15s; }
+.indice-lista a:active { transform: scale(0.99); }
+@keyframes entra-fila { from { opacity: 0; transform: translateY(18px); } }
+@media (prefers-reduced-motion: reduce) { .indice-lista li { animation: none; } .indice-lista a { transition: none; } }

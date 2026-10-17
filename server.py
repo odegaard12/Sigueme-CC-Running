@@ -220,11 +220,36 @@ def carreras_archivadas():
         for n in ("carrera.json", "resultado.json"):
             try:
                 with open(os.path.join(d, n), encoding="utf-8") as f:
-                    datos.append(json.load(f))
+                    v = json.load(f)
+                # «null», una lista o una fecha numérica tumbaban el índice y la portada
+                datos.append(v if isinstance(v, dict) else {})
             except (OSError, ValueError):
                 datos.append({})
         salida.append((slug, datos[0], datos[1]))
-    return sorted(salida, key=lambda x: (x[1].get("fecha") or x[0]), reverse=True)
+    return sorted(salida, key=lambda x: str(x[1].get("fecha") or x[0]), reverse=True)
+
+
+def traza_svg(slug):
+    """El recorrido archivado como dibujo pequeño (SVG en línea) para el
+    índice. Vacío si no hay ruta o no se entiende."""
+    try:
+        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+            pts = json.load(f)["features"][0]["geometry"]["coordinates"]
+        pts = [(float(p[0]), float(p[1])) for p in pts[::max(1, len(pts) // 120)]]
+        if len(pts) < 2:
+            raise ValueError
+        k = math.cos(math.radians(sum(p[1] for p in pts) / len(pts)))
+        xs = [p[0] * k for p in pts]; ys = [-p[1] for p in pts]
+        lado = max(max(xs) - min(xs), max(ys) - min(ys)) or 1
+        d = "M" + " L".join(f"{(x - min(xs)) / lado * 88 + 6 + (88 - (max(xs) - min(xs)) / lado * 88) / 2:.1f},"
+                            f"{(y - min(ys)) / lado * 88 + 6 + (88 - (max(ys) - min(ys)) / lado * 88) / 2:.1f}"
+                            for x, y in zip(xs, ys))
+        return (f'<svg class="indice-traza" viewBox="0 0 100 100" aria-hidden="true"><path d="{d}" fill="none" '
+                'stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>')
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        pass
+    return '<span class="indice-traza" aria-hidden="true"></span>'      # el hueco, para que la fila no se descoloque
+
 
 
 # --- preparar la carrera desde el panel ------------------------------------
@@ -1411,21 +1436,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         filas = []
         for slug, c, r in carreras_archivadas():
             h, m = divmod(int(r.get("tiempo_oficial_s") or 0) // 60, 60)
-            f = c.get("fecha", "")
+            f = str(c.get("fecha") or "")
             fecha = "/".join(reversed(f.split("-"))) if re.match(r"^\d{4}-\d{2}-\d{2}$", f) else f
-            datos = " · ".join(x for x in (
-                fecha, c.get("lugar", ""), f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else "",
+            datos = " · ".join(str(x) for x in (
+                fecha, c.get("lugar", ""),
                 f"{str(r.get('distancia_km', '')).replace('.', ',')} km" if r.get("distancia_km") else "",
                 f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
-            filas.append(f'<li><a href="/{esc(slug)}/"><b>{esc(c.get("nombre") or slug)}</b>'
-                         f'<span>{esc(datos)}</span></a></li>')
+            tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
+            filas.append(f'<li style="--i:{min(len(filas), 12)}"><a href="/{esc(slug)}/">{traza_svg(slug)}<span class="indice-txt"><b>{esc(c.get("nombre") or slug)}</b>'
+                         f'<span>{esc(datos)}</span></span><strong class="indice-tiempo">{esc(tiempo)}</strong></a></li>')
         en_marcha = '<p class="indice-vivo"><a href="/">● Carrera en directo ahora</a></p>' if hay_carrera_en_marcha() else ""
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1">'
                 '<title>Carreras · Sígueme CC</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=3"><link rel="stylesheet" href="/style.css?v=indice">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=3"><link rel="stylesheet" href="/style.css?v=indice3">'
                 '</head><body class="indice"><header class="topbar"><div class="marca"><h1>Sígueme <span>CC</span></h1>'
-                '<p class="marca-sub">Todas las carreras</p></div></header><main class="indice-main">'
+                '</div></header><main class="indice-main">'
+                f'<h2 class="indice-titulo">Todas las carreras</h2>'
+                f'<p class="indice-cuenta">{len(filas)} {"carrera" if len(filas) == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p>'
                 f'{en_marcha}<ul class="indice-lista">{"".join(filas) or "<li>Todavía no hay carreras archivadas.</li>"}</ul>'
                 '</main></body></html>').encode("utf-8")
         self.send_response(200)

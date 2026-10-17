@@ -1,0 +1,30 @@
+name: Pruebas del servidor
+# En cada cambio: el servidor real en una carpeta limpia, con datos inventados.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['android/**', 'docs/**', '*.md']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONIOENCODING: utf-8
+      TZ: Europe/Madrid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install fitdecode
+      - name: Lector de GPX (ruido, coma decimal, UTF-16)
+        run: python pruebas/gpx.py
+      - name: Panel, plan de la app y seguridad del servidor
+        run: python pruebas/servidor.py
+      - name: Ensayo de una carrera entera
+        run: python pruebas/ensayo.py
+      - name: Carga (60 espectadores a la vez)
+        run: python pruebas/carga.py 60

@@ -4,6 +4,20 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.5 · 2026-10-18
+- **Las pruebas, en el repo y en cada cambio:** `pruebas/` (lector de GPX,
+  panel y seguridad del servidor, ensayo de una carrera entera, carga con 60
+  espectadores y la web en un móvil lento) y un flujo de GitHub Actions que
+  las corre en cada cambio. Usan un GPX inventado, nunca una ruta real.
+- **Índice de carreras nuevo:** título grande y cada carrera con el dibujo de
+  su propio recorrido, su tiempo destacado y una entrada suave de las filas.
+- **Arreglado:** un `carrera.json` archivado que no fuera un objeto (`null`,
+  una lista, una fecha numérica) tumbaba el índice y también la portada
+  cuando no hay carrera en marcha. Con su prueba.
+- **Página de instalación:** en iPhone o en el PC el botón principal era un
+  enlace que solo entiende Chrome en Android; ahora allí explica que la app
+  es para Android y enseña el identificador para usarlo en Traccar Client.
+
 ## v1.13.4 · 2026-10-18
 - **Panel revisado con el mismo inspector** (de 10 fallos a 0): los títulos
   sin numeración («Datos de la carrera», no «1 · Datos…»; el orden ya lo da
