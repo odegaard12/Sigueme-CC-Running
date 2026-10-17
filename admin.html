@@ -529,23 +529,15 @@ async function cargarGps() {
 document.addEventListener('click', async e => {
   if (e.target.id !== 'rotar-gps') return;
   if (!confirm('¿Generar un identificador nuevo?\n\nEl actual deja de valer al momento: tendrás que ponerlo en Traccar y en el reloj, y volver a escanear el código en la app.')) return;
-  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'rotar_gps' }) });
-  if (res.status === 403) { sesionCaducada(); return; }
-  const d = await res.json();
-  if (d.gps_id) { $('gps-id').value = d.gps_id; pintarQR(d.gps_id); $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
+  const d = await accion({ action: 'rotar_gps' });
+  if (d && d.gps_id) { $('gps-id').value = d.gps_id; pintarQR(d.gps_id); $('msg').textContent = 'Identificador nuevo: ponlo en Traccar y en el reloj'; $('msg').className = 'msg ok'; }
 });
 
 document.addEventListener('click', async e => {
   if (e.target.id !== 'archivar') return;
   if (!confirm('¿Archivar la carrera terminada?\n\nSu resultado pasa a su propia dirección y la portada queda a cero para la siguiente carrera.')) return;
-  const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'archivar' }) });
-  if (res.status === 403) { sesionCaducada(); return; }
-  const d = await res.json();
-  $('msg').textContent = res.ok ? 'Archivada en /' + d.archivada + '/' : (d.error || 'No se pudo archivar');
-  $('msg').className = res.ok ? 'msg ok' : 'msg err';
-  if (res.ok) refreshStatus(d.live);
+  const d = await accion({ action: 'archivar' });
+  if (d) { $('msg').textContent = 'Archivada en /' + d.archivada + '/'; refreshStatus(d.live); }
 });
 
 // lista de preparación: qué está listo y qué falta para la próxima carrera
@@ -572,6 +564,9 @@ function pintarPreparacion(p) {
 async function accion(cuerpo, url = '/api/live', opciones = {}) {
   const msg = $('msg');
   msg.textContent = 'Guardando…'; msg.className = 'msg';
+  // sin esto, dos toques a «Subir ruta» o «Archivar» mandaban dos veces lo mismo
+  const botones = document.querySelectorAll('.btn, .save-btn');
+  botones.forEach(x => { x.disabled = true; });
   try {
     const res = await fetch(url, Object.assign({ method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cuerpo), signal: AbortSignal.timeout ? AbortSignal.timeout(60000) : undefined }, opciones));
@@ -587,6 +582,8 @@ async function accion(cuerpo, url = '/api/live', opciones = {}) {
   } catch (e) {
     msg.textContent = 'No se pudo conectar con el servidor.'; msg.className = 'msg err';
     return null;
+  } finally {
+    botones.forEach(x => { x.disabled = false; });
   }
 }
 

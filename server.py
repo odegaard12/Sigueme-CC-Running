@@ -336,7 +336,7 @@ def limpiar_carrera(d):
                 c["fecha"] = datetime.strptime(c["fecha"], "%Y-%m-%d").date().isoformat()
         if "hora_salida" in d:
             c["hora_salida"] = _texto(d["hora_salida"], 5)
-            if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", c["hora_salida"]):
+            if c["hora_salida"] and not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", c["hora_salida"]):
                 return None, "hora de salida no válida (HH:MM)"
         if "zona_horaria" in d:
             c["zona_horaria"] = _texto(d["zona_horaria"], 40) or "Europe/Madrid"
@@ -2049,6 +2049,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # así, pegar otro enlace a mitad de carrera (móvil muerto, app
             # cerrada...) no reinicia el cronómetro.
             actual = read_live()
+            if not actual.get("started_at") or actual.get("finished_at"):
+                # carrera nueva: fuera los km y el pulso de la anterior (o de una
+                # prueba en casa), como en _empezar; si no, se sumaba casa→salida
+                patch.update({"gps_dist_km": 0, "gps_ult": None, "gps_t": None, "gps_at": None, "gps_origen": None,
+                              "hr_suma": None, "hr_n": None, "hr_t": None, "hr_at": None, "dist_km": None,
+                              "ruta_km": None, "lejos_de_meta": None, "aviso_id": None, "aviso_t": None,
+                              "aviso_texto": None, "elapsed": None})
+                actual["started_at"] = None
             guardada = actual.get("hora_salida")
             if guardada and self.hora_a_iso(guardada):
                 patch["started_at"] = self.hora_a_iso(guardada)

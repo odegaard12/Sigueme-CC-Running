@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.5 · 2026-10-17
+- **Empezar con un enlace de LiveTrack arrastraba la carrera anterior:** los km y
+  el pulso medio de una prueba en casa (o de la última carrera) se sumaban a los
+  de la nueva, y tras «Finalizar» sin hora de salida el crono contaba desde días
+  atrás. Ahora una carrera nueva empieza de cero también por esa vía.
+- **Panel:** se pueden guardar los datos de la carrera sin hora de salida (antes
+  fallaba todo el formulario); «Generar identificador nuevo» y «Archivar»
+  avisan si no hay conexión o el servidor falla, en vez de quedarse callados;
+  los botones se bloquean mientras se guarda, para que dos toques no suban la
+  ruta ni archiven dos veces.
+
 ## v1.12.4 · 2026-10-16
 - **Meta falsa con un lote repetido:** si la app reenviaba un lote que ya había
   llegado (se perdió la respuesta) y traía los puntos de la salida, junto a la
