@@ -97,11 +97,11 @@ class MainActivity : Activity() {
         // tarjeta de estado
         val estado = tarjeta()
         pastilla = TextView(this).apply {
-            textSize = 12f; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f
+            textSize = 14f; typeface = Typeface.DEFAULT_BOLD
             setPadding(10.px(), 4.px(), 10.px(), 4.px())
         }
         estado.addView(pastilla, LinearLayout.LayoutParams(-2, -2))
-        kmTxt = texto(56f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; setPadding(0, 8.px(), 0, 0) }
+        kmTxt = texto(76f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; letterSpacing = -0.03f; includeFontPadding = false; setPadding(0, 14.px(), 0, 2.px()) }
         estado.addView(kmTxt)
         deTxt = texto(14f, apagadoC)
         estado.addView(deTxt)
@@ -113,7 +113,7 @@ class MainActivity : Activity() {
         estado.addView(barra, LinearLayout.LayoutParams(-1, 10.px()).apply { topMargin = 12.px(); bottomMargin = 12.px() })
         avisoTxt = texto(16f, textoC)
         estado.addView(avisoTxt)
-        redTxt = texto(13f, apagadoC)
+        redTxt = texto(14f, apagadoC)
         estado.addView(redTxt, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 6.px() })
         caja.addView(estado)
 
@@ -132,12 +132,12 @@ class MainActivity : Activity() {
 
         // lista de comprobación
         val prep = tarjeta()
-        prep.addView(texto(12f, apagadoC).apply { text = "LISTO PARA SALIR"; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f })
+        prep.addView(texto(20f, textoC).apply { text = "Listo para salir"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 4.px()) })
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         prep.addView(lista)
         caja.addView(prep)
 
-        caja.addView(texto(13f, apagadoC).apply {
+        caja.addView(texto(14f, apagadoC).apply {
             setPadding(4.px(), 18.px(), 4.px(), 0)
             text = "Con la pantalla apagada y sin cobertura, la app sigue tu km con el GPS, lanza los avisos " +
                 "(Zepp o Mi Fitness los pasan a la pulsera) y guarda tu posición hasta que vuelve la cobertura.\n\n" +
@@ -180,13 +180,13 @@ class MainActivity : Activity() {
     }
     private fun texto(tam: Float, color: Int) = TextView(this).apply { textSize = tam; setTextColor(color) }
     private fun tarjeta() = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 16, bordeC)
+        orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 18)
         setPadding(18.px(), 16.px(), 18.px(), 18.px())
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = 16.px() }
     }
     private fun botonSec(txt: String, accion: () -> Unit) = TextView(this).apply {
         text = txt; gravity = Gravity.CENTER; textSize = 15f; setTextColor(textoC); typeface = Typeface.DEFAULT_BOLD
-        background = fondo(tarjetaC, 14, bordeC); isClickable = true; setOnClickListener { accion() }
+        background = fondo(tarjetaC, 16); isClickable = true; setOnClickListener { accion() }
     }
 
     private fun filaLista(ok: Boolean, txt: String, arreglo: () -> Unit) = LinearLayout(this).apply {
@@ -197,7 +197,7 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(22.px(), 22.px()).apply { rightMargin = 12.px() })
         addView(texto(15f, if (ok) textoC else ambarC).apply { text = txt }, LinearLayout.LayoutParams(0, -2, 1f))
         if (!ok) {
-            addView(texto(13f, verdeC).apply { text = "Arreglar ›"; typeface = Typeface.DEFAULT_BOLD })
+            addView(texto(14f, verdeC).apply { text = "Arreglar ›"; typeface = Typeface.DEFAULT_BOLD })
             isClickable = true; setOnClickListener { arreglo() }
         }
     }
@@ -209,7 +209,7 @@ class MainActivity : Activity() {
         val activo = Seguimiento.corriendo
         carreraTxt.text = plan?.nombre ?: "Sin carrera: escanea el código del panel"
 
-        pastilla.text = if (activo) "● SIGUIENDO" else "PARADO"
+        pastilla.text = if (activo) "Siguiendo" else "Parado"
         pastilla.setTextColor(if (activo) fondoC else apagadoC)
         pastilla.background = fondo(if (activo) verdeC else bordeC, 20)
 
@@ -236,7 +236,7 @@ class MainActivity : Activity() {
         redTxt.text = listOfNotNull(
             when {
                 cola > 0 && url == null -> "$cola posiciones guardadas (falta configurar el servidor)"
-                cola > 0 -> "📡 $cola posiciones esperando cobertura"
+                cola > 0 -> "$cola posiciones esperando cobertura"
                 activo -> "Posición al día en la web"
                 else -> null
             },
@@ -247,9 +247,10 @@ class MainActivity : Activity() {
             else -> prefs.getString("web_estado", null)?.takeIf { it.isNotBlank() }?.let { "\nWeb: $it" } ?: ""
         }
 
-        botonGrande.text = if (activo) "PARAR SEGUIMIENTO" else "EMPEZAR SEGUIMIENTO"
+        botonGrande.text = if (activo) "Parar seguimiento" else "Empezar seguimiento"
         botonGrande.setTextColor(if (activo) rojoC else fondoC)
-        botonGrande.background = if (activo) fondo(tarjetaC, 16, rojoC) else fondo(verdeC, 16)
+        // parar, relleno en rojo apagado (antes una caja con borde fino); empezar, el verde de la web
+        botonGrande.background = if (activo) fondo(Color.rgb(58, 30, 27), 18) else fondo(verdeC, 18)
 
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

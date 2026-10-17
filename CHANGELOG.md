@@ -4,6 +4,16 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.6 · 2026-10-18
+- **La app con el mismo criterio de diseño que la web:** el estado en frase
+  normal («Siguiendo», «Parado») y «Listo para salir» como título, no en
+  mayúsculas pequeñas espaciadas; las tarjetas y los botones sin borde fino
+  (se separan por tono); el km en grande (76 sp); «Parar seguimiento» como
+  botón relleno en rojo apagado en vez de una caja con borde; sin emojis y
+  nada de texto por debajo de 14 sp.
+- Banco de pruebas del emulador: cierra los avisos del propio sistema
+  («Pixel Launcher no responde») que a veces tapaban la app.
+
 ## v1.13.5 · 2026-10-18
 - **Las pruebas, en el repo y en cada cambio:** `pruebas/` (lector de GPX,
   panel y seguridad del servidor, ensayo de una carrera entera, carga con 60

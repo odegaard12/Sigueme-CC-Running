@@ -29,13 +29,23 @@ adb shell "run-as $P mkdir -p shared_prefs && run-as $P cp /data/local/tmp/sigue
 
 # al abrir, sin plan guardado, la app lo baja sola (sin tocar nada)
 adb emu geo fix -4.0 40.8
-adb shell am start -n $P/.MainActivity; sleep 8
+adb shell am start -n $P/.MainActivity
+# el emulador de CI a veces tarda en arrancar la app: esperar a verla, no 8 s fijos
+for i in $(seq 1 30); do
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null
+  adb shell uiautomator dump /sdcard/espera.xml >/dev/null 2>&1
+  adb shell cat /sdcard/espera.xml 2>/dev/null | grep -qi "Listo para salir" && break
+  sleep 2
+done
+sleep 4                                     # y que le dé tiempo a bajar el plan
 adb shell run-as $P ls files/plan.json || mal "la app no bajó el plan al abrirse"
 [ "$(vivo app_at)" != "$APP_AT0" ] || mal "el servidor no vio a la app pedir el plan"
 adb exec-out screencap -p > capturas/5-banco-plan.png
 
+# un aviso del sistema («Pixel Launcher no responde») tapaba la app en el emulador
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null; sleep 1
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml /tmp/ui.xml
-XY=$(python3 -c "import re;s=open('/tmp/ui.xml',encoding='utf-8').read();m=re.search(r'text=.EMPEZAR SEGUIMIENTO.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\]',s);a,b,c,d=map(int,m.groups());print((a+c)//2,(b+d)//2)")
+XY=$(python3 -c "import re;s=open('/tmp/ui.xml',encoding='utf-8').read();m=re.search(r'text=.(?i:Empezar seguimiento).[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\]',s);a,b,c,d=map(int,m.groups());print((a+c)//2,(b+d)//2)")
 adb shell input tap $XY; sleep 5; adb shell input keyevent KEYCODE_BACK; sleep 1
 [ -n "$(vivo started_at)" ] || mal "EMPEZAR no puso la carrera en marcha en la web"
 
