@@ -149,7 +149,9 @@ def main():
         res = generar(pathlib.Path(sys.argv[1]))
     except ValueError as exc:
         sys.exit(str(exc))
-    (RAIZ / 'resultado.json').write_text(json.dumps(res, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    tmp = RAIZ / '.resultado.json.tmp'          # entero o nada: la web lo lee mientras tanto
+    tmp.write_text(json.dumps(res, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    tmp.replace(RAIZ / 'resultado.json')
     h, m = divmod(res['tiempo_oficial_s'] // 60, 60)
     print(f"tiempo oficial {h}h {m:02d}m · {res['distancia_km']} km · media en movimiento {res['velocidad_media_mov']} km/h")
     print(f"pasos por avituallamiento: {len(res['pasos'])} · traza {len(res['traza'])} puntos")

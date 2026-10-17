@@ -1971,11 +1971,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if os.path.exists(destino):
                 self._send_json(409, {"error": f"ya hay una carrera archivada en /{archivada}/ (pon otro \"slug\" en carrera.json)"})
                 return
-            os.makedirs(destino)
-            for n in FICHEROS_CARRERA:
-                if os.path.exists(os.path.join(ROOT, n)):
-                    shutil.copy2(os.path.join(ROOT, n), destino)
-            shutil.move(os.path.join(ROOT, "resultado.json"), os.path.join(destino, "resultado.json"))
+            # se llena en una carpeta oculta y se renombra de golpe: si falla a
+            # medias (tarjeta llena) no queda un archivo cojo que bloquee los reintentos
+            os.makedirs(ARCHIVO_DIR, exist_ok=True)
+            tmp = tempfile.mkdtemp(dir=ARCHIVO_DIR, prefix="." + archivada + ".")
+            try:
+                for n in FICHEROS_CARRERA + ("resultado.json",):
+                    if os.path.exists(os.path.join(ROOT, n)):
+                        shutil.copy2(os.path.join(ROOT, n), tmp)
+                os.rename(tmp, destino)
+            except OSError:
+                shutil.rmtree(tmp, ignore_errors=True)
+                self._send_json(409, {"error": f"no se pudo archivar en /{archivada}/ (¿ya existe o falta espacio?)"})
+                return
+            os.remove(os.path.join(ROOT, "resultado.json"))
             apuntar_historial("archivada", slug=archivada)
             accion = "reset"
 

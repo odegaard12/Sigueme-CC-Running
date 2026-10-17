@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.12.6 · 2026-10-17
+- **Archivar ya no puede dejar un archivo a medias:** se llena en una carpeta
+  oculta y se mueve de golpe. Antes, un fallo a mitad (tarjeta llena) dejaba
+  una carpeta coja que bloqueaba los reintentos con «ya hay una carrera
+  archivada», y dos toques a la vez daban un error 500.
+- `generar_resultado.py` desde la consola escribe el resultado entero o nada:
+  quien abría la web en ese momento podía leer un JSON cortado.
+
 ## v1.12.5 · 2026-10-17
 - **Empezar con un enlace de LiveTrack arrastraba la carrera anterior:** los km y
   el pulso medio de una prueba en casa (o de la última carrera) se sumaban a los
