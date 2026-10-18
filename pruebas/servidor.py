@@ -178,6 +178,9 @@ try:
                 + bloque(b'IDAT', zlib.compress(fila * lado)) + bloque(b'IEND', b''))
     st, d, _ = pedir('/api/avatar', b'GIF89a' + b'x' * 50, 'image/png')
     ok(st == 400, f"foto que no es PNG: {d.get('error')}")
+    grande = png(8)[:16] + struct.pack('>II', 30000, 30000) + png(8)[24:]
+    st, d, _ = pedir('/api/avatar', grande, 'image/png')
+    ok(st == 400, f'foto que dice ser de 30000 x 30000: {st}')
     st, d, _ = pedir('/api/avatar', png(), 'image/png', cookie=False)
     ok(st == 403, 'foto sin sesión: 403')
     st, d, _ = pedir('/api/avatar', png(), 'image/png')
@@ -247,6 +250,16 @@ try:
     ok(st == 200 and not v.get('gps_dist_km') and not v.get('hr_suma') and not v.get('gps_t') and v.get('started_at'),
        f"enlace nuevo empieza de cero: {st} {v.get('gps_dist_km')} {v.get('hr_suma')} {v.get('gps_t')}")
     pedir('/api/live', {'action': 'reset'})
+    # simular sin ruta: error claro y sin carrera fantasma que bloquee el panel
+    pedir('/api/live', {'action': 'reset'})
+    (W / 'route.geojson').unlink()
+    st, d, _ = pedir('/api/live', {'action': 'simular', 'segundos': 60})
+    vivo = json.loads((W / 'live.json').read_text(encoding='utf-8'))
+    ok(st == 400 and not vivo.get('started_at'), f"simular sin ruta: {st} {d.get('error')}, started_at={vivo.get('started_at')}")
+    # «nan» desde el panel no llega al live.json (el navegador no lo leería)
+    pedir('/api/live', {'speed_kmh': 'nan', 'hr': 'inf'})
+    texto = (W / 'live.json').read_text(encoding='utf-8')
+    ok('NaN' not in texto and 'Infinity' not in texto, 'sin NaN ni Infinity en live.json')
     # tope del cuerpo
     st, d, _ = pedir('/api/live', {'action': 'guardar_avisos', 'avisos': [{'id': 1, 'texto': 'x' * 100}] * 700})
     ok(st == 413, f'cuerpo de más de 64 KB: {st}')

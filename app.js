@@ -925,7 +925,8 @@ function previsiones(km, datoIso) {
   const v = km / ((t - new Date(lastStartedAt)) / 3600000);       // km/h
   if (!(v > 0.5 && v < 80)) return null;
   const est = Math.min(totalRouteKm, km + v * Math.max(0, ahoraServidor() - t) / 3600000);
-  const hora = k => fmtTime(new Date(t + (k - km) / v * 3600000).toISOString());
+  // nunca una hora ya pasada: sin cobertura cerca del final marcaba «Meta ~11:21» a las 11:30
+  const hora = k => fmtTime(new Date(Math.max(ahoraServidor(), t + (k - km) / v * 3600000)).toISOString());
   const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
   return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
 }

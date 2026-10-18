@@ -548,9 +548,15 @@ SIN_SENSOR = {255, 65535}
 SIN_SENSOR_PULSO = {0, 255, 65535}
 
 
+def es_de_igpsport(url):
+    """Por el nombre del servidor, no por el texto: «http://127.0.0.1/?igpsport.com» colaba."""
+    h = (urlparse(url).hostname or "") if isinstance(url, str) else ""
+    return h == "igpsport.com" or h.endswith(".igpsport.com")
+
+
 def igpsport_id(url):
     """Saca el id de cualquier enlace de iGPSPORT (share o livetracing)."""
-    if "igpsport.com" not in url:
+    if not es_de_igpsport(url):
         return None
     m = re.search(r"[?&]id=([^&]+)", url)
     return m.group(1) if m else None
@@ -583,7 +589,9 @@ def _num(valor, sentinelas=SIN_SENSOR):
         n = float(valor)
     except (TypeError, ValueError):
         return None
-    return None if n in sentinelas else n
+    # «NaN» o 1e999 en la respuesta: json.dumps los escribe tal cual y el
+    # navegador no acepta ese live.json (la web se congelaba para todos)
+    return None if not math.isfinite(n) or n in sentinelas else n
 
 
 def extract_igpsport(payload):
@@ -613,8 +621,9 @@ def extract_igpsport(payload):
         if valor is not None:
             fuera[clave] = valor
 
-    if resumen.get("totalTime") is not None:
-        fuera["elapsed"] = resumen["totalTime"]
+    t = _num(resumen.get("totalTime"), ())
+    if t is not None:
+        fuera["elapsed"] = t
 
     return fuera or None
 
@@ -651,7 +660,7 @@ def fetch_page(url):
     # urllib.request daba 403 SIEMPRE, aunque llevara User-Agent, Referer y
     # sec-ch-ua de Chrome de verdad. curl_cffi reproduce la huella TLS real
     # de Chrome (BoringSSL) y con eso Cloudflare deja pasar la petición.
-    if "igpsport.com" in url:
+    if es_de_igpsport(url):
         if cffi_requests is None:
             raise RuntimeError("falta curl_cffi en el servidor (pip install curl_cffi) para leer iGPSPORT")
         r = cffi_requests.get(url, impersonate="chrome120", timeout=10)
@@ -663,6 +672,15 @@ def fetch_page(url):
         if r.status_code == 429 or (r.status_code >= 400 and not cuerpo.lstrip().startswith("{")):
             raise RespuestaHTTP(r.status_code)
         return cuerpo
+    # otros enlaces: solo http(s) y a direcciones públicas (ni file://, ni la red de casa)
+    pu = urlparse(url)
+    try:
+        publica = pu.scheme in ("http", "https") and bool(pu.hostname) and all(
+            ipaddress.ip_address(a[4][0]).is_global for a in socket.getaddrinfo(pu.hostname, None))
+    except (OSError, ValueError):
+        publica = False
+    if not publica:
+        raise ValueError("enlace no permitido: solo http(s) a direcciones públicas")
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
@@ -1159,8 +1177,7 @@ def puntos_de_la_ruta():
     return [(lat, lon) for lon, lat in coords]
 
 
-def simular_loop(stop_event, segundos):
-    puntos = puntos_de_la_ruta()
+def simular_loop(stop_event, segundos, puntos):
     total = len(puntos)
     inicio = time.time()
     hr_base, cad_base = 138, 82
@@ -1200,9 +1217,14 @@ def parar_simulacion():
 
 
 def arrancar_simulacion(segundos=120):
+    # la ruta se lee ANTES de poner la carrera en marcha: sin GPX el hilo moría
+    # y quedaba una «carrera» empezada que bloqueaba el panel hasta un reset
+    puntos = puntos_de_la_ruta()
+    if len(puntos) < 2:
+        raise ValueError("ruta sin puntos")
     parar_simulacion()
     stop_event = threading.Event()
-    hilo = threading.Thread(target=simular_loop, args=(stop_event, segundos), daemon=True)
+    hilo = threading.Thread(target=simular_loop, args=(stop_event, segundos, puntos), daemon=True)
     simulador["thread"] = hilo
     simulador["stop"] = stop_event
     merge_live({"started_at": datetime.now(timezone.utc).isoformat(), "livetrack_url": None,
@@ -1696,7 +1718,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         cuerpo = self._subida(2_000_000, "la foto")
         if cuerpo is None:
             return
-        if not cuerpo.startswith(b"\x89PNG\r\n\x1a\n"):
+        # PNG de verdad y de como mucho 1024×1024 (el panel la recorta a 256): una
+        # imagen que declara 30000×30000 en 2 MB obligaba a cada navegador a descodificarla
+        ancho, alto = int.from_bytes(cuerpo[16:20], "big"), int.from_bytes(cuerpo[20:24], "big")
+        if not (cuerpo.startswith(b"\x89PNG\r\n\x1a\n") and cuerpo[12:16] == b"IHDR"
+                and 0 < ancho <= 1024 and 0 < alto <= 1024):
             self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
             return
         tmp = os.path.join(ROOT, ".rider.png.tmp")
@@ -1980,7 +2006,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except (TypeError, ValueError):
                 self._send_json(400, {"error": "segundos no válidos"})
                 return
-            arrancar_simulacion(segundos)
+            try:
+                arrancar_simulacion(segundos)
+            except (OSError, ValueError, KeyError, IndexError, TypeError):
+                self._send_json(400, {"error": "falta la ruta: sube antes el GPX"})
+                return
             self._send_json(200, {"ok": True, "live": read_live()})
             return
 
@@ -2071,6 +2101,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 try:
                     valor = float(valor)
                 except (TypeError, ValueError):
+                    continue
+                if not math.isfinite(valor):          # «nan» también era float
                     continue
             patch[key] = valor
 

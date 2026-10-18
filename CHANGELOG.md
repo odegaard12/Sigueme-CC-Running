@@ -4,6 +4,23 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.10 · 2026-10-19
+- **Enlace de seguimiento validado:** el servidor solo usa la vía de iGPSPORT
+  si el servidor del enlace es de verdad iGPSPORT (no si el texto lo
+  contiene), y cualquier otro enlace solo puede ser http(s) a una dirección
+  pública: ni `file://` ni direcciones de la red de casa.
+- **Un «NaN» en la respuesta de iGPSPORT (o desde el panel) ya no congela la
+  web:** se descarta en vez de escribirse en el live.json, que el navegador
+  no aceptaba.
+- **«Simular» sin ruta subida** deja un error claro («falta la ruta») en vez
+  de una carrera fantasma en marcha que bloqueaba el panel.
+- **Foto del corredor:** solo PNG de hasta 1024×1024 (el panel la recorta a
+  256); una imagen que declaraba un tamaño enorme obligaba a cada navegador a
+  descodificarla.
+- **Web:** sin cobertura cerca del final, la hora prevista de meta ya no se
+  queda en el pasado.
+- Pruebas nuevas para la foto, la simulación sin ruta y el NaN.
+
 ## v1.13.9 · 2026-10-19
 - **Réplica entre las dos Pis (`despliegue/replicar.sh`):** si la IP flotante
   cambiaba de Pi justo cuando empezaba una copia, la copia llegaba después y
