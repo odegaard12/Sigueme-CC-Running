@@ -24,7 +24,9 @@ listo y qué falta:
 
 ## 1 · Datos de la carrera
 
-Nombre, lugar, fecha, hora de salida, tiempo límite, corredor y dorsal. En
+Nombre, lugar, fecha, hora de salida (la única: el crono y la app cuentan
+desde ella), tiempo límite, corredor, dorsal, club, categoría y **tu foto** (se
+recorta cuadrada y sale en el mapa y en la ficha). En
 «Más datos»: la bici para la ficha, los metros alrededor de salida y meta en
 los que no se publica tu posición (si salen de tu casa), la zona horaria y la
 dirección que tendrá al archivarla.
@@ -85,18 +87,23 @@ En casa, con cobertura:
    app**: confirma tu servidor y baja la ruta, el perfil y los avisos. No hay
    que volver a escanear nada en las siguientes carreras (salvo si generas un
    identificador nuevo).
-3. En la app: **Probar aviso en la pulsera** (con una actividad en marcha en la
-   pulsera, tiene que vibrar y verse el texto) y **Quitar ahorro de batería**.
+3. En la app, «Listo para salir»: **Arreglar** en todo lo que no esté en verde
+   (ubicación, notificaciones, sin ahorro de batería). La app busca sola la app
+   de la pulsera, **Zepp** (Amazfit), **Mi Fitness** o **Zepp Life** (Xiaomi),
+   comprueba que tenga «Acceso a notificaciones» y dice qué activar y dónde.
+4. **Probar aviso**: llega a los 5 segundos; bloquea el móvil y mira la
+   pulsera (muchas apps solo pasan los avisos con la pantalla apagada).
 
 El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
 apagada y sin cobertura:
 
 - sigue tu km con el GPS del propio móvil y lanza cada aviso como notificación;
-  **Mi Fitness** (o la app de tu reloj) la pasa a la pulsera;
+  **Zepp** o **Mi Fitness** la pasan a la pulsera;
 - guarda tu posición y la manda a la web en cuanto vuelve la cobertura.
 
-Si cambias algo en el panel después, pulsa «Actualizar plan» en la app. Si
-generas un identificador nuevo, vuelve a escanear el código.
+Si cambias algo en el panel después, la app lo pone al día sola cada vez que
+la abres con cobertura (o pulsa «Actualizar plan»); la lista dice cuándo se
+guardó. Si generas un identificador nuevo, vuelve a escanear el código.
 
 Mientras no tengas la app, la posición se puede mandar con **Traccar Client**
 (Android e iPhone) o el reloj Amazfit: en el README, «Elegir cómo se manda tu
@@ -104,12 +111,12 @@ posición».
 
 ## 6 · El día de la carrera
 
-1. En la app, **EMPEZAR SEGUIMIENTO** cuando quieras, aunque sea una hora antes
+1. En la app, **Empezar seguimiento** cuando quieras, aunque sea una hora antes
    de la salida: baja el plan al día y pone la carrera en marcha en la web (sin
    cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
    oficial la web dice «En la salida», el crono no corre y no salen avisos.
    Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Guardar y empezar a seguir**.
+2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Empezar a seguir**.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También
@@ -120,15 +127,14 @@ posición».
 
 ## 7 · El resultado
 
-```bash
-python herramientas/generar_resultado.py actividad.fit
-```
-
-La web pasa a modo resultado: tiempo, paso por avituallamientos, repetición.
+Panel → **Más** → **Resultado de la carrera**: sube el FIT de tu reloj o
+ciclocomputador. La web pasa a modo resultado: tiempo oficial, paso por cada
+avituallamiento y la repetición. Si el FIT no vale (no llega a meta, es de otra
+carrera…), el panel dice por qué.
 
 ## 8 · Archivar
 
-Panel → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
+Panel → **Más** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
 `/carreras/` y la portada queda a cero para la siguiente.
 
 ---

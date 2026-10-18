@@ -61,7 +61,8 @@ encendida. Si abres el entrenamiento oficial del reloj, la miniapp se cierra.
 En la app Zepp → **Sígueme CC** → Ajustes:
 
 - **Dirección del servidor:** `https://tu-dominio/api/gps`
-- **Identificador:** el de la tarjeta «GPS del móvil» del panel (el mismo que Traccar).
+- **Identificador:** el del panel, pestaña **Móvil** → «Sin la app: iPhone, Traccar o
+  reloj» → **Ver la configuración** (el mismo que la app y Traccar).
 
 ## Usarla
 

@@ -37,21 +37,36 @@ const kmMinimosMeta = () => CARRERA.km_minimos_meta || 0.8 * (totalRouteKm || 10
 function diaCarrera() {
   if (!CARRERA.fecha) return '';
   const d = new Date(CARRERA.fecha + 'T12:00:00');
-  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '').toUpperCase();
+  return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '');
 }
 function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
-  document.querySelectorAll('img[src^="rider.png"]').forEach(i => { i.alt = 'Avatar de ' + (corredor.nombre || 'corredor'); });
+  // ?v= cambia al subir otra foto desde el panel: así nadie ve la vieja
+  document.querySelectorAll('img[src^="rider.png"]').forEach(i => {
+    i.src = 'rider.png?v=' + (Number(c.avatar_v) || 5);
+    i.alt = 'Foto de ' + (corredor.nombre || 'corredor');
+  });
   const nombre = document.getElementById('ficha-nombre');
   if (nombre && corredor.nombre) nombre.textContent = corredor.nombre;
+  const sub = document.getElementById('ficha-sub');
+  if (sub) sub.textContent = [corredor.club, corredor.categoria].filter(Boolean).join(' · ') || c.nombre || '';
   const dorsal = document.getElementById('ficha-dorsal');
-  if (dorsal) {
-    dorsal.textContent = '';
-    if (corredor.dorsal) { dorsal.append('Dorsal '); const n = document.createElement('b'); n.textContent = corredor.dorsal; dorsal.append(n); }
-    const resto = [c.modalidad, c.nombre].filter(Boolean).join(' · ');
-    if (resto) dorsal.append((corredor.dorsal ? ' · ' : '') + resto);
+  if (dorsal && corredor.dorsal) { document.getElementById('ficha-dorsal-n').textContent = corredor.dorsal; dorsal.hidden = false; }
+  // la carrera, en casillas: solo las que tienen dato
+  const datos = document.getElementById('ficha-carrera');
+  if (datos) {
+    const fecha = c.fecha ? new Date(c.fecha + 'T12:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+    const casillas = [['Carrera', c.nombre], ['Modalidad', c.modalidad],
+      ['Distancia', c.distancia_km ? num(c.distancia_km, c.distancia_km % 1 ? 1 : 0) + ' km' : ''],
+      ['Desnivel', c.desnivel_m ? '+' + Math.round(c.desnivel_m).toLocaleString('es-ES') + ' m' : ''],
+      ['Salida', [fecha, c.hora_salida].filter(Boolean).join(' · ')], ['Límite', c.limite_h ? c.limite_h + ' h' : '']];
+    datos.textContent = '';
+    casillas.filter(([, v]) => v).forEach(([k, v]) => {
+      const fila = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = k; dd.textContent = v; fila.append(dt, dd); datos.append(fila);
+    });
   }
   const bici = document.getElementById('ficha-bici');
   if (bici && c.bici && c.bici.modelo) {
@@ -262,8 +277,9 @@ if (botonFicha) {
 function quitarPantallaDeCarga() {
   const tapa = document.getElementById('cargando');
   if (!tapa || tapa.classList.contains('fuera')) return;
-  tapa.classList.add('fuera');
-  setTimeout(() => tapa.remove(), 500);
+  tapa.classList.add('fuera');      // se queda oculta: el aviso de mapa roto la reutiliza
+  // tras un minuto funcionando, una pérdida de WebGL dentro de horas vuelve a tener sus reintentos
+  setTimeout(() => { if (mapReady) intentosDeMapa = 0; }, 60000);
 }
 
 function buildMap3D() {
@@ -302,7 +318,7 @@ function buildMap3D() {
     // salía el cartel de "mapa no disponible". Con este tope nunca se pasa de
     // donde hay imagen.
     maxZoom: 17.5,
-    center: [-3.7, 40.4],
+    center: [-3.7, 40.4],          // la península; enseguida encuadra la ruta
     zoom: 11,
     // con un dedo se desliza la página y con dos se mueve el mapa: si no, en
     // el móvil es imposible bajar a ver las métricas sin arrastrar el mapa
@@ -384,7 +400,7 @@ let chinchetasPuestas = false;
 // resultado es un recuadro negro sin chinchetas y sin ningún aviso. También
 // puede pasar en el móvil si el navegador se lleva por delante el contexto
 // gráfico al cambiar de app. Este vigilante lo detecta y rehace el mapa.
-let intentosDeMapa = 0;
+let intentosDeMapa = 0, temporizadorRevisar = null;
 let lienzoActual = null;
 let revisarActual = null;
 const alPerderContexto = () => rehacerMapa('contexto gráfico perdido');
@@ -393,7 +409,7 @@ function montarMapa() {
   try {
     buildMap3D();
   } catch (e) {
-    map3dDiv.innerHTML = '<p style="color:#eef2ee;text-align:center;padding:40px 16px">No se pudo cargar el mapa 3D: ' + e.message + '</p>';
+    map3dDiv.innerHTML = '<p style="color:#eef2ee;text-align:center;padding:40px 16px">No se pudo cargar el mapa 3D: ' + esc(e.message) + '</p>';
     return;
   }
   // si el contexto gráfico se pierde (cambiar de app, memoria baja), rehacer.
@@ -413,14 +429,18 @@ function montarMapa() {
     if (document.hidden) return;
     if (!mapReady) rehacerMapa('el mapa no terminó de cargar');
   };
-  setTimeout(revisar, 20000);
+  clearTimeout(temporizadorRevisar);
+  temporizadorRevisar = setTimeout(revisar, 20000);
   revisarActual = revisar;
 }
 
 // UNA sola escucha: si se ponía dentro de montarMapa, cada mapa rehecho añadía
 // otra, y al volver a la pestaña saltaban todas y gastaban los reintentos
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !mapReady && revisarActual) setTimeout(revisarActual, 20000);
+  if (!document.hidden && !mapReady && revisarActual) {
+    clearTimeout(temporizadorRevisar);
+    temporizadorRevisar = setTimeout(revisarActual, 20000);
+  }
 });
 
 function avisoMapaRoto() {
@@ -455,7 +475,11 @@ function rehacerMapa(motivo) {
   montarMapa();
 }
 
-montarMapa();
+// La librería del mapa (800 KB) llega aparte (async): las cifras, el perfil y
+// los avituallamientos se pintan sin esperarla. Medido en un móvil lento:
+// antes los datos salían a los 7-9 s, detrás de la librería.
+if (window.__libMapa) window.__libMapa.then(montarMapa, avisoMapaRoto);
+else montarMapa();
 
 
 // Se llama cuando el mapa Y la ruta están listos (llegan async, en cualquier orden).
@@ -470,7 +494,7 @@ function onMapReady() {
     if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
     return;
   }
-  if (!aidStations.length) return;
+  if (!avitusCargados) return;      // hasta saber si hay avituallamientos
   chinchetasPuestas = true;
 
   map3d.fitBounds(
@@ -478,27 +502,30 @@ function onMapReady() {
     { padding: 30, pitch: 50, bearing: -20, duration: 0 }
   );
 
-  // salida y meta son el mismo punto (recorrido circular)
-  const startPos = routeLatLon[0];
-  if (startPos) {
+  // salida y meta: una bandera si es un recorrido circular, dos si no
+  const startPos = routeLatLon[0], endPos = routeLatLon[routeLatLon.length - 1];
+  const circular = startPos && endPos && haversineKm(startPos, endPos) < 0.3;
+  const bandera = (pos, tipo, km) => {
     const el = document.createElement('div');
     el.className = 'aid-pin';
-    el.innerHTML = aidPinSVG('#f3f6f2', '🏁');
+    el.innerHTML = aidPinSVG('#f3f6f2', 'M');
     pulsarAbrePopup(
       new maplibregl.Marker({ element: el, anchor: 'bottom', opacityWhenCovered: '0.99' })
-        .setLngLat([startPos[1], startPos[0]])
+        .setLngLat([pos[1], pos[0]])
         .setPopup(nuevoPopup(30).setHTML(
-          '<div class="globo"><span class="globo-tipo">Salida y meta</span>' +
-          '<b>Salida y meta</b>' +
-          '<span class="globo-km">km 0 · km ' + num(totalRouteKm) + '</span></div>'))
+          '<div class="globo"><span class="globo-tipo">' + tipo + '</span>' +
+          '<b>' + esc(CARRERA.lugar || CARRERA.nombre || tipo) + '</b>' +
+          '<span class="globo-km">' + km + '</span></div>'))
         .addTo(map3d),
       el);
-  }
+  };
+  if (startPos) bandera(startPos, circular ? 'Salida y meta' : 'Salida', circular ? 'km 0 · km ' + num(totalRouteKm) : 'km 0');
+  if (endPos && !circular) bandera(endPos, 'Meta', 'km ' + num(totalRouteKm));
 
   // avituallamientos como chinchetas numeradas: verde normal, naranja el
   // principal (comida caliente), azul los talleres MTB, igual que la guía
   aidStations.forEach((s, i) => {
-    const pos = pointAtKm(s.km);
+    const pos = pointAtKm(s.km / (factorKm || 1));
     if (!pos) return;
     const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
     const tipo = s.principal ? 'Avituallamiento principal'
@@ -506,13 +533,13 @@ function onMapReady() {
       : 'Avituallamiento';
     const el = document.createElement('div');
     el.className = 'aid-pin';
-    el.innerHTML = aidPinSVG(color, s.taller ? '🔧' : String(i + 1));
+    el.innerHTML = aidPinSVG(color, s.taller ? 'T' : String(i + 1));
     pulsarAbrePopup(
       new maplibregl.Marker({ element: el, anchor: 'bottom', opacityWhenCovered: '0.99' })
         .setLngLat([pos[1], pos[0]])
         .setPopup(nuevoPopup(30).setHTML(
           '<div class="globo"><span class="globo-tipo" style="color:' + color + '">' + tipo + '</span>' +
-          '<b>' + (i + 1) + '. ' + s.name + '</b>' +
+          '<b>' + (i + 1) + '. ' + esc(s.name) + '</b>' +
           '<span class="globo-km">km ' + num(s.km) + ' · faltan ' +
           num(totalRouteKm - s.km) + ' km para meta</span></div>'))
         .addTo(map3d),
@@ -520,6 +547,8 @@ function onMapReady() {
   });
 
   if (riderMarkerPos) placeRiderMarker(riderMarkerPos[0], riderMarkerPos[1]);
+  idxRecorridoPintado = -1;
+  drawTraveledLine(currentKm || 0);
 }
 
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
@@ -562,17 +591,20 @@ precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
 
 // Se editan a mano en aid_stations.json ([{ "name": "...", "km": 0 }, ...]) —
 // no hay forma de sacarlos del GPX, así que se rellenan antes de la carrera.
+let avitusCargados = false;
 function loadAidStations() {
   precargado('aid_stations.json', () => fetch('aid_stations.json').then(r => r.ok ? r.json() : []))
     .then(stations => {
       aidStations = stations || [];
+      avitusCargados = true;
+      document.querySelector('.leyenda').hidden = !aidStations.length;
       const hay = { normal: aidStations.some(s => !s.principal && !s.taller), principal: aidStations.some(s => s.principal),
                     taller: aidStations.some(s => s.taller) };
       document.querySelectorAll('.leyenda [data-tipo]').forEach(el => { el.hidden = !hay[el.dataset.tipo]; });
       drawElevationMarkers();
       onMapReady();
     })
-    .catch(() => {});
+    .catch(() => { avitusCargados = true; onMapReady(); });
 }
 
 // ---------- Perfil de altimetría ----------
@@ -742,7 +774,13 @@ function drawElevationChart(profile, minEle, maxEle) {
   }
 }
 
-window.addEventListener('resize', () => drawElevationMarkers());
+let anchoPerfil = 0;
+window.addEventListener('resize', () => {
+  const c = document.getElementById('elevation-chart');
+  if (!c || c.clientWidth === anchoPerfil) return;      // solo si cambia el ancho
+  anchoPerfil = c.clientWidth;
+  drawElevationMarkers();
+});
 
 // ⚠️ Cada setData obliga a redibujar el mapa 3D entero. Se hacía 5 veces por
 // segundo aunque la línea no cambiara: medido, la página trabajaba el 100 %
@@ -780,7 +818,7 @@ function placeRiderMarker(lat, lon) {
     el.style.zIndex = '6';
     // ?v= para que el móvil no siga enseñando la foto cacheada
     const corredor = CARRERA.corredor || {};
-    el.innerHTML = '<span><img src="rider.png?v=5" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
+    el.innerHTML = '<span><img src="rider.png?v=' + (Number(CARRERA.avatar_v) || 5) + '" alt="' + esc(corredor.nombre || 'Corredor') + '"></span>';
     // opacityWhenCovered: con terreno 3D MapLibre da por "tapado" todo lo que
     // está pegado al suelo y lo deja casi invisible al acercar. Aquí no
     // interesa: el corredor tiene que verse siempre.
@@ -887,7 +925,8 @@ function previsiones(km, datoIso) {
   const v = km / ((t - new Date(lastStartedAt)) / 3600000);       // km/h
   if (!(v > 0.5 && v < 80)) return null;
   const est = Math.min(totalRouteKm, km + v * Math.max(0, ahoraServidor() - t) / 3600000);
-  const hora = k => fmtTime(new Date(t + (k - km) / v * 3600000).toISOString());
+  // nunca una hora ya pasada: sin cobertura cerca del final marcaba «Meta ~11:21» a las 11:30
+  const hora = k => fmtTime(new Date(Math.max(ahoraServidor(), t + (k - km) / v * 3600000)).toISOString());
   const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
   return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
 }
@@ -1080,7 +1119,9 @@ function pintarNivel(texto) {
   const pct = isNaN(n) ? 50 : Math.max(0, Math.min(100, 50 + (n / 15) * 50));
   marca.style.left = pct + '%';
   const hueco = document.getElementById('m-grad');
-  if (hueco) hueco.style.color = isNaN(n) ? '' : gradColor(n);
+  // el color de la rampa, aclarado: las bajadas (azul oscuro) no se leían sobre el fondo
+  const aclarar = c => c.replace(/[0-9a-f]{2}/gi, h => Math.round(parseInt(h, 16) + (255 - parseInt(h, 16)) * 0.45).toString(16).padStart(2, '0'));
+  if (hueco) hueco.style.color = isNaN(n) ? '' : aclarar(gradColor(n));
 }
 
 function esMeta(data, km) {
@@ -1115,7 +1156,8 @@ function fmtDuracion(ms) {
 // se pregunta cada 5 s, se amontonaban varias a la vez (peor aún la red). Y
 // si la Pi o el túnel caían, Cloudflare devuelve una página de error: la web
 // fallaba al leerla y se callaba, sin avisar de que no llegaban datos.
-let pidiendo = false;
+let pidiendo = false, pidiendoDesde = 0;
+let llegadaFija = null;     // primer «en meta» sin hora del servidor: el tiempo final no sigue creciendo
 let fallosSeguidos = 0;
 
 function fetchConTiempo(url, ms = 8000) {
@@ -1143,8 +1185,10 @@ function pollLive() {
   // hasta saber si hay resultado guardado no se pinta nada: si no, salía un
   // instante "INICIO 08:30 · SÁBADO 26/09" y luego cambiaba todo
   if (!resultadoConsultado) return;
-  if (pidiendo) return;          // la anterior aún no ha vuelto: no amontonar
+  // la anterior aún no ha vuelto: no amontonar (pero si lleva 20 s, se da por perdida)
+  if (pidiendo && Date.now() - pidiendoDesde < 20000) return;
   pidiendo = true;
+  pidiendoDesde = Date.now();
   // tramos de 3 s: quien mira a la vez comparte la misma copia en la caché del borde
   precargado('live.json', () => fetchConTiempo('live.json?_=' + Math.floor(Date.now() / 3000)))
     .then(r => {
@@ -1160,7 +1204,7 @@ function pollLive() {
       fallosSeguidos = 0;
       avisoConexion(false);
       lastStartedAt = data.started_at || null;
-      document.querySelector('.metricas').classList.remove('cargando');
+      document.querySelector('.metricas').classList.remove('esqueleto');
 
       // sin carrera en marcha y con resultado guardado: se enseña el resultado
       if (resultado && !data.started_at && !data.livetrack_url && !data.en_seguimiento) {
@@ -1241,7 +1285,8 @@ function pollLive() {
 
       // último dato NUEVO del ciclocomputador (updated se renueva en cada consulta)
       const ultimoDato = data.data_at || data.updated;
-      const llegada = data.finished_at || ultimoDato;
+      if (!enMeta) llegadaFija = null;
+      const llegada = data.finished_at || llegadaFija || (enMeta ? (llegadaFija = ultimoDato) : ultimoDato);
       if (enMeta && lastStartedAt && llegada) {
         // tiempo final = del pistoletazo a la llegada (o al último dato)
         document.getElementById('m-time').textContent =
@@ -1257,7 +1302,7 @@ function pollLive() {
         moverSuave(enMeta ? totalRouteKm : doneKm,
                    data.lat != null && data.lon != null ? [data.lat, data.lon] : null,
                    enMeta || lejosDeRuta < 0.08);
-      } else if (kmPintado !== null && kmPintado !== 0) {
+      } else if (!data.started_at && kmPintado !== null && kmPintado !== 0) {
         // se reseteó desde el panel: borrar también lo ya pintado en las
         // pantallas que estuvieran abiertas, o se quedan con el progreso
         if (animacion) cancelAnimationFrame(animacion);
@@ -1276,8 +1321,8 @@ function pollLive() {
       const estado = document.getElementById('estado-carrera');
       if (enMeta) {
         estado.classList.remove('previo');
-        estado.textContent = '🏁 En meta · tiempo final ' +
-          document.getElementById('m-time').textContent;
+        ponerTexto('estado-carrera', 'En meta · tiempo final ' +
+          document.getElementById('m-time').textContent);
         estado.classList.add('meta');
       } else {
         estado.classList.remove('meta');
@@ -1286,15 +1331,15 @@ function pollLive() {
         if (data.lat != null && !haArrancado) {
           // ya está compartiendo y se le ve en el mapa, pero aún no ha salido
           const quien = (CARRERA.corredor || {}).nombre;
-          estado.textContent = 'INICIO ' + hora + ' · ' + (quien ? quien + ' ya está' : 'Ya está') + ' en la salida';
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + ' · ' + (quien ? quien + ' ya está' : 'ya está') + ' en la salida');
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          estado.textContent = 'INICIO ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '');
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : ''));
           estado.classList.add('previo');
         } else {
           const pr = previsiones(doneKm, data.data_at);
-          estado.textContent = pr ? (pr.prox ? 'Próximo avituallamiento: ' + pr.prox.name + ' (km ' + num(pr.prox.km) + ') ~' + pr.horaProx + ' · ' : '') +
-            'Meta ~' + pr.horaMeta : '';
+          ponerTexto('estado-carrera', pr ? (pr.prox ? 'Próximo avituallamiento: ' + pr.prox.name + ' (km ' + num(pr.prox.km) + ') ~' + pr.horaProx + ' · ' : '') +
+            'Meta ~' + pr.horaMeta : '');
         }
       }
 
@@ -1305,13 +1350,17 @@ function pollLive() {
         const pr = haArrancado && !enMeta && hueco > 240000 && data.status_label === 'En carrera'
           ? previsiones(doneKm, data.data_at) : null;
         if (enMeta) pildora('En meta', 'meta');
-        else if (data.status_label !== 'En carrera') pildora('');
-        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de la salida', 'previo');
+        else if (data.status_label !== 'En carrera') {
+          // carrera preparada para hoy o más adelante: que se vea que va a haber directo
+          const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: CARRERA.zona_horaria });
+          pildora(CARRERA.fecha && CARRERA.fecha >= hoy ? 'Antes de salir' : '', 'previo');
+        }
+        else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de salir', 'previo');
         else if (hueco > 240000) pildora('Sin cobertura', 'sin');
         else pildora('En directo', 'vivo');
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
-          pie.textContent = '📡 Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
+          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
             ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
         } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
@@ -1373,12 +1422,15 @@ const fmtHM = s => Math.floor(s / 3600) + 'h ' + String(Math.floor(s % 3600 / 60
 function calcularKmsTraza() {
   if (kmsTraza || !resultado || !routeLatLon.length) return;
   let km = 0;
-  kmsTraza = resultado.traza.map(([la, lo]) => {
+  kmsTraza = (resultado.traza || []).map(([la, lo]) => {
     let mejor = Infinity, mk = km;
-    for (let j = 0; j < routeLatLon.length; j++) {
-      if (routeCumKm[j] < km - 0.5 || routeCumKm[j] > km + 8) continue;
-      const d = haversineKm([la, lo], routeLatLon[j]);
-      if (d < mejor) { mejor = d; mk = routeCumKm[j]; }
+    for (const tope of [8, Infinity]) {        // tras un hueco largo, sin tope por delante
+      for (let j = 0; j < routeLatLon.length; j++) {
+        if (routeCumKm[j] < km - 0.5 || routeCumKm[j] > km + tope) continue;
+        const d = haversineKm([la, lo], routeLatLon[j]);
+        if (d < mejor) { mejor = d; mk = routeCumKm[j]; }
+      }
+      if (mejor < 0.15) break;
     }
     if (mejor < 0.15) km = Math.max(km, mk);
     return Math.min(totalRouteKm, km * factorKm);
@@ -1392,7 +1444,7 @@ function cabeceraReal(r) {
     if (!b || real == null) return;
     b.textContent = real;
     b.dataset.real = '1';
-    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' (prev. ' + previsto + ')' : '');
+    b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' de ' + previsto : '');   // como «2h 00m de 5 h»
   };
   pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
   pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
@@ -1402,7 +1454,12 @@ function cabeceraReal(r) {
 function pintarResultado() {
   const r = resultado;
   ['speed', 'hr', 'grad', 'left'].forEach(n => verCasilla(n, false));
-  ['dist', 'time', 'speed-avg', 'hr-avg', 'cad'].forEach(n => verCasilla(n, true));
+  ['dist', 'time', 'speed-avg'].forEach(n => verCasilla(n, true));
+  // pulso y cadencia solo si el FIT los trae (si no, salían casillas con «—»)
+  verCasilla('hr-avg', r.pulso_medio != null);
+  verCasilla('cad', r.cadencia_media != null);
+  const barra = document.getElementById('progreso-barra');
+  if (barra) barra.style.width = '100%';
   document.querySelector('.metricas').classList.remove('sin-datos');
   ponerTexto('m-dist', num(r.distancia_km));
   ponerTexto('m-time', fmtHM(r.tiempo_oficial_s));
@@ -1417,7 +1474,7 @@ function pintarResultado() {
   const estado = document.getElementById('estado-carrera');
   estado.classList.remove('previo', 'meta');
   estado.textContent = '';
-  ponerTexto('aviso-titulo', '🏁 Terminada en ' + fmtHM(r.tiempo_oficial_s));
+  ponerTexto('aviso-titulo', 'Terminada en ' + fmtHM(r.tiempo_oficial_s));
   // corto a propósito: en el móvil pequeño partía en dos líneas (el "de 12 h"
   // ya sale en la cabecera)
   ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));
@@ -1433,13 +1490,13 @@ function pintarResultado() {
     idxRecorridoPintado = -1; pixelPerfilPintado = null;
     drawTraveledLine(totalRouteKm);
     drawElevationMarkers();
-    const fin = r.traza[r.traza.length - 1];
-    placeRiderMarker(fin[0], fin[1]);
+    const fin = (r.traza || [])[(r.traza || []).length - 1];
+    if (fin) placeRiderMarker(fin[0], fin[1]);
   }
   const lista = document.getElementById('pasos');
   if (!lista.children.length) {
     const salida = new Date(r.salida);
-    r.pasos.forEach((p, i) => {
+    (r.pasos || []).forEach((p, i) => {
       const li = document.createElement('li');
       const trans = (new Date(p.hora) - salida) / 1000;
       li.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="nombre"></span>' +
@@ -1448,7 +1505,8 @@ function pintarResultado() {
       lista.appendChild(li);
     });
   }
-  document.getElementById('resultado').hidden = false;
+  // sin parciales (FIT sin pasos) no se enseña un título con nada debajo
+  document.getElementById('resultado').hidden = !lista.children.length;
 }
 
 // Repetición: la carrera entera en 60 s, con la foto por la traza real
@@ -1456,6 +1514,7 @@ const DURACION_REPETICION = 60000;
 function repetirCarrera() {
   const boton = document.getElementById('btn-repeticion');
   if (repitiendo) { repitiendo = false; return; }
+  if (!resultado.traza || resultado.traza.length < 2) return;
   calcularKmsTraza();
   if (!kmsTraza) return;
   repitiendo = true;

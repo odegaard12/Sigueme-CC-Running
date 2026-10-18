@@ -105,7 +105,11 @@ def calcular(perfil, avitus=(), oficial=None, antes=0.3, cada=None):
     for i in range(len(e) - 2, -1, -1):
         restante[i] = restante[i + 1] + max(0.0, e[i + 1] - e[i])
     # el perfil suavizado da menos D+ que el oficial: se escala para que cuadre
-    escala = (oficial / restante[0]) if oficial and restante[0] else 1.0
+    # ⚠️ con tope: un perfil casi plano contra un D+ oficial grande daba
+    # «quedan +4000m»; si no cuadran ni de lejos, se usa el del perfil
+    escala = (oficial / restante[0]) if oficial and restante[0] >= 20 else 1.0
+    if not 0.5 <= escala <= 3:
+        escala = 1.0
     restante = [r * escala for r in restante]
     def dplus_desde(km):
         i = min(range(len(d)), key=lambda k: abs(d[k] - km))

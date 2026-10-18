@@ -4,6 +4,285 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.10 · 2026-10-19
+- **Enlace de seguimiento validado:** el servidor solo usa la vía de iGPSPORT
+  si el servidor del enlace es de verdad iGPSPORT (no si el texto lo
+  contiene), y cualquier otro enlace solo puede ser http(s) a una dirección
+  pública: ni `file://` ni direcciones de la red de casa.
+- **Un «NaN» en la respuesta de iGPSPORT (o desde el panel) ya no congela la
+  web:** se descarta en vez de escribirse en el live.json, que el navegador
+  no aceptaba.
+- **«Simular» sin ruta subida** deja un error claro («falta la ruta») en vez
+  de una carrera fantasma en marcha que bloqueaba el panel.
+- **Foto del corredor:** solo PNG de hasta 1024×1024 (el panel la recorta a
+  256); una imagen que declaraba un tamaño enorme obligaba a cada navegador a
+  descodificarla.
+- **Web:** sin cobertura cerca del final, la hora prevista de meta ya no se
+  queda en el pasado.
+- Pruebas nuevas para la foto, la simulación sin ruta y el NaN.
+
+## v1.13.9 · 2026-10-19
+- **Réplica entre las dos Pis (`despliegue/replicar.sh`):** si la IP flotante
+  cambiaba de Pi justo cuando empezaba una copia, la copia llegaba después y
+  machacaba los datos nuevos del titular (y con `--delete`, una carrera recién
+  archivada). Ahora la Pi de destino se niega si es ella la que tiene la IP.
+  Probado: sin la protección la copia entra; con ella, se rechaza.
+- Un corte de red a mitad de una copia ya no la deja colgada horas sin
+  avisar: `rsync --timeout=30`, ssh con `ServerAlive` y `TimeoutStartSec` en
+  el servicio.
+
+## v1.13.8 · 2026-10-18
+- **Idas y vueltas por el mismo camino:** si el GPS se perdía unos minutos
+  cerca del giro y volvía ya en la vuelta, la app se situaba en el mismo sitio
+  de la ida y el km iba hacia atrás el resto de la carrera, sin avisos de la
+  vuelta. Ahora busca primero hacia delante y solo retrocede (0,5 km) si no
+  encuentra nada. Con su prueba.
+- Entre 975 y 999 m la distancia salía «en 1000m»; ahora «en 1,0km».
+- **Reloj Amazfit:** con la cola llena (más de ~4 h sin móvil o sin red), los
+  puntos que llegaban mientras se enviaba un lote hacían borrar, al
+  confirmarse el envío, puntos que no se habían mandado (en el reloj y en el
+  lado del móvil). Ahora se quita exactamente lo enviado.
+
+## v1.13.7 · 2026-10-18
+- **Dependencias al día** (las PRs de Dependabot, probadas con el emulador y
+  la carrera de prueba): actions/checkout 7, actions/setup-java 6,
+  gradle/actions 6, actions/upload-artifact 7 y org.json 20260814 (solo para
+  las pruebas). El salto a Android Gradle Plugin 9 y Kotlin 2.4 queda aparte:
+  son cambios mayores y piden su propia prueba.
+- **CI también en las PRs:** pruebas y APK de depuración, para que las
+  próximas de Dependabot lleguen ya probadas.
+- La guía y el README al día con la app: busca sola Zepp, Mi Fitness o Zepp
+  Life, el aviso de prueba llega a los 5 s y el plan se pone al día solo.
+
+## v1.13.6 · 2026-10-18
+- **La app con el mismo criterio de diseño que la web:** el estado en frase
+  normal («Siguiendo», «Parado») y «Listo para salir» como título, no en
+  mayúsculas pequeñas espaciadas; las tarjetas y los botones sin borde fino
+  (se separan por tono); el km en grande (76 sp); «Parar seguimiento» como
+  botón relleno en rojo apagado en vez de una caja con borde; sin emojis y
+  nada de texto por debajo de 14 sp.
+- Banco de pruebas del emulador: cierra los avisos del propio sistema
+  («Pixel Launcher no responde») que a veces tapaban la app.
+
+## v1.13.5 · 2026-10-18
+- **Las pruebas, en el repo y en cada cambio:** `pruebas/` (lector de GPX,
+  panel y seguridad del servidor, ensayo de una carrera entera, carga con 60
+  espectadores y la web en un móvil lento) y un flujo de GitHub Actions que
+  las corre en cada cambio. Usan un GPX inventado, nunca una ruta real.
+- **Índice de carreras nuevo:** título grande y cada carrera con el dibujo de
+  su propio recorrido, su tiempo destacado y una entrada suave de las filas.
+- **Arreglado:** un `carrera.json` archivado que no fuera un objeto (`null`,
+  una lista, una fecha numérica) tumbaba el índice y también la portada
+  cuando no hay carrera en marcha. Con su prueba.
+- **Página de instalación:** en iPhone o en el PC el botón principal era un
+  enlace que solo entiende Chrome en Android; ahora allí explica que la app
+  es para Android y enseña el identificador para usarlo en Traccar Client.
+
+## v1.13.4 · 2026-10-18
+- **Panel revisado con el mismo inspector** (de 10 fallos a 0): los títulos
+  sin numeración («Datos de la carrera», no «1 · Datos…»; el orden ya lo da
+  la página), la píldora de estado en frase normal, las tarjetas y botones
+  sin borde fino (se separan por tono), el botón de elegir el GPX con la piel
+  del panel, sin halo degradado en el fondo y sin ✓/⚠ en los mensajes.
+- **Pantalla de resultado:** el titular «Terminada en…» bastante más grande
+  (es lo primero que se mira), la cabecera dice «21,1 km de 21,10» en vez de
+  «(prev. 21,10)» y, si el FIT no trae parciales, ya no sale el título «Paso
+  por los avituallamientos» con nada debajo.
+- App y panel hablan ya de Zepp o Mi Fitness (no solo Mi Fitness) y de la
+  pestaña Móvil.
+
+## v1.13.3 · 2026-10-17
+- **Revisión de diseño con un inspector en navegador real** (tasteskill): de
+  28 fallos a 0 en el código y de 6 a 3 en la página (los 3 que quedan son de
+  una web de presentación, no de una pantalla de seguimiento: fotos, vídeo y
+  tamaño de párrafo).
+- Fuera los adornos sin función: el halo verde del fondo, el degradado de la
+  barra de progreso, el desenfoque de las casillas, las rayas finas y los
+  bordes de 1 px (las superficies se separan por tono), la sombra del dorsal
+  y el resplandor de la foto del corredor.
+- Sin emojis en la interfaz: meta «M» y asistencia «T» en las chinchetas,
+  «pulso» en vez de ♥ y textos sin 🏁/📡.
+- **Más legible:** nada por debajo de 13 px (leyenda, datos de la ruta,
+  créditos), la pendiente aclarada (las bajadas, azul oscuro sobre negro, se
+  leían a 2,2:1) y los créditos a un ancho de lectura.
+- Se mantiene lo que flota sobre el mapa (sombras de chinchetas, botones y
+  el velo del perfil) y la escala de color de la pendiente, que es un dato.
+
+## v1.13.2 · 2026-10-17
+- **Diseño más limpio en la web:** las cifras se separan por tono de fondo y
+  no por bordes finos; las etiquetas y títulos van en frase normal, no en
+  mayúsculas pequeñas espaciadas; las cifras son más grandes y, en el PC, el
+  tiempo ocupa su propia fila (la columna de datos quedaba medio vacía). Antes
+  de la salida, la hora sale en grande: «Sale a las 10:00 · sábado 17/10».
+- **Servidor:** quien cierra la pestaña a mitad de una respuesta ya no deja
+  un error en el registro (tapaba los errores de verdad).
+- **Repositorio más seguro:** escaneo de secretos con bloqueo al subir,
+  alertas y arreglos automáticos de Dependabot (también para las Actions y
+  Gradle), la rama principal sin «force push» ni borrado, las Actions con
+  permisos de solo lectura salvo el paso que publica la APK, y `SECURITY.md`
+  con cómo avisar de un fallo en privado.
+
+## v1.13.1 · 2026-10-17
+- **Banco de pruebas con el servidor real:** en cada cambio de la app, el
+  emulador corre una carrera de 3 km contra el servidor de verdad: baja el plan
+  solo al abrirse, EMPEZAR pone en marcha la web, la mitad del recorrido va en
+  modo avión y, al volver la red, la cola se vacía, la web da la meta y sale el
+  aviso del avituallamiento (`android/prueba/carrera.sh`). La versión de
+  pruebas habla por http con el servidor del banco; la APK publicada no.
+- **App sin cobertura:** la cola de posiciones se lee una vez y se limpia de
+  golpe (antes, tras horas sin red, se reescribía entera por cada lote y podía
+  congelar la pantalla); sin red, la espera entre intentos crece de 20 s a
+  5 min (batería y radio) y, en cuanto Android avisa de que vuelve la
+  cobertura, la cola sale al momento.
+- **Servidor con muchos espectadores:** con una simulación de ~1000 personas
+  mirando a la vez rechazaba conexiones (solo admitía 5 en espera); ahora 128
+  y ningún error.
+
+## v1.13.0 · 2026-10-17
+- **La web carga antes:** la librería del mapa (800 KB) ya no frena el resto.
+  Medido en un móvil lento con 4G floja, la primera visita enseña los datos a
+  los 2,7 s en vez de a los 9 s; el mapa llega detrás. Si la librería no
+  carga (sin red), sale el aviso de mapa roto en vez de un recuadro negro.
+- **La app busca la app de la pulsera:** reconoce Zepp (Amazfit), Mi Fitness y
+  Zepp Life (Xiaomi) y Gadgetbridge, comprueba que tenga «Acceso a
+  notificaciones» y dice qué activar y dónde («Listo para salir» → Arreglar).
+  Sin ninguna, ofrece instalar Zepp o Mi Fitness.
+- **Aviso de prueba más realista:** llega a los 5 s, para dar tiempo a
+  bloquear el móvil (muchas apps solo pasan avisos con la pantalla apagada), y
+  ofrece abrir la app de la pulsera.
+- **Sin cobertura en la salida:** el plan se pone al día solo cada vez que se
+  abre la app con red, y la lista dice cuándo se guardó. Volver a abrir la app
+  a mitad de carrera ya no pone el km a 0.
+- La app ya no relee y analiza el plan entero cada 2 s (pantalla más ligera).
+- Página de instalación: el botón baja el APK directamente y explica lo de la
+  pulsera y el iPhone (Traccar).
+
+## v1.12.7 · 2026-10-17
+- **Desnivel inflado por el ruido del GPS:** con un punto cada pocos metros, el
+  ruido de la elevación se contaba como subida (300 m reales salían 450 con
+  1 m de ruido, y más de 2000 con 2 m). Ahora se suaviza ±50 m antes de contar.
+- Un GPX con la elevación escrita con coma («12,5») o vacía ya no pierde los
+  puntos: solo se pierde esa elevación. Antes se rechazaba el fichero entero.
+- Un GPX en UTF-16 sin marca de orden de bytes ya no se cuela por el filtro de
+  declaraciones DOCTYPE/ENTITY.
+
+## v1.12.6 · 2026-10-17
+- **Archivar ya no puede dejar un archivo a medias:** se llena en una carpeta
+  oculta y se mueve de golpe. Antes, un fallo a mitad (tarjeta llena) dejaba
+  una carpeta coja que bloqueaba los reintentos con «ya hay una carrera
+  archivada», y dos toques a la vez daban un error 500.
+- `generar_resultado.py` desde la consola escribe el resultado entero o nada:
+  quien abría la web en ese momento podía leer un JSON cortado.
+
+## v1.12.5 · 2026-10-17
+- **Empezar con un enlace de LiveTrack arrastraba la carrera anterior:** los km y
+  el pulso medio de una prueba en casa (o de la última carrera) se sumaban a los
+  de la nueva, y tras «Finalizar» sin hora de salida el crono contaba desde días
+  atrás. Ahora una carrera nueva empieza de cero también por esa vía.
+- **Panel:** se pueden guardar los datos de la carrera sin hora de salida (antes
+  fallaba todo el formulario); «Generar identificador nuevo» y «Archivar»
+  avisan si no hay conexión o el servidor falla, en vez de quedarse callados;
+  los botones se bloquean mientras se guarda, para que dos toques no suban la
+  ruta ni archiven dos veces.
+
+## v1.12.4 · 2026-10-16
+- **Meta falsa con un lote repetido:** si la app reenviaba un lote que ya había
+  llegado (se perdió la respuesta) y traía los puntos de la salida, junto a la
+  meta, la carrera se daba por terminada con tiempo 0. Ahora solo cuentan los
+  puntos nuevos. Lo destapó una medición de la web en un móvil simulado.
+- **App, carreras largas:** un plan a medio escribir ya no deja la app sin
+  avisos toda la carrera (se escribe entero o nada y, si falla, se queda el
+  anterior); ante «identificador no válido» o «demasiados intentos» deja de
+  insistir en vez de alargar el bloqueo; en meta avisa y se para sola a los
+  15 min; avisa si se apaga el GPS o falta el permiso; los envíos no se
+  amontonan con mala cobertura y la cola se reescribe sin riesgo; avisa antes
+  de empezar si las notificaciones están apagadas; no se cierra si una
+  respuesta llega con la pantalla cerrada; consejo para Samsung («Apps que
+  nunca se suspenden»); hora de salida «9:00» aceptada.
+- **Web, carreras largas:** el directo ya no se puede quedar congelado si una
+  respuesta se corta a medias; un dato vacío pasajero no borra lo pintado; el
+  aviso de «no se pudo cargar el mapa» vuelve a salir y el mapa recupera sus
+  reintentos tras un rato funcionando; los lectores de pantalla no repiten el
+  estado cada 5 s; el resultado sin traza o sin pasos no rompe la vista; la
+  repetición no se clava tras un hueco largo; el perfil no se repinta al mover
+  la barra del navegador; en meta sin hora del servidor el tiempo final no
+  sigue creciendo; píldora «Antes de salir» con la carrera preparada.
+- Sin errores en la consola del navegador (antes, un 404 de resultado.json en
+  cada visita).
+
+## v1.12.3 · 2026-10-16
+- **Llegada a meta más fiable:** tras un corte de cobertura, la cola trae el
+  paso por meta y lo de después; ahora se mira punto a punto y vale la hora del
+  paso real. Nunca hay «llegada» antes de la salida oficial (con EMPEZAR antes
+  de la hora y la salida junto a la meta, llegar a la salida contaba como meta).
+  El punto de meta se vuelve a leer si cambia la ruta (antes quedaba el de la
+  carrera anterior hasta reiniciar).
+- **Seguridad:** las claves falsas sin cabecera Origin no sumaban al bloqueo
+  por fuerza bruta; ahora sí.
+- **Portada:** con una carrera preparada para hoy o más adelante, la portada es
+  esa carrera (antes llevaba al último resultado hasta pulsar EMPEZAR).
+- La vista previa al compartir (WhatsApp) sale con el dominio de cada uno.
+- El servidor arranca sin `curl_cffi` (solo lo necesita iGPSPORT) y crea el
+  identificador de los móviles al primer arranque.
+- Miniapp de Amazfit: sin dirección por defecto (cada uno pone la de su web) y
+  sin perder puntos pendientes al cerrar Zepp.
+- Más robusto: el lector de iGPSPORT no escribe después de pararlo ni arranca
+  dos veces; «Simular» no machaca una carrera en marcha; sin ruta no se
+  publica la posición si hay zona privada; nombres con «\» o tiempos vacíos ya
+  no rompen el archivo; entradas raras (horas NaN, cookies absurdas) no dan error.
+- Documentación al día: requisitos, cómo crear y cambiar el identificador,
+  nombres de botones, la app como opción principal, despliegue paso a paso.
+
+## v1.12.2 · 2026-10-16
+- **Avisos legibles en la pulsera** (Xiaomi Band con Mi Fitness, relojes
+  Amazfit con Zepp): el título dice lo importante («Subida larga en 300 m»,
+  «Avituallamiento en 200 m», «Cima», «Km 12») en vez de repetir «Sígueme CC»;
+  el cuerpo lleva los números con espacio («1,2 km · 7 % · +84 m») y lo de
+  «rampa» o «quedan +X m» en su propia línea. La distancia a la subida se
+  calcula al avisar, como la del avituallamiento.
+- La app enseña el último aviso con el mismo formato, y el km como «1,5 de 5,0 km».
+- Historial del repositorio limpio de datos de la carrera real (ruta,
+  avituallamientos y capturas viejas), sin cambiar el código.
+
+## v1.12.1 · 2026-10-16
+- **Ejemplo sin datos reales:** la ruta, el perfil y los avituallamientos de
+  ejemplo son ahora un bucle inventado de 21 km; el código ya no nombra ningún
+  sitio (el popup de salida usa el lugar de cada carrera) ni centra el mapa en
+  una zona concreta.
+- Salida y meta: dos banderas si no son el mismo sitio.
+- Servidor: un GPX sin altura deja el plan de avisos vacío (antes quedaba el
+  de la carrera anterior y la app lo bajaba) y quita el D+ viejo; carrera.json
+  con BOM se lee bien y uno roto ya no se sobrescribe; guardados simultáneos
+  sin pisarse; la fecha se guarda siempre como AAAA-MM-DD; la hora oficial, en
+  la zona de la carrera; EMPEZAR repetido pasada la medianoche no reinicia la
+  carrera; /api/plan con su propio contador de fallos; el marcado de taller y
+  los textos de avisos cambiados a mano se conservan al guardar.
+- Resultado: FIT con datos raros no da error mudo, y los largos se procesan
+  mucho más rápido.
+- Web: la línea recorrida sale aunque no llegue un dato nuevo; sin
+  avituallamientos el mapa encuadra la ruta; las métricas ya no tapan la
+  pantalla mientras cargan; cabecera sin cortes en móviles estrechos.
+- Panel: el sondeo se para al caducar la sesión.
+- App: volver a pulsar EMPEZAR a mitad de carrera sigue donde iba (antes, desde
+  el km 40, dejaba de dar avisos); una línea rota en la cola ya no la tumba;
+  girar el móvil no la cierra; un identificador viejo no se reintenta sin fin;
+  PARAR no pone después la carrera en marcha; avisa si Android la detiene.
+
+## v1.12.0 · 2026-10-16
+- **Resultado desde el panel:** se sube el FIT (pestaña «Más») y la web pasa a
+  modo resultado; si el FIT no vale (no llega a meta, es de otra carrera), dice
+  por qué. Ya no hace falta la consola en ningún paso.
+- **Ficha del corredor nueva:** foto, dorsal como un dorsal de carrera, club y
+  categoría, y la carrera en casillas (modalidad, distancia, desnivel, salida,
+  límite).
+- **Foto del corredor desde el panel:** se recorta y se reduce en el navegador
+  (sin datos EXIF) y la web la refresca sola.
+- **Panel coherente:** la hora de salida está en un solo sitio (los datos de la
+  carrera); en «Hoy» sale primero lo que toca (empezar, o el estado en carrera);
+  Traccar y Amazfit quedan plegados como alternativa a la app.
+- Modo resultado sin casillas vacías de pulso o cadencia, y la barra llena.
+- Capturas nuevas en el README (móvil, PC y panel).
+
 ## v1.11.0 · 2026-10-16
 - **Todo desde la app:** EMPEZAR pone también la carrera en marcha en la web
   (sin abrir el panel) y baja el plan al día. Sin cobertura en ese momento, lo

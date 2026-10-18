@@ -3,9 +3,8 @@
 // móvil y se suben todos al volver, igual que hace Traccar.
 import { BaseSideService } from '@zeppos/zml/base-side'
 
-const MAX_PENDIENTES = 3000
+const MAX_PENDIENTES = 1500      // lo mismo que se guarda: más, se perdían al cerrar Zepp
 const POR_SUBIDA = 150
-const URL_DEFECTO = 'https://odegaard12.online/api/gps'
 let pendientes = []
 let subiendo = false
 
@@ -37,12 +36,11 @@ AppSideService(BaseSideService({
 
   async subir() {
     if (subiendo || !pendientes.length) return
-    // ⚠️ Ajustes enseña esta dirección de entrada pero, si no se toca, no se
-    // guarda: sin esto el móvil nunca subía nada ("falta la dirección")
-    const url = (this.settings.getItem('url') || URL_DEFECTO).trim()
+    // sin dirección por defecto: cada uno pone la de SU web (antes iba a la del autor)
+    const url = (this.settings.getItem('url') || '').trim()
     const id = (this.settings.getItem('id') || '').trim()
     if (!url || !id) {
-      this.settings.setItem('ultimo_error', 'Falta la dirección o el identificador en Ajustes')
+      this.settings.setItem('ultimo_error', 'Falta la dirección de tu web o el identificador en Ajustes')
       return
     }
     subiendo = true
@@ -55,6 +53,9 @@ AppSideService(BaseSideService({
         extras: { hr: p.hr, origen: 'amazfit' },
       })),
     }
+    // fuera LO ENVIADO, no los primeros: si el reloj manda puntos durante el envío
+    // con la cola llena, el recorte del principio hacía borrar puntos sin mandar
+    const sinLote = (lista, l) => { const fuera = new Set(l); return lista.filter(q => !fuera.has(q)) }
     try {
       const r = await this.fetch({
         url, method: 'POST',
@@ -62,14 +63,14 @@ AppSideService(BaseSideService({
         body: JSON.stringify(cuerpo),
       })
       if (r && r.status >= 200 && r.status < 300) {
-        pendientes = pendientes.slice(lote.length)
+        pendientes = sinLote(pendientes, lote)
         this.guardar()
         this.settings.setItem('ultimo_envio', new Date().toISOString())
         this.settings.setItem('ultimo_error', '')
       } else if (r && (r.status === 400 || r.status === 413 || r.status === 422)) {
         // el servidor no acepta ESE lote (no se arregla reintentando): fuera,
         // o taparía para siempre todos los puntos de detrás
-        pendientes = pendientes.slice(lote.length)
+        pendientes = sinLote(pendientes, lote)
         this.guardar()
         this.settings.setItem('ultimo_error', 'El servidor rechazó ' + lote.length + ' puntos (' + r.status + ')')
       } else {

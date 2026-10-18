@@ -43,6 +43,27 @@ class MainActivity : Activity() {
     private val ambarC = Color.rgb(243, 201, 105)
 
     private val prefs by lazy { Seguimiento.prefs(this) }
+    private var sinAvisosOk = false
+    private var planCache: Pair<Long, Plan?> = -1L to null
+    private fun plan(): Plan? {
+        val t = File(filesDir, "plan.json").lastModified()
+        if (t != planCache.first) planCache = t to Seguimiento.cargarPlan(this)
+        return planCache.second
+    }
+
+    /** Apps que pasan las notificaciones a la pulsera: paquete, nombre y dónde se activa Sígueme CC. */
+    private val pulseras = listOf(
+        Triple("com.huami.watch.hmwatchmanager", "Zepp", "Perfil → tu reloj → Alertas de apps → activa Sígueme CC"),
+        Triple("com.xiaomi.wearable", "Mi Fitness", "Dispositivo → Notificaciones de apps → activa Sígueme CC"),
+        Triple("com.mi.health", "Mi Fitness", "Dispositivo → Notificaciones de apps → activa Sígueme CC"),
+        Triple("com.xiaomi.hm.health", "Zepp Life", "Perfil → tu pulsera → Alertas de apps → activa Sígueme CC"),
+        Triple("nodomain.freeyourgadget.gadgetbridge", "Gadgetbridge", "Ajustes → Notificaciones → deja pasar Sígueme CC"))
+    private fun instalada(p: String) = try { packageManager.getPackageInfo(p, 0); true } catch (e: PackageManager.NameNotFoundException) { false }
+    /** ¿Tiene esa app «Acceso a notificaciones»? null si Android no deja saberlo. */
+    private fun leeNotificaciones(p: String): Boolean? =
+        Settings.Secure.getString(contentResolver, "enabled_notification_listeners")?.contains("$p/")
+    /** La app de la pulsera instalada; si hay varias, la que ya lee las notificaciones. */
+    private fun pulsera() = pulseras.filter { instalada(it.first) }.let { l -> l.firstOrNull { leeNotificaciones(it.first) == true } ?: l.firstOrNull() }
     private val reloj = Handler(Looper.getMainLooper())
     private val repintar = object : Runnable { override fun run() { pintar(); reloj.postDelayed(this, 2000) } }
 
@@ -76,11 +97,11 @@ class MainActivity : Activity() {
         // tarjeta de estado
         val estado = tarjeta()
         pastilla = TextView(this).apply {
-            textSize = 12f; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f
+            textSize = 14f; typeface = Typeface.DEFAULT_BOLD
             setPadding(10.px(), 4.px(), 10.px(), 4.px())
         }
         estado.addView(pastilla, LinearLayout.LayoutParams(-2, -2))
-        kmTxt = texto(56f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; setPadding(0, 8.px(), 0, 0) }
+        kmTxt = texto(76f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; letterSpacing = -0.03f; includeFontPadding = false; setPadding(0, 14.px(), 0, 2.px()) }
         estado.addView(kmTxt)
         deTxt = texto(14f, apagadoC)
         estado.addView(deTxt)
@@ -92,7 +113,7 @@ class MainActivity : Activity() {
         estado.addView(barra, LinearLayout.LayoutParams(-1, 10.px()).apply { topMargin = 12.px(); bottomMargin = 12.px() })
         avisoTxt = texto(16f, textoC)
         estado.addView(avisoTxt)
-        redTxt = texto(13f, apagadoC)
+        redTxt = texto(14f, apagadoC)
         estado.addView(redTxt, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 6.px() })
         caja.addView(estado)
 
@@ -111,15 +132,17 @@ class MainActivity : Activity() {
 
         // lista de comprobación
         val prep = tarjeta()
-        prep.addView(texto(12f, apagadoC).apply { text = "LISTO PARA SALIR"; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f })
+        prep.addView(texto(20f, textoC).apply { text = "Listo para salir"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 4.px()) })
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         prep.addView(lista)
         caja.addView(prep)
 
-        caja.addView(texto(13f, apagadoC).apply {
+        caja.addView(texto(14f, apagadoC).apply {
             setPadding(4.px(), 18.px(), 4.px(), 0)
             text = "Con la pantalla apagada y sin cobertura, la app sigue tu km con el GPS, lanza los avisos " +
-                "(Mi Fitness los pasa a la pulsera) y guarda tu posición hasta que vuelve la cobertura."
+                "(Zepp o Mi Fitness los pasan a la pulsera) y guarda tu posición hasta que vuelve la cobertura.\n\n" +
+                "En Samsung, para que no la duerma: Ajustes → Batería → Límites de uso en segundo plano → " +
+                "«Apps que nunca se suspenden» → añade Sígueme CC."
         })
         caja.addView(texto(14f, verdeC).apply {
             text = "Configurar a mano"; typeface = Typeface.DEFAULT_BOLD
@@ -131,7 +154,24 @@ class MainActivity : Activity() {
     }
 
     override fun onNewIntent(i: Intent) { super.onNewIntent(i); leerEnlace(i) }
-    override fun onResume() { super.onResume(); reloj.post(repintar) }
+    override fun onResume() {
+        super.onResume(); reloj.post(repintar)
+        // el plan al día cada vez que se abre con cobertura: así en la salida,
+        // sin cobertura, va el último (sin diálogos si no hay red)
+        val f = File(filesDir, "plan.json")
+        if (!Seguimiento.corriendo && prefs.getString("url", null) != null &&
+            System.currentTimeMillis() - f.lastModified() > 30 * 60_000L) bajarPlan(callado = true)
+    }
+
+    private fun hace(t: Long): String {
+        val min = (System.currentTimeMillis() - t) / 60_000
+        return when {
+            min < 2 -> "ahora"
+            min < 60 -> "hace $min min"
+            min < 48 * 60 -> "hace ${min / 60} h"
+            else -> "hace ${min / 1440} días"
+        }
+    }
     override fun onPause() { reloj.removeCallbacks(repintar); super.onPause() }
 
     // ---------- piezas ----------
@@ -140,13 +180,13 @@ class MainActivity : Activity() {
     }
     private fun texto(tam: Float, color: Int) = TextView(this).apply { textSize = tam; setTextColor(color) }
     private fun tarjeta() = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 16, bordeC)
+        orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 18)
         setPadding(18.px(), 16.px(), 18.px(), 18.px())
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = 16.px() }
     }
     private fun botonSec(txt: String, accion: () -> Unit) = TextView(this).apply {
         text = txt; gravity = Gravity.CENTER; textSize = 15f; setTextColor(textoC); typeface = Typeface.DEFAULT_BOLD
-        background = fondo(tarjetaC, 14, bordeC); isClickable = true; setOnClickListener { accion() }
+        background = fondo(tarjetaC, 16); isClickable = true; setOnClickListener { accion() }
     }
 
     private fun filaLista(ok: Boolean, txt: String, arreglo: () -> Unit) = LinearLayout(this).apply {
@@ -157,19 +197,19 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(22.px(), 22.px()).apply { rightMargin = 12.px() })
         addView(texto(15f, if (ok) textoC else ambarC).apply { text = txt }, LinearLayout.LayoutParams(0, -2, 1f))
         if (!ok) {
-            addView(texto(13f, verdeC).apply { text = "Arreglar ›"; typeface = Typeface.DEFAULT_BOLD })
+            addView(texto(14f, verdeC).apply { text = "Arreglar ›"; typeface = Typeface.DEFAULT_BOLD })
             isClickable = true; setOnClickListener { arreglo() }
         }
     }
 
     // ---------- estado ----------
     private fun pintar() {
-        val plan = Seguimiento.cargarPlan(this)
+        val plan = plan()
         val url = prefs.getString("url", null)
         val activo = Seguimiento.corriendo
         carreraTxt.text = plan?.nombre ?: "Sin carrera: escanea el código del panel"
 
-        pastilla.text = if (activo) "● SIGUIENDO" else "PARADO"
+        pastilla.text = if (activo) "Siguiendo" else "Parado"
         pastilla.setTextColor(if (activo) fondoC else apagadoC)
         pastilla.background = fondo(if (activo) verdeC else bordeC, 20)
 
@@ -178,15 +218,15 @@ class MainActivity : Activity() {
         deTxt.text = when {
             plan == null -> "km"
             // el estado solo si dice algo que no sea el km (fuera de la ruta, sin GPS)
-            activo -> "de ${Plan.kmTxt(plan.distancia)}" + (prefs.getString("estado_km", null)
+            activo -> String.format(Locale("es", "ES"), "de %.1f km", plan.distancia) + (prefs.getString("estado_km", null)
                 ?.takeUnless { it.startsWith("Km ") }?.let { " · $it" } ?: if (prefs.contains("estado_km")) "" else " · buscando GPS…")
-            else -> "de ${Plan.kmTxt(plan.distancia)}"
+            else -> String.format(Locale("es", "ES"), "de %.1f km", plan.distancia)
         }
         barra.progress = if (plan != null && plan.distancia > 0) (km / plan.distancia * 1000).toInt() else 0
 
         val ultimo = prefs.getString("ultimo_aviso", null)
         avisoTxt.text = when {
-            activo && ultimo != null -> "Último aviso: $ultimo"
+            activo && ultimo != null -> Plan.notificacion(ultimo).let { (t, c) -> "Último aviso: $t" + (if (c.isEmpty()) "" else " · " + c.replace('\n', ' ')) }
             activo -> "Esperando el primer aviso…"
             plan != null -> "${plan.avisos.size} avisos guardados en el móvil"
             else -> "Sin avisos"
@@ -196,7 +236,7 @@ class MainActivity : Activity() {
         redTxt.text = listOfNotNull(
             when {
                 cola > 0 && url == null -> "$cola posiciones guardadas (falta configurar el servidor)"
-                cola > 0 -> "📡 $cola posiciones esperando cobertura"
+                cola > 0 -> "$cola posiciones esperando cobertura"
                 activo -> "Posición al día en la web"
                 else -> null
             },
@@ -207,9 +247,10 @@ class MainActivity : Activity() {
             else -> prefs.getString("web_estado", null)?.takeIf { it.isNotBlank() }?.let { "\nWeb: $it" } ?: ""
         }
 
-        botonGrande.text = if (activo) "PARAR SEGUIMIENTO" else "EMPEZAR SEGUIMIENTO"
+        botonGrande.text = if (activo) "Parar seguimiento" else "Empezar seguimiento"
         botonGrande.setTextColor(if (activo) rojoC else fondoC)
-        botonGrande.background = if (activo) fondo(tarjetaC, 16, rojoC) else fondo(verdeC, 16)
+        // parar, relleno en rojo apagado (antes una caja con borde fino); empezar, el verde de la web
+        botonGrande.background = if (activo) fondo(Color.rgb(58, 30, 27), 18) else fondo(verdeC, 18)
 
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -218,10 +259,18 @@ class MainActivity : Activity() {
         lista.removeAllViews()
         lista.addView(filaLista(url != null, if (url != null) "Servidor: ${Uri.parse(url).host}" else "Escanea el código del panel") { aMano() })
         lista.addView(filaLista(plan != null && plan.avisos.isNotEmpty(),
-            if (plan != null) "Plan: ${plan.avisos.size} avisos, ${plan.subidas.size} " + (if (plan.subidas.size == 1) "subida" else "subidas") else "Falta bajar el plan") { bajarPlan() })
+            if (plan != null) "Plan: ${plan.avisos.size} avisos, ${plan.subidas.size} " + (if (plan.subidas.size == 1) "subida" else "subidas") +
+                " · guardado " + hace(File(filesDir, "plan.json").lastModified()) else "Falta bajar el plan") { bajarPlan() })
         lista.addView(filaLista(tiene(Manifest.permission.ACCESS_FINE_LOCATION), "Ubicación precisa") { ajustesApp() })
         lista.addView(filaLista(avisosOn, if (avisosOn) "Notificaciones de avisos" else "Notificaciones apagadas") { ajustesAvisos() })
         lista.addView(filaLista(pm.isIgnoringBatteryOptimizations(packageName), "Sin ahorro de batería") { sinAhorro() })
+        val pb = pulsera()
+        val lee = pb?.let { leeNotificaciones(it.first) }
+        lista.addView(filaLista(pb != null && lee != false, when {
+            pb == null -> "Falta la app de la pulsera (Zepp o Mi Fitness)"
+            lee == false -> "${pb.second} no puede leer las notificaciones"
+            else -> "App de la pulsera: ${pb.second}"
+        }) { arreglarPulsera(pb) })
         lista.addView(filaLista(prefs.getLong("prueba_t", 0) > 0, "Aviso de prueba en la pulsera") { probarAviso() })
     }
 
@@ -248,27 +297,34 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("¿Usar este servidor?")
             .setMessage("Tu posición se mandará a:\n\n$host")
             .setPositiveButton("Sí") { _, _ ->
-                prefs.edit().putString("url", u).putString("id", id).apply()
+                prefs.edit().putString("url", u).putString("id", id).remove("bloqueado_hasta").apply()
                 bajarPlan()
             }.setNegativeButton("No", null).show()
     }
 
-    private fun bajarPlan() {
+    private var bajando = false
+    private var verResultado = false      // alguien pulsó: enseñar el resultado aunque ya fuera bajando callado
+    private fun bajarPlan(callado: Boolean = false) {
         val url = prefs.getString("url", null)
         val id = prefs.getString("id", null)
         if (url == null || id == null) {
-            dialogo("Escanea antes el código QR del panel (5 · App del móvil)")
+            if (!callado) dialogo("Escanea antes el código QR del panel (pestaña Móvil)")
             return
         }
-        avisoTxt.text = "Bajando el plan…"
+        if (!callado) { verResultado = true; avisoTxt.text = "Bajando el plan…" }
+        if (bajando) return
+        bajando = true
         thread {
             val msg = try {
                 val (codigo, txt) = Seguimiento.post("$url/api/plan", JSONObject().put("device_id", id).toString())
                 when (codigo) {
                     200 -> {
                         val plan = Plan(txt)                      // si no se entiende, no se guarda
-                        File(filesDir, "plan.json").writeText(txt)
-                        if (!Seguimiento.corriendo) prefs.edit().putFloat("km", 0f).putInt("aviso", 0).apply()
+                        Seguimiento.escribirSeguro(File(filesDir, "plan.json"), txt)
+                        // a mitad de carrera (Android cerró la app y se vuelve a abrir) NO se
+                        // pone el km a 0: sin ruta desde ahí no habría más avisos
+                        if (!Seguimiento.corriendo && System.currentTimeMillis() - prefs.getLong("km_t", 0) > 6 * 3600_000L)
+                            prefs.edit().putFloat("km", 0f).putInt("aviso", 0).apply()
                         "Plan listo: ${plan.nombre}\n${plan.avisos.size} avisos guardados. Ya puedes ir sin cobertura."
                     }
                     403 -> "El servidor no reconoce el identificador: vuelve a escanear el código del panel."
@@ -276,23 +332,64 @@ class MainActivity : Activity() {
                     else -> "El servidor contestó $codigo"
                 }
             } catch (e: Exception) { "Sin conexión con el servidor. Prueba otra vez con cobertura." }
-            runOnUiThread { pintar(); dialogo(msg) }
+            runOnUiThread {
+                bajando = false
+                val ver = verResultado; verResultado = false
+                if (!isFinishing && !isDestroyed) { pintar(); if (ver) dialogo(msg) }
+            }
         }
     }
 
     private fun probarAviso() {
-        Seguimiento.avisar(this, "Prueba de Sígueme CC · si lo ves en la pulsera, los avisos funcionan")
+        // 5 s para apagar la pantalla: Zepp y Mi Fitness suelen pasar los avisos
+        // solo con el móvil bloqueado, como irá en carrera
+        reloj.postDelayed({ Seguimiento.avisar(this, "Prueba de Sígueme CC · si lo ves en la pulsera · los avisos funcionan") }, 5000)
         prefs.edit().putLong("prueba_t", System.currentTimeMillis()).apply()
         pintar()
-        dialogo("Aviso enviado: tiene que vibrar el móvil y salir en la pulsera.\n\nSi no sale en la pulsera: en Mi Fitness → " +
-            "notificaciones de apps, activa Sígueme CC, y prueba con una actividad en marcha en la pulsera.")
+        val pb = pulsera()
+        val donde = pb?.let { "Si no sale: en ${it.second} → ${it.third}." }
+            ?: "Si no sale: instala la app de la pulsera (Zepp para Amazfit, Mi Fitness para Xiaomi) y enlázala."
+        if (isFinishing || isDestroyed) return
+        val d = AlertDialog.Builder(this)
+            .setMessage("El aviso llega en 5 segundos: bloquea el móvil y mira la pulsera.\n\n$donde")
+            .setPositiveButton("Vale", null)
+        pb?.let { p -> packageManager.getLaunchIntentForPackage(p.first)?.let { li -> d.setNeutralButton("Abrir ${p.second}") { _, _ -> abrir(li) } } }
+        d.show()
+    }
+
+    private fun arreglarPulsera(pb: Triple<String, String, String>?) {
+        if (isFinishing || isDestroyed) return
+        if (pb == null) {
+            AlertDialog.Builder(this).setMessage("Los avisos llegan a la pulsera a través de su app:\n\n• Amazfit → Zepp\n• Xiaomi Smart Band → Mi Fitness\n\nInstálala y enlaza la pulsera.")
+                .setPositiveButton("Zepp") { _, _ -> tienda("com.huami.watch.hmwatchmanager") }
+                .setNeutralButton("Mi Fitness") { _, _ -> tienda("com.xiaomi.wearable") }
+                .setNegativeButton("Cerrar", null).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setMessage("${pb.second} necesita «Acceso a notificaciones» para pasarlas a la pulsera: actívalo en la lista que se abre.\n\nDespués, en ${pb.second} → ${pb.third}.")
+            .setPositiveButton("Abrir") { _, _ -> abrir(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+            .setNegativeButton("Cerrar", null).show()
+    }
+
+    private fun tienda(p: String) {
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$p"))) }
+        catch (e: Exception) { abrir(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$p"))) }
+    }
+
+    private fun abrir(i: Intent) {
+        try { startActivity(i) } catch (e: Exception) { dialogo("No se pudo abrir") }
     }
 
     private fun carrera() {
         val servicio = Intent(this, Seguimiento::class.java)
         if (Seguimiento.corriendo) {
             AlertDialog.Builder(this).setMessage("¿Parar el seguimiento?\n\nLa web deja de recibir tu posición.")
-                .setPositiveButton("Parar") { _, _ -> stopService(servicio); reloj.postDelayed({ pintar() }, 300) }
+                .setPositiveButton("Parar") { _, _ ->
+                    stopService(servicio)
+                    prefs.edit().remove("km_t").apply()      // la próxima vez, carrera nueva desde el km 0
+                    reloj.postDelayed({ pintar() }, 300)
+                }
                 .setNegativeButton("Seguir", null).show()
             return
         }
@@ -301,7 +398,17 @@ class MainActivity : Activity() {
             dialogo("Hace falta la ubicación precisa")
             return
         }
-        if (Seguimiento.cargarPlan(this) == null) {
+        // sin notificaciones no llega nada a la pulsera: mejor saberlo en casa
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val avisosOn = nm.areNotificationsEnabled() &&
+            (nm.getNotificationChannel(Seguimiento.CANAL_AVISOS)?.importance ?: 0) >= NotificationManager.IMPORTANCE_DEFAULT
+        if (!avisosOn && !sinAvisosOk) {
+            AlertDialog.Builder(this).setMessage("Las notificaciones de avisos están apagadas: no llegará ningún aviso a la pulsera.")
+                .setPositiveButton("Arreglar") { _, _ -> ajustesAvisos() }
+                .setNegativeButton("Empezar igual") { _, _ -> sinAvisosOk = true; carrera() }.show()
+            return
+        }
+        if (plan() == null) {
             AlertDialog.Builder(this).setMessage("No hay plan de avisos: solo se mandará la posición. ¿Empezar igual?")
                 .setPositiveButton("Empezar") { _, _ -> arrancar(servicio) }.setNegativeButton("No", null).show()
             return
@@ -310,9 +417,14 @@ class MainActivity : Activity() {
     }
 
     private fun arrancar(servicio: Intent) {
-        // carrera nueva: desde el km 0 y sin avisos dados
-        prefs.edit().putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km")
-            .putBoolean("empezar_pendiente", true).remove("web_estado").apply()
+        // ⚠️ Si se vuelve a pulsar EMPEZAR a mitad de carrera (se paró sin querer o
+        // Android cerró la app) se sigue donde iba: con el km a 0, desde el km 40
+        // la app no encontraba la ruta y no daba más avisos. Carrera nueva si hace
+        // más de 6 h del último km.
+        val retomar = System.currentTimeMillis() - prefs.getLong("km_t", 0) < 6 * 3600_000L
+        val e = prefs.edit().putBoolean("empezar_pendiente", true).remove("web_estado")
+        if (!retomar) e.putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km").remove("meta_t")
+        e.apply()
         startForegroundService(servicio)
         reloj.postDelayed({ pintar() }, 500)
         // la carrera también en la web, sin abrir el panel (y el plan al día)
@@ -359,6 +471,8 @@ class MainActivity : Activity() {
     }
 
     private fun dialogo(t: String) {
+        // la respuesta del servidor puede llegar con la pantalla ya cerrada: sin esto, la app se caía
+        if (isFinishing || isDestroyed) return
         AlertDialog.Builder(this).setMessage(t).setPositiveButton("Vale", null).show()
     }
 }

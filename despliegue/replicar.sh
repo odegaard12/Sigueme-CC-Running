@@ -7,14 +7,20 @@ VIP="IP_FLOTANTE"
 DESTINO="USUARIO@IP_OTRA_PI"
 WEB="/home/USUARIO/sigueme/"
 LOG="/home/USUARIO/sigueme_replica.log"
-SSH="ssh -o BatchMode=yes -o ConnectTimeout=10"
+# sin respuesta en 15 s, la conexión se da por muerta: si no, un corte de red a
+# mitad de una copia la dejaba colgada horas y la réplica dejaba de correr
+SSH="ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3"
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
 ip -4 addr show | grep -q "inet ${VIP}/" || exit 0
 
-if cambios=$(rsync -a --delete --itemize-changes \
+# --rsync-path: la Pi de DESTINO se niega si es ella la que tiene ahora la IP
+# flotante (la IP cambió de Pi a mitad de una copia): si no, machacaba los datos
+# nuevos del titular con los viejos
+if cambios=$(rsync -a --delete --timeout=30 --itemize-changes \
         --exclude '__pycache__' --exclude '*.bak*' --exclude '*.tmp' \
+        --rsync-path="ip -4 addr show | grep -q 'inet ${VIP}/' && exit 1; rsync" \
         -e "$SSH" "$WEB" "${DESTINO}:${WEB}" 2>>"$LOG"); then
     # se apunta solo si cambió algo más que live.json (si no, una línea cada 20 s)
     copiados=$(grep -v ' live\.json$' <<< "$cambios" | grep '^[<>c]f' | awk '{print $2}' | tr '\n' ' ')

@@ -10,7 +10,7 @@ import kotlin.math.sqrt
 /** Plan de la carrera bajado del servidor (/api/plan). Sin Android: se prueba en la JVM.
  *  La misma lógica que tenía el servidor con ntfy, ahora en el móvil y sin cobertura. */
 class Plan(json: String) {
-    data class Aviso(val id: Int, val km: Double, val texto: String, val validoHasta: Double, val objetivoKm: Double?)
+    data class Aviso(val id: Int, val km: Double, val texto: String, val validoHasta: Double, val objetivoKm: Double?, val tipo: String = "")
     data class Subida(val inicio: Double, val fin: Double, val desnivel: Int, val largo: Double)
 
     val nombre: String
@@ -29,7 +29,7 @@ class Plan(json: String) {
         val j = JSONObject(json)
         val c = j.optJSONObject("carrera") ?: JSONObject()
         nombre = c.optString("nombre", "Carrera")
-        horaSalida = c.optString("hora_salida", "")
+        horaSalida = c.optString("hora_salida", "").let { if (Regex("^\\d:\\d\\d$").matches(it)) "0$it" else it }   // «9:00» → «09:00»
         salida = try {
             java.time.LocalDateTime.parse(c.getString("fecha") + "T" + horaSalida)
                 .atZone(java.time.ZoneId.of(c.optString("zona_horaria", "Europe/Madrid"))).toInstant().toEpochMilli()
@@ -47,7 +47,7 @@ class Plan(json: String) {
         avisos = (0 until (a?.length() ?: 0)).map {
             val o = a!!.getJSONObject(it)
             Aviso(o.getInt("id"), o.getDouble("km"), o.getString("texto"), o.optDouble("valido_hasta", o.getDouble("km") + 0.3),
-                if (o.has("objetivo_km")) o.getDouble("objetivo_km") else null)
+                if (o.has("objetivo_km")) o.getDouble("objetivo_km") else null, o.optString("tipo", ""))
         }.sortedBy { it.km }
         val s = j.optJSONArray("subidas")
         subidas = (0 until (s?.length() ?: 0)).map {
@@ -70,11 +70,15 @@ class Plan(json: String) {
      *  la vuelta y, como solo se avanza, se perdían los avisos de en medio. Vale
      *  la PRIMERA pasada por ese sitio (y dentro de ella, el punto más cercano). */
     fun kmEnRuta(la: Double, lo: Double, ultimo: Double): Double? {
-        for (ventana in doubleArrayOf(5.0, 40.0)) {
+        // la última ventana, sin tope: tras un corte muy largo o un reinicio a mitad de carrera.
+        // ⚠️ Primero solo HACIA DELANTE y, si no hay nada, hasta 0,5 km atrás: en una ida y
+        // vuelta, al volver de un hueco de GPS ya en la vuelta, el mismo sitio en la ida
+        // (0,5 km atrás) ganaba y el km iba hacia atrás el resto de la carrera
+        for (ventana in doubleArrayOf(5.0, 40.0, Double.MAX_VALUE)) for (atras in doubleArrayOf(0.0, 0.5)) {
             var mejor = 0.15
             var res: Double? = null
             for (i in km.indices) {
-                if (km[i] < ultimo - 0.5 || km[i] > ultimo + ventana) continue
+                if (km[i] < ultimo - atras || km[i] > ultimo + ventana) continue
                 val d = kmEntre(la, lo, lat[i], lon[i])
                 if (d < mejor) { mejor = d; res = km[i] }
                 else if (res != null && d > 0.3) break        // se alejó: fin de la primera pasada
@@ -90,7 +94,13 @@ class Plan(json: String) {
         val a = avisos.lastOrNull { it.km <= k && it.id > enviado } ?: return null
         if (k > a.validoHasta) return a.id to textoEstado(k)
         val falta = (a.objetivoKm ?: k) - k
-        return a.id to a.texto.replace("{dist}", if (falta > 0.05) "en " + kmTxt(falta) else "AQUÍ")
+        var texto = a.texto.replace("{dist}", if (falta > 0.05) "en " + kmTxt(falta) else "AQUÍ")
+        // «subida en 300 m»: lo que falta hasta donde empieza, calculado al avisar
+        if (a.tipo == "subida") subidas.firstOrNull { it.inicio >= a.km - 0.05 }?.let {
+            val hasta = it.inicio - k
+            if (hasta > 0.05) texto = texto.replaceFirst(" · ", " en ${kmTxt(hasta)} · ").let { t -> if (t == texto) "$texto en ${kmTxt(hasta)}" else t }
+        }
+        return a.id to texto
     }
 
     fun textoEstado(k: Double): String {
@@ -103,8 +113,35 @@ class Plan(json: String) {
     }
 
     companion object {
+        /** Texto del plan → (título, cuerpo) para la pulsera: lo importante en el
+         *  título («Subida larga en 300 m»), los números con espacio en el cuerpo
+         *  y «rampa»/«quedan» en la última línea. Antes el título era siempre
+         *  «Sígueme CC» y todo iba en una línea que la pulsera cortaba. */
+        fun notificacion(texto: String): Pair<String, String> {
+            val trozos = texto.split(" · ").map { espacios(it.trim()) }.filter { it.isNotEmpty() }
+            if (trozos.isEmpty()) return "Sígueme CC" to ""
+            val titulo = frase(trozos[0])
+            val (finales, resto) = trozos.drop(1).partition { it.startsWith("rampa", true) || it.startsWith("quedan +", true) }
+            val lineas = resto.chunked(2).map { it.joinToString(" · ") { t -> frase(t) } } + finales.map { frase(it) }
+            return titulo to lineas.joinToString("\n")
+        }
+
+        private fun espacios(t: String) = t.replace(Regex("""(\d)(km|m)\b"""), "$1 $2").replace(Regex("""(\d)%"""), "$1 %")
+            .replace(Regex("""(^|\s)-(\d)"""), "$1−$2")
+
+        /** «SUBIDA LARGA» → «Subida larga». Solo si empieza por una palabra en
+         *  mayúsculas (las del plan): «Prueba de Sígueme CC» o el nombre de un
+         *  avituallamiento se quedan como están. */
+        private fun frase(t: String): String {
+            val mayus = { p: String -> p.any { it.isLetter() } && p == p.uppercase() }
+            val palabras = t.split(" ")
+            if (!mayus(palabras[0])) return t.replaceFirstChar { it.uppercase() }
+            return palabras.joinToString(" ") { if (mayus(it)) it.lowercase() else it }.replaceFirstChar { it.uppercase() }
+        }
+
         fun kmTxt(k: Double): String =
-            if (k < 1) "${(k * 1000 / 50).roundToInt() * 50}m" else String.format(java.util.Locale.ROOT, "%.1f", k).replace('.', ',') + "km"
+            // de 975 a 999 m redondeaba a «1000m»: desde ahí, en km
+            (k * 1000 / 50).roundToInt().times(50).let { m -> if (m < 1000) "${m}m" else String.format(java.util.Locale.ROOT, "%.1f", k).replace('.', ',') + "km" }
 
         fun kmEntre(la1: Double, lo1: Double, la2: Double, lo2: Double): Double {
             val r = Math.PI / 180
