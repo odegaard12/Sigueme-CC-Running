@@ -70,12 +70,15 @@ class Plan(json: String) {
      *  la vuelta y, como solo se avanza, se perdían los avisos de en medio. Vale
      *  la PRIMERA pasada por ese sitio (y dentro de ella, el punto más cercano). */
     fun kmEnRuta(la: Double, lo: Double, ultimo: Double): Double? {
-        // la última ventana, sin tope: tras un corte muy largo o un reinicio a mitad de carrera
-        for (ventana in doubleArrayOf(5.0, 40.0, Double.MAX_VALUE)) {
+        // la última ventana, sin tope: tras un corte muy largo o un reinicio a mitad de carrera.
+        // ⚠️ Primero solo HACIA DELANTE y, si no hay nada, hasta 0,5 km atrás: en una ida y
+        // vuelta, al volver de un hueco de GPS ya en la vuelta, el mismo sitio en la ida
+        // (0,5 km atrás) ganaba y el km iba hacia atrás el resto de la carrera
+        for (ventana in doubleArrayOf(5.0, 40.0, Double.MAX_VALUE)) for (atras in doubleArrayOf(0.0, 0.5)) {
             var mejor = 0.15
             var res: Double? = null
             for (i in km.indices) {
-                if (km[i] < ultimo - 0.5 || km[i] > ultimo + ventana) continue
+                if (km[i] < ultimo - atras || km[i] > ultimo + ventana) continue
                 val d = kmEntre(la, lo, lat[i], lon[i])
                 if (d < mejor) { mejor = d; res = km[i] }
                 else if (res != null && d > 0.3) break        // se alejó: fin de la primera pasada
@@ -137,7 +140,8 @@ class Plan(json: String) {
         }
 
         fun kmTxt(k: Double): String =
-            if (k < 1) "${(k * 1000 / 50).roundToInt() * 50}m" else String.format(java.util.Locale.ROOT, "%.1f", k).replace('.', ',') + "km"
+            // de 975 a 999 m redondeaba a «1000m»: desde ahí, en km
+            (k * 1000 / 50).roundToInt().times(50).let { m -> if (m < 1000) "${m}m" else String.format(java.util.Locale.ROOT, "%.1f", k).replace('.', ',') + "km" }
 
         fun kmEntre(la1: Double, lo1: Double, la2: Double, lo2: Double): Double {
             val r = Math.PI / 180

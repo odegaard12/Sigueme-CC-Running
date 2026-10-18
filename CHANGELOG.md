@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.8 · 2026-10-18
+- **Idas y vueltas por el mismo camino:** si el GPS se perdía unos minutos
+  cerca del giro y volvía ya en la vuelta, la app se situaba en el mismo sitio
+  de la ida y el km iba hacia atrás el resto de la carrera, sin avisos de la
+  vuelta. Ahora busca primero hacia delante y solo retrocede (0,5 km) si no
+  encuentra nada. Con su prueba.
+- Entre 975 y 999 m la distancia salía «en 1000m»; ahora «en 1,0km».
+- **Reloj Amazfit:** con la cola llena (más de ~4 h sin móvil o sin red), los
+  puntos que llegaban mientras se enviaba un lote hacían borrar, al
+  confirmarse el envío, puntos que no se habían mandado (en el reloj y en el
+  lado del móvil). Ahora se quita exactamente lo enviado.
+
 ## v1.13.7 · 2026-10-18
 - **Dependencias al día** (las PRs de Dependabot, probadas con el emulador y
   la carrera de prueba): actions/checkout 7, actions/setup-java 6,

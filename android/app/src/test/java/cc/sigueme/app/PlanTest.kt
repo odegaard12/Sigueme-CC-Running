@@ -40,6 +40,8 @@ class PlanTest {
         assertEquals(1.0, p.kmEnRuta(punto(1.0), -3.9996, 0.8)!!, 0.1)
         // ya en la vuelta, la ida queda detrás y vale la vuelta
         assertEquals(5.2, p.kmEnRuta(punto(1.0), -3.9996, 4.9)!!, 0.15)
+        // vuelve de un hueco de GPS ya en la vuelta: no puede caer en la ida (antes 2,57)
+        assertEquals(3.6, p.kmEnRuta(punto(2.5), -3.9995, 2.9)!!, 0.1)
     }
 
     @Test fun avisoPorEstado() {
@@ -86,5 +88,6 @@ class PlanTest {
     @Test fun textos() {
         assertEquals("250m", Plan.kmTxt(0.26))
         assertEquals("2,3km", Plan.kmTxt(2.34))
+        assertEquals("1,0km", Plan.kmTxt(0.98))       // antes «1000m»
     }
 }

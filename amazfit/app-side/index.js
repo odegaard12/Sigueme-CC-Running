@@ -53,6 +53,9 @@ AppSideService(BaseSideService({
         extras: { hr: p.hr, origen: 'amazfit' },
       })),
     }
+    // fuera LO ENVIADO, no los primeros: si el reloj manda puntos durante el envío
+    // con la cola llena, el recorte del principio hacía borrar puntos sin mandar
+    const sinLote = (lista, l) => { const fuera = new Set(l); return lista.filter(q => !fuera.has(q)) }
     try {
       const r = await this.fetch({
         url, method: 'POST',
@@ -60,14 +63,14 @@ AppSideService(BaseSideService({
         body: JSON.stringify(cuerpo),
       })
       if (r && r.status >= 200 && r.status < 300) {
-        pendientes = pendientes.slice(lote.length)
+        pendientes = sinLote(pendientes, lote)
         this.guardar()
         this.settings.setItem('ultimo_envio', new Date().toISOString())
         this.settings.setItem('ultimo_error', '')
       } else if (r && (r.status === 400 || r.status === 413 || r.status === 422)) {
         // el servidor no acepta ESE lote (no se arregla reintentando): fuera,
         // o taparía para siempre todos los puntos de detrás
-        pendientes = pendientes.slice(lote.length)
+        pendientes = sinLote(pendientes, lote)
         this.guardar()
         this.settings.setItem('ultimo_error', 'El servidor rechazó ' + lote.length + ' puntos (' + r.status + ')')
       } else {

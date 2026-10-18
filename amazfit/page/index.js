@@ -164,7 +164,10 @@ Page(BasePage({
     const lote = this.state.cola.slice(0, POR_ENVIO)
     this.request({ method: 'gps.enviar', params: { puntos: lote } })
       .then(() => {
-        this.state.cola.splice(0, lote.length)
+        // fuera LO ENVIADO, no los primeros: con la cola llena, cada toma durante
+        // el envío recortaba el principio y se borraban puntos sin mandar
+        const enviados = new Set(lote)
+        this.state.cola = this.state.cola.filter(q => !enviados.has(q))
         this.state.enviados += lote.length
         this.state.ultimoOk = Date.now()
       })
