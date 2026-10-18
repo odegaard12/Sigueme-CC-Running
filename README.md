@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.13.6-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.13.7-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -130,7 +130,7 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
 
 ## 5. El día de la carrera
 
-1. Con la **app**: pulsa **EMPEZAR SEGUIMIENTO** cuando quieras, aunque sea una
+1. Con la **app**: pulsa **Empezar seguimiento** cuando quieras, aunque sea una
    hora antes. Baja el plan al día y pone la carrera en marcha en la web; hasta
    la hora oficial la web dice «En la salida», el crono no corre y no hay
    avisos. Guarda el móvil: sigue solo con la pantalla apagada.

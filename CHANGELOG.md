@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.7 · 2026-10-18
+- **Dependencias al día** (las PRs de Dependabot, probadas con el emulador y
+  la carrera de prueba): actions/checkout 7, actions/setup-java 6,
+  gradle/actions 6, actions/upload-artifact 7 y org.json 20260814 (solo para
+  las pruebas). El salto a Android Gradle Plugin 9 y Kotlin 2.4 queda aparte:
+  son cambios mayores y piden su propia prueba.
+- **CI también en las PRs:** pruebas y APK de depuración, para que las
+  próximas de Dependabot lleguen ya probadas.
+- La guía y el README al día con la app: busca sola Zepp, Mi Fitness o Zepp
+  Life, el aviso de prueba llega a los 5 s y el plan se pone al día solo.
+
 ## v1.13.6 · 2026-10-18
 - **La app con el mismo criterio de diseño que la web:** el estado en frase
   normal («Siguiendo», «Parado») y «Listo para salir» como título, no en
