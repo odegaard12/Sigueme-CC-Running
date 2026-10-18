@@ -4,6 +4,16 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.13.9 · 2026-10-19
+- **Réplica entre las dos Pis (`despliegue/replicar.sh`):** si la IP flotante
+  cambiaba de Pi justo cuando empezaba una copia, la copia llegaba después y
+  machacaba los datos nuevos del titular (y con `--delete`, una carrera recién
+  archivada). Ahora la Pi de destino se niega si es ella la que tiene la IP.
+  Probado: sin la protección la copia entra; con ella, se rechaza.
+- Un corte de red a mitad de una copia ya no la deja colgada horas sin
+  avisar: `rsync --timeout=30`, ssh con `ServerAlive` y `TimeoutStartSec` en
+  el servicio.
+
 ## v1.13.8 · 2026-10-18
 - **Idas y vueltas por el mismo camino:** si el GPS se perdía unos minutos
   cerca del giro y volvía ya en la vuelta, la app se situaba en el mismo sitio

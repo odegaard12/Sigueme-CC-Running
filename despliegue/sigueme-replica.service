@@ -5,4 +5,6 @@ Description=Replica Sígueme CC a la otra Pi
 Type=oneshot
 User=USUARIO
 ExecStart=/home/USUARIO/replicar.sh
+# por si algo se queda colgado: el temporizador no vuelve a lanzar la réplica hasta que acaba
+TimeoutStartSec=90
 LogLevelMax=notice
