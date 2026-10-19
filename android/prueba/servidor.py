@@ -49,4 +49,11 @@ pedir('/api/live', {'action': 'guardar_carrera', 'carrera': {
     'distancia_km': 3.0, 'zona_horaria': 'Europe/Madrid'}})
 pedir('/api/live', {'action': 'guardar_avituallamientos', 'avituallamientos': [{'name': 'Fuente', 'km': 2.0}]})
 plan = json.loads(pedir('/api/plan', {'device_id': ID}).read())
+# una ruta publicada por un invitado: la app la tiene que enseñar en «Rutas» y bajar su GPX
+codigo = json.loads(pedir('/api/live', {'action': 'invitado_crear', 'usuario': 'banco2', 'dias': 30}).read())['codigo']
+r = pedir('/api/invitado/login', {'usuario': 'banco2', 'codigo': codigo}); invitada = r.headers['Set-Cookie'].split(';')[0]
+galleta_admin, galleta = galleta, invitada
+ruta_inv = json.loads(pedir('/api/invitado/gpx?nombre=Ruta%20de%20prueba', ('<gpx><trk><trkseg>' + pts + '</trkseg></trk></gpx>').encode(), 'application/gpx+xml').read())['ruta']
+pedir('/api/invitado/ruta', {'id': ruta_inv['id'], 'publica': True, 'ocultar_m': 0, 'avituallamientos': [{'name': 'Fuente del banco', 'km': 1.5}]})
+galleta = galleta_admin
 print('servidor listo:', len(plan.get('avisos', [])), 'avisos,', len(plan.get('ruta', [])), 'puntos de ruta')

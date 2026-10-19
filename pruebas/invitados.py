@@ -8,6 +8,8 @@ from datetime import date, timedelta
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from comun import RAIZ, carpeta, gpx_inventado
 W = carpeta('invitados')
+_c = json.loads((W / 'carrera.json').read_text(encoding='utf-8')); _c['fecha'] = '2099-01-01'
+(W / 'carrera.json').write_text(json.dumps(_c), encoding='utf-8')     # una carrera lejana: la portada es la de rutas
 sys.path.insert(0, str(W / 'herramientas'))
 import invitados as inv
 malos = []
@@ -60,8 +62,8 @@ try:
     for malo in ('ana', 'Ad min', 'admin', 'x', 'a' * 30):
         st, d, _ = http('POST', '/api/live', {'action': 'invitado_crear', 'usuario': malo}, admin)
         ok(st == 400, f'rechaza el usuario {malo!r}: {d.get("error")}')
-    st, d, _ = http('POST', '/api/live', {'action': 'invitado_crear', 'usuario': 'cleo', 'dias': 0}, admin)
-    ok(st == 400, f'rechaza 0 días: {d.get("error")}')
+    st, d, _ = http('POST', '/api/live', {'action': 'invitado_crear', 'usuario': 'cleo', 'dias': -1}, admin)
+    ok(st == 400, f'rechaza días negativos: {d.get("error")}')
     st, d, _ = http('POST', '/api/live', {'action': 'invitados'})
     ok(st == 403, 'el listado sin sesión del panel: 403')
     datos_disco = (W / 'invitados' / 'usuarios.dat').read_text(encoding='utf-8')
@@ -150,14 +152,100 @@ try:
         st, d, _ = http('GET', f'/api/invitado/ruta?id={malo}', cookie=ana)
         ok(st in (400, 404), f'id raro {malo!r}: {st}')
 
+    # ---- publicar: privado por defecto, recortado, sin decir de quién es
+    privada = json.loads((W / 'invitados' / 'ana' / f'{rid}.ruta').read_text(encoding='utf-8'))
+    km0, ini0 = privada['distancia_km'], privada['coords'][0]
+    st, d, _ = http('GET', '/api/rutas-publicas')
+    ok(st == 200 and d['rutas'] == [], 'nada publicado por defecto')
+    st, d, _ = http('GET', f'/api/ruta-publica?id={rid}')
+    ok(st == 404, 'una ruta privada no se ve en público')
+    st, d, _ = http('GET', f'/api/ruta-publica/reloj.gpx?id={rid}')
+    ok(st == 404, '  ni se descarga')
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'publica': True, 'ocultar_m': 300, 'autor': 'Ana'}, ben)
+    ok(st == 404, 'ben no publica la ruta de ana')
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'publica': True, 'ocultar_m': 5000}, ana)
+    ok(st == 400, f'no se pueden ocultar más de 1000 m: {d.get("error")}')
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'publica': True, 'ocultar_m': 300, 'autor': 'Ana'}, ana)
+    ok(st == 200 and d['ruta']['publica'] and d['ruta']['publicada'] and d['ruta']['autor'] == 'Ana', 'ana publica su ruta')
+    st, d, h = http('GET', '/api/rutas-publicas')
+    r0 = d['rutas'][0] if d['rutas'] else {}
+    ok(st == 200 and len(d['rutas']) == 1 and 'u' not in r0 and '"ana"' not in json.dumps(d) and 'public' in h.get('Cache-Control', ''),
+       'sale en la lista pública, sin decir quién es el usuario y con caché')
+    ok(abs(r0['distancia_km'] - (km0 - 0.6)) < 0.05 and r0['traza'] and r0['perfil'] and r0['traza'][0] != [round(ini0[0], 4), round(ini0[1], 4)],
+       f"lo público va recortado: {r0['distancia_km']} km de {km0}, y no empieza donde la ruta privada")
+    st, p, h = http('GET', f'/api/ruta-publica?id={rid}')
+    ok(st == 200 and p['autor'] == 'Ana' and len(p['coords']) > 50 and p['bbox'] and 'u' not in p and 'usuario' not in p,
+       'la página pública trae su ruta, perfil y bbox')
+    ok(p['coords'][0] != ini0 and abs(p['distancia_km'] - (km0 - 0.6)) < 0.05 and [a['km'] for a in p['avituallamientos']] == [9.7],
+       f"  recortada, con el avituallamiento a 9,7 y sin la meta (cae en lo oculto): {p['avituallamientos']}")
+    st, cuerpo, h = http('GET', f'/api/ruta-publica/reloj.gpx?id={rid}')
+    raiz_p = ET.fromstring(cuerpo)
+    ok(st == 200 and 'attachment' in h['Content-Disposition'] and len(raiz_p.findall('g:wpt', ns)) == 1 + 2 * len(p['subidas']),
+       f"el GPX público (sin sesión) lleva el mismo recorte: {len(raiz_p.findall('g:wpt', ns))} puntos de control")
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'ocultar_m': 0}, ana)
+    st, p0, _ = http('GET', f'/api/ruta-publica?id={rid}')
+    ok(p0['distancia_km'] == km0 and len(p0['avituallamientos']) == 2 and p0['coords'][0] == ini0, 'con 0 m ocultos sale entera')
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'ocultar_m': 300}, ana)
+    # el dueño ve todo y modera
+    st, d, _ = http('POST', '/api/live', {'action': 'rutas_todas'}, admin)
+    ok(st == 200 and [x['usuario'] for x in d['rutas'] if x['publica']] == ['ana'] and d['invitados'], 'el panel lista lo publicado')
+    st, d, _ = http('POST', '/api/live', {'action': 'rutas_todas'}, ana)
+    ok(st == 403, '  y solo con la sesión del panel')
+    st, d, _ = http('POST', '/api/live', {'action': 'ruta_moderar', 'usuario': 'ana', 'id': rid, 'accion': 'despublicar'}, admin)
+    st2, d2, _ = http('GET', '/api/rutas-publicas')
+    ok(st == 200 and d2['rutas'] == [] and http('GET', f'/api/ruta-publica?id={rid}')[0] == 404, 'el dueño la despublica y desaparece')
+    st, d, _ = http('GET', f'/api/invitado/ruta?id={rid}', cookie=ana)
+    ok(st == 200 and d['ruta']['publica'] is False, '  pero ana conserva su ruta (privada)')
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid, 'publica': True}, ana)
+    ok(len(http('GET', '/api/rutas-publicas')[1]['rutas']) == 1, 'ana la vuelve a publicar')
+
+    # ---- la portada y la página de la ruta
+    for ruta_web in ('/inicio', '/'):
+        r = urllib.request.urlopen(U + ruta_web)
+        ok(r.status == 200 and b'inicio.js' in r.read() and 'noindex' in r.headers.get('X-Robots-Tag', ''),
+           f'{ruta_web}: la portada de rutas (sin carrera para hoy), con noindex')
+    st, pagina, h = http('GET', f'/r/{rid}')
+    texto = pagina.decode('utf-8')
+    ok(st == 200 and '&lt;b&gt;Mi trail&lt;/b&gt;' in texto and '<b>Mi trail' not in texto and 'ruta.js' in texto,
+       'la página de la ruta lleva su nombre en el título (escapado)')
+    st, pagina, h = http('GET', '/r/aaaaaaaaaaaa')
+    ok(st == 404 and b'ruta.js' in pagina, 'una ruta que no existe: 404, con la página que lo explica')
+    for f_, tipo in (('/cartel.css', 'css'), ('/fonts/anton.woff2', 'woff2'), ('/ruta.js', 'javascript'), ('/inicio.js', 'javascript')):
+        r = urllib.request.urlopen(U + f_)
+        ok(r.status == 200 and tipo in r.headers['Content-Type'], f'{f_} se sirve ({r.headers["Content-Type"]})')
+    r = urllib.request.urlopen(U + '/index.html')
+    ok(r.status == 200 and b'inicio.js' not in r.read(), '/index.html sigue siendo la página de la carrera')
+    # caducar = desaparecer de la web al momento (sin esperar a la purga)
+    fichero = W / 'invitados' / 'usuarios.dat'
+    datos = json.loads(fichero.read_text(encoding='utf-8'))
+    datos['usuarios']['ana']['caduca'] = (date.today() - timedelta(days=1)).isoformat()
+    fichero.write_text(json.dumps(datos), encoding='utf-8')
+    ok(http('GET', '/api/rutas-publicas')[1]['rutas'] == [] and http('GET', f'/api/ruta-publica?id={rid}')[0] == 404,
+       'al caducar el acceso de ana, su ruta deja de verse en la web')
+    datos['usuarios']['ana']['caduca'] = (date.today() + timedelta(days=30)).isoformat()
+    fichero.write_text(json.dumps(datos), encoding='utf-8')
+    ok(len(http('GET', '/api/rutas-publicas')[1]['rutas']) == 1, '  y vuelve al renovarlo')
+    st, d, _ = http('POST', '/api/live', {'action': 'invitado_crear', 'usuario': 'oscar', 'dias': 0}, admin)
+    g = [x for x in d['invitados'] if x['usuario'] == 'oscar'][0]
+    ok(st == 200 and g['sin_caducidad'] and g['caduca'] == '2099-12-31', 'una cuenta sin caducidad (la del dueño)')
+    st, d, _ = http('POST', '/api/live', {'action': 'invitado_renovar', 'usuario': 'oscar', 'dias': 30}, admin)
+    ok(d['caduca'] == '2099-12-31', '  renovarla no la toca')
+    st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'oscar'}, admin)
+    st, d, _ = http('POST', '/api/live', {'action': 'invitado_crear', 'usuario': 'dueno'}, admin)
+    ok(st == 400, 'el usuario «dueno» está reservado')
+
     # ---- los datos no se sirven como ficheros
-    for f in ('/invitados/usuarios.dat', f'/invitados/ana/{rid}.ruta', '/invitados/', '/invitados', '/INVITADOS/usuarios.dat', '/invitados/../server.py'):
+    for f in ('/invitados/publicas.dat', '/invitados/usuarios.dat', f'/invitados/ana/{rid}.ruta', '/invitados/', '/invitados', '/INVITADOS/usuarios.dat', '/invitados/../server.py'):
         try:
             urllib.request.urlopen(U + f); ok(False, f'{f} se sirve')
         except urllib.error.HTTPError as e:
             ok(e.code in (403, 404), f'{f} no se sirve ({e.code})')
-    st, pagina, h = http('GET', '/rutas.html')
-    ok(st == 200 and 'noindex' in h.get('X-Robots-Tag', '') and b'rutas.js' in pagina, 'la página de invitados se sirve (con noindex)')
+    st, pagina, h = http('GET', '/mis-rutas.html')
+    ok(st == 200 and 'noindex' in h.get('X-Robots-Tag', '') and b'mis-rutas.js' in pagina, 'la página de invitados se sirve (con noindex)')
+    r = urllib.request.urlopen(U + '/rutas.html')
+    ok(r.status == 200 and r.url.endswith('/mis-rutas.html'), 'el nombre viejo /rutas.html redirige a /mis-rutas.html')
+    st, d, _ = http('GET', '/api/carreras')
+    ok(st == 200 and isinstance(d['carreras'], list) and 'proxima' in d, '/api/carreras (público) para la portada')
 
     # ---- límites: 5 rutas por invitado; GPX demasiado grande
     for i in range(4):
@@ -172,6 +260,7 @@ try:
         ok(True, f'GPX enorme: {e}')
     st, d, _ = http('POST', '/api/invitado/borrar', {'id': rid}, ana)
     ok(st == 200 and http('GET', f'/api/invitado/ruta?id={rid}', cookie=ana)[0] == 404, 'borrar una ruta suya')
+    ok(http('GET', '/api/rutas-publicas')[1]['rutas'] == [], '  y si estaba publicada, desaparece de la web')
 
     # ---- renovar, código nuevo, caducidad y purga
     f = W / 'invitados' / 'usuarios.dat'
@@ -202,7 +291,7 @@ try:
     ok('ben' not in f.read_text(encoding='utf-8') and not (W / 'invitados' / 'ben').exists() and not (W / 'invitados' / 'fantasma').exists(),
        'a los 7 días de caducar se borran su usuario y sus rutas (y carpetas huérfanas)')
     st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'ana'}, admin)
-    ok(st == 200 and d['invitados'] == [] and not (W / 'invitados' / 'ana').exists(), 'quitar a ana borra también sus rutas')
+    ok(st == 200 and d['invitados'] == [] and not (W / 'invitados' / 'ana').exists(), f"quitar a ana borra también sus rutas: quedan {[x['usuario'] for x in d.get('invitados', [])]}, carpeta {(W / 'invitados' / 'ana').exists()}")
     st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'ana'}, admin)
     ok(st == 400, 'quitar a quien no existe: 400')
 

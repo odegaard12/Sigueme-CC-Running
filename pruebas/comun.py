@@ -4,7 +4,7 @@ import math, pathlib, shutil, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 WEB = ('server.py', 'index.html', 'app.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
-       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'rutas.html', 'rutas.js')
+       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'mis-rutas.js', 'inicio.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css')
 
 
 def carpeta(prefijo, datos=('carrera.json',)):
@@ -15,6 +15,8 @@ def carpeta(prefijo, datos=('carrera.json',)):
             shutil.copy(RAIZ / f, w / f)
     shutil.copytree(RAIZ / 'lib', w / 'lib')
     shutil.copytree(RAIZ / 'herramientas', w / 'herramientas')
+    if (RAIZ / 'fonts').exists():
+        shutil.copytree(RAIZ / 'fonts', w / 'fonts')
     return w
 
 

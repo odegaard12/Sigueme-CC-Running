@@ -85,6 +85,9 @@ class MainActivity : Activity() {
     private val repintar = object : Runnable {
         override fun run() {
             pintar()
+            // sin plan (la primera vez, o sin cobertura al abrir): reintenta cada 10 s hasta bajarlo
+            if (!Seguimiento.corriendo && prefs.getString("url", null) != null && !File(filesDir, "plan.json").exists() &&
+                System.currentTimeMillis() - ultimoIntentoPlan > 10_000) { ultimoIntentoPlan = System.currentTimeMillis(); bajarPlan(callado = true) }
             // «¿te llegó el aviso a la pulsera?»: cuando el aviso ya ha salido y no hay otro mensaje abierto
             if (prefs.getBoolean("prueba_preguntar", false) && dialogoAbierto == null &&
                 System.currentTimeMillis() - prefs.getLong("prueba_t", 0) > 9000) preguntarPrueba()
@@ -108,6 +111,11 @@ class MainActivity : Activity() {
     private lateinit var lista: LinearLayout
     private var firmaLista = ""
     private var dialogoAbierto: Dialog? = null
+    private lateinit var vistaCarrera: ScrollView
+    private lateinit var pantallaRutas: RutasPantalla
+    private lateinit var tabRutas: TextView
+    private lateinit var tabCarrera: TextView
+    private var ultimoIntentoPlan = 0L
 
     private fun Int.px() = (this * resources.displayMetrics.density).toInt()
 
@@ -116,7 +124,7 @@ class MainActivity : Activity() {
         Seguimiento.canales(this)
         window.statusBarColor = fondoC
         window.navigationBarColor = fondoC
-        val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20.px(), 28.px(), 20.px(), 32.px()) }
+        val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20.px(), 12.px(), 20.px(), 32.px()) }
 
         // cabecera
         val cab = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.BOTTOM }
@@ -197,7 +205,24 @@ class MainActivity : Activity() {
             setPadding(4.px(), 18.px(), 4.px(), 8.px()); setOnClickListener { aMano() }
             pulsable(this)
         })
-        setContentView(ScrollView(this).apply { setBackgroundColor(fondoC); addView(caja) })
+        vistaCarrera = ScrollView(this).apply { setBackgroundColor(fondoC); addView(caja) }
+        pantallaRutas = RutasPantalla(this, prefs, { elegirPestana("carrera") },
+            { titulo, texto, botones -> mostrar(titulo, texto, *botones.map { Boton(it.first, it.second) }.toTypedArray()) })
+        tabRutas = boton("Rutas", false, 44) { elegirPestana("rutas") }
+        tabCarrera = boton("Carrera", false, 44) { elegirPestana("carrera") }
+        val pestanas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(fondoC); setPadding(16.px(), 28.px(), 16.px(), 4.px()) }
+        pestanas.addView(tabRutas, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = 6.px() })
+        pestanas.addView(tabCarrera, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = 6.px() })
+        val contenido = FrameLayout(this).apply { addView(vistaCarrera); addView(pantallaRutas.vista) }
+        setContentView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setBackgroundColor(fondoC)
+            addView(pestanas); addView(contenido, LinearLayout.LayoutParams(-1, 0, 1f))
+        })
+        // con el seguimiento en marcha, siempre la carrera; si no, la última pestaña; la primera vez, la carrera
+        // (la guía de preparación) salvo quien solo tiene servidor y ninguna carrera: para él, las rutas
+        elegirPestana(
+            if (Seguimiento.corriendo) "carrera"
+            else prefs.getString("pestana", null) ?: if (prefs.getString("url", null) == null || plan() != null) "carrera" else "rutas")
         pedirPermisos()
         leerEnlace(intent)
 
@@ -221,6 +246,26 @@ class MainActivity : Activity() {
     }
     override fun onPause() { reloj.removeCallbacks(repintar); super.onPause() }
     override fun onDestroy() { dialogoAbierto?.dismiss(); super.onDestroy() }
+
+    private var pestanaActual = "carrera"
+    private fun elegirPestana(t: String) {
+        pestanaActual = t
+        prefs.edit().putString("pestana", t).apply()
+        vistaCarrera.visibility = if (t == "carrera") View.VISIBLE else View.GONE
+        pantallaRutas.vista.visibility = if (t == "rutas") View.VISIBLE else View.GONE
+        for ((v, nombre) in listOf(tabRutas to "rutas", tabCarrera to "carrera")) {
+            val activa = t == nombre
+            v.setTextColor(if (activa) fondoC else textoC)
+            v.background = fondo(if (activa) verdeC else tarjetaC, 16)
+        }
+        if (t == "rutas") pantallaRutas.mostrar()
+    }
+
+    // «atrás» dentro de una ruta vuelve a la lista de rutas, no cierra la app
+    override fun onBackPressed() {
+        if (pestanaActual == "rutas" && pantallaRutas.atras()) return
+        super.onBackPressed()
+    }
 
     private fun hace(t: Long): String {
         val min = (System.currentTimeMillis() - t) / 60_000

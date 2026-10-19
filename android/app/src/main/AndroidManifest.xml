@@ -19,6 +19,7 @@
         <package android:name="com.mi.health" />
         <package android:name="com.xiaomi.hm.health" />
         <package android:name="nodomain.freeyourgadget.gadgetbridge" />
+        <package android:name="com.huawei.health" />
     </queries>
 
     <application

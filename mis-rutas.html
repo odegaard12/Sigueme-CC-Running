@@ -21,7 +21,7 @@
   .sub { color:var(--apagado); font-size:.95rem; }
   .tarjeta { background:var(--card); border-radius:18px; padding:18px; margin-top:16px; }
   label { display:block; color:var(--apagado); font-size:.9rem; margin:12px 0 4px; }
-  input[type=text], input[type=password], input[type=number], input[type=file] {
+  input[type=text], input[type=password], input[type=number], input[type=file], select {
     width:100%; min-height:48px; background:var(--campo); color:var(--texto); border:1px solid var(--borde);
     border-radius:12px; padding:10px 14px; font:inherit; }
   input:focus-visible, button:focus-visible, a.btn:focus-visible { outline:3px solid var(--verde); outline-offset:2px; }
@@ -119,9 +119,32 @@
         <p class="sub">Los menús cambian según el modelo y la versión. Si tu reloj no enseña los puntos de control, la ruta se sigue igual.</p>
       </details>
     </div>
+    <div class="tarjeta entra" id="card-publicar">
+      <div class="paso"><span class="n">5</span><span><b>Publicar en la web</b> (opcional). Así aparece en la portada y cualquiera puede verla y llevársela al reloj. Es privada hasta que tú lo decidas.</span></div>
+      <div id="pub-no">
+        <label for="pub-ocultar">Ocultar el principio y el final</label>
+        <select id="pub-ocultar">
+          <option value="0">No ocultar</option>
+          <option value="300" selected>300 m (recomendado)</option>
+          <option value="500">500 m</option>
+          <option value="1000">1 km</option>
+        </select>
+        <p class="sub" style="margin-top:6px">Si la ruta sale de tu casa, no dejes que se vea dónde empieza y dónde acaba.</p>
+        <label for="pub-autor">Firmar como (opcional)</label>
+        <input type="text" id="pub-autor" maxlength="30" placeholder="Tu nombre o apodo">
+        <button class="btn principal" type="button" id="publicar">Publicar esta ruta</button>
+      </div>
+      <div id="pub-si" hidden>
+        <p><b>✓ Publicada.</b> Se ve en la portada mientras tu acceso esté vigente.</p>
+        <a class="btn" id="pub-ver" href="#" target="_blank" rel="noopener">Ver la página pública</a>
+        <button class="btn" type="button" id="pub-copiar">Copiar el enlace</button>
+        <button class="btn peligro" type="button" id="despublicar">Dejar de publicar</button>
+      </div>
+      <div class="msg" id="msg-pub" role="status"></div>
+    </div>
     <button class="btn peligro" type="button" id="borrar">Borrar esta ruta</button>
   </section>
 </main>
-<script src="rutas.js"></script>
+<script src="mis-rutas.js"></script>
 </body>
 </html>

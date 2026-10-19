@@ -193,6 +193,7 @@ def live_publico():
 ARCHIVO_DIR = os.path.join(ROOT, "carreras")
 mimetypes.add_type("application/geo+json", ".geojson")
 mimetypes.add_type("application/manifest+json", ".webmanifest")
+mimetypes.add_type("font/woff2", ".woff2")
 SLUG_RE = re.compile(r"^/(\d{4}-[a-z0-9-]{1,60})(/.*)?$")
 FICHEROS_CARRERA = ("carrera.json", "route.geojson", "elevation.json", "aid_stations.json", "rider.png", "avisos.json")
 
@@ -452,6 +453,20 @@ def preparacion():
             "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,
             "resultado_pendiente": os.path.exists(os.path.join(ROOT, "resultado.json")),
             "app_at": live.get("app_at")}
+
+
+def directo_ahora():
+    """¿La portada es la carrera? En marcha, o preparada para hoy (o ya pasada y sin archivar).
+    Con una carrera para otro día, la portada es la de las rutas (con la carrera como «próxima»)."""
+    d = read_live()
+    if d.get("started_at") or d.get("livetrack_url"):
+        return True
+    fecha = carrera().get("fecha") or ""
+    try:
+        hoy = datetime.now(zona_carrera()).date().isoformat()
+        return bool(fecha) and fecha <= hoy and slug_de(carrera()) not in {a[0] for a in carreras_archivadas()}
+    except Exception:
+        return False
 
 
 def hay_carrera_en_marcha():
@@ -1308,7 +1323,7 @@ def stop_previous_poller():
 # como si no existiera.
 EXTENSIONES_PUBLICAS = {
     ".html", ".css", ".js", ".json", ".geojson", ".webmanifest",
-    ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt",
+    ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt", ".woff2",
 }
 
 
@@ -1416,6 +1431,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         crudo = self.path.split("?")[0]
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
+        if crudo == "/rutas.html":
+            return self._redirigir("/mis-rutas.html", 301)       # el espacio del invitado se llama /mis-rutas.html
+        if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
+            return self._publico_get(crudo)
+        if crudo == "/inicio":
+            return self._pagina("inicio.html")
+        m_ruta = re.fullmatch(r"/r/([0-9a-f]{12})", crudo)
+        if m_ruta:
+            return self._pagina_ruta(m_ruta.group(1))
         if crudo.startswith("/api/invitado/"):
             return self._invitado_get(crudo)
         ruta = self._ruta()
@@ -1426,6 +1450,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not m.group(2) and not crudo.endswith("/"):
                 return self._redirigir("/" + m.group(1) + "/", 301)   # sin la barra, los enlaces relativos fallan
             return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
+        if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+            return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
         if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() \
                 and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             # sin carrera en marcha: la portada lleva al último resultado (302,
@@ -1609,7 +1635,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("X-Robots-Tag", "noindex, nofollow")
         elif csp_web():
             self.send_header("Content-Security-Policy", csp_web())
-        if ruta == "/rutas.html":
+        if ruta == "/mis-rutas.html":
             self.send_header("X-Robots-Tag", "noindex, nofollow")   # el espacio de invitados no sale en Google
         super().end_headers()
 
@@ -1776,7 +1802,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(400, {"error": "invalid json"})
                 return
             if ruta == "/api/invitado/ruta":
-                r = inv.guardar_ruta(ROOT, usuario, d.get("id"), d.get("nombre"), d.get("avituallamientos"))
+                r = inv.guardar_ruta(ROOT, usuario, d.get("id"), d.get("nombre"), d.get("avituallamientos"),
+                                     d.get("publica"), d.get("ocultar_m"), d.get("autor"))
                 self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
                 return
             if ruta == "/api/invitado/borrar":
@@ -1808,6 +1835,81 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             _gpx_inv_sem.release()
         print(f"[invitado] {usuario} sube una ruta", flush=True)
         self._send_json(200, {"ok": True, "ruta": detalle})
+
+    # --- rutas públicas (portada, página de cada ruta y GPX para el reloj) ---------
+    def _publico_get(self, ruta):
+        inv = invitados_mod()
+        cache = "public, max-age=60, s-maxage=60"
+        if ruta == "/api/rutas-publicas":
+            self._send_json(200, {"rutas": inv.publicas(ROOT)}, cache=cache)
+            return
+        if ruta == "/api/carreras":
+            lista = [{"slug": slug, "nombre": c.get("nombre"), "lugar": c.get("lugar"), "fecha": c.get("fecha"),
+                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km"),
+                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s")}
+                     for slug, c, r in carreras_archivadas()]
+            c, live = carrera(), read_live()
+            hoy = datetime.now(zona_carrera()).date().isoformat()
+            proxima = None
+            if c.get("nombre") and (c.get("fecha") or "") >= hoy and not live.get("finished_at") \
+                    and slug_de(c) not in {x["slug"] for x in lista}:
+                proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
+            self._send_json(200, {"carreras": lista, "proxima": proxima,
+                                  "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
+            return
+        id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
+        if ruta == "/api/ruta-publica":
+            d = inv.publica_detalle(ROOT, id_)
+            self._send_json(200 if d else 404, d or {"error": "esa ruta no existe o ya no es pública"}, cache=cache if d else "no-store")
+            return
+        if ruta == "/api/ruta-publica/reloj.gpx":
+            nombre, gpx = inv.gpx_publico(ROOT, id_, herramienta("gpx_reloj").generar)
+            if gpx is None:
+                self._send_json(404, {"error": "esa ruta no existe o ya no es pública"})
+                return
+            cuerpo = gpx.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+            self.send_header("Content-Disposition",
+                             f'attachment; filename="{re.sub(r"[^a-z0-9]+", "-", nombre.lower()).strip("-") or "ruta"}-reloj.gpx"')
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", cache)
+            self.end_headers()
+            self.wfile.write(cuerpo)
+            return
+        self._send_json(404, {"error": "not found"})
+
+    # --- páginas de la web de rutas -------------------------------------------------
+    def _pagina(self, nombre, reemplazos=None, estado=200):
+        """Una página de la web con og:url y og:image del dominio de quien la sirve y, si trae
+        {{TOKENS}}, sus valores ya escapados."""
+        from html import escape
+        with open(os.path.join(ROOT, nombre), encoding="utf-8") as f:
+            html = f.read()
+        host = self.headers.get("Host", "")
+        if re.fullmatch(r"[A-Za-z0-9.-]+(:\d{1,5})?", host):
+            html = re.sub(r'(<meta property="og:url" content=")[^"]*', lambda m: m.group(1) + f"https://{host}{self._ruta()}", html, count=1)
+            html = re.sub(r'(<meta property="og:image" content=")[^"]*', lambda m: m.group(1) + f"https://{host}/og.jpg", html, count=1)
+        for k, v in (reemplazos or {}).items():
+            html = html.replace("{{" + k + "}}", escape(str(v), quote=True))
+        cuerpo = html.encode("utf-8")
+        self.send_response(estado)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "no-cache, must-revalidate")
+        self.send_header("X-Robots-Tag", "noindex, nofollow")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
+
+    def _pagina_ruta(self, id_):
+        d = invitados_mod().publica_detalle(ROOT, id_)
+        if d:
+            titulo = f"{d['nombre']} · Sígueme CC"
+            desc = f"{d['distancia_km']:g} km · +{d['desnivel_m']} m · mapa, perfil y GPX para tu reloj"
+        else:
+            titulo, desc = "Ruta no disponible · Sígueme CC", "Esta ruta ya no está disponible."
+        return self._pagina("ruta.html", {"TITULO": titulo, "DESC": desc}, 200 if d else 404)
 
     def _gpx_reloj(self):
         """La ruta con altitud y los avituallamientos y subidas como puntos de control,
@@ -2190,7 +2292,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         accion = data.get("action")
 
-        if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar"):
+        if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar",
+                      "rutas_todas", "ruta_moderar"):
             # los amigos que pueden preparar sus rutas para el reloj (el código solo se ve al crearlo)
             inv = invitados_mod()
             usuario = str(data.get("usuario") or "").strip().lower()
@@ -2204,11 +2307,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     extra = {"usuario": usuario, "codigo": inv.codigo_nuevo(ROOT, usuario)}
                 elif accion == "invitado_borrar":
                     inv.borrar(ROOT, usuario)
+                elif accion == "ruta_moderar":
+                    inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
                 inv.purgar(ROOT)
             except ValueError as e:
                 self._send_json(400, {"error": str(e)})
                 return
-            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT)))
+            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT)))
             return
 
         if accion == "rotar_gps":

@@ -48,7 +48,7 @@ async function lista() {
     const dato = document.createElement('div'); dato.className = 'dato';
     const nombre = document.createElement('b'); nombre.textContent = r.nombre;
     const info = document.createElement('span'); info.className = 'sub';
-    info.textContent = km(r.distancia_km) + ' km · +' + r.desnivel_m + ' m' + (r.avituallamientos ? ' · ' + r.avituallamientos + ' avit.' : '');
+    info.textContent = km(r.distancia_km) + ' km · +' + r.desnivel_m + ' m' + (r.avituallamientos ? ' · ' + r.avituallamientos + ' avit.' : '') + (r.publica ? ' · pública' : '');
     dato.append(nombre, info);
     const abrir = document.createElement('button'); abrir.type = 'button'; abrir.className = 'btn chico principal'; abrir.textContent = 'Abrir';
     abrir.addEventListener('click', () => abrirRuta(r.id));
@@ -122,8 +122,32 @@ function pintarRuta(r) {
   }
   $('bajar').href = base + '/reloj.gpx?id=' + r.id;
   aviso('msg-ruta', '');
+  pintarPublicacion(r);
   ver('ruta');
 }
+
+// ---- publicar en la web
+function pintarPublicacion(r) {
+  $('pub-no').hidden = !!r.publica; $('pub-si').hidden = !r.publica;
+  $('pub-ocultar').value = String(r.ocultar_m ?? 300); $('pub-autor').value = r.autor || '';
+  $('pub-ver').href = '/r/' + r.id;
+  aviso('msg-pub', '');
+}
+async function publicacion(publica) {
+  const b = publica ? $('publicar') : $('despublicar'); b.disabled = true; aviso('msg-pub', publica ? 'Publicando…' : 'Quitando…');
+  try {
+    const d = await post('/ruta', { id: actual.id, publica, ocultar_m: Number($('pub-ocultar').value), autor: $('pub-autor').value });
+    actual = d.ruta; pintarPublicacion(actual);
+    aviso('msg-pub', publica ? 'Publicada. Ya sale en la portada.' : 'Ya no es pública.', 'ok');
+  } catch (err) { if (err.message !== 'sesion') aviso('msg-pub', err.message, 'err'); }
+  finally { b.disabled = false; }
+}
+$('publicar').addEventListener('click', () => publicacion(true));
+$('despublicar').addEventListener('click', () => { if (confirm('¿Dejar de publicar «' + actual.nombre + '»? Desaparece de la portada.')) publicacion(false); });
+$('pub-copiar').addEventListener('click', async () => {
+  const url = location.origin + '/r/' + actual.id;
+  try { await navigator.clipboard.writeText(url); aviso('msg-pub', 'Enlace copiado.', 'ok'); } catch (e) { aviso('msg-pub', url, 'ok'); }
+});
 
 $('mas-avit').addEventListener('click', () => { const f = filaAvit({}); $('avits').append(f); f.querySelector('input').focus(); });
 $('volver').addEventListener('click', () => lista().catch(() => {}));

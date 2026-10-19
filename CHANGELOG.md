@@ -4,6 +4,31 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.18.0 · 2026-10-19
+- **Portada de rutas** (estilo cartel: lima, negro y letra condensada): es la web
+  en `/` cuando no hay una carrera para hoy, y siempre en `/inicio`. Enseña las
+  rutas publicadas, las carreras archivadas y, si la hay, la próxima carrera;
+  arriba, «Mis rutas» (invitados) y «Admin». Antes redirigía al último resultado.
+- **Cada ruta, su página** (`/r/…`): titular, cifras, mapa de satélite con la
+  ruta, perfil de altura, avituallamientos, subidas, **Descargar GPX para el
+  reloj** y Compartir. Sale con su vista previa al compartir el enlace.
+- **Los invitados publican.** Cada ruta es privada hasta que su dueño la publica.
+  Lo público va **recortado** (por defecto sin los primeros y últimos 300 m, donde
+  suele estar su casa; se puede elegir 0, 500 m o 1 km), con la firma que quiera, y
+  deja de verse en cuanto caduca su acceso. En la pestaña nueva **Rutas** del panel
+  ves todo lo publicado y lo quitas o borras; también hay cuentas sin caducidad
+  (la tuya). El espacio del invitado pasa a `/mis-rutas.html` (el nombre viejo
+  redirige).
+- **App Android:** pestañas **Rutas | Carrera**. Rutas es la misma portada
+  (lista, pantalla de cada ruta con su perfil) y **guarda el GPX en Descargas**
+  (Android 10 o más) con «Abrir con…» y «Compartir». Sin cobertura enseña las
+  últimas rutas que bajó. Con el seguimiento en marcha, siempre la carrera.
+- **Arreglos:** Huawei Health no se detectaba en Android 11 o más (faltaba en el
+  manifiesto, error de la v1.16.0); la app solo intentaba bajar el plan al abrirse,
+  y sin cobertura en ese momento no volvía a probar: ahora reintenta cada 10 s.
+- El banco del emulador publica una ruta y comprueba que la app la muestra, la
+  abre y guarda su GPX. Tipografía Anton (SIL OFL) en `fonts/`.
+
 ## v1.17.0 · 2026-10-19
 - **Invitados:** un amigo prepara **sus** rutas y se las lleva al reloj, sin ver
   nada de tu carrera ni de tu panel. En el panel (pestaña Resultado →

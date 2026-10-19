@@ -103,7 +103,7 @@
   .pill-panel:empty { display: none; }
   .pill-panel.vivo { background: #7fd46a; color: #0a0d0c; border-color: #7fd46a; }
   .admin-wrap { max-width: 560px; padding-top: 6px; }
-  .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
     padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.96); backdrop-filter: blur(10px); /* taste-skill-ignore: la única barra fija */
     border: 0; border-radius: 14px; }
   .pestanas button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
@@ -207,7 +207,11 @@
     .lista-prep { grid-template-columns: 1fr 1fr; gap: 6px 28px; }
     .qr { width: min(260px, 100%); }
   }
+  @media (max-width: 519px) { .pestanas button { font-size: 0.76rem; padding: 0 2px; } }
   /* invitados */
+  .inv-sin { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; color: #cdd4cf; font-size: 0.92rem; }
+  .inv-sin input { width: 22px; height: 22px; min-height: 0; accent-color: #7fd46a; }
+  a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
   .inv-fila { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.08); }
   .inv-dato b { display: block; } .inv-dato span { color: var(--muted); font-size: 0.9rem; }
   .inv-caducado { color: #ff8a7a !important; }
@@ -246,6 +250,7 @@
     <button type="button" role="tab" data-tab="movil" data-n="2"><span class="n" aria-hidden="true">2</span><span class="t"><b>Móvil</b><small id="est-movil">Instalar la app y la pulsera</small></span></button>
     <button type="button" role="tab" data-tab="hoy" data-n="3"><span class="n" aria-hidden="true">3</span><span class="t"><b>Carrera</b><small id="est-hoy">Empezar y seguir el directo</small></span></button>
     <button type="button" role="tab" data-tab="mas" data-n="4"><span class="n" aria-hidden="true">4</span><span class="t"><b>Resultado</b><small id="est-mas">Subir el FIT y archivar</small></span></button>
+    <button type="button" role="tab" data-tab="rutas" data-n="5"><span class="n" aria-hidden="true">5</span><span class="t"><b>Rutas</b><small id="est-rutas">Invitados y rutas públicas</small></span></button>
   </nav>
 
   <div class="tarjeta" id="t-empezar" data-tab="hoy">
@@ -482,7 +487,14 @@
     </details>
   </div>
 
-  <div class="tarjeta" id="sec-invitados" data-tab="mas">
+    <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
+    <h2>Rutas publicadas</h2>
+    <div class="howto">Lo que tus invitados han publicado en la web: cualquiera puede verlo. Si algo no debe estar,
+      quítalo aquí. Se ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>.</div>
+    <div id="pub-lista"></div>
+  </div>
+
+  <div class="tarjeta" id="sec-invitados" data-tab="rutas">
     <h2>Invitados</h2>
     <div class="howto">Para que un amigo prepare <b>sus</b> rutas y se las lleve al reloj, sin ver nada de tu carrera ni de tu panel.
       Le das un usuario y un código que caduca; él entra en <b id="inv-url"></b>.</div>
@@ -493,6 +505,7 @@
       <div class="field"><label for="inv-dias">Días de acceso</label>
         <input type="number" id="inv-dias" min="1" max="365" value="30"></div>
     </div>
+    <label class="inv-sin"><input type="checkbox" id="inv-sin"> Sin caducidad (para tu propia cuenta)</label>
     <button class="save-btn" id="inv-crear" type="button">Crear invitado</button>
     <div class="msg" id="inv-msg" role="status"></div>
     <div class="inv-nuevo" id="inv-nuevo" hidden>
@@ -872,7 +885,7 @@ function pintarInvitados(lista) {
     const f = document.createElement('div'); f.className = 'inv-fila';
     const t = document.createElement('div'); t.className = 'inv-dato';
     const n = document.createElement('b'); n.textContent = g.usuario;
-    const s = document.createElement('span'); s.textContent = (g.activo ? 'vale hasta el ' : 'CADUCADO el ') + fechaEs(g.caduca) + ' · ' + g.rutas + (g.rutas === 1 ? ' ruta' : ' rutas');
+    const s = document.createElement('span'); s.textContent = (g.sin_caducidad ? 'sin caducidad' : (g.activo ? 'vale hasta el ' : 'CADUCADO el ') + fechaEs(g.caduca)) + ' · ' + g.rutas + (g.rutas === 1 ? ' ruta' : ' rutas') + (g.publicas ? ' (' + g.publicas + ' públicas)' : '');
     if (!g.activo) s.className = 'inv-caducado';
     t.append(n, s);
     const bs = document.createElement('div'); bs.className = 'inv-botones';
@@ -880,13 +893,13 @@ function pintarInvitados(lista) {
       ['+30 días', async () => { const d = await invPost({ action: 'invitado_renovar', usuario: g.usuario, dias: 30 }); if (d) { pintarInvitados(d.invitados); invAviso('Acceso renovado hasta el ' + fechaEs(d.caduca) + '.'); } }],
       ['Código nuevo', async () => { if (!confirm('¿Código nuevo para ' + g.usuario + '? El anterior deja de valer.')) return; const d = await invPost({ action: 'invitado_codigo', usuario: g.usuario }); if (d) { pintarInvitados(d.invitados); enseñarCodigo(d.usuario, d.codigo, g.caduca); } }],
       ['Quitar', async () => { if (!confirm('¿Quitar a ' + g.usuario + ' y borrar sus rutas?')) return; const d = await invPost({ action: 'invitado_borrar', usuario: g.usuario }); if (d) { pintarInvitados(d.invitados); invAviso('Quitado.'); } }],
-    ]) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = txt; b.addEventListener('click', fn); bs.append(b); }
+    ].filter(([txt]) => !(g.sin_caducidad && txt === '+30 días'))) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = txt; b.addEventListener('click', fn); bs.append(b); }
     f.append(t, bs); c.append(f);
   }
 }
 function invAviso(texto) { const m = $('inv-msg'); m.textContent = texto; m.className = 'msg ok'; }
 function enseñarCodigo(usuario, codigo, caduca) {
-  const url = location.origin + '/rutas.html';
+  const url = location.origin + '/mis-rutas.html';
   $('inv-n-codigo').textContent = codigo;
   $('inv-nuevo').hidden = false;
   $('inv-copiar').onclick = async () => {
@@ -894,15 +907,40 @@ function enseñarCodigo(usuario, codigo, caduca) {
     try { await navigator.clipboard.writeText(texto); invAviso('Copiado. Pégalo en un mensaje.'); } catch (e) { invAviso(texto); }
   };
 }
+function pintarPublicadas(rutas) {
+  const c = $('pub-lista'); c.textContent = '';
+  const pub = rutas.filter(r => r.publica);
+  const resto = rutas.length - pub.length;
+  if (!pub.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'Nada publicado todavía' + (resto ? ' (' + resto + ' rutas privadas de invitados).' : '.'); c.append(p); return; }
+  for (const r of pub) {
+    const f = document.createElement('div'); f.className = 'inv-fila';
+    const t = document.createElement('div'); t.className = 'inv-dato';
+    const n = document.createElement('b'); n.textContent = r.nombre;
+    const s = document.createElement('span'); s.textContent = String(r.distancia_km).replace('.', ',') + ' km · de ' + r.usuario + (r.autor ? ' (firma «' + r.autor + '»)' : '') + (r.activo ? '' : ' · acceso caducado');
+    t.append(n, s);
+    const bs = document.createElement('div'); bs.className = 'inv-botones';
+    const ver = document.createElement('a'); ver.className = 'btn'; ver.textContent = 'Ver'; ver.href = '/r/' + r.id; ver.target = '_blank'; ver.rel = 'noopener'; bs.append(ver);
+    for (const [txt, accion, pregunta] of [['Quitar de la web', 'despublicar', null], ['Borrar', 'borrar', '¿Borrar esta ruta de ' + r.usuario + '? No se puede deshacer.']]) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = txt;
+      b.addEventListener('click', async () => {
+        if (pregunta && !confirm(pregunta)) return;
+        const d = await invPost({ action: 'ruta_moderar', usuario: r.usuario, id: r.id, accion });
+        if (d) { pintarPublicadas(d.rutas); pintarInvitados(d.invitados); invAviso(accion === 'borrar' ? 'Ruta borrada.' : 'Ya no sale en la web.'); }
+      });
+      bs.append(b);
+    }
+    f.append(t, bs); c.append(f);
+  }
+}
 async function cargarInvitados() {
-  $('inv-url').textContent = location.origin + '/rutas.html';
-  const d = await invPost({ action: 'invitados' });
-  if (d) pintarInvitados(d.invitados);
+  $('inv-url').textContent = location.origin + '/mis-rutas.html';
+  const d = await invPost({ action: 'rutas_todas' });
+  if (d) { pintarInvitados(d.invitados); pintarPublicadas(d.rutas); }
 }
 $('inv-crear').addEventListener('click', async () => {
   const usuario = $('inv-usuario').value.trim().toLowerCase();
   const b = $('inv-crear'); b.disabled = true; $('inv-msg').textContent = '';
-  const d = await invPost({ action: 'invitado_crear', usuario, dias: Number($('inv-dias').value) || 30 });
+  const d = await invPost({ action: 'invitado_crear', usuario, dias: $('inv-sin').checked ? 0 : (Number($('inv-dias').value) || 30) });
   b.disabled = false;
   if (!d) return;
   $('inv-usuario').value = '';
@@ -1007,7 +1045,7 @@ function verPestana(t) {
   document.querySelectorAll('.pestanas button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
   document.querySelectorAll('.tarjeta[data-tab]').forEach(c => { c.hidden = c.dataset.tab !== t; });
   try { localStorage.setItem('pestana', t); } catch (e) {}
-  if (t === 'mas' && typeof cargarInvitados === 'function') cargarInvitados();
+  if (t === 'rutas' && typeof cargarInvitados === 'function') cargarInvitados();
 }
 document.querySelectorAll('.pestanas button').forEach(b => b.addEventListener('click', () => verPestana(b.dataset.tab)));
 // los botones «Siguiente» del final de cada pestaña
@@ -1025,7 +1063,7 @@ function marcarPestana(t, hecho) {
 let pestanaElegida = false;
 let inicial = 'hoy';
 try { inicial = localStorage.getItem('pestana') || 'hoy'; } catch (e) {}
-verPestana(['hoy', 'preparar', 'movil', 'mas'].includes(inicial) ? inicial : 'hoy');
+verPestana(['hoy', 'preparar', 'movil', 'mas', 'rutas'].includes(inicial) ? inicial : 'hoy');
 
 let sondeo = null;
 function entrar() {

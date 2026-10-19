@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#d9f24a">
+<title>{{TITULO}}</title>
+<meta name="description" content="{{DESC}}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{TITULO}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:url" content="">
+<meta property="og:image" content="/og.jpg">
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="/cartel.css">
+<link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
+</head>
+<body class="cartel ruta">
+<div class="campo cab">
+  <header class="barra"><a href="/inicio">‹ RUTAS</a><nav><a href="/mis-rutas.html">Mis rutas</a><a href="/admin.html">Admin</a></nav></header>
+  <h1 class="nombre-ruta" id="titulo">&nbsp;</h1>
+  <p class="autor" id="autor" hidden></p>
+  <div class="cifras" id="cifras" hidden></div>
+  <div class="acciones" id="acciones" hidden>
+    <a class="boton" id="bajar" href="#" download>Descargar GPX para el reloj</a>
+    <button class="boton claro" id="compartir" type="button">Compartir</button>
+  </div>
+</div>
+<main>
+  <section class="oscuro" id="detalle" hidden>
+    <div class="mapa" id="mapa" role="img" aria-label="Mapa de la ruta"></div>
+    <svg class="perfil" id="perfil" viewBox="0 0 1000 240" role="img" aria-label="Perfil de altura de la ruta"></svg>
+  </section>
+  <section id="sec-avit" hidden><h2 class="titulo">Avituallamientos</h2><div class="oscuro" id="avits"></div></section>
+  <section id="sec-subidas" hidden><h2 class="titulo">Subidas</h2><div class="oscuro" id="subidas"></div></section>
+  <details class="como" id="como" hidden>
+    <summary>Cómo meterla en mi reloj</summary>
+    <p><b>Huawei</b> (Watch Fit 4, GT…): en Huawei Health → Yo → Mi ruta → Importar ruta, elige el fichero y, dentro de la ruta, «Enviar al reloj». En el reloj: Entrenamiento → ajustes → Rutas.</p>
+    <p><b>Amazfit, Garmin o Coros:</b> importa el mismo GPX con su app (Zepp, Garmin Connect, Coros). En iPhone el fichero se guarda en Archivos: elígelo desde ahí.</p>
+    <p>Los menús cambian según el modelo. Si tu reloj no enseña los puntos de control, la ruta se sigue igual.</p>
+  </details>
+  <section class="oscuro" id="error" hidden><p class="vacio">Esta ruta ya no está disponible: puede que su dueño la haya quitado.</p><a class="boton" href="/inicio">Ver las rutas</a></section>
+</main>
+<footer class="pie"><span>Sígueme CC</span><small>Mapa: imágenes de Esri. Los primeros y últimos metros de cada ruta no se muestran.</small></footer>
+<script src="/ruta.js"></script>
+</body>
+</html>

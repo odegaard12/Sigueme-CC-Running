@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.17.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.18.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -25,7 +25,10 @@
   <img src="docs/capturas/pc.jpg" width="900" alt="La web en el ordenador">
 </p>
 <p align="center">
-  <img src="docs/capturas/panel.png" width="820" alt="Panel en el ordenador: las pestañas son los pasos (Preparar, Móvil, Carrera y Resultado) y dice cuál es el siguiente">
+  <img src="docs/capturas/panel.png" width="820" alt="Panel en el ordenador: las pestañas son los pasos (Preparar, Móvil, Carrera, Resultado y Rutas) y dice cuál es el siguiente">
+</p>
+<p align="center">
+  <img src="docs/capturas/rutas.png" width="900" alt="La portada de rutas en el ordenador y la página de una ruta en el móvil">
 </p>
 
 ---
@@ -120,15 +123,23 @@ Sin panel, las mismas herramientas desde la consola:
 Para que un amigo prepare **sus** rutas y se las lleve al reloj sin ver nada de tu
 carrera: en el panel, pestaña **Resultado** → **Invitados**, creas un usuario con
 un código que caduca (30 días por defecto; puedes renovarlo o quitarlo). Él entra
-en `https://tu-dominio/rutas.html` desde cualquier móvil (iPhone incluido), sube
+en `https://tu-dominio/mis-rutas.html` desde cualquier móvil (iPhone incluido), sube
 un GPX, pone sus avituallamientos y descarga el GPX para el reloj. No hay
 seguimiento ni se guarda su GPX original (solo la ruta simplificada y su perfil);
 sus datos se borran siete días después de caducar. Máximo 20 invitados y 5 rutas
-cada uno.
+cada uno. Cada ruta es **privada hasta que su dueño la publica**: lo público se ve
+recortado (por defecto sin los primeros y últimos 300 m, donde suele estar su casa) y
+deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Rutas** del panel,
+ves todo lo publicado y puedes quitarlo.
+
+La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
+las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada
+ruta tiene su página (`/r/…`) con mapa, perfil, avituallamientos, subidas y el GPX para el reloj.
+Tipografía Anton (SIL OFL) servida desde `fonts/`.
 
 ## 4. Elegir cómo se manda tu posición
 
-<p align="center"><img src="docs/capturas/app.jpg" width="640" alt="App Android: el siguiente paso, siguiendo la carrera y los avisos que llegan a la pulsera"></p>
+<p align="center"><img src="docs/capturas/app.jpg" width="640" alt="App Android: las rutas, una ruta con su perfil y el seguimiento de la carrera"></p>
 
 Puedes usar una sola o varias a la vez; la web decide sola cuál usar.
 
