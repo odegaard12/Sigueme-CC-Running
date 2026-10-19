@@ -137,6 +137,17 @@
   input[type=file]::file-selector-button { font: inherit; font-weight: 700; color: #f1f3f1; background: #1f2622;
     border: 0; border-radius: 10px; padding: 10px 14px; margin-right: 12px; cursor: pointer; }
   input[type=file]::file-selector-button:hover { background: #26302b; }
+  /* guiado de la preparación */
+  .tarjeta { scroll-margin-top: 76px; }
+  .progreso-prep { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-left: 6px; }
+  .siguiente { background: #1b2b1f; border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; display: grid; gap: 10px; }
+  .siguiente p { margin: 0; font-size: 0.95rem; line-height: 1.45; color: var(--text); }
+  .lista-prep li.ir { cursor: pointer; border-radius: 10px; padding: 7px 8px; margin: 0 -8px; align-items: center; }
+  .lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1c2320; outline: none; }
+  .lista-prep .ir-flecha { margin-left: auto; color: #7fd46a; font-weight: 700; white-space: nowrap; padding-left: 10px; }
+  .resalta { animation: resalta 1.8s ease-out; }
+  @keyframes resalta { 0% { background: #2a4a31; } 100% { background: #161c19; } }
+  @media (prefers-reduced-motion: reduce) { .resalta { animation: none; } }
 </style>
 </head>
 <body>
@@ -170,6 +181,10 @@
 
   <div class="tarjeta" id="t-empezar" data-tab="hoy">
     <h2>Empezar la carrera</h2>
+    <div class="siguiente" id="hoy-pendientes" hidden>
+      <p id="hoy-pendientes-txt"></p>
+      <button class="btn" id="hoy-ir" type="button">Ir ›</button>
+    </div>
     <div class="howto"><b>Lo normal:</b> pulsa <b>EMPEZAR</b> en la app del móvil (aunque sea un rato
       antes de la salida) y la carrera se pone en marcha aquí sola. Este botón es para
       cuando no usas la app.</div>
@@ -245,10 +260,14 @@
   </div>
 
   <div class="tarjeta" data-tab="preparar">
-    <h2>Preparar la carrera</h2>
+    <h2>Preparar la carrera <span class="progreso-prep" id="prep-progreso"></span></h2>
+    <div class="siguiente" id="siguiente" hidden>
+      <p id="siguiente-txt"></p>
+      <button class="save-btn" id="siguiente-ir" type="button">Ir ›</button>
+    </div>
     <ul class="lista-prep" id="lista-prep"><li>Cargando…</li></ul>
-    <div class="howto" style="margin-top:8px">Todo se prepara aquí abajo, en orden, con cobertura
-      y antes de la carrera. Con una carrera en marcha no se pueden cambiar la ruta ni los datos.</div>
+    <div class="howto" style="margin-top:8px">Sigue el siguiente paso de arriba, o pulsa cualquier fila para ir a su
+      sitio. Se prepara en casa, con cobertura. Con una carrera en marcha no se pueden cambiar la ruta ni los datos.</div>
   </div>
 
   <div class="tarjeta" id="t-carrera" data-tab="preparar">
@@ -287,7 +306,7 @@
     <button class="save-btn" id="guardar-carrera" type="button">Guardar datos de la carrera</button>
   </div>
 
-  <div class="tarjeta" data-tab="preparar">
+  <div class="tarjeta" id="sec-ruta" data-tab="preparar">
     <h2>Ruta (GPX)</h2>
     <div class="howto">El GPX de la organización, o el que exportas de Strava, Komoot o Wikiloc. Salen
       el trazado del mapa y el perfil, y se rehace el plan de avisos.</div>
@@ -297,7 +316,7 @@
     <button class="save-btn" id="subir-gpx" type="button">Subir ruta</button>
   </div>
 
-  <div class="tarjeta" data-tab="preparar">
+  <div class="tarjeta" id="sec-avit" data-tab="preparar">
     <h2>Avituallamientos</h2>
     <div class="howto">Nombre y km de cada uno (la meta también, si quieres que salga en el mapa).</div>
     <div id="lista-avit" class="lista-avit"></div>
@@ -307,7 +326,7 @@
     </div>
   </div>
 
-  <div class="tarjeta" data-tab="preparar">
+  <div class="tarjeta" id="sec-avisos" data-tab="preparar">
     <h2>Avisos a la pulsera</h2>
     <div class="howto">Salen solos del perfil: antes de cada subida (tipo, largo, %, D+, rampa), a mitad
       de las largas, en la cima, antes de cada avituallamiento, un resumen cada pocos km y el último km.
@@ -327,7 +346,7 @@
     </details>
   </div>
 
-  <div class="tarjeta primero" data-tab="movil">
+  <div class="tarjeta primero" id="sec-app" data-tab="movil">
     <h2>App del móvil (Android)</h2>
     <div class="howto">Una sola vez, en casa: escanea este código con la cámara del móvil. Se abre la página
       de la app: instálala (la primera vez), vuelve a esa misma página y pulsa «Abrir en la app».
@@ -347,7 +366,7 @@
     <button class="save-btn" id="subir-fit" type="button">Subir y generar el resultado</button>
   </div>
 
-  <div class="tarjeta" data-tab="mas">
+  <div class="tarjeta" id="sec-archivar" data-tab="mas">
     <h2>Archivar</h2>
     <!-- archivar: la carrera terminada pasa a su carpeta y la portada queda libre -->
     <div class="howto"><b>Archivar la carrera terminada</b>: pasa a su propia
@@ -543,22 +562,64 @@ document.addEventListener('click', async e => {
   if (d) { $('msg').textContent = 'Archivada en /' + d.archivada + '/'; refreshStatus(d.live); }
 });
 
-// lista de preparación: qué está listo y qué falta para la próxima carrera
+// lleva a una sección del panel (cambia de pestaña, baja hasta ella y la resalta un momento)
+function irA(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  verPestana(el.dataset.tab);
+  const quieto = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' });
+  el.classList.remove('resalta'); void el.offsetWidth; el.classList.add('resalta');
+}
+
+// lista de preparación: qué está listo, qué falta y adónde ir a arreglarlo
 function pintarPreparacion(p) {
   if (!p) return;
-  const fila = (ok, texto) => { const li = document.createElement('li'); const m = document.createElement('span');
-    m.className = ok ? 'si' : 'no'; m.textContent = ok ? '✓' : '!'; li.append(m, ' ' + texto); return li; };  // taste-skill-ignore: marca de estado de la lista
   const km = v => v != null ? String(v).replace('.', ',') : '—';
   const l = $('lista-prep'); l.textContent = '';
   const app = p.app_at ? 'la app bajó el plan el ' + new Date(p.app_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-  l.append(
-    fila(p.nombre && p.fecha, 'Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—')),
-    fila(p.ruta_km, 'Ruta: ' + (p.ruta_km ? km(p.ruta_km) + ' km' : 'falta subir el GPX') + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (la carrera dice ' + km(p.distancia_km) + ')' : '')),
-    fila(p.avituallamientos > 0, 'Avituallamientos: ' + p.avituallamientos),
-    fila(p.avisos > 0, 'Avisos a la pulsera: ' + (p.avisos ? p.avisos + ' avisos, ' + p.subidas + ' subidas' : 'falta la ruta')),
-    fila(!!p.app_at, 'App del móvil: ' + (app || 'aún no ha bajado el plan (escanea el código)')),
-    fila(p.id_largo, p.id_largo ? 'Identificador GPS largo' : 'Identificador GPS corto o viejo: pulsa «Generar identificador nuevo»'),
-    fila(!p.resultado_pendiente, p.resultado_pendiente ? 'Hay un resultado sin archivar: archívalo antes de empezar' : 'Sin resultados pendientes de archivar'));
+  const pasos = [
+    { ok: !!(p.nombre && p.fecha), ir: 't-carrera', paso: 'Pon el nombre, la fecha y la hora de salida',
+      texto: 'Carrera: ' + (p.nombre || 'sin nombre') + ' · ' + (p.fecha || 'sin fecha') + ' · salida ' + (p.hora_salida || '—') },
+    { ok: !!p.ruta_km, ir: 'sec-ruta', paso: 'Sube el GPX de la ruta',
+      texto: 'Ruta: ' + (p.ruta_km ? km(p.ruta_km) + ' km' : 'falta subir el GPX') + (p.distancia_km && p.ruta_km && Math.abs(p.distancia_km - p.ruta_km) > 0.5 ? ' (la carrera dice ' + km(p.distancia_km) + ')' : '') },
+    { ok: p.avituallamientos > 0, ir: 'sec-avit', paso: 'Añade los avituallamientos (nombre y km)',
+      texto: 'Avituallamientos: ' + p.avituallamientos },
+    // sin ruta no hay avisos: se hacen solos al subir el GPX, no es un paso aparte
+    { ok: p.avisos > 0, ir: 'sec-avisos', paso: 'Pulsa «Rehacer el plan» en Avisos a la pulsera', depende: !p.ruta_km,
+      texto: 'Avisos a la pulsera: ' + (p.avisos ? p.avisos + ' avisos, ' + p.subidas + ' subidas' : 'se hacen solos al subir la ruta') },
+    { ok: !!p.app_at, ir: 'sec-app', paso: 'Instala la app en el móvil y ábrela con el código QR',
+      texto: 'App del móvil: ' + (app || 'aún no ha bajado el plan (escanea el código)') },
+    { ok: !!p.id_largo, ir: 'sec-app', paso: 'Pulsa «Generar identificador nuevo» y vuelve a escanear el código',
+      texto: p.id_largo ? 'Identificador GPS largo' : 'Identificador GPS corto o viejo: pulsa «Generar identificador nuevo»' },
+    { ok: !p.resultado_pendiente, ir: 'sec-archivar', paso: 'Archiva el resultado anterior',
+      texto: p.resultado_pendiente ? 'Hay un resultado sin archivar: archívalo antes de empezar' : 'Sin resultados pendientes de archivar' },
+  ];
+  pasos.forEach(x => {
+    const li = document.createElement('li'); li.className = 'ir'; li.tabIndex = 0; li.setAttribute('role', 'button');
+    const m = document.createElement('span'); m.className = x.ok ? 'si' : 'no'; m.textContent = x.ok ? '✓' : '!';  // taste-skill-ignore: marca de estado de la lista
+    li.append(m, ' ' + x.texto);
+    if (!x.ok) { const f = document.createElement('span'); f.className = 'ir-flecha'; f.textContent = 'Ir ›'; li.append(f); }
+    li.addEventListener('click', () => irA(x.ir));
+    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irA(x.ir); } });
+    l.append(li);
+  });
+  $('prep-progreso').textContent = pasos.filter(x => x.ok).length + ' de ' + pasos.length + ' listos';
+  const sig = pasos.find(x => !x.ok && !x.depende);
+  const cuadro = $('siguiente');
+  cuadro.hidden = false;
+  $('siguiente-txt').textContent = sig ? 'Siguiente paso: ' + sig.paso.charAt(0).toLowerCase() + sig.paso.slice(1) + '.'
+    : 'Todo listo. El día de la carrera, abre la app y pulsa «Empezar seguimiento».';
+  $('siguiente-ir').hidden = !sig;
+  $('siguiente-ir').onclick = () => sig && irA(sig.ir);
+  // lo mismo, en la pestaña Hoy (solo si no hay carrera en marcha)
+  const hoy = $('hoy-pendientes');
+  const enMarcha = !!document.querySelector('.pill-panel.vivo');
+  hoy.hidden = !sig || enMarcha;
+  if (sig) {
+    $('hoy-pendientes-txt').textContent = 'Falta preparar la carrera. Siguiente paso: ' + sig.paso.charAt(0).toLowerCase() + sig.paso.slice(1) + '.';
+    $('hoy-ir').onclick = () => irA(sig.ir);
+  }
   $('app-text').textContent = app ? app[0].toUpperCase() + app.slice(1) : 'La app aún no ha bajado el plan';
 }
 

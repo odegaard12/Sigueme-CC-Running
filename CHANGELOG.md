@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.14.0 · 2026-10-19
+- **El panel guía la preparación de la carrera:** «Preparar la carrera»
+  enseña cuántos pasos hay listos («4 de 7 listos»), dice cuál es el
+  **siguiente paso** con un botón que te lleva a su sitio (cambia de pestaña,
+  baja hasta la sección y la resalta), y cada fila de la lista es pulsable.
+  Si falta la ruta, el siguiente paso es subir el GPX; si ya está todo, dice
+  «Todo listo. El día de la carrera, abre la app y pulsa Empezar seguimiento».
+- La pestaña **Hoy** avisa de lo que falta preparar mientras no haya una
+  carrera en marcha.
+- Prueba nueva (`pruebas/panel.py`, con Playwright): comprueba los tres
+  estados y que el botón lleva a la pestaña y la sección correctas.
+
 ## v1.13.10 · 2026-10-19
 - **Enlace de seguimiento validado:** el servidor solo usa la vía de iGPSPORT
   si el servidor del enlace es de verdad iGPSPORT (no si el texto lo
