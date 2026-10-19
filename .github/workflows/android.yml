@@ -76,7 +76,16 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: bash android/prueba/emulador.sh && bash android/prueba/carrera.sh
+          script: bash android/prueba/emulador.sh
+      # la carrera, con un emulador nuevo (tras la primera prueba el de CI se quedaba colgado)
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash android/prueba/carrera.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with: { name: capturas-emulador, path: capturas }
