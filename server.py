@@ -1364,6 +1364,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/reloj.gpx":
+            return self._gpx_reloj()
         ruta = self._ruta()
         if ruta == "/carreras":
             return self._indice_carreras()
@@ -1611,6 +1613,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 pass
         return datetime.now(timezone.utc).isoformat()
+
+    def _gpx_reloj(self):
+        """La ruta con altitud y los avituallamientos y subidas como puntos de control,
+        para importarla en el reloj (Huawei Health, Zepp, Garmin...). Solo con sesión."""
+        if not sesion_valida(self.headers.get("Cookie")):
+            self._send_json(403, {"error": "entra en el panel primero"})
+            return
+        try:
+            cuerpo = herramienta("gpx_reloj").desde_ficheros(ROOT).encode("utf-8")
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{slug_de(carrera()) or "ruta"}-reloj.gpx"')
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(cuerpo)
 
     def _sesion_panel(self):
         """Peticiones del panel que no son JSON (subir el GPX): solo con sesión

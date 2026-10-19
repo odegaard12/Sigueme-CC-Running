@@ -115,6 +115,22 @@ Mientras no tengas la app, la posición se puede mandar con **Traccar Client**
 (Android e iPhone) o el reloj Amazfit: en el README, «Elegir cómo se manda tu
 posición».
 
+## Opcional · La ruta en el reloj
+
+Para que el reloj te guíe por la ruta, sin móvil y sin cobertura:
+
+1. En el panel (pestaña **Preparar**, tarjeta «Ruta (GPX)») pulsa **Descargar GPX
+   para el reloj**. Lleva la altitud y, como puntos de control, los
+   avituallamientos y el principio y la cima de cada subida.
+2. **Huawei** (Watch Fit 4, GT…): en **Huawei Health** → Yo → Mi ruta → Importar
+   ruta, elige el fichero y, dentro de la ruta, «Enviar al reloj». En el reloj:
+   Entrenamiento → ajustes → Rutas → activa la navegación.
+3. **Amazfit, Garmin o Coros** importan el mismo GPX con su app (Zepp, Garmin
+   Connect, Coros).
+
+Los menús cambian según el modelo y la versión, y no todos los relojes enseñan
+los puntos de control o el perfil: si el tuyo no los enseña, la ruta se sigue igual.
+
 ## 6 · El día de la carrera
 
 1. En la app, **Empezar seguimiento** cuando quieras, aunque sea una hora antes

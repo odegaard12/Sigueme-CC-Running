@@ -379,6 +379,12 @@
     <div class="field" style="margin-top:8px"><label for="gpx">Fichero GPX</label><input type="file" id="gpx" accept=".gpx,application/gpx+xml"></div>
     <div class="field"><label for="gpx-dist">Km oficiales (opcional, si no coinciden con los del GPX)</label><input type="number" step="0.01" min="0.1" id="gpx-dist"></div>
     <button class="save-btn" id="subir-gpx" type="button">Subir ruta</button>
+    <div id="reloj-gpx" hidden>
+      <div class="howto" style="margin-top:16px"><b>La ruta en el reloj (opcional).</b> Con altitud y, como puntos
+        de control, los avituallamientos y las subidas. Impórtala en Huawei Health (Yo → Mi ruta → Importar ruta →
+        Enviar al reloj), Zepp, Garmin o Coros.</div>
+      <a class="btn" id="bajar-reloj" href="/api/reloj.gpx" download style="margin-top:10px">Descargar GPX para el reloj</a>
+    </div>
   </div>
 
   <div class="tarjeta" id="sec-avit" data-tab="preparar">
@@ -427,9 +433,9 @@
   <div class="tarjeta primero" id="sec-pulsera" data-tab="movil">
     <h2>Que los avisos lleguen a la pulsera</h2>
     <ol class="guia">
-      <li><span>Instala <b>Mi Fitness</b> (Xiaomi) o <b>Zepp</b> (Amazfit) y enlaza tu pulsera.</span></li>
+      <li><span>Instala <b>Mi Fitness</b> (Xiaomi), <b>Zepp</b> (Amazfit) o <b>Huawei Health</b> (Huawei) y enlaza tu pulsera.</span></li>
       <li><span>En la app Sígueme CC pulsa <b>«Probar aviso»</b> una vez. Hasta entonces Sígueme CC no sale en la lista de apps de la pulsera.</span></li>
-      <li><span>En Mi Fitness o Zepp, abre los ajustes de tu pulsera → notificaciones de apps y <b>activa Sígueme CC</b>: viene desactivada.</span></li>
+      <li><span>En Mi Fitness, Zepp o Huawei Health, abre los ajustes de tu pulsera → notificaciones de apps y <b>activa Sígueme CC</b>: viene desactivada.</span></li>
       <li><span>Bloquea el móvil, pulsa «Probar aviso» otra vez y mira la pulsera.</span></li>
     </ol>
     <div class="howto">Los nombres de los menús cambian un poco según la versión de la app de la pulsera.</div>
@@ -770,6 +776,7 @@ function pintarFormCarrera(c) {
   $('c-piezas').value = Object.entries((c.bici || {}).piezas || {}).map(([k, v]) => k + ': ' + v).join('\n');
   const r = c.distancia_km ? km(c.distancia_km) + ' km' + (c.desnivel_m ? ' · +' + c.desnivel_m + ' m' : '') : '';
   $('ruta-text').textContent = r ? 'Ruta actual: ' + r : 'Sin ruta';
+  $('reloj-gpx').hidden = !r;
 }
 const km = v => v != null ? String(v).replace('.', ',') : '—';
 $('guardar-carrera').addEventListener('click', () => {

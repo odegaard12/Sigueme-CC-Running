@@ -86,6 +86,9 @@ La guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.m
 4. **Avisos a la pulsera:** salen solos del perfil (subidas, cimas,
    avituallamientos, lo que queda); los revisas y cambias los textos.
 5. **App del móvil:** escaneas el código QR y baja todo para ir sin cobertura.
+6. **La ruta en el reloj (opcional):** un botón descarga el GPX con altitudes y, como
+   puntos de control, los avituallamientos y las subidas, para importarlo en Huawei Health,
+   Zepp, Garmin o Coros.
 
 Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
 (`carrera.json`, `route.geojson`, `elevation.json`, `aid_stations.json`,

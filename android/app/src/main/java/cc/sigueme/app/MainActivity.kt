@@ -72,6 +72,7 @@ class MainActivity : Activity() {
         "com.xiaomi.wearable" to "Mi Fitness",
         "com.mi.health" to "Mi Fitness",
         "com.xiaomi.hm.health" to "Zepp Life",
+        "com.huawei.health" to "Huawei Health",
         "nodomain.freeyourgadget.gadgetbridge" to "Gadgetbridge")
     private fun instalada(p: String) = try { packageManager.getPackageInfo(p, 0); true } catch (e: PackageManager.NameNotFoundException) { false }
     /** ¿Tiene esa app «Acceso a notificaciones»? null si Android no deja saberlo. */
@@ -183,7 +184,7 @@ class MainActivity : Activity() {
             setLineSpacing(0f, 1.2f)
             text = "Con la pantalla apagada y sin cobertura, la app:\n" +
                 "•  sigue tu km con el GPS del móvil,\n" +
-                "•  lanza cada aviso como una notificación (Mi Fitness o Zepp la repiten en la pulsera),\n" +
+                "•  lanza cada aviso como una notificación (Mi Fitness, Zepp o Huawei Health la repiten en la pulsera),\n" +
                 "•  guarda tu posición y la manda a la web cuando vuelve la cobertura."
         })
         como.addView(texto(15f, apagadoC).apply {
@@ -360,12 +361,12 @@ class MainActivity : Activity() {
                 "Quitar el ahorro") { sinAhorro() },
             Paso(pb != null && lee != false,
                 when {
-                    pb == null -> "Falta la app de la pulsera (Mi Fitness o Zepp)"
+                    pb == null -> "Falta la app de la pulsera (Mi Fitness, Zepp o Huawei Health)"
                     lee == false -> "${pb.second} no puede leer las notificaciones"
                     else -> "App de la pulsera: ${pb.second}"
                 },
                 if (pb == null) "Instala la app de tu pulsera" else "Deja que ${pb.second} lea las notificaciones",
-                if (pb == null) "Los avisos llegan a la pulsera a través de su app: Mi Fitness (Xiaomi) o Zepp (Amazfit)."
+                if (pb == null) "Los avisos llegan a la pulsera a través de su app: Mi Fitness (Xiaomi), Zepp (Amazfit) o Huawei Health (Huawei)."
                 else "Android solo deja que ${pb.second} pase las notificaciones a la pulsera si se lo permites tú.",
                 if (pb == null) "Cómo instalarla" else "Dar el permiso") {
                 if (pb == null) guiaPulsera(null) else accesoNotificaciones(pb)
@@ -548,9 +549,10 @@ class MainActivity : Activity() {
     private fun guiaPulsera(pb: Pair<String, String>?) {
         if (pb == null) {
             mostrar("Falta la app de la pulsera",
-                "Los avisos llegan a la pulsera a través de su app:\n\n•  Xiaomi Smart Band → Mi Fitness\n•  Amazfit → Zepp\n\nInstálala y enlaza la pulsera.",
+                "Los avisos llegan a la pulsera a través de su app:\n\n•  Xiaomi Smart Band → Mi Fitness\n•  Amazfit → Zepp\n•  Huawei → Huawei Health\n\nInstálala y enlaza la pulsera.",
                 Boton("Instalar Mi Fitness") { tienda("com.xiaomi.wearable") },
                 Boton("Instalar Zepp") { tienda("com.huami.watch.hmwatchmanager") },
+                Boton("Instalar Huawei Health") { tienda("com.huawei.health") },
                 Boton("Cerrar") {})
             return
         }
