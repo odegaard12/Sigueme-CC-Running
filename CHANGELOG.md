@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.18.1 · 2026-10-19
+- El mensaje de la portada cuando no hay rutas nombra el botón «Mis rutas».
+
 ## v1.18.0 · 2026-10-19
 - **Portada de rutas** (estilo cartel: lima, negro y letra condensada): es la web
   en `/` cuando no hay una carrera para hoy, y siempre en `/inicio`. Enseña las
