@@ -4,7 +4,7 @@ import math, pathlib, shutil, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 WEB = ('server.py', 'index.html', 'app.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
-       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png')
+       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'rutas.html', 'rutas.js')
 
 
 def carpeta(prefijo, datos=('carrera.json',)):

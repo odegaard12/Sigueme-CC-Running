@@ -525,6 +525,54 @@ def sesion_valida(cabecera_cookie):
     return False
 
 
+# --- invitados: rutas para el reloj de un amigo ------------------------------
+# Usuario + código que caduca (los crea el dueño en el panel). Sesión propia, en otra
+# cookie (inv, solo para /api/invitado) y firmada con otra clave: la del panel no vale
+# aquí ni al revés. Sin estado: vale en las dos Pis.
+INV_SESION_HORAS = 12
+_inv_mod = None
+
+
+def invitados_mod():
+    """herramientas/invitados.py, importado UNA vez (guarda un cerrojo: recargarlo lo rompería)."""
+    global _inv_mod
+    if _inv_mod is None:
+        if HERRAMIENTAS not in sys.path:
+            sys.path.insert(0, HERRAMIENTAS)
+        _inv_mod = importlib.import_module("invitados")
+    return _inv_mod
+
+
+def _inv_firma(usuario, exp):
+    clave = hashlib.sha256(b"sesion-invitado\0" + ADMIN_HASH.encode()).digest()
+    return hmac.new(clave, f"{usuario}.{exp}".encode(), hashlib.sha256).hexdigest()
+
+
+def nueva_sesion_invitado(usuario):
+    exp = int(time.time()) + INV_SESION_HORAS * 3600
+    return f"{usuario}.{exp}.{_inv_firma(usuario, exp)}"
+
+
+def invitado_de(cabecera_cookie):
+    """El usuario de la cookie inv si está bien firmada, no ha caducado y el invitado sigue vigente."""
+    if not ADMIN_HASH or not cabecera_cookie:
+        return None
+    inv = invitados_mod()
+    for trozo in cabecera_cookie.split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "inv":
+            usuario, _, resto = valor.partition(".")
+            exp, _, firma = resto.partition(".")
+            if inv.USUARIO_RE.match(usuario) and exp.isascii() and exp.isdigit() and len(exp) < 15 \
+                    and int(exp) > time.time() and compare_digest(firma.encode(), _inv_firma(usuario, int(exp)).encode()) \
+                    and inv.activo(ROOT, usuario):
+                return usuario
+    return None
+
+
+_gpx_inv_sem = threading.BoundedSemaphore(1)     # un GPX de invitado a la vez: la Pi es pequeña
+
+
 # --- iGPSPORT ---------------------------------------------------------------
 # El enlace que comparte la app (prod.en.igpsport.com/.../GetShareHtml?id=...)
 # es solo el envoltorio: redirige a analyse.en.igpsport.com/livetracing y ESA
@@ -1332,6 +1380,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # nada de carpetas o ficheros ocultos (.git, .vscode, .claude…)
         if any(trozo.startswith(".") for trozo in ruta.split("/")):
             return False
+        if ruta.lower().startswith("/invitados"):
+            return False                 # los datos de los invitados nunca se sirven como fichero
         return os.path.splitext(ruta)[1].lower() in EXTENSIONES_PUBLICAS
 
     def _gps(self, cuerpo=b""):
@@ -1366,6 +1416,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         crudo = self.path.split("?")[0]
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
+        if crudo.startswith("/api/invitado/"):
+            return self._invitado_get(crudo)
         ruta = self._ruta()
         if ruta == "/carreras":
             return self._indice_carreras()
@@ -1557,9 +1609,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("X-Robots-Tag", "noindex, nofollow")
         elif csp_web():
             self.send_header("Content-Security-Policy", csp_web())
+        if ruta == "/rutas.html":
+            self.send_header("X-Robots-Tag", "noindex, nofollow")   # el espacio de invitados no sale en Google
         super().end_headers()
 
-    def _send_json(self, status, payload, cookie=None, cache="no-store"):
+    def _send_json(self, status, payload, cookie=None, cache="no-store", galleta="adm"):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -1568,9 +1622,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Secure solo si llega por https (Cloudflare); por la red de casa
             # (http) el navegador no guardaría una cookie Secure
             https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
-            self.send_header("Set-Cookie", f"adm={cookie}; Path=/api; HttpOnly; SameSite=Strict"
+            horas = INV_SESION_HORAS if galleta == "inv" else SESION_HORAS
+            self.send_header("Set-Cookie", f"{galleta}={cookie}; Path={'/api/invitado' if galleta == 'inv' else '/api'}; HttpOnly; SameSite=Strict"
                              + ("; Secure" if https else "")
-                             + (f"; Max-Age={SESION_HORAS * 3600}" if cookie else "; Max-Age=0"))
+                             + (f"; Max-Age={horas * 3600}" if cookie else "; Max-Age=0"))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -1613,6 +1668,146 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 pass
         return datetime.now(timezone.utc).isoformat()
+
+    # --- invitados --------------------------------------------------------------
+    def _inv_json(self, tope=8192):
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 <= largo <= tope:
+            return None
+        try:
+            d = json.loads(self.rfile.read(largo) or b"{}")
+        except (ValueError, UnicodeDecodeError):
+            return None
+        return d if isinstance(d, dict) else None
+
+    def _invitado_get(self, ruta):
+        usuario = invitado_de(self.headers.get("Cookie"))
+        if ruta == "/api/invitado/yo":
+            # «¿ya hay sesión?» sin que el navegador pinte un error 403 en la consola
+            self._send_json(200, {"sesion": bool(usuario)})
+            return
+        if not usuario:
+            self._send_json(403, {"error": "entra primero"})
+            return
+        inv = invitados_mod()
+        id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
+        try:
+            if ruta == "/api/invitado/rutas":
+                reg = inv.activo(ROOT, usuario)
+                self._send_json(200, {"usuario": usuario, "nombre": reg["nombre"], "caduca": reg["caduca"],
+                                      "rutas": inv.rutas(ROOT, usuario)})
+                return
+            if ruta == "/api/invitado/ruta":
+                r = inv.ruta(ROOT, usuario, id_)
+                self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/reloj.gpx":
+                nombre, gpx = inv.gpx_reloj(ROOT, usuario, id_, herramienta("gpx_reloj").generar)
+                if gpx is None:
+                    self._send_json(404, {"error": "esa ruta no existe"})
+                    return
+                cuerpo = gpx.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+                self.send_header("Content-Disposition",
+                                 f'attachment; filename="{re.sub(r"[^a-z0-9]+", "-", nombre.lower()).strip("-") or "ruta"}-reloj.gpx"')
+                self.send_header("Content-Length", str(len(cuerpo)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(cuerpo)
+                return
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self._send_json(404, {"error": "not found"})
+
+    def _invitado_post(self):
+        ruta = self.path.split("?")[0]
+        inv = invitados_mod()
+        if ruta == "/api/invitado/login":
+            ip = "inv:" + self.ip_cliente()
+            d = self._inv_json(2048)
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            espera = segundos_de_castigo(ip)
+            if espera > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            if espera:
+                if not castigo_lock.acquire(timeout=5):
+                    self._send_json(429, {"error": "demasiados intentos: espera un poco"})
+                    return
+                try:
+                    time.sleep(1)
+                finally:
+                    castigo_lock.release()
+            usuario = str(d.get("usuario") or "").strip().lower()
+            if not inv.comprobar(ROOT, usuario, d.get("codigo", "")):
+                fallo_de(ip)
+                print(f"[invitado] acceso incorrecto desde {self.ip_cliente()}", flush=True)
+                self._send_json(403, {"error": "usuario o código incorrecto, o el acceso ha caducado"})
+                return
+            acierto_de(ip)
+            inv.purgar(ROOT)
+            print(f"[invitado] {usuario} entra", flush=True)
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(usuario), galleta="inv")
+            return
+        # lo demás: desde esta misma web y con sesión de invitado
+        if self.mismo_origen() is not True:
+            self._send_json(403, {"error": "origen no permitido"})
+            return
+        usuario = invitado_de(self.headers.get("Cookie"))
+        if not usuario:
+            self._send_json(403, {"error": "sesión caducada: entra otra vez"})
+            return
+        try:
+            if ruta == "/api/invitado/logout":
+                self._send_json(200, {"ok": True}, cookie="", galleta="inv")
+                return
+            if ruta == "/api/invitado/gpx":
+                self._invitado_subir(usuario, inv)
+                return
+            d = self._inv_json()
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            if ruta == "/api/invitado/ruta":
+                r = inv.guardar_ruta(ROOT, usuario, d.get("id"), d.get("nombre"), d.get("avituallamientos"))
+                self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/borrar":
+                hecho = inv.borrar_ruta(ROOT, usuario, d.get("id"))
+                self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa ruta no existe"})
+                return
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self._send_json(404, {"error": "not found"})
+
+    def _invitado_subir(self, usuario, inv):
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= inv.MAX_GPX:
+            self._send_json(413, {"error": f"el GPX tiene que pesar menos de {inv.MAX_GPX // 1_000_000} MB"})
+            return
+        cuerpo = self.rfile.read(largo)
+        nombre = (parse_qs(urlparse(self.path).query).get("nombre") or [""])[0]
+        if not _gpx_inv_sem.acquire(timeout=20):
+            self._send_json(429, {"error": "hay otra ruta preparándose: prueba en un momento"})
+            return
+        try:
+            detalle = inv.crear_ruta(ROOT, usuario, nombre, cuerpo,
+                                     herramienta("preparar_ruta").preparar, herramienta("plan_avisos").calcular)
+        finally:
+            _gpx_inv_sem.release()
+        print(f"[invitado] {usuario} sube una ruta", flush=True)
+        self._send_json(200, {"ok": True, "ruta": detalle})
 
     def _gpx_reloj(self):
         """La ruta con altitud y los avituallamientos y subidas como puntos de control,
@@ -1898,6 +2093,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
+        if self.path.startswith("/api/invitado/"):
+            return self._invitado_post()
         if self.path.startswith("/api/gpx") or self.path in ("/api/fit", "/api/avatar"):
             with datos_lock:
                 {"/api/fit": self._subir_fit, "/api/avatar": self._subir_avatar}.get(self.path, self._subir_gpx)()
@@ -1992,6 +2189,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
 
         accion = data.get("action")
+
+        if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar"):
+            # los amigos que pueden preparar sus rutas para el reloj (el código solo se ve al crearlo)
+            inv = invitados_mod()
+            usuario = str(data.get("usuario") or "").strip().lower()
+            extra = {}
+            try:
+                if accion == "invitado_crear":
+                    extra = {"usuario": usuario, "codigo": inv.crear(ROOT, usuario, data.get("dias", 30), data.get("nombre", ""))}
+                elif accion == "invitado_renovar":
+                    extra = {"caduca": inv.renovar(ROOT, usuario, data.get("dias", 30))}
+                elif accion == "invitado_codigo":
+                    extra = {"usuario": usuario, "codigo": inv.codigo_nuevo(ROOT, usuario)}
+                elif accion == "invitado_borrar":
+                    inv.borrar(ROOT, usuario)
+                inv.purgar(ROOT)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT)))
+            return
 
         if accion == "rotar_gps":
             # identificador nuevo (32 caracteres al azar) para cada carrera: el

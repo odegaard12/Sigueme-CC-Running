@@ -4,6 +4,24 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.17.0 · 2026-10-19
+- **Invitados:** un amigo prepara **sus** rutas y se las lleva al reloj, sin ver
+  nada de tu carrera ni de tu panel. En el panel (pestaña Resultado →
+  Invitados) creas un usuario con un código que caduca (30 días por defecto;
+  se renueva con un botón, se cambia el código o se quita). Él entra en
+  `/rutas.html` desde cualquier móvil, iPhone incluido: sube un GPX, pone sus
+  avituallamientos, ve el perfil y las subidas y descarga el GPX para el reloj.
+- **Datos de los invitados:** del GPX que suben no se guarda el original, solo
+  la ruta simplificada y su perfil; en un sitio que el servidor nunca sirve.
+  El código solo se ve al crearlo (en disco queda su hash). Sus datos se
+  borran 7 días después de caducar. Máximo 20 invitados y 5 rutas cada uno.
+- **Seguridad:** sesión propia (cookie `inv`, firmada con otra clave) que no
+  vale en el panel ni al revés; un invitado no ve ni toca las rutas de otro;
+  freno a la fuerza bruta; GPX de hasta 8 MB, uno a la vez; la página no sale
+  en buscadores.
+- Prueba nueva `pruebas/invitados.py` (aislamiento, caducidad, límites,
+  ficheros no públicos) y el paso en el flujo de pruebas.
+
 ## v1.16.0 · 2026-10-19
 - **La ruta en el reloj:** en la tarjeta «Ruta (GPX)» del panel, el botón
   **Descargar GPX para el reloj**. Lleva la altitud y, como puntos de control,

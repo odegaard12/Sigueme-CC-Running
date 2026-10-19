@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.16.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.17.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -114,6 +114,17 @@ recorta cuadrada en el navegador y sale en el mapa y en la ficha (`rider.png`).
 Sin panel, las mismas herramientas desde la consola:
 `python herramientas/preparar_ruta.py ruta.gpx --distancia 21.1` y
 `python herramientas/plan_avisos.py`.
+
+### Invitados: las rutas de un amigo, en su reloj
+
+Para que un amigo prepare **sus** rutas y se las lleve al reloj sin ver nada de tu
+carrera: en el panel, pestaña **Resultado** → **Invitados**, creas un usuario con
+un código que caduca (30 días por defecto; puedes renovarlo o quitarlo). Él entra
+en `https://tu-dominio/rutas.html` desde cualquier móvil (iPhone incluido), sube
+un GPX, pone sus avituallamientos y descarga el GPX para el reloj. No hay
+seguimiento ni se guarda su GPX original (solo la ruta simplificada y su perfil);
+sus datos se borran siete días después de caducar. Máximo 20 invitados y 5 rutas
+cada uno.
 
 ## 4. Elegir cómo se manda tu posición
 

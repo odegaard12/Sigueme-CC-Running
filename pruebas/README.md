@@ -7,6 +7,7 @@ ejemplo del repo y un GPX inventado. No tocan nada fuera de esa carpeta.
 | --- | --- |
 | `gpx.py` | El lector de GPX: desnivel sin ruido del GPS, elevación con coma, UTF-16 sin BOM. |
 | `servidor.py` | Panel (sesión, CSRF, bloqueo por intentos), subir GPX/FIT, datos de la carrera, avituallamientos, plan para la app. |
+| `invitados.py` | Invitados: crear con caducidad, entrar, subir una ruta, avituallamientos, GPX para el reloj, aislamiento entre invitados y con el panel, ficheros no públicos, límites. |
 | `ensayo.py` | Una carrera entera: preparar, EMPEZAR desde la app, corte de cobertura, meta sola, Finalizar, FIT, archivar. |
 | `carga.py [N]` | N espectadores pidiendo el directo cada segundo mientras llegan posiciones. |
 | `rendimiento.py` | La web en un móvil lento (4G floja, CPU ×4): tiempos y errores de consola. Necesita Playwright. |
