@@ -13,6 +13,7 @@ a { color: inherit; }
 .barra { display: flex; justify-content: space-between; align-items: center; padding: 10px 22px; font-weight: 800; letter-spacing: .02em; }
 .barra a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 .barra nav { display: flex; gap: 22px; }
+.barra a.marca { text-transform: uppercase; }
 .barra nav a { text-decoration: underline; text-underline-offset: 4px; }
 
 h1.gigante { font: 400 clamp(4.2rem, 17vw, 15rem)/.94 var(--display); text-transform: uppercase; margin: 6px 18px 0; letter-spacing: -.005em; }

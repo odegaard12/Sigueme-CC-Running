@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.19.0 · 2026-10-19
+- **Una sola cabecera en todas las páginas** y el mismo diseño cartel (lima, negro,
+  letra condensada) en la portada, la página de cada ruta, «Mis rutas» y el panel.
+  Botón **Inicio** siempre a mano y un único botón **Admin**: al dueño lo lleva al
+  panel (que incluye «Mis rutas»), al invitado a su espacio, donde administra sus rutas.
+- **El titular lleva el nombre del dominio** (p. ej. «RUTAS ODEGAARD12»), en la web
+  y en la app. Quitado el crédito de la tipografía de las pantallas.
+- **El dueño entra directo a «Mis rutas»**, sin cuenta de invitado: vale la sesión
+  del panel o su usuario y clave del panel. Sus rutas no caducan.
+- **Arreglos:** el nombre de la ruta es el título de su página; pruebas del flujo
+  del dueño.
+
 ## v1.18.1 · 2026-10-19
 - El mensaje de la portada cuando no hay rutas nombra el botón «Mis rutas».
 

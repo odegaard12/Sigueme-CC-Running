@@ -179,9 +179,18 @@ def listar(raiz):
             for u, r in sorted(_usuarios(raiz).items())]
 
 
+DUENO = "dueno"       # el dueño de la web: sus rutas viven en invitados/dueno/, sin crear cuenta y sin caducidad
+
+
+def _registro(raiz, usuario):
+    if usuario == DUENO:
+        return {"nombre": "Tú", "caduca": SIN_CADUCIDAD}
+    return _usuarios(raiz).get(str(usuario))
+
+
 def activo(raiz, usuario):
     """El registro del invitado si existe y no ha caducado; si no, None."""
-    r = _usuarios(raiz).get(str(usuario))
+    r = _registro(raiz, usuario)
     return r if r and r["caduca"] >= date.today().isoformat() else None
 
 
@@ -212,7 +221,7 @@ def purgar(raiz):
         base = _dir(raiz)
         if os.path.isdir(base):
             for n in os.listdir(base):
-                if os.path.isdir(os.path.join(base, n)) and n not in todos:
+                if os.path.isdir(os.path.join(base, n)) and n not in todos and n != DUENO:
                     _borrar_carpeta(raiz, n)
     return len(viejos)
 
@@ -465,7 +474,7 @@ def _leer_indice(raiz):
 def publicas(raiz):
     """Las rutas publicadas de invitados con el acceso vigente, la más nueva primero (sin decir de quién son)."""
     hoy = date.today().isoformat()
-    vivos = {u for u, r in _usuarios(raiz).items() if r["caduca"] >= hoy}
+    vivos = {u for u, r in _usuarios(raiz).items() if r["caduca"] >= hoy} | {DUENO}
     return [{k: v for k, v in x.items() if k != "u"} for x in _leer_indice(raiz) if x["u"] in vivos]
 
 
@@ -476,7 +485,7 @@ def publica_detalle(raiz, id_):
     hoy = date.today().isoformat()
     for x in _leer_indice(raiz):
         if x["id"] == id_:
-            u = _usuarios(raiz).get(x["u"])
+            u = _registro(raiz, x["u"])
             if not u or u["caduca"] < hoy:
                 return None
             r = _leer_ruta(raiz, x["u"], id_)
@@ -506,7 +515,7 @@ def todas(raiz):
     """Todas las rutas de todos los invitados, para que el dueño vea qué hay publicado."""
     sal = []
     hoy = date.today().isoformat()
-    for u, reg in sorted(_usuarios(raiz).items()):
+    for u, reg in sorted(_usuarios(raiz).items()) + [(DUENO, _registro(raiz, DUENO))]:
         for i in _ids(raiz, u):
             r = _leer_ruta(raiz, u, i)
             if r:
@@ -517,7 +526,7 @@ def todas(raiz):
 
 
 def moderar(raiz, usuario, id_, accion):
-    usuario = _usuario_valido(usuario)
+    usuario = usuario if usuario == DUENO else _usuario_valido(usuario)
     if accion == "borrar":
         if not borrar_ruta(raiz, usuario, id_):
             raise ValueError("esa ruta no existe")

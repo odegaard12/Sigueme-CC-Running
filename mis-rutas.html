@@ -4,65 +4,63 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0c0f0e">
-<title>Tus rutas para el reloj</title>
-<link rel="icon" href="favicon.png">
+<meta name="theme-color" content="#d9f24a">
+<title>Mis rutas</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="/cartel-panel.css">
 <style>
-  :root { --bg:#0c0f0e; --card:#161b19; --campo:#111614; --borde:rgba(255,255,255,.10); --texto:#f1f3f1; --apagado:#8a968f;
-          --verde:#7fd46a; --rojo:#ff8a7a; --ambar:#f3c969; --boton:#222a26; }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin:0; background:var(--bg); color:var(--texto); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-         padding:0 16px max(32px, env(safe-area-inset-bottom)); }
-  main { max-width:640px; margin:0 auto; padding-top:max(20px, env(safe-area-inset-top)); }
-  h1 { font-size:1.5rem; margin:8px 0 2px; } h1 span { color:var(--apagado); font-weight:500; }
-  h2 { font-size:1.15rem; margin:0 0 10px; }
-  p { margin:0 0 10px; }
-  .sub { color:var(--apagado); font-size:.95rem; }
-  .tarjeta { background:var(--card); border-radius:18px; padding:18px; margin-top:16px; }
-  label { display:block; color:var(--apagado); font-size:.9rem; margin:12px 0 4px; }
+  body { margin: 0; background: var(--tinta); color: var(--papel); font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+  main { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+  p { margin: 0 0 10px; }
+  .sub { color: var(--muted); font-size: .95rem; }
+  .sub-cab { max-width: 1240px; margin: 0 auto; padding: 4px 16px 24px; font-weight: 700; font-size: 1.1rem; }
+  .tarjeta { padding: 18px; margin-top: 16px; }
+  label { display: block; color: var(--muted); font-size: .9rem; margin: 12px 0 4px; }
   input[type=text], input[type=password], input[type=number], input[type=file], select {
-    width:100%; min-height:48px; background:var(--campo); color:var(--texto); border:1px solid var(--borde);
-    border-radius:12px; padding:10px 14px; font:inherit; }
-  input:focus-visible, button:focus-visible, a.btn:focus-visible { outline:3px solid var(--verde); outline-offset:2px; }
-  .btn, button.btn { display:flex; align-items:center; justify-content:center; width:100%; min-height:52px; margin-top:12px;
-    border:0; border-radius:14px; background:var(--boton); color:var(--texto); font:inherit; font-weight:700; text-decoration:none; cursor:pointer;
-    transition:transform .08s, opacity .2s; }
-  .btn:active { transform:scale(.98); }
-  .btn.principal { background:var(--verde); color:#0c0f0e; }
-  .btn.peligro { color:var(--rojo); }
-  .btn:disabled { opacity:.5; cursor:default; }
-  .btn.chico { width:auto; min-height:44px; margin:0; padding:0 14px; }
-  .msg { min-height:1.4em; margin-top:10px; font-size:.95rem; } .msg.ok { color:var(--verde); } .msg.err { color:var(--rojo); }
-  .ruta-fila { display:flex; align-items:center; gap:10px; padding:12px 0; border-top:1px solid var(--borde); }
-  .ruta-fila:first-of-type { border-top:0; }
-  .ruta-fila .dato { flex:1; min-width:0; } .ruta-fila b { display:block; overflow-wrap:anywhere; }
-  .paso { display:flex; gap:12px; margin:0 0 12px; } .paso .n { flex:none; width:28px; height:28px; border-radius:50%; background:var(--verde);
-    color:#0c0f0e; font-weight:700; display:grid; place-items:center; font-size:.9rem; }
-  .avit { display:grid; grid-template-columns:1fr 92px 44px; gap:8px; margin-top:8px; align-items:center; }
-  .avit input { min-height:44px; } .avit button { min-height:44px; width:44px; border:0; border-radius:12px; background:var(--boton); color:var(--rojo); font-size:1.2rem; cursor:pointer; }
-  .subidas { list-style:none; padding:0; margin:8px 0 0; } .subidas li { padding:6px 0; border-top:1px solid var(--borde); font-size:.95rem; }
-  details { margin-top:12px; } summary { cursor:pointer; min-height:44px; display:flex; align-items:center; font-weight:700; }
-  details p, details li { color:#cdd4cf; font-size:.95rem; }
-  svg { width:100%; height:auto; display:block; margin-top:10px; background:var(--campo); border-radius:12px; }
-  [hidden] { display:none !important; }
-  .entra { animation:entra .28s ease-out both; }
-  @keyframes entra { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-  @media (prefers-reduced-motion: reduce) { .entra { animation:none; } .btn { transition:none; } }
+    width: 100%; min-height: 48px; background: var(--panel-2); color: var(--papel); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 14px; font: inherit; }
+  input:focus-visible, select:focus-visible, button:focus-visible, a.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .btn, button.btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; margin-top: 12px; border: 0; border-radius: 4px;
+    background: #232b26; color: var(--papel); font: 400 1.35rem/1 var(--display); text-transform: uppercase; text-decoration: none; cursor: pointer; transition: transform .08s, opacity .2s; }
+  .btn:active { transform: scale(.98); }
+  .btn.principal { background: var(--accent); color: var(--tinta); }
+  .btn.peligro { color: #ff8a7a; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.chico { width: auto; min-height: 44px; margin: 0; padding: 0 16px; font-size: 1.15rem; }
+  .msg { min-height: 1.4em; margin-top: 10px; font-size: .95rem; } .msg.ok { color: var(--accent); } .msg.err { color: #ff8a7a; }
+  .ruta-fila { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .ruta-fila:first-of-type { border-top: 0; }
+  .ruta-fila .dato { flex: 1; min-width: 0; } .ruta-fila b { display: block; overflow-wrap: anywhere; font: 400 1.5rem/1.05 var(--display); text-transform: uppercase; }
+  .paso { display: flex; gap: 12px; margin: 0 0 12px; } .paso .n { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent);
+    color: var(--tinta); font: 400 1.1rem/30px var(--display); text-align: center; }
+  .avit { display: grid; grid-template-columns: 1fr 92px 44px; gap: 8px; margin-top: 8px; align-items: center; }
+  .avit input { min-height: 44px; } .avit button { min-height: 44px; width: 44px; border: 0; border-radius: 4px; background: #232b26; color: #ff8a7a; font-size: 1.2rem; cursor: pointer; }
+  .subidas { list-style: none; padding: 0; margin: 8px 0 0; } .subidas li { padding: 8px 0; border-top: 1px solid var(--border); font-size: .98rem; }
+  details { margin-top: 12px; } summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font: 400 1.35rem/1 var(--display); text-transform: uppercase; }
+  details p { color: #dfe6d0; font-size: .95rem; }
+  svg { width: 100%; height: auto; display: block; margin-top: 10px; background: var(--panel-2); border-radius: 4px; }
+  [hidden] { display: none !important; }
+  .entra { animation: entra .28s ease-out both; }
+  @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .entra { animation: none; } .btn { transition: none; } }
 </style>
 </head>
-<body>
+<body class="mis">
+<div class="campo-cartel">
+  <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio">Sígueme CC</a><nav><a href="/inicio">Inicio</a><a href="/admin.html" id="nav-admin" hidden>Admin</a></nav></header>
+  <div class="topbar"><h1>Mis rutas</h1></div>
+  <p class="sub-cab" id="cabecera">Sube un GPX, pon los avituallamientos y llévate la ruta al reloj.</p>
+</div>
 <main>
-  <h1>Tus rutas <span>para el reloj</span></h1>
-  <p class="sub" id="cabecera">Sube un GPX, pon los avituallamientos y llévate la ruta al reloj.</p>
-
   <section class="tarjeta entra" id="vista-login">
     <h2>Entrar</h2>
-    <p class="sub">Con el usuario y el código que te han dado. El acceso caduca: cuando pase la fecha, pide otro.</p>
+    <p class="sub">Con el usuario y el código que te han dado. El acceso caduca: cuando pase la fecha, pide otro. Si eres el dueño de la web, entra con tu usuario y tu clave del panel (o abre el panel y vuelve aquí).</p>
     <form id="form-login" autocomplete="on">
       <label for="usuario">Usuario</label>
       <input type="text" id="usuario" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
-      <label for="codigo">Código</label>
+      <label for="codigo">Código o clave</label>
       <input type="password" id="codigo" name="password" autocomplete="current-password" autocapitalize="characters" spellcheck="false" required>
       <button class="btn principal" type="submit" id="entrar">Entrar</button>
     </form>
@@ -145,6 +143,6 @@
     <button class="btn peligro" type="button" id="borrar">Borrar esta ruta</button>
   </section>
 </main>
-<script src="mis-rutas.js"></script>
+<script src="/mis-rutas.js"></script>
 </body>
 </html>

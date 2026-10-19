@@ -117,6 +117,13 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
     private fun url() = prefs.getString("url", null)
     private fun km(v: Double) = String.format(es, "%.1f", v)
 
+    /** El nombre del sitio, del dominio del servidor (odegaard12.online → ODEGAARD12); sin dominio, «PARA EL RELOJ». */
+    private fun sitio(): String {
+        val h = try { Uri.parse(url() ?: "").host ?: "" } catch (e: Exception) { "" }
+        val n = h.removePrefix("www.").substringBefore('.')
+        return if (n.isEmpty() || n.all { it.isDigit() }) "PARA EL RELOJ" else n.uppercase()
+    }
+
     private fun t(txt: String, size: Float, color: Int, fuente: Typeface? = null) = TextView(act).apply {
         text = txt; textSize = size; setTextColor(color); typeface = fuente ?: Typeface.DEFAULT_BOLD
     }
@@ -179,7 +186,7 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
 
     private fun cabeceraLista(): View {
         val c = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(lima); setPadding(20.px(), 16.px(), 20.px(), 22.px()) }
-        c.addView(t("RUTAS\nPARA EL RELOJ", 58f, tinta, anton).apply { setLineSpacing(0f, 0.95f); includeFontPadding = false })
+        c.addView(t("RUTAS\n" + sitio(), 58f, tinta, anton).apply { setLineSpacing(0f, 0.95f); includeFontPadding = false })
         c.addView(t("Mira la ruta, descarga el GPX y sal.", 16f, tinta).apply { setPadding(0, 14.px(), 0, 0) })
         c.addView(t("Huawei · Amazfit · Garmin · Coros", 14f, tinta).apply { setPadding(0, 4.px(), 0, 0) })
         return c

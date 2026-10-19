@@ -29,7 +29,7 @@
     border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
     font-size: 0.95rem;
   }
-  .field input:focus, .field select:focus { outline: 2px solid var(--accent, #7fd46a); outline-offset: 1px; }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent, #d9f24a); outline-offset: 1px; }
   .link-field input { font-size: 1rem; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .save-btn {
@@ -46,7 +46,7 @@
   .peligro { color: #ff8a7a; font-weight: 600; }
   .lista-prep { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 0.85rem; }
   .lista-prep li { display: flex; gap: 8px; align-items: baseline; }
-  .lista-prep .si { color: #7fd46a; } .lista-prep .no { color: #f3c969; }
+  .lista-prep .si { color: #d9f24a; } .lista-prep .no { color: #f3c969; }
   .estado-fila { flex-wrap: wrap; gap: 4px 12px; }
   details.pruebas > summary { cursor: pointer; font-weight: 600; margin-bottom: 6px; }
   .msg.ok { color: #c9d2cc; }
@@ -97,34 +97,34 @@
   .topbar { border-bottom: 0; padding: 16px 16px 6px; }
   .topbar h1 { font-size: 1.4rem; letter-spacing: -0.02em; }
   .cabecera-datos { gap: 12px; }
-  .cd-linea { font-size: 0.85rem; color: #7fd46a; text-decoration: none; font-weight: 600; }
+  .cd-linea { font-size: 0.85rem; color: #d9f24a; text-decoration: none; font-weight: 600; }
   .pill-panel { font-size: 0.86rem; font-weight: 700;
     padding: 5px 11px; border-radius: 999px; background: #1a211e; color: #8a968f; border: 0; }
   .pill-panel:empty { display: none; }
-  .pill-panel.vivo { background: #7fd46a; color: #0a0d0c; border-color: #7fd46a; }
+  .pill-panel.vivo { background: #d9f24a; color: #0a0d0c; border-color: #d9f24a; }
   .admin-wrap { max-width: 560px; padding-top: 6px; }
   .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
     padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.96); backdrop-filter: blur(10px); /* taste-skill-ignore: la única barra fija */
     border: 0; border-radius: 14px; }
   .pestanas button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
     font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
-  .pestanas button[aria-selected="true"] { background: #7fd46a; color: #0a0d0c; }
+  .pestanas button[aria-selected="true"] { background: #d9f24a; color: #0a0d0c; }
   .tarjeta { background: #161c19; border: 0; border-radius: 16px;
     padding: 18px; margin-bottom: 14px; }
   .tarjeta h2 { font-size: 1.05rem; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 12px; }
   .howto { font-size: 0.86rem; line-height: 1.55; }
   .field label { font-size: 0.8rem; }
   .field input, .field select, .field textarea { border-radius: 12px; background: #111614; border-color: rgba(255,255,255,0.1); }
-  .save-btn { background: #7fd46a; color: #0a0d0c; border-radius: 12px; font-weight: 800; }
+  .save-btn { background: #d9f24a; color: #0a0d0c; border-radius: 12px; font-weight: 800; }
   .btn { border-radius: 12px; background: #1a211e; border-color: rgba(255,255,255,0.1); }
   .stop-btn { background: rgba(255,138,122,0.08); border-color: rgba(255,138,122,0.45); color: #ff9a8a; }
   .lista-prep { gap: 10px; font-size: 0.92rem; }
   .lista-prep .si, .lista-prep .no { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
     font-size: 0.75rem; font-weight: 900; color: #0a0d0c; flex: 0 0 auto; }
-  .lista-prep .si { background: #7fd46a; } .lista-prep .no { background: #f3c969; }
+  .lista-prep .si { background: #d9f24a; } .lista-prep .no { background: #f3c969; }
   .estado-fila { font-size: 0.88rem; }
   .foto-fila { display: flex; gap: 14px; align-items: center; margin: 4px 0 14px; }
-  .foto-fila img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #7fd46a; flex: 0 0 auto; }
+  .foto-fila img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #d9f24a; flex: 0 0 auto; }
   .foto-fila .btn { display: inline-flex; width: auto; padding: 0 16px; cursor: pointer; }
   .foto-fila .howto { margin-top: 6px; }
   /* en cada pestaña, lo importante primero (estado en «Hoy», la app en «Móvil») */
@@ -140,13 +140,13 @@
   /* guiado de la preparación */
   .tarjeta { scroll-margin-top: 76px; }
   .progreso-prep { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-left: 6px; }
-  .siguiente { background: #1b2b1f; border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; display: grid; gap: 10px; }
+  .siguiente { background: #232c12; border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; display: grid; gap: 10px; }
   .siguiente p { margin: 0; font-size: 0.95rem; line-height: 1.45; color: var(--text); }
   .lista-prep li.ir { cursor: pointer; border-radius: 10px; padding: 7px 8px; margin: 0 -8px; align-items: center; }
   .lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1c2320; outline: none; }
-  .lista-prep .ir-flecha { margin-left: auto; color: #7fd46a; font-weight: 700; white-space: nowrap; padding-left: 10px; }
+  .lista-prep .ir-flecha { margin-left: auto; color: #d9f24a; font-weight: 700; white-space: nowrap; padding-left: 10px; }
   .resalta { animation: resalta 1.8s ease-out; }
-  @keyframes resalta { 0% { background: #2a4a31; } 100% { background: #161c19; } }
+  @keyframes resalta { 0% { background: #3b4a14; } 100% { background: #161c19; } }
   @media (prefers-reduced-motion: reduce) { .resalta { animation: none; } }
   /* v1.15: pestañas como pasos, rejilla ancha en el PC, explicaciones en pasos y transiciones */
   #panel.abierto { display: flex; }
@@ -169,7 +169,7 @@
   .tarjeta:not([hidden]) { animation: entra 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   .tarjeta.resalta:not([hidden]) { animation: resalta 1.8s ease-out; }
   @keyframes entra { from { opacity: 0; transform: translateY(10px); } }
-  #msg.ok:not(:empty) { background: #1b2b1f; color: #dff3d8; animation: entra 0.25s ease-out both; }
+  #msg.ok:not(:empty) { background: #232c12; color: #dff3d8; animation: entra 0.25s ease-out both; }
   #msg.err:not(:empty) { background: #3a1f1f; color: #ffc9c0; animation: entra 0.25s ease-out both; }
   @media (prefers-reduced-motion: reduce) {
     .tarjeta:not([hidden]), #msg:not(:empty) { animation: none; }
@@ -184,8 +184,8 @@
     .pestanas button { min-height: 66px; justify-content: flex-start; padding: 0 18px; }
     .pestanas .n { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
       background: #26302b; color: #c9d2cc; font-weight: 800; flex: 0 0 auto; }
-    .pestanas button[aria-selected="true"] .n { background: #0a0d0c; color: #7fd46a; }
-    .pestanas button.hecho .n { background: #7fd46a; color: #0a0d0c; }
+    .pestanas button[aria-selected="true"] .n { background: #0a0d0c; color: #d9f24a; }
+    .pestanas button.hecho .n { background: #d9f24a; color: #0a0d0c; }
     .pestanas small { display: block; }
     .pestanas b { font-size: 1.02rem; }
   }
@@ -210,26 +210,29 @@
   @media (max-width: 519px) { .pestanas button { font-size: 0.76rem; padding: 0 2px; } }
   /* invitados */
   .inv-sin { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; color: #cdd4cf; font-size: 0.92rem; }
-  .inv-sin input { width: 22px; height: 22px; min-height: 0; accent-color: #7fd46a; }
+  .inv-sin input { width: 22px; height: 22px; min-height: 0; accent-color: #d9f24a; }
   a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
   .inv-fila { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.08); }
   .inv-dato b { display: block; } .inv-dato span { color: var(--muted); font-size: 0.9rem; }
   .inv-caducado { color: #ff8a7a !important; }
   .inv-botones { display: flex; gap: 8px; flex-wrap: wrap; }
   .tarjeta .inv-botones .btn { width: auto; flex: 1 1 auto; min-height: 44px; margin-top: 0; padding: 0 12px; }
-  .inv-nuevo { background: #1b2b1f; border-radius: 12px; padding: 14px; margin-top: 12px; }
+  .inv-nuevo { background: #232c12; border-radius: 12px; padding: 14px; margin-top: 12px; }
   .inv-nuevo p { margin: 0 0 6px; }
   .inv-nuevo .btn { margin-top: 8px; }
-  .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #7fd46a; user-select: all; margin: 8px 0; }
+  .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #d9f24a; user-select: all; margin: 8px 0; }
 </style>
+<link rel="stylesheet" href="/cartel-panel.css">
 </head>
 <body>
-<header class="topbar">
-  <h1>Panel admin</h1>
-  <div class="cabecera-datos">
-    <span class="pill-panel" id="pill-panel"></span><a class="cd-linea" href="index.html">Ver la web ›</a>
+<div class="campo-cartel">
+  <header class="barra-cartel"><a class="marca-cartel" id="marca-sitio" href="/inicio">Sígueme CC</a>
+    <nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Mis rutas</a><a href="/index.html">La carrera</a></nav></header>
+  <div class="topbar">
+    <h1>Admin</h1>
+    <div class="cabecera-datos"><span class="pill-panel" id="pill-panel"></span></div>
   </div>
-</header>
+</div>
 
 <div id="login-screen">
   <div class="field">
@@ -487,7 +490,14 @@
     </details>
   </div>
 
-    <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
+    <div class="tarjeta primero" id="sec-mis" data-tab="rutas">
+    <h2>Mis rutas</h2>
+    <div class="howto">Tus propias rutas, las del dueño de la web: sube un GPX, ponle avituallamientos, llévatelo al reloj o publícalo
+      en la portada. No necesitas otro usuario: entras directo.</div>
+    <a class="save-btn" href="/mis-rutas.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Abrir Mis rutas</a>
+  </div>
+
+  <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
     <h2>Rutas publicadas</h2>
     <div class="howto">Lo que tus invitados han publicado en la web: cualquiera puede verlo. Si algo no debe estar,
       quítalo aquí. Se ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>.</div>
@@ -561,7 +571,7 @@
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
   <div class="quick-actions">
-    <a class="btn" href="index.html">← Volver a la web</a>
+    <a class="btn" href="/inicio">← Volver a la portada</a>
     <button class="btn" id="salir">Cerrar sesión</button>
   </div>
 </div>
@@ -865,6 +875,9 @@ function pintarAvituallamientos(lista) {
   $('lista-avit').replaceChildren(...lista.map(filaAvit));
 }
 $('mas-avit').addEventListener('click', () => { const f = filaAvit(); $('lista-avit').append(f); f.querySelector('input').focus(); });
+// el nombre del sitio, del dominio (odegaard12.online → odegaard12)
+(() => { const h = location.hostname.replace(/^www\./, '').split('.')[0];
+  if (h && !/^[\d.]+$/.test(location.hostname) && location.hostname !== 'localhost') { const m = document.getElementById('marca-sitio'); if (m) m.textContent = h; } })();
 // ---------- invitados: las rutas de un amigo, en su reloj ----------
 const fechaEs = iso => iso.split('-').reverse().join('/');
 async function invPost(cuerpo) {
@@ -911,7 +924,7 @@ function pintarPublicadas(rutas) {
   const c = $('pub-lista'); c.textContent = '';
   const pub = rutas.filter(r => r.publica);
   const resto = rutas.length - pub.length;
-  if (!pub.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'Nada publicado todavía' + (resto ? ' (' + resto + ' rutas privadas de invitados).' : '.'); c.append(p); return; }
+  if (!pub.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'Nada publicado todavía' + (resto ? (resto === 1 ? ' (hay 1 ruta privada de un invitado).' : ' (hay ' + resto + ' rutas privadas de invitados).') : '.'); c.append(p); return; }
   for (const r of pub) {
     const f = document.createElement('div'); f.className = 'inv-fila';
     const t = document.createElement('div'); t.className = 'inv-dato';

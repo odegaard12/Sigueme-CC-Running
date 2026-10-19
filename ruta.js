@@ -112,3 +112,9 @@ fetch('/api/ruta-publica?id=' + encodeURIComponent(id)).then(r => r.ok ? r.json(
   if (!r) { $('titulo').textContent = 'Ruta no disponible'; $('error').hidden = false; return; }
   pintar(r);
 }).catch(() => { $('titulo').textContent = 'Sin conexión'; $('error').hidden = false; });
+
+// «Admin»: al dueño lo lleva al panel; al invitado, a su espacio de rutas
+fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
+  const a = document.getElementById('nav-admin');
+  if (a && d && d.dueno) a.href = '/admin.html';
+}).catch(() => {});

@@ -455,6 +455,14 @@ def preparacion():
             "app_at": live.get("app_at")}
 
 
+def nombre_sitio(host):
+    """El nombre de la web, del dominio: «odegaard12» para odegaard12.online; «Sígueme CC» si es una IP o localhost."""
+    h = re.sub(r"^www\.", "", host.lower())
+    if not h or h == "localhost" or re.fullmatch(r"[\d.]+|\[.*\]", h):
+        return "Sígueme CC"
+    return h.split(".")[0]
+
+
 def directo_ahora():
     """¿La portada es la carrera? En marcha, o preparada para hoy (o ya pasada y sin archivar).
     Con una carrera para otro día, la portada es la de las rutas (con la carrera como «próxima»)."""
@@ -573,6 +581,8 @@ def invitado_de(cabecera_cookie):
     if not ADMIN_HASH or not cabecera_cookie:
         return None
     inv = invitados_mod()
+    if sesion_valida(cabecera_cookie):
+        return inv.DUENO              # quien está dentro del panel es el dueño: entra directo a «Mis rutas»
     for trozo in cabecera_cookie.split(";"):
         nombre, _, valor = trozo.strip().partition("=")
         if nombre == "inv":
@@ -1713,7 +1723,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         usuario = invitado_de(self.headers.get("Cookie"))
         if ruta == "/api/invitado/yo":
             # «¿ya hay sesión?» sin que el navegador pinte un error 403 en la consola
-            self._send_json(200, {"sesion": bool(usuario)})
+            self._send_json(200, {"sesion": bool(usuario), "dueno": usuario == invitados_mod().DUENO})
             return
         if not usuario:
             self._send_json(403, {"error": "entra primero"})
@@ -1724,7 +1734,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if ruta == "/api/invitado/rutas":
                 reg = inv.activo(ROOT, usuario)
                 self._send_json(200, {"usuario": usuario, "nombre": reg["nombre"], "caduca": reg["caduca"],
-                                      "rutas": inv.rutas(ROOT, usuario)})
+                                      "dueno": usuario == inv.DUENO, "rutas": inv.rutas(ROOT, usuario)})
                 return
             if ruta == "/api/invitado/ruta":
                 r = inv.ruta(ROOT, usuario, id_)
@@ -1772,7 +1782,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 finally:
                     castigo_lock.release()
             usuario = str(d.get("usuario") or "").strip().lower()
-            if not inv.comprobar(ROOT, usuario, d.get("codigo", "")):
+            # el dueño también puede entrar aquí con su usuario y su clave del panel
+            es_dueno = bool(ADMIN_USER) and usuario == ADMIN_USER.lower() and credenciales_ok(d.get("usuario", ""), d.get("codigo", ""))
+            if not (es_dueno or inv.comprobar(ROOT, usuario, d.get("codigo", ""))):
                 fallo_de(ip)
                 print(f"[invitado] acceso incorrecto desde {self.ip_cliente()}", flush=True)
                 self._send_json(403, {"error": "usuario o código incorrecto, o el acceso ha caducado"})
@@ -1780,7 +1792,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
             inv.purgar(ROOT)
             print(f"[invitado] {usuario} entra", flush=True)
-            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(usuario), galleta="inv")
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv")
             return
         # lo demás: desde esta misma web y con sesión de invitado
         if self.mismo_origen() is not True:
@@ -1890,7 +1902,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if re.fullmatch(r"[A-Za-z0-9.-]+(:\d{1,5})?", host):
             html = re.sub(r'(<meta property="og:url" content=")[^"]*', lambda m: m.group(1) + f"https://{host}{self._ruta()}", html, count=1)
             html = re.sub(r'(<meta property="og:image" content=")[^"]*', lambda m: m.group(1) + f"https://{host}/og.jpg", html, count=1)
-        for k, v in (reemplazos or {}).items():
+        sitio = os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", host))
+        for k, v in dict({"SITIO": sitio}, **(reemplazos or {})).items():
             html = html.replace("{{" + k + "}}", escape(str(v), quote=True))
         cuerpo = html.encode("utf-8")
         self.send_response(estado)
@@ -1905,10 +1918,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def _pagina_ruta(self, id_):
         d = invitados_mod().publica_detalle(ROOT, id_)
         if d:
-            titulo = f"{d['nombre']} · Sígueme CC"
+            titulo = d["nombre"]
             desc = f"{d['distancia_km']:g} km · +{d['desnivel_m']} m · mapa, perfil y GPX para tu reloj"
         else:
-            titulo, desc = "Ruta no disponible · Sígueme CC", "Esta ruta ya no está disponible."
+            titulo, desc = "Ruta no disponible", "Esta ruta ya no está disponible."
         return self._pagina("ruta.html", {"TITULO": titulo, "DESC": desc}, 200 if d else 404)
 
     def _gpx_reloj(self):

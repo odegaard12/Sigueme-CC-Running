@@ -62,3 +62,9 @@ async function json(url) { try { const r = await fetch(url); return r.ok ? await
     }
   }
 })();
+
+// «Admin»: al dueño lo lleva al panel; al invitado, a su espacio de rutas
+fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
+  const a = document.getElementById('nav-admin');
+  if (a && d && d.dueno) a.href = '/admin.html';
+}).catch(() => {});

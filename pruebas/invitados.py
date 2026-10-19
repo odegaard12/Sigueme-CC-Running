@@ -91,7 +91,7 @@ try:
     st, d, _ = http('POST', '/api/live', {'action': 'invitados'}, ana)
     ok(st == 403, '  ni lista a los invitados')
     st, d, _ = http('GET', '/api/invitado/rutas', cookie=admin)
-    ok(st == 403, 'la sesión del panel no abre el espacio de invitado')
+    ok(st == 200 and d['dueno'] and d['caduca'] == '2099-12-31', 'el dueño (sesión del panel) entra directo a Mis rutas, sin caducidad')
     st, d, _ = http('GET', '/api/invitado/rutas')
     ok(st == 403, 'sin sesión: 403')
     st, d, _ = http('GET', '/api/reloj.gpx', cookie=ana)
@@ -102,7 +102,7 @@ try:
 
     st, d, _ = http('GET', '/api/invitado/yo', cookie=ana)
     st2, d2, _ = http('GET', '/api/invitado/yo')
-    ok(st == 200 and d == {'sesion': True} and st2 == 200 and d2 == {'sesion': False}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
+    ok(st == 200 and d == {'sesion': True, 'dueno': False} and st2 == 200 and d2 == {'sesion': False, 'dueno': False}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
 
     # ---- subir una ruta
     st, d, _ = http('GET', '/api/invitado/rutas', cookie=ana)
@@ -294,6 +294,31 @@ try:
     ok(st == 200 and d['invitados'] == [] and not (W / 'invitados' / 'ana').exists(), f"quitar a ana borra también sus rutas: quedan {[x['usuario'] for x in d.get('invitados', [])]}, carpeta {(W / 'invitados' / 'ana').exists()}")
     st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'ana'}, admin)
     ok(st == 400, 'quitar a quien no existe: 400')
+
+    # ---- el dueño: sus propias rutas, sin crear cuenta (con la sesión del panel o con su usuario y clave)
+    st, d, h = http('POST', '/api/invitado/login', {'usuario': 'prueba', 'codigo': 'clave'}, origen=False)
+    dueno = h.get('Set-Cookie', '').split(';')[0]
+    ok(st == 200 and dueno.startswith('inv='), 'el dueño entra en Mis rutas con su usuario y su clave del panel')
+    st, d, _ = http('POST', '/api/invitado/login', {'usuario': 'prueba', 'codigo': 'mala'}, origen=False)
+    ok(st == 403, '  y con la clave mala, no')
+    st, d, _ = http('POST', '/api/invitado/gpx?nombre=Mi%20casa', gpx_inventado(12), dueno, tipo='application/gpx+xml')
+    ok(st == 200, 'el dueño sube una ruta suya')
+    rid_d = d['ruta']['id']
+    st, d, _ = http('POST', '/api/invitado/ruta', {'id': rid_d, 'publica': True, 'ocultar_m': 300}, admin)     # vale la sesión del panel
+    ok(st == 200 and d['ruta']['publica'], '  y la publica (también vale la sesión del panel, sin otra cookie)')
+    ok(any(x['id'] == rid_d for x in http('GET', '/api/rutas-publicas')[1]['rutas']), 'sale en la portada')
+    st, d, _ = http('POST', '/api/live', {'action': 'rutas_todas'}, admin)
+    ok(any(x['usuario'] == 'dueno' and x['id'] == rid_d for x in d['rutas']) and all(g['usuario'] != 'dueno' for g in d['invitados']),
+       'el panel la ve como del dueño, y «dueno» no cuenta como invitado')
+    http('POST', '/api/live', {'action': 'invitados'}, admin)                                                  # purga
+    ok((W / 'invitados' / 'dueno').exists(), 'la purga no borra la carpeta del dueño')
+    st, d, _ = http('POST', '/api/live', {'action': 'ruta_moderar', 'usuario': 'dueno', 'id': rid_d, 'accion': 'borrar'}, admin)
+    ok(st == 200 and rid_d not in [x['id'] for x in http('GET', '/api/rutas-publicas')[1]['rutas']], 'el dueño la borra desde el panel')
+    # el nombre del sitio sale del dominio
+    r = urllib.request.urlopen(urllib.request.Request(U + '/inicio', headers={'Host': 'odegaard12.online'}))
+    pg = r.read().decode('utf-8')
+    ok('Rutas<br>odegaard12' in pg and '<title>Rutas odegaard12</title>' in pg, 'la portada se titula con el dominio: «Rutas odegaard12»')
+    ok('Tipografía' not in pg, '  y sin el crédito de la tipografía')
 
     # ---- freno a la fuerza bruta
     codigos = []

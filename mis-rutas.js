@@ -2,6 +2,8 @@
 // se pintan SIEMPRE con textContent (nunca innerHTML).
 'use strict';
 const $ = id => document.getElementById(id);
+// el nombre del sitio, del dominio (odegaard12.online → odegaard12)
+(() => { const h = location.hostname.replace(/^www\./, '').split('.')[0]; if (h && !/^[\d.]+$/.test(location.hostname) && location.hostname !== 'localhost') $('marca').textContent = h; })();
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
 const base = '/api/invitado';
 let actual = null;          // la ruta abierta
@@ -40,7 +42,8 @@ $('salir').addEventListener('click', async () => { try { await post('/logout', {
 // ---- lista de rutas
 async function lista() {
   const d = await api('/rutas');
-  $('cabecera').textContent = 'Hola, ' + d.nombre + '. Tu acceso vale hasta el ' + fecha(d.caduca) + '.';
+  $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + '. Tu acceso vale hasta el ' + fecha(d.caduca) + '.';
+  $('salir').hidden = !!d.dueno;
   const cont = $('lista'); cont.textContent = '';
   $('lista-vacia').hidden = d.rutas.length > 0;
   for (const r of d.rutas) {
@@ -95,12 +98,12 @@ function perfilSvg(perfil, avits) {
   const ns = 'http://www.w3.org/2000/svg';
   const area = document.createElementNS(ns, 'polygon');
   area.setAttribute('points', [[0, eMin]].concat(perfil, [[dMax, eMin]]).map(q => X(q[0]).toFixed(1) + ',' + Y(q[1]).toFixed(1)).join(' '));
-  area.setAttribute('fill', 'rgba(127,212,106,.25)'); area.setAttribute('stroke', '#7fd46a'); area.setAttribute('stroke-width', '1.5');
+  area.setAttribute('fill', 'rgba(217,242,74,.28)'); area.setAttribute('stroke', '#d9f24a'); area.setAttribute('stroke-width', '1.5');
   svg.append(area);
   for (const a of avits) {
     const l = document.createElementNS(ns, 'line');
     l.setAttribute('x1', X(a.km).toFixed(1)); l.setAttribute('x2', X(a.km).toFixed(1)); l.setAttribute('y1', p); l.setAttribute('y2', H - p);
-    l.setAttribute('stroke', '#f3c969'); l.setAttribute('stroke-width', '1.5'); l.setAttribute('stroke-dasharray', '3 3');
+    l.setAttribute('stroke', '#f4f7e6'); l.setAttribute('stroke-width', '1.5'); l.setAttribute('stroke-dasharray', '3 3');
     svg.append(l);
   }
 }
@@ -170,3 +173,9 @@ $('borrar').addEventListener('click', async () => {
 
 // si ya hay sesión (cookie), se entra directo
 api('/yo').then(d => d.sesion ? lista() : ver('login')).catch(() => ver('login'));
+
+// «Admin» solo aparece si quien mira es el dueño (sesión del panel)
+fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
+  const a = document.getElementById('nav-admin');
+  if (a && d && d.dueno) a.hidden = false;
+}).catch(() => {});
