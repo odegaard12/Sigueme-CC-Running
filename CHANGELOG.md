@@ -4,6 +4,20 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.16.0 · 2026-10-19
+- **La ruta en el reloj:** en la tarjeta «Ruta (GPX)» del panel, el botón
+  **Descargar GPX para el reloj**. Lleva la altitud y, como puntos de control,
+  los avituallamientos y el principio y la cima de cada subida. Se importa en
+  Huawei Health (Yo → Mi ruta → Importar ruta → Enviar al reloj), Zepp, Garmin
+  o Coros. También desde la consola: `python herramientas/gpx_reloj.py`. Solo
+  con sesión del panel. Importación probada solo hasta el fichero: falta
+  comprobarla en un reloj Huawei real (Watch Fit 4).
+- **Huawei Health** como app de la pulsera en la app Android: la reconoce, la
+  guía de «Activar Sígueme CC» y el aviso de «falta la app» la incluyen y
+  ofrece instalarla.
+- El panel y la guía lo explican; prueba nueva del servidor (sesión, puntos de
+  control, altitud en cada punto).
+
 ## v1.15.1 · 2026-10-19
 - Capturas nuevas: la app con el **siguiente paso**, y el panel en el
   ordenador con las pestañas a lo ancho; las de la guía («Preparar la
