@@ -148,6 +148,65 @@
   .resalta { animation: resalta 1.8s ease-out; }
   @keyframes resalta { 0% { background: #2a4a31; } 100% { background: #161c19; } }
   @media (prefers-reduced-motion: reduce) { .resalta { animation: none; } }
+  /* v1.15: pestañas como pasos, rejilla ancha en el PC, explicaciones en pasos y transiciones */
+  #panel.abierto { display: flex; }
+  .pestanas button { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: left; }
+  .pestanas .n { display: none; }
+  .pestanas .t { display: grid; gap: 1px; }
+  .pestanas small { display: none; font-weight: 500; font-size: 0.8rem; opacity: 0.8; }
+  .pestanas button { transition: background 0.2s, color 0.2s; }
+  .pestanas button:not([aria-selected="true"]):hover { background: #1c2320; color: #dfe6e1; }
+  ol.guia { margin: 0 0 12px; padding: 0; list-style: none; counter-reset: p; display: grid; gap: 12px; }
+  ol.guia li { counter-increment: p; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; font-size: 0.92rem; line-height: 1.5; color: var(--muted); }
+  ol.guia li::before { content: counter(p); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    background: #26302b; color: #c9d2cc; font-weight: 800; font-size: 0.8rem; }
+  ol.guia li b { color: var(--text); }
+  .tarjeta.paso-sig { display: flex; gap: 16px; align-items: center; justify-content: space-between; background: #111614; order: 90; }
+  .paso-sig p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+  .tarjeta.paso-sig .save-btn { width: auto; padding: 0 22px; min-height: 46px; white-space: nowrap; flex: 0 0 auto; }
+  #msg { order: 98; }
+  #panel > .quick-actions { order: 99; }
+  .tarjeta:not([hidden]) { animation: entra 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .tarjeta.resalta:not([hidden]) { animation: resalta 1.8s ease-out; }
+  @keyframes entra { from { opacity: 0; transform: translateY(10px); } }
+  #msg.ok:not(:empty) { background: #1b2b1f; color: #dff3d8; animation: entra 0.25s ease-out both; }
+  #msg.err:not(:empty) { background: #3a1f1f; color: #ffc9c0; animation: entra 0.25s ease-out both; }
+  @media (prefers-reduced-motion: reduce) {
+    .tarjeta:not([hidden]), #msg:not(:empty) { animation: none; }
+    .pestanas button { transition: none; }
+  }
+  @media (max-width: 759px) {
+    .tarjeta.paso-sig { flex-direction: column; align-items: stretch; }
+    .tarjeta.paso-sig .save-btn { width: 100%; }
+  }
+  @media (min-width: 760px) {
+    .pestanas { gap: 8px; padding: 8px; }
+    .pestanas button { min-height: 66px; justify-content: flex-start; padding: 0 18px; }
+    .pestanas .n { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+      background: #26302b; color: #c9d2cc; font-weight: 800; flex: 0 0 auto; }
+    .pestanas button[aria-selected="true"] .n { background: #0a0d0c; color: #7fd46a; }
+    .pestanas button.hecho .n { background: #7fd46a; color: #0a0d0c; }
+    .pestanas small { display: block; }
+    .pestanas b { font-size: 1.02rem; }
+  }
+  @media (min-width: 760px) {
+    .siguiente { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; }
+    .siguiente .save-btn, .siguiente .btn { width: auto; padding: 0 26px; white-space: nowrap; }
+  }
+  @media (min-width: 1000px) {
+    .topbar { max-width: 1240px; margin: 0 auto; padding: 16px 32px 6px; }
+    .admin-wrap { max-width: 1240px; padding: 14px 32px 70px; }
+    #panel.abierto { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    #panel.abierto > .tarjeta { margin-bottom: 0; }
+    #panel.abierto > .pestanas, #panel.abierto > #msg, #panel.abierto > .quick-actions,
+    #panel.abierto > .paso-sig, #t-prep { grid-column: 1 / -1; }
+    #t-carrera { grid-column: 1; grid-row: span 3; }
+    #sec-ruta, #sec-avit, #sec-avisos { grid-column: 2; }
+    .howto, ol.guia li { font-size: 0.95rem; }
+    .tarjeta h2 { font-size: 1.15rem; }
+    .lista-prep { grid-template-columns: 1fr 1fr; gap: 6px 28px; }
+    .qr { width: min(260px, 100%); }
+  }
 </style>
 </head>
 <body>
@@ -172,33 +231,38 @@
 </div>
 
 <div class="admin-wrap" id="panel">
-  <nav class="pestanas" role="tablist" aria-label="Secciones del panel">
-    <button type="button" role="tab" data-tab="hoy">Hoy</button>
-    <button type="button" role="tab" data-tab="preparar">Preparar</button>
-    <button type="button" role="tab" data-tab="movil">Móvil</button>
-    <button type="button" role="tab" data-tab="mas">Más</button>
+  <nav class="pestanas" role="tablist" aria-label="Pasos del panel">
+    <button type="button" role="tab" data-tab="preparar" data-n="1"><span class="n" aria-hidden="true">1</span><span class="t"><b>Preparar</b><small id="est-preparar">La ruta, los avisos y los datos</small></span></button>
+    <button type="button" role="tab" data-tab="movil" data-n="2"><span class="n" aria-hidden="true">2</span><span class="t"><b>Móvil</b><small id="est-movil">Instalar la app y la pulsera</small></span></button>
+    <button type="button" role="tab" data-tab="hoy" data-n="3"><span class="n" aria-hidden="true">3</span><span class="t"><b>Carrera</b><small id="est-hoy">Empezar y seguir el directo</small></span></button>
+    <button type="button" role="tab" data-tab="mas" data-n="4"><span class="n" aria-hidden="true">4</span><span class="t"><b>Resultado</b><small id="est-mas">Subir el FIT y archivar</small></span></button>
   </nav>
 
   <div class="tarjeta" id="t-empezar" data-tab="hoy">
-    <h2>Empezar la carrera</h2>
+    <h2>El día de la carrera</h2>
     <div class="siguiente" id="hoy-pendientes" hidden>
       <p id="hoy-pendientes-txt"></p>
       <button class="btn" id="hoy-ir" type="button">Ir ›</button>
     </div>
-    <div class="howto"><b>Lo normal:</b> pulsa <b>EMPEZAR</b> en la app del móvil (aunque sea un rato
-      antes de la salida) y la carrera se pone en marcha aquí sola. Este botón es para
-      cuando no usas la app.</div>
-    <div class="howto" style="margin-top:8px">
-      Con iGPSPORT: en su app, compartir seguimiento en vivo, y pega el enlace aquí.
-    </div>
-    <div class="field link-field" style="margin-top:12px">
-      <label for="livetrack">Enlace LiveTrack</label>
-      <input type="url" id="livetrack" placeholder="https://...">
-    </div>
+    <ol class="guia">
+      <li><span><b>En la app del móvil, «Empezar seguimiento».</b> Vale desde una hora antes de la salida.
+        Después guarda el móvil: sigue solo con la pantalla apagada.</span></li>
+      <li><span><b>La web te sigue sola.</b> Hasta la hora de salida pone «En la salida»;
+        después cuenta el tiempo y la posición.</span></li>
+      <li><span><b>Al llegar,</b> la web da la meta sola. Si no, usa «Finalizar seguimiento».</span></li>
+    </ol>
     <input type="hidden" id="hora-salida">
-    <p class="estado-fila" style="margin:4px 0 12px"><span>Salida oficial: <b id="hora-txt">—</b>
+    <p class="estado-fila" style="margin:10px 0 4px"><span>Salida oficial: <b id="hora-txt">—</b>
       · el crono cuenta desde ahí (se cambia en Preparar → Datos)</span></p>
-    <button class="save-btn" id="save">Empezar a seguir</button>
+    <details class="sin-app">
+      <summary>No uso la app (iGPSPORT)</summary>
+      <div class="howto">En la app de iGPSPORT, compartir seguimiento en vivo, y pega el enlace aquí.</div>
+      <div class="field link-field" style="margin-top:12px">
+        <label for="livetrack">Enlace LiveTrack</label>
+        <input type="url" id="livetrack" placeholder="https://...">
+      </div>
+      <button class="save-btn" id="save">Empezar a seguir</button>
+    </details>
   </div>
 
   <div class="tarjeta primero" id="t-estado" data-tab="hoy">
@@ -259,7 +323,7 @@
     </details>
   </div>
 
-  <div class="tarjeta" data-tab="preparar">
+  <div class="tarjeta" id="t-prep" data-tab="preparar">
     <h2>Preparar la carrera <span class="progreso-prep" id="prep-progreso"></span></h2>
     <div class="siguiente" id="siguiente" hidden>
       <p id="siguiente-txt"></p>
@@ -272,6 +336,7 @@
 
   <div class="tarjeta" id="t-carrera" data-tab="preparar">
     <h2>Datos de la carrera</h2>
+    <div class="howto" style="margin:-4px 0 12px">Lo imprescindible: nombre, fecha y hora de salida. El resto es opcional.</div>
     <div class="field"><label for="c-nombre">Nombre</label><input id="c-nombre" maxlength="80" placeholder="Mi trail 2027"></div>
     <div class="row2">
       <div class="field"><label for="c-lugar">Lugar</label><input id="c-lugar" maxlength="80"></div>
@@ -328,9 +393,9 @@
 
   <div class="tarjeta" id="sec-avisos" data-tab="preparar">
     <h2>Avisos a la pulsera</h2>
-    <div class="howto">Salen solos del perfil: antes de cada subida (tipo, largo, %, D+, rampa), a mitad
-      de las largas, en la cima, antes de cada avituallamiento, un resumen cada pocos km y el último km.
-      La app del móvil los baja y los lanza <b>sin cobertura</b>; Zepp o Mi Fitness los pasan a la pulsera.</div>
+    <div class="howto"><b>Normalmente no hay que tocar nada aquí:</b> se crean solos al subir la ruta (antes de cada
+      subida, en la cima, antes de cada avituallamiento y el último km). La app los baja y los lanza
+      <b>sin cobertura</b>; Zepp o Mi Fitness los pasan a la pulsera.</div>
     <div class="row2" style="margin-top:10px">
       <div class="field"><label for="av-antes">Avisar antes (m)</label><input type="number" min="50" max="2000" step="50" id="av-antes" placeholder="300"></div>
       <div class="field"><label for="av-cada">Resumen cada (km)</label><input type="number" min="1" max="100" id="av-cada" placeholder="según la distancia"></div>
@@ -348,13 +413,26 @@
 
   <div class="tarjeta primero" id="sec-app" data-tab="movil">
     <h2>App del móvil (Android)</h2>
-    <div class="howto">Una sola vez, en casa: escanea este código con la cámara del móvil. Se abre la página
-      de la app: instálala (la primera vez), vuelve a esa misma página y pulsa «Abrir en la app».
-      Después ya no hace falta escanear nada: el día de la carrera pulsa <b>EMPEZAR</b> en la app
-      (aunque sea un rato antes de la salida) y baja el plan al día y pone la carrera en marcha aquí.
-      Solo si generas un identificador nuevo hay que volver a escanear.</div>
+    <ol class="guia">
+      <li><span><b>Escanea este código</b> con la cámara del móvil: se abre una página de la app.</span></li>
+      <li><span><b>Descarga e instala la app</b> y vuelve a esa misma página.</span></li>
+      <li><span>Pulsa <b>«Abrir en la app»</b>: confirma el servidor y baja la ruta y los avisos.</span></li>
+      <li><span>En la app, sigue el <b>«Siguiente paso»</b> hasta que ponga «Todo listo».</span></li>
+    </ol>
     <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
     <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
+    <div class="howto" style="margin-top:8px">Se hace una sola vez. Solo si generas un identificador nuevo hay que volver a escanear.</div>
+  </div>
+
+  <div class="tarjeta primero" id="sec-pulsera" data-tab="movil">
+    <h2>Que los avisos lleguen a la pulsera</h2>
+    <ol class="guia">
+      <li><span>Instala <b>Mi Fitness</b> (Xiaomi) o <b>Zepp</b> (Amazfit) y enlaza tu pulsera.</span></li>
+      <li><span>En la app Sígueme CC pulsa <b>«Probar aviso»</b> una vez. Hasta entonces Sígueme CC no sale en la lista de apps de la pulsera.</span></li>
+      <li><span>En Mi Fitness o Zepp, abre los ajustes de tu pulsera → notificaciones de apps y <b>activa Sígueme CC</b>: viene desactivada.</span></li>
+      <li><span>Bloquea el móvil, pulsa «Probar aviso» otra vez y mira la pulsera.</span></li>
+    </ol>
+    <div class="howto">Los nombres de los menús cambian un poco según la versión de la app de la pulsera.</div>
   </div>
 
   <div class="tarjeta primero" data-tab="mas">
@@ -418,6 +496,19 @@
     </details>
   </div>
 
+  <div class="tarjeta paso-sig" data-tab="preparar">
+    <p>Cuando la lista de arriba esté en verde, el siguiente paso es conectar el móvil.</p>
+    <button class="save-btn" data-ir-tab="movil" type="button">Siguiente: el móvil ›</button>
+  </div>
+  <div class="tarjeta paso-sig" data-tab="movil">
+    <p>Con la app lista y el aviso de prueba en la pulsera, solo queda el día de la carrera.</p>
+    <button class="save-btn" data-ir-tab="hoy" type="button">Siguiente: la carrera ›</button>
+  </div>
+  <div class="tarjeta paso-sig" data-tab="hoy">
+    <p>Cuando termines, sube el resultado y archiva la carrera.</p>
+    <button class="save-btn" data-ir-tab="mas" type="button">Siguiente: el resultado ›</button>
+  </div>
+
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
   <div class="quick-actions">
@@ -434,7 +525,7 @@ const $ = id => document.getElementById(id);
 try { sessionStorage.removeItem('adminToken'); } catch (e) {}
 function sesionCaducada() {
   clearInterval(sondeo); sondeo = null;
-  $('panel').style.display = 'none';
+  $('panel').classList.remove('abierto'); $('panel').style.display = 'none';
   $('login-screen').style.display = 'block';
   $('login-msg').textContent = 'La sesión ha caducado: vuelve a entrar.';
   $('login-msg').className = 'msg err';
@@ -484,6 +575,8 @@ $('hora-salida').addEventListener('input', () => { horaTocada = true; });
 
 function refreshStatus(live) {
   $('status-text').textContent = live.status_label || '—';
+  $('est-hoy').textContent = live.finished_at ? 'Carrera terminada' : live.started_at ? 'En directo' : 'Sin empezar';
+  marcarPestana('hoy', !!live.finished_at);
   const pill = $('pill-panel');
   pill.textContent = live.finished_at ? 'En meta' : live.started_at ? 'En carrera' : 'Sin empezar';
   pill.className = 'pill-panel ' + (live.finished_at ? '' : live.started_at ? 'vivo' : '');
@@ -604,7 +697,12 @@ function pintarPreparacion(p) {
     li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irA(x.ir); } });
     l.append(li);
   });
-  $('prep-progreso').textContent = pasos.filter(x => x.ok).length + ' de ' + pasos.length + ' listos';
+  const listos = pasos.filter(x => x.ok).length;
+  $('prep-progreso').textContent = listos + ' de ' + pasos.length + ' listos';
+  $('est-preparar').textContent = listos === pasos.length ? 'Todo preparado' : listos + ' de ' + pasos.length + ' listos';
+  marcarPestana('preparar', listos === pasos.length);
+  $('est-movil').textContent = p.app_at ? 'App conectada' : 'Falta instalar la app';
+  marcarPestana('movil', !!p.app_at && !!p.id_largo);
   const sig = pasos.find(x => !x.ok && !x.depende);
   const cuadro = $('siguiente');
   cuadro.hidden = false;
@@ -621,6 +719,11 @@ function pintarPreparacion(p) {
     $('hoy-ir').onclick = () => irA(sig.ir);
   }
   $('app-text').textContent = app ? app[0].toUpperCase() + app.slice(1) : 'La app aún no ha bajado el plan';
+  // la primera vez que se abre: con lo pendiente, a Preparar; con una carrera en marcha, a la carrera
+  if (!pestanaElegida) {
+    pestanaElegida = true;
+    if (enMarcha) verPestana('hoy'); else if (sig) verPestana('preparar');
+  }
 }
 
 // ---------- preparar la carrera (formularios) ----------
@@ -810,6 +913,19 @@ function verPestana(t) {
   try { localStorage.setItem('pestana', t); } catch (e) {}
 }
 document.querySelectorAll('.pestanas button').forEach(b => b.addEventListener('click', () => verPestana(b.dataset.tab)));
+// los botones «Siguiente» del final de cada pestaña
+document.querySelectorAll('[data-ir-tab]').forEach(b => b.addEventListener('click', () => {
+  verPestana(b.dataset.irTab);
+  window.scrollTo({ top: 0, behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}));
+// una pestaña con todo hecho se marca con una palomita
+function marcarPestana(t, hecho) {
+  const b = document.querySelector('.pestanas button[data-tab="' + t + '"]');
+  if (!b) return;
+  b.classList.toggle('hecho', hecho);
+  b.querySelector('.n').textContent = hecho ? '✓' : b.dataset.n;  // taste-skill-ignore: marca de paso hecho
+}
+let pestanaElegida = false;
 let inicial = 'hoy';
 try { inicial = localStorage.getItem('pestana') || 'hoy'; } catch (e) {}
 verPestana(['hoy', 'preparar', 'movil', 'mas'].includes(inicial) ? inicial : 'hoy');
@@ -817,7 +933,7 @@ verPestana(['hoy', 'preparar', 'movil', 'mas'].includes(inicial) ? inicial : 'ho
 let sondeo = null;
 function entrar() {
   $('login-screen').style.display = 'none';
-  $('panel').style.display = 'flex';
+  $('panel').style.display = ''; $('panel').classList.add('abierto');
   pollStatus();
   cargarGps();
   cargarConfig();

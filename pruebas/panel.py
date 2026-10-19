@@ -74,6 +74,16 @@ try:
                     if nombre == 'todo_listo':
                         ok('Todo listo' in texto and pg.evaluate("document.getElementById('siguiente-ir').hidden"), 'todo listo: sin botón y con la indicación del día')
                         ok(pg.evaluate("document.getElementById('hoy-pendientes').hidden"), 'todo listo: Hoy sin aviso')
+            if ancho == 1440:
+                pg.click('button[data-tab="preparar"]'); pg.wait_for_timeout(400)
+                x1 = pg.evaluate("document.getElementById('t-carrera').getBoundingClientRect().left")
+                x2 = pg.evaluate("document.getElementById('sec-ruta').getBoundingClientRect().left")
+                ok(x2 - x1 > 300, f'en el PC, datos y ruta van en dos columnas ({x1:.0f} / {x2:.0f})')
+                ok(pg.evaluate("[...document.querySelectorAll('.pestanas small')].every(e => e.offsetParent && e.textContent.trim())"),
+                   'en el PC, cada pestaña enseña su estado')
+                pg.click('.paso-sig[data-tab="preparar"] [data-ir-tab]'); pg.wait_for_timeout(400)
+                ok(pg.evaluate("document.querySelector('.pestanas button[aria-selected=true]').dataset.tab") == 'movil',
+                   'el botón «Siguiente» de Preparar lleva a Móvil')
             ok(not errores, f'sin errores JS a {ancho}px: {errores}')
             ctx.close()
         b.close()

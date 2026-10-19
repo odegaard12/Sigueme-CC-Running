@@ -15,6 +15,9 @@ python3 android/prueba/servidor.py || { echo CARRERA_MAL >> capturas/carrera.txt
 ID=$(cat /tmp/banco/id)
 APP_AT0=$(vivo app_at)
 
+adb shell settings put global hide_error_dialogs 1
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb shell dumpsys deviceidle whitelist +$P
 adb shell cmd statusbar collapse            # la prueba anterior dejó la persiana abierta
 # app limpia, configurada a mano con el servidor del banco (10.0.2.2 = el ordenador)
 adb shell am force-stop $P
@@ -34,7 +37,7 @@ adb shell am start -n $P/.MainActivity
 for i in $(seq 1 30); do
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null
   adb shell uiautomator dump /sdcard/espera.xml >/dev/null 2>&1
-  adb shell cat /sdcard/espera.xml 2>/dev/null | grep -qi "Listo para salir" && break
+  adb shell cat /sdcard/espera.xml 2>/dev/null | grep -qi "Empezar seguimiento" && break
   sleep 2
 done
 sleep 4                                     # y que le dé tiempo a bajar el plan
@@ -79,5 +82,7 @@ adb shell dumpsys notification --noredact | grep -E "android.title=|android.text
 grep -qi "Fuente" capturas/banco-notificaciones.txt || mal "no salió el aviso del avituallamiento"
 cp /tmp/banco/servidor.log capturas/banco-servidor.log
 grep -q Traceback /tmp/banco/servidor.log && mal "error en el servidor"
+# si algo falla, lo que dijo Android (cierres, ANR) queda junto a las capturas
+grep -q "^MAL" capturas/carrera.txt && { adb logcat -d -b crash > capturas/logcat-cierres.txt; adb logcat -d | grep -iE "sigueme|ANR|FATAL|AndroidRuntime" | tail -n 300 > capturas/logcat.txt; } 2>/dev/null
 grep -q "^MAL" capturas/carrera.txt && echo CARRERA_MAL >> capturas/carrera.txt || echo CARRERA_OK >> capturas/carrera.txt
 cat capturas/carrera.txt

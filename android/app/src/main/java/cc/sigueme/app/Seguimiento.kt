@@ -208,6 +208,11 @@ class Seguimiento : Service(), LocationListener {
          *  Título = lo importante; cuerpo = los números (Plan.notificacion). */
         fun avisar(c: Context, texto: String) {
             val (titulo, cuerpo) = Plan.notificacion(texto)
+            notificar(c, titulo, cuerpo)
+        }
+
+        /** Título y cuerpo ya hechos (el aviso de prueba usa este, con el mismo diseño que los de la carrera). */
+        fun notificar(c: Context, titulo: String, cuerpo: String) {
             val n = Notification.Builder(c, CANAL_AVISOS).setSmallIcon(R.drawable.ic_noti).setContentTitle(titulo)
                 .setContentText(cuerpo.replace('\n', ' ')).setStyle(Notification.BigTextStyle().bigText(cuerpo))
                 .setSubText("Sígueme CC")

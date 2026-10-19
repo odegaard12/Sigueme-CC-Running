@@ -4,6 +4,29 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.15.0 · 2026-10-19
+- **La app te lleva de la mano:** arriba sale el **siguiente paso** («Paso 6
+  de 7: instala la app de tu pulsera») con un solo botón verde, hasta «Todo
+  listo». «Empezar seguimiento» se queda en gris mientras falten pasos. La
+  lista de abajo («Comprobaciones») sigue ahí y cada fila lleva a su sitio.
+- **La pulsera, lo que más falla:** Mi Fitness y Zepp traen Sígueme CC
+  **desactivada** por defecto. El aviso de prueba ahora es un aviso real
+  («Prueba: subida larga en 300 m»), y al volver a la app pregunta «¿Te llegó
+  a la pulsera?»; si no, explica paso a paso cómo activarla y abre Mi Fitness.
+- **Mensajes con el diseño de la app** (no los del sistema), con título,
+  texto claro y botones grandes; «Cómo funciona» en tres líneas.
+- Transiciones: la pantalla entra por partes, los botones responden al
+  pulsarlos y los cambios se animan; respeta «reducir movimiento».
+- **Panel en el PC a lo ancho:** las pestañas son los pasos (1 Preparar, 2
+  Móvil, 3 Carrera, 4 Resultado) con su estado y una marca al completarse, y
+  el contenido va en dos columnas. Explicaciones en pasos cortos, «Siguiente»
+  al final de cada pestaña, una tarjeta nueva para la pulsera y lo de
+  iGPSPORT plegado. Al abrir con cosas pendientes, va directo a Preparar.
+- App: los botones crecen con la letra grande del móvil. Arreglos: sin cierre
+  si el móvil no tiene la pantalla de ahorro de batería y sin ventana colgada
+  al girar con un mensaje abierto.
+- El banco del emulador guarda el registro de Android cuando una prueba falla.
+
 ## v1.14.0 · 2026-10-19
 - **El panel guía la preparación de la carrera:** «Preparar la carrera»
   enseña cuántos pasos hay listos («4 de 7 listos»), dice cuál es el

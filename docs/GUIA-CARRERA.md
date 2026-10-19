@@ -87,12 +87,15 @@ En casa, con cobertura:
    app**: confirma tu servidor y baja la ruta, el perfil y los avisos. No hay
    que volver a escanear nada en las siguientes carreras (salvo si generas un
    identificador nuevo).
-3. En la app, «Listo para salir»: **Arreglar** en todo lo que no esté en verde
-   (ubicación, notificaciones, sin ahorro de batería). La app busca sola la app
-   de la pulsera, **Zepp** (Amazfit), **Mi Fitness** o **Zepp Life** (Xiaomi),
-   comprueba que tenga «Acceso a notificaciones» y dice qué activar y dónde.
-4. **Probar aviso**: llega a los 5 segundos; bloquea el móvil y mira la
-   pulsera (muchas apps solo pasan los avisos con la pantalla apagada).
+3. En la app, sigue el **Siguiente paso** de arriba hasta que ponga «Todo
+   listo»: ubicación, notificaciones, sin ahorro de batería, la app de la
+   pulsera (**Zepp**, **Mi Fitness** o **Zepp Life**, con su «Acceso a
+   notificaciones») y el aviso de prueba.
+4. **El aviso de prueba**: llega a los 5 segundos; bloquea el móvil y mira la
+   pulsera. Al volver, la app pregunta si llegó. **En Mi Fitness y en Zepp,
+   Sígueme CC viene desactivada**: en los ajustes de la pulsera →
+   notificaciones de apps, actívala (si no sale en la lista, prueba antes el
+   aviso una vez: la lista solo enseña las apps que ya han avisado).
 
 El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
 apagada y sin cobertura:
