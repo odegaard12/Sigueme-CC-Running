@@ -193,6 +193,7 @@ def live_publico():
 ARCHIVO_DIR = os.path.join(ROOT, "carreras")
 mimetypes.add_type("application/geo+json", ".geojson")
 mimetypes.add_type("application/manifest+json", ".webmanifest")
+mimetypes.add_type("font/woff2", ".woff2")
 SLUG_RE = re.compile(r"^/(\d{4}-[a-z0-9-]{1,60})(/.*)?$")
 FICHEROS_CARRERA = ("carrera.json", "route.geojson", "elevation.json", "aid_stations.json", "rider.png", "avisos.json")
 
@@ -454,6 +455,28 @@ def preparacion():
             "app_at": live.get("app_at")}
 
 
+def nombre_sitio(host):
+    """El nombre de la web, del dominio: «odegaard12» para odegaard12.online; «Sígueme CC» si es una IP o localhost."""
+    h = re.sub(r"^www\.", "", host.lower())
+    if not h or h == "localhost" or re.fullmatch(r"[\d.]+|\[.*\]", h):
+        return "Sígueme CC"
+    return h.split(".")[0]
+
+
+def directo_ahora():
+    """¿La portada es la carrera? En marcha, o preparada para hoy (o ya pasada y sin archivar).
+    Con una carrera para otro día, la portada es la de las rutas (con la carrera como «próxima»)."""
+    d = read_live()
+    if d.get("started_at") or d.get("livetrack_url"):
+        return True
+    fecha = carrera().get("fecha") or ""
+    try:
+        hoy = datetime.now(zona_carrera()).date().isoformat()
+        return bool(fecha) and fecha <= hoy and slug_de(carrera()) not in {a[0] for a in carreras_archivadas()}
+    except Exception:
+        return False
+
+
 def hay_carrera_en_marcha():
     """En marcha, o preparada para hoy o más adelante: la portada es esa carrera
     (antes, quien entraba a las 08:00 iba al resultado de la anterior)."""
@@ -523,6 +546,56 @@ def sesion_valida(cabecera_cookie):
                     and compare_digest(firma.encode(), _firma(int(exp)).encode()):
                 return True
     return False
+
+
+# --- invitados: rutas para el reloj de un amigo ------------------------------
+# Usuario + código que caduca (los crea el dueño en el panel). Sesión propia, en otra
+# cookie (inv, solo para /api/invitado) y firmada con otra clave: la del panel no vale
+# aquí ni al revés. Sin estado: vale en las dos Pis.
+INV_SESION_HORAS = 12
+_inv_mod = None
+
+
+def invitados_mod():
+    """herramientas/invitados.py, importado UNA vez (guarda un cerrojo: recargarlo lo rompería)."""
+    global _inv_mod
+    if _inv_mod is None:
+        if HERRAMIENTAS not in sys.path:
+            sys.path.insert(0, HERRAMIENTAS)
+        _inv_mod = importlib.import_module("invitados")
+    return _inv_mod
+
+
+def _inv_firma(usuario, exp):
+    clave = hashlib.sha256(b"sesion-invitado\0" + ADMIN_HASH.encode()).digest()
+    return hmac.new(clave, f"{usuario}.{exp}".encode(), hashlib.sha256).hexdigest()
+
+
+def nueva_sesion_invitado(usuario):
+    exp = int(time.time()) + INV_SESION_HORAS * 3600
+    return f"{usuario}.{exp}.{_inv_firma(usuario, exp)}"
+
+
+def invitado_de(cabecera_cookie):
+    """El usuario de la cookie inv si está bien firmada, no ha caducado y el invitado sigue vigente."""
+    if not ADMIN_HASH or not cabecera_cookie:
+        return None
+    inv = invitados_mod()
+    if sesion_valida(cabecera_cookie):
+        return inv.DUENO              # quien está dentro del panel es el dueño: entra directo a «Mis rutas»
+    for trozo in cabecera_cookie.split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "inv":
+            usuario, _, resto = valor.partition(".")
+            exp, _, firma = resto.partition(".")
+            if inv.USUARIO_RE.match(usuario) and exp.isascii() and exp.isdigit() and len(exp) < 15 \
+                    and int(exp) > time.time() and compare_digest(firma.encode(), _inv_firma(usuario, int(exp)).encode()) \
+                    and inv.activo(ROOT, usuario):
+                return usuario
+    return None
+
+
+_gpx_inv_sem = threading.BoundedSemaphore(1)     # un GPX de invitado a la vez: la Pi es pequeña
 
 
 # --- iGPSPORT ---------------------------------------------------------------
@@ -1260,7 +1333,7 @@ def stop_previous_poller():
 # como si no existiera.
 EXTENSIONES_PUBLICAS = {
     ".html", ".css", ".js", ".json", ".geojson", ".webmanifest",
-    ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt",
+    ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt", ".woff2",
 }
 
 
@@ -1332,6 +1405,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # nada de carpetas o ficheros ocultos (.git, .vscode, .claude…)
         if any(trozo.startswith(".") for trozo in ruta.split("/")):
             return False
+        if ruta.lower().startswith("/invitados"):
+            return False                 # los datos de los invitados nunca se sirven como fichero
         return os.path.splitext(ruta)[1].lower() in EXTENSIONES_PUBLICAS
 
     def _gps(self, cuerpo=b""):
@@ -1364,6 +1439,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/reloj.gpx":
+            return self._gpx_reloj()
+        if crudo == "/rutas.html":
+            return self._redirigir("/mis-rutas.html", 301)       # el espacio del invitado se llama /mis-rutas.html
+        if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
+            return self._publico_get(crudo)
+        if crudo == "/inicio":
+            return self._pagina("inicio.html")
+        m_ruta = re.fullmatch(r"/r/([0-9a-f]{12})", crudo)
+        if m_ruta:
+            return self._pagina_ruta(m_ruta.group(1))
+        if crudo.startswith("/api/invitado/"):
+            return self._invitado_get(crudo)
         ruta = self._ruta()
         if ruta == "/carreras":
             return self._indice_carreras()
@@ -1372,6 +1460,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not m.group(2) and not crudo.endswith("/"):
                 return self._redirigir("/" + m.group(1) + "/", 301)   # sin la barra, los enlaces relativos fallan
             return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
+        if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+            return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
         if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() \
                 and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             # sin carrera en marcha: la portada lleva al último resultado (302,
@@ -1555,9 +1645,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("X-Robots-Tag", "noindex, nofollow")
         elif csp_web():
             self.send_header("Content-Security-Policy", csp_web())
+        if ruta == "/mis-rutas.html":
+            self.send_header("X-Robots-Tag", "noindex, nofollow")   # el espacio de invitados no sale en Google
         super().end_headers()
 
-    def _send_json(self, status, payload, cookie=None, cache="no-store"):
+    def _send_json(self, status, payload, cookie=None, cache="no-store", galleta="adm"):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -1566,9 +1658,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Secure solo si llega por https (Cloudflare); por la red de casa
             # (http) el navegador no guardaría una cookie Secure
             https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
-            self.send_header("Set-Cookie", f"adm={cookie}; Path=/api; HttpOnly; SameSite=Strict"
+            horas = INV_SESION_HORAS if galleta == "inv" else SESION_HORAS
+            self.send_header("Set-Cookie", f"{galleta}={cookie}; Path={'/api/invitado' if galleta == 'inv' else '/api'}; HttpOnly; SameSite=Strict"
                              + ("; Secure" if https else "")
-                             + (f"; Max-Age={SESION_HORAS * 3600}" if cookie else "; Max-Age=0"))
+                             + (f"; Max-Age={horas * 3600}" if cookie else "; Max-Age=0"))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -1611,6 +1704,244 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 pass
         return datetime.now(timezone.utc).isoformat()
+
+    # --- invitados --------------------------------------------------------------
+    def _inv_json(self, tope=8192):
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 <= largo <= tope:
+            return None
+        try:
+            d = json.loads(self.rfile.read(largo) or b"{}")
+        except (ValueError, UnicodeDecodeError):
+            return None
+        return d if isinstance(d, dict) else None
+
+    def _invitado_get(self, ruta):
+        usuario = invitado_de(self.headers.get("Cookie"))
+        if ruta == "/api/invitado/yo":
+            # «¿ya hay sesión?» sin que el navegador pinte un error 403 en la consola
+            self._send_json(200, {"sesion": bool(usuario), "dueno": usuario == invitados_mod().DUENO})
+            return
+        if not usuario:
+            self._send_json(403, {"error": "entra primero"})
+            return
+        inv = invitados_mod()
+        id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
+        try:
+            if ruta == "/api/invitado/rutas":
+                reg = inv.activo(ROOT, usuario)
+                self._send_json(200, {"usuario": usuario, "nombre": reg["nombre"], "caduca": reg["caduca"],
+                                      "dueno": usuario == inv.DUENO, "rutas": inv.rutas(ROOT, usuario)})
+                return
+            if ruta == "/api/invitado/ruta":
+                r = inv.ruta(ROOT, usuario, id_)
+                self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/reloj.gpx":
+                nombre, gpx = inv.gpx_reloj(ROOT, usuario, id_, herramienta("gpx_reloj").generar)
+                if gpx is None:
+                    self._send_json(404, {"error": "esa ruta no existe"})
+                    return
+                cuerpo = gpx.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+                self.send_header("Content-Disposition",
+                                 f'attachment; filename="{re.sub(r"[^a-z0-9]+", "-", nombre.lower()).strip("-") or "ruta"}-reloj.gpx"')
+                self.send_header("Content-Length", str(len(cuerpo)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(cuerpo)
+                return
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self._send_json(404, {"error": "not found"})
+
+    def _invitado_post(self):
+        ruta = self.path.split("?")[0]
+        inv = invitados_mod()
+        if ruta == "/api/invitado/login":
+            ip = "inv:" + self.ip_cliente()
+            d = self._inv_json(2048)
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            espera = segundos_de_castigo(ip)
+            if espera > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            if espera:
+                if not castigo_lock.acquire(timeout=5):
+                    self._send_json(429, {"error": "demasiados intentos: espera un poco"})
+                    return
+                try:
+                    time.sleep(1)
+                finally:
+                    castigo_lock.release()
+            usuario = str(d.get("usuario") or "").strip().lower()
+            # el dueño también puede entrar aquí con su usuario y su clave del panel
+            es_dueno = bool(ADMIN_USER) and usuario == ADMIN_USER.lower() and credenciales_ok(d.get("usuario", ""), d.get("codigo", ""))
+            if not (es_dueno or inv.comprobar(ROOT, usuario, d.get("codigo", ""))):
+                fallo_de(ip)
+                print(f"[invitado] acceso incorrecto desde {self.ip_cliente()}", flush=True)
+                self._send_json(403, {"error": "usuario o código incorrecto, o el acceso ha caducado"})
+                return
+            acierto_de(ip)
+            inv.purgar(ROOT)
+            print(f"[invitado] {usuario} entra", flush=True)
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv")
+            return
+        # lo demás: desde esta misma web y con sesión de invitado
+        if self.mismo_origen() is not True:
+            self._send_json(403, {"error": "origen no permitido"})
+            return
+        usuario = invitado_de(self.headers.get("Cookie"))
+        if not usuario:
+            self._send_json(403, {"error": "sesión caducada: entra otra vez"})
+            return
+        try:
+            if ruta == "/api/invitado/logout":
+                self._send_json(200, {"ok": True}, cookie="", galleta="inv")
+                return
+            if ruta == "/api/invitado/gpx":
+                self._invitado_subir(usuario, inv)
+                return
+            d = self._inv_json()
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            if ruta == "/api/invitado/ruta":
+                r = inv.guardar_ruta(ROOT, usuario, d.get("id"), d.get("nombre"), d.get("avituallamientos"),
+                                     d.get("publica"), d.get("ocultar_m"), d.get("autor"))
+                self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/borrar":
+                hecho = inv.borrar_ruta(ROOT, usuario, d.get("id"))
+                self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa ruta no existe"})
+                return
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self._send_json(404, {"error": "not found"})
+
+    def _invitado_subir(self, usuario, inv):
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= inv.MAX_GPX:
+            self._send_json(413, {"error": f"el GPX tiene que pesar menos de {inv.MAX_GPX // 1_000_000} MB"})
+            return
+        cuerpo = self.rfile.read(largo)
+        nombre = (parse_qs(urlparse(self.path).query).get("nombre") or [""])[0]
+        if not _gpx_inv_sem.acquire(timeout=20):
+            self._send_json(429, {"error": "hay otra ruta preparándose: prueba en un momento"})
+            return
+        try:
+            detalle = inv.crear_ruta(ROOT, usuario, nombre, cuerpo,
+                                     herramienta("preparar_ruta").preparar, herramienta("plan_avisos").calcular)
+        finally:
+            _gpx_inv_sem.release()
+        print(f"[invitado] {usuario} sube una ruta", flush=True)
+        self._send_json(200, {"ok": True, "ruta": detalle})
+
+    # --- rutas públicas (portada, página de cada ruta y GPX para el reloj) ---------
+    def _publico_get(self, ruta):
+        inv = invitados_mod()
+        cache = "public, max-age=60, s-maxage=60"
+        if ruta == "/api/rutas-publicas":
+            self._send_json(200, {"rutas": inv.publicas(ROOT)}, cache=cache)
+            return
+        if ruta == "/api/carreras":
+            lista = [{"slug": slug, "nombre": c.get("nombre"), "lugar": c.get("lugar"), "fecha": c.get("fecha"),
+                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km"),
+                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s")}
+                     for slug, c, r in carreras_archivadas()]
+            c, live = carrera(), read_live()
+            hoy = datetime.now(zona_carrera()).date().isoformat()
+            proxima = None
+            if c.get("nombre") and (c.get("fecha") or "") >= hoy and not live.get("finished_at") \
+                    and slug_de(c) not in {x["slug"] for x in lista}:
+                proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
+            self._send_json(200, {"carreras": lista, "proxima": proxima,
+                                  "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
+            return
+        id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
+        if ruta == "/api/ruta-publica":
+            d = inv.publica_detalle(ROOT, id_)
+            self._send_json(200 if d else 404, d or {"error": "esa ruta no existe o ya no es pública"}, cache=cache if d else "no-store")
+            return
+        if ruta == "/api/ruta-publica/reloj.gpx":
+            nombre, gpx = inv.gpx_publico(ROOT, id_, herramienta("gpx_reloj").generar)
+            if gpx is None:
+                self._send_json(404, {"error": "esa ruta no existe o ya no es pública"})
+                return
+            cuerpo = gpx.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+            self.send_header("Content-Disposition",
+                             f'attachment; filename="{re.sub(r"[^a-z0-9]+", "-", nombre.lower()).strip("-") or "ruta"}-reloj.gpx"')
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", cache)
+            self.end_headers()
+            self.wfile.write(cuerpo)
+            return
+        self._send_json(404, {"error": "not found"})
+
+    # --- páginas de la web de rutas -------------------------------------------------
+    def _pagina(self, nombre, reemplazos=None, estado=200):
+        """Una página de la web con og:url y og:image del dominio de quien la sirve y, si trae
+        {{TOKENS}}, sus valores ya escapados."""
+        from html import escape
+        with open(os.path.join(ROOT, nombre), encoding="utf-8") as f:
+            html = f.read()
+        host = self.headers.get("Host", "")
+        if re.fullmatch(r"[A-Za-z0-9.-]+(:\d{1,5})?", host):
+            html = re.sub(r'(<meta property="og:url" content=")[^"]*', lambda m: m.group(1) + f"https://{host}{self._ruta()}", html, count=1)
+            html = re.sub(r'(<meta property="og:image" content=")[^"]*', lambda m: m.group(1) + f"https://{host}/og.jpg", html, count=1)
+        sitio = os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", host))
+        for k, v in dict({"SITIO": sitio}, **(reemplazos or {})).items():
+            html = html.replace("{{" + k + "}}", escape(str(v), quote=True))
+        cuerpo = html.encode("utf-8")
+        self.send_response(estado)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "no-cache, must-revalidate")
+        self.send_header("X-Robots-Tag", "noindex, nofollow")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
+
+    def _pagina_ruta(self, id_):
+        d = invitados_mod().publica_detalle(ROOT, id_)
+        if d:
+            titulo = d["nombre"]
+            desc = f"{d['distancia_km']:g} km · +{d['desnivel_m']} m · mapa, perfil y GPX para tu reloj"
+        else:
+            titulo, desc = "Ruta no disponible", "Esta ruta ya no está disponible."
+        return self._pagina("ruta.html", {"TITULO": titulo, "DESC": desc}, 200 if d else 404)
+
+    def _gpx_reloj(self):
+        """La ruta con altitud y los avituallamientos y subidas como puntos de control,
+        para importarla en el reloj (Huawei Health, Zepp, Garmin...). Solo con sesión."""
+        if not sesion_valida(self.headers.get("Cookie")):
+            self._send_json(403, {"error": "entra en el panel primero"})
+            return
+        try:
+            cuerpo = herramienta("gpx_reloj").desde_ficheros(ROOT).encode("utf-8")
+        except ValueError as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{slug_de(carrera()) or "ruta"}-reloj.gpx"')
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(cuerpo)
 
     def _sesion_panel(self):
         """Peticiones del panel que no son JSON (subir el GPX): solo con sesión
@@ -1877,6 +2208,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
+        if self.path.startswith("/api/invitado/"):
+            return self._invitado_post()
         if self.path.startswith("/api/gpx") or self.path in ("/api/fit", "/api/avatar"):
             with datos_lock:
                 {"/api/fit": self._subir_fit, "/api/avatar": self._subir_avatar}.get(self.path, self._subir_gpx)()
@@ -1971,6 +2304,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
 
         accion = data.get("action")
+
+        if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar",
+                      "rutas_todas", "ruta_moderar"):
+            # los amigos que pueden preparar sus rutas para el reloj (el código solo se ve al crearlo)
+            inv = invitados_mod()
+            usuario = str(data.get("usuario") or "").strip().lower()
+            extra = {}
+            try:
+                if accion == "invitado_crear":
+                    extra = {"usuario": usuario, "codigo": inv.crear(ROOT, usuario, data.get("dias", 30), data.get("nombre", ""))}
+                elif accion == "invitado_renovar":
+                    extra = {"caduca": inv.renovar(ROOT, usuario, data.get("dias", 30))}
+                elif accion == "invitado_codigo":
+                    extra = {"usuario": usuario, "codigo": inv.codigo_nuevo(ROOT, usuario)}
+                elif accion == "invitado_borrar":
+                    inv.borrar(ROOT, usuario)
+                elif accion == "ruta_moderar":
+                    inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
+                inv.purgar(ROOT)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT)))
+            return
 
         if accion == "rotar_gps":
             # identificador nuevo (32 caracteres al azar) para cada carrera: el
@@ -2230,6 +2587,21 @@ if __name__ == "__main__":
     if live.get("livetrack_url") and tengo_la_vip():
         start_poller(live["livetrack_url"])
     threading.Thread(target=watch_live_file, daemon=True).start()
+
+    def purga_invitados():
+        # sin esperar a que alguien entre: lo caducado se borra solo (cada 6 h; solo la Pi que tiene la VIP)
+        import importlib.util
+        while True:
+            try:
+                if tengo_la_vip():
+                    spec = importlib.util.spec_from_file_location('invitados_purga', os.path.join(ROOT, 'herramientas', 'invitados.py'))
+                    m = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(m)
+                    m.purgar(ROOT)
+            except Exception as exc:
+                print(f"[invitado] purga: {exc}", flush=True)
+            time.sleep(6 * 3600)
+    threading.Thread(target=purga_invitados, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
     # petición cada vez, así que un móvil con mala cobertura dejaba clavado al
     # resto. Con la web abierta en varios teléfonos pidiendo live.json cada

@@ -142,11 +142,10 @@ try:
     ok(st == 200 and d.get('archivada') == '2027-ensayo' and (W / 'carreras/2027-ensayo/resultado.json').exists(), f"archivada en /{d.get('archivada') if isinstance(d, dict) else d}/")
     live = publico()
     ok(not live.get('started_at') and live.get('status_label') == 'Sin iniciar', 'tras archivar: portada a cero')
-    try:
-        sin_red.open(U + '/')
-        ok(False, 'la portada redirige al último resultado')
-    except urllib.error.HTTPError as e:
-        ok(e.code == 302 and e.headers['Location'].endswith('/2027-ensayo/'), f"portada → {e.headers['Location']}")
+    r = sin_red.open(U + '/')
+    ok(r.status == 200 and b'inicio.js' in r.read(), 'la portada, sin carrera para hoy, es la de rutas')
+    d = json.load(sin_red.open(U + '/api/carreras'))
+    ok([c['slug'] for c in d['carreras']] == ['2027-ensayo'], f"y lista la carrera archivada: {[c['slug'] for c in d['carreras']]}")
     st, html, _ = pedir('/2027-ensayo/', panel=False)
     ok(st == 200 and b'Ensayo 2027' in html, 'la carrera archivada se ve en su dirección')
     st, html, _ = pedir('/carreras/', panel=False)

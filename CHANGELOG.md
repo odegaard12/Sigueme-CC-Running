@@ -4,6 +4,127 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.19.1 · 2026-10-19
+- **Al caducar un acceso se borra todo, y a tiempo:** el día siguiente a la fecha
+  de caducidad desaparecen el usuario, sus rutas y las que había publicado (antes
+  esperaba siete días y solo se limpiaba cuando alguien entraba). Ahora el servido
+  lo revisa solo cada 6 horas.
+
+## v1.19.0 · 2026-10-19
+- **Una sola cabecera en todas las páginas** y el mismo diseño cartel (lima, negro,
+  letra condensada) en la portada, la página de cada ruta, «Mis rutas» y el panel.
+  Botón **Inicio** siempre a mano y un único botón **Admin**: al dueño lo lleva al
+  panel (que incluye «Mis rutas»), al invitado a su espacio, donde administra sus rutas.
+- **El titular lleva el nombre del dominio** (p. ej. «RUTAS ODEGAARD12»), en la web
+  y en la app. Quitado el crédito de la tipografía de las pantallas.
+- **El dueño entra directo a «Mis rutas»**, sin cuenta de invitado: vale la sesión
+  del panel o su usuario y clave del panel. Sus rutas no caducan.
+- **Arreglos:** el nombre de la ruta es el título de su página; pruebas del flujo
+  del dueño.
+
+## v1.18.1 · 2026-10-19
+- El mensaje de la portada cuando no hay rutas nombra el botón «Mis rutas».
+
+## v1.18.0 · 2026-10-19
+- **Portada de rutas** (estilo cartel: lima, negro y letra condensada): es la web
+  en `/` cuando no hay una carrera para hoy, y siempre en `/inicio`. Enseña las
+  rutas publicadas, las carreras archivadas y, si la hay, la próxima carrera;
+  arriba, «Mis rutas» (invitados) y «Admin». Antes redirigía al último resultado.
+- **Cada ruta, su página** (`/r/…`): titular, cifras, mapa de satélite con la
+  ruta, perfil de altura, avituallamientos, subidas, **Descargar GPX para el
+  reloj** y Compartir. Sale con su vista previa al compartir el enlace.
+- **Los invitados publican.** Cada ruta es privada hasta que su dueño la publica.
+  Lo público va **recortado** (por defecto sin los primeros y últimos 300 m, donde
+  suele estar su casa; se puede elegir 0, 500 m o 1 km), con la firma que quiera, y
+  deja de verse en cuanto caduca su acceso. En la pestaña nueva **Rutas** del panel
+  ves todo lo publicado y lo quitas o borras; también hay cuentas sin caducidad
+  (la tuya). El espacio del invitado pasa a `/mis-rutas.html` (el nombre viejo
+  redirige).
+- **App Android:** pestañas **Rutas | Carrera**. Rutas es la misma portada
+  (lista, pantalla de cada ruta con su perfil) y **guarda el GPX en Descargas**
+  (Android 10 o más) con «Abrir con…» y «Compartir». Sin cobertura enseña las
+  últimas rutas que bajó. Con el seguimiento en marcha, siempre la carrera.
+- **Arreglos:** Huawei Health no se detectaba en Android 11 o más (faltaba en el
+  manifiesto, error de la v1.16.0); la app solo intentaba bajar el plan al abrirse,
+  y sin cobertura en ese momento no volvía a probar: ahora reintenta cada 10 s.
+- El banco del emulador publica una ruta y comprueba que la app la muestra, la
+  abre y guarda su GPX. Tipografía Anton (SIL OFL) en `fonts/`.
+
+## v1.17.0 · 2026-10-19
+- **Invitados:** un amigo prepara **sus** rutas y se las lleva al reloj, sin ver
+  nada de tu carrera ni de tu panel. En el panel (pestaña Resultado →
+  Invitados) creas un usuario con un código que caduca (30 días por defecto;
+  se renueva con un botón, se cambia el código o se quita). Él entra en
+  `/rutas.html` desde cualquier móvil, iPhone incluido: sube un GPX, pone sus
+  avituallamientos, ve el perfil y las subidas y descarga el GPX para el reloj.
+- **Datos de los invitados:** del GPX que suben no se guarda el original, solo
+  la ruta simplificada y su perfil; en un sitio que el servidor nunca sirve.
+  El código solo se ve al crearlo (en disco queda su hash). Sus datos se
+  borran 7 días después de caducar. Máximo 20 invitados y 5 rutas cada uno.
+- **Seguridad:** sesión propia (cookie `inv`, firmada con otra clave) que no
+  vale en el panel ni al revés; un invitado no ve ni toca las rutas de otro;
+  freno a la fuerza bruta; GPX de hasta 8 MB, uno a la vez; la página no sale
+  en buscadores.
+- Prueba nueva `pruebas/invitados.py` (aislamiento, caducidad, límites,
+  ficheros no públicos) y el paso en el flujo de pruebas.
+
+## v1.16.0 · 2026-10-19
+- **La ruta en el reloj:** en la tarjeta «Ruta (GPX)» del panel, el botón
+  **Descargar GPX para el reloj**. Lleva la altitud y, como puntos de control,
+  los avituallamientos y el principio y la cima de cada subida. Se importa en
+  Huawei Health (Yo → Mi ruta → Importar ruta → Enviar al reloj), Zepp, Garmin
+  o Coros. También desde la consola: `python herramientas/gpx_reloj.py`. Solo
+  con sesión del panel. Importación probada solo hasta el fichero: falta
+  comprobarla en un reloj Huawei real (Watch Fit 4).
+- **Huawei Health** como app de la pulsera en la app Android: la reconoce, la
+  guía de «Activar Sígueme CC» y el aviso de «falta la app» la incluyen y
+  ofrece instalarla.
+- El panel y la guía lo explican; prueba nueva del servidor (sesión, puntos de
+  control, altitud en cada punto).
+
+## v1.15.1 · 2026-10-19
+- Capturas nuevas: la app con el **siguiente paso**, y el panel en el
+  ordenador con las pestañas a lo ancho; las de la guía («Preparar la
+  carrera», datos, ruta, avituallamientos y avisos) con el diseño de ahora, y
+  una nueva de la tarjeta «Que los avisos lleguen a la pulsera».
+- README y guía con los nombres de las pestañas actuales (Preparar, Móvil,
+  Carrera y Resultado) y los títulos sin numerar. Sin cambios de código.
+
+## v1.15.0 · 2026-10-19
+- **La app te lleva de la mano:** arriba sale el **siguiente paso** («Paso 6
+  de 7: instala la app de tu pulsera») con un solo botón verde, hasta «Todo
+  listo». «Empezar seguimiento» se queda en gris mientras falten pasos. La
+  lista de abajo («Comprobaciones») sigue ahí y cada fila lleva a su sitio.
+- **La pulsera, lo que más falla:** Mi Fitness y Zepp traen Sígueme CC
+  **desactivada** por defecto. El aviso de prueba ahora es un aviso real
+  («Prueba: subida larga en 300 m»), y al volver a la app pregunta «¿Te llegó
+  a la pulsera?»; si no, explica paso a paso cómo activarla y abre Mi Fitness.
+- **Mensajes con el diseño de la app** (no los del sistema), con título,
+  texto claro y botones grandes; «Cómo funciona» en tres líneas.
+- Transiciones: la pantalla entra por partes, los botones responden al
+  pulsarlos y los cambios se animan; respeta «reducir movimiento».
+- **Panel en el PC a lo ancho:** las pestañas son los pasos (1 Preparar, 2
+  Móvil, 3 Carrera, 4 Resultado) con su estado y una marca al completarse, y
+  el contenido va en dos columnas. Explicaciones en pasos cortos, «Siguiente»
+  al final de cada pestaña, una tarjeta nueva para la pulsera y lo de
+  iGPSPORT plegado. Al abrir con cosas pendientes, va directo a Preparar.
+- App: los botones crecen con la letra grande del móvil. Arreglos: sin cierre
+  si el móvil no tiene la pantalla de ahorro de batería y sin ventana colgada
+  al girar con un mensaje abierto.
+- El banco del emulador guarda el registro de Android cuando una prueba falla.
+
+## v1.14.0 · 2026-10-19
+- **El panel guía la preparación de la carrera:** «Preparar la carrera»
+  enseña cuántos pasos hay listos («4 de 7 listos»), dice cuál es el
+  **siguiente paso** con un botón que te lleva a su sitio (cambia de pestaña,
+  baja hasta la sección y la resalta), y cada fila de la lista es pulsable.
+  Si falta la ruta, el siguiente paso es subir el GPX; si ya está todo, dice
+  «Todo listo. El día de la carrera, abre la app y pulsa Empezar seguimiento».
+- La pestaña **Hoy** avisa de lo que falta preparar mientras no haya una
+  carrera en marcha.
+- Prueba nueva (`pruebas/panel.py`, con Playwright): comprueba los tres
+  estados y que el botón lleva a la pestaña y la sección correctas.
+
 ## v1.13.10 · 2026-10-19
 - **Enlace de seguimiento validado:** el servidor solo usa la vía de iGPSPORT
   si el servidor del enlace es de verdad iGPSPORT (no si el texto lo

@@ -24,6 +24,8 @@ jobs:
         run: python pruebas/gpx.py
       - name: Panel, plan de la app y seguridad del servidor
         run: python pruebas/servidor.py
+      - name: Invitados (usuario con caducidad, rutas y GPX para el reloj)
+        run: python pruebas/invitados.py
       - name: Ensayo de una carrera entera
         run: python pruebas/ensayo.py
       - name: Carga (60 espectadores a la vez)

@@ -1,0 +1,40 @@
+/* El panel de admin y «Mis rutas» con el diseño cartel de la portada: lima, negro y letra condensada. */
+@font-face { font-family: "Anton"; src: url("/fonts/anton.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+:root {
+  --accent: #d9f24a; --accent-dark: #0c0f0e; --bg: #0c0f0e; --panel: #151b17; --panel-2: #0f1512;
+  --muted: #b5c06a; --border: rgba(244, 247, 230, 0.14); --campo: #d9f24a; --tinta: #0c0f0e; --papel: #f4f7e6;
+  --display: "Anton", Impact, "Arial Narrow", sans-serif;
+}
+body { background: #0c0f0e; background-attachment: scroll; }
+
+/* la franja lima de arriba: nombre del sitio, enlaces y el título grande */
+.campo-cartel { background: var(--campo); color: var(--tinta); margin-bottom: 14px; }
+.barra-cartel { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 16px; font-weight: 800; max-width: 1240px; margin: 0 auto; }
+.barra-cartel a { color: inherit; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+.barra-cartel nav { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
+.barra-cartel nav a { text-decoration: underline; text-underline-offset: 4px; }
+.barra-cartel .marca-cartel { text-transform: uppercase; letter-spacing: 0.02em; }
+.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 20px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.campo-cartel .topbar h1 { font: 400 clamp(3.6rem, 14vw, 8rem)/0.94 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
+.campo-cartel .topbar h1 span { color: inherit; }
+.campo-cartel .pill-panel { background: var(--tinta); color: var(--accent); border-color: var(--tinta); font-weight: 700; }
+.campo-cartel .pill-panel.vivo { background: var(--tinta); color: var(--accent); }
+
+/* tarjetas, títulos y botones */
+.tarjeta { background: var(--panel); border-radius: 6px; }
+.tarjeta h2 { font: 400 1.65rem/1 var(--display); text-transform: uppercase; letter-spacing: 0; color: var(--papel); margin: 0 0 12px; }
+.save-btn { background: var(--accent) !important; color: var(--tinta) !important; font: 400 1.3rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; border-radius: 4px; padding: 16px; }
+.btn { border-radius: 4px; }
+.field input:focus, .field select:focus { outline: 2px solid var(--accent); }
+a { color: var(--accent); }
+
+/* las pestañas del panel */
+.pestanas { border-radius: 6px; background: rgba(21, 27, 23, 0.97); }
+.pestanas b { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; }
+.pestanas button[aria-selected="true"] { background: var(--accent); color: var(--tinta); }
+.pestanas button[aria-selected="true"] .n { background: var(--tinta); color: var(--accent); }
+.siguiente { background: #232c12; }
+.lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1d2412; }
+.inv-nuevo { background: #232c12; }
+@keyframes resalta { 0% { background: #3b4a14; } 100% { background: #151b17; } }

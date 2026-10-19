@@ -1,0 +1,3 @@
+Anton (fonts/anton.woff2, subconjunto latino)
+Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont)
+Licencia: SIL Open Font License 1.1 (https://openfontlicense.org)

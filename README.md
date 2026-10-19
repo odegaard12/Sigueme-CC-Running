@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.13.10-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.19.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -25,7 +25,10 @@
   <img src="docs/capturas/pc.jpg" width="900" alt="La web en el ordenador">
 </p>
 <p align="center">
-  <img src="docs/capturas/panel.png" width="820" alt="Panel en pestañas: Hoy, Preparar, Móvil y Más">
+  <img src="docs/capturas/panel.png" width="820" alt="Panel en el ordenador: las pestañas son los pasos (Preparar, Móvil, Carrera, Resultado y Rutas) y dice cuál es el siguiente">
+</p>
+<p align="center">
+  <img src="docs/capturas/rutas.png" width="900" alt="La portada de rutas en el ordenador y la página de una ruta en el móvil">
 </p>
 
 ---
@@ -76,8 +79,9 @@ ADMIN_USER=tu_usuario ADMIN_HASH='scrypt:…' python3 server.py 8710
 
 ## 3. Preparar tu carrera
 
-Todo desde el **panel**, en cinco pasos y con una lista que dice qué falta. La
-guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md)**.
+Todo desde el **panel**: las cuatro pestañas son los pasos (**Preparar**,
+**Móvil**, **Carrera** y **Resultado**) y arriba pone cuál es el **siguiente paso**.
+La guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md)**.
 
 1. **Datos de la carrera:** nombre, fecha, hora de salida, límite, corredor…
 2. **Ruta:** subes el GPX y salen el trazado y el perfil.
@@ -85,6 +89,9 @@ guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.md)*
 4. **Avisos a la pulsera:** salen solos del perfil (subidas, cimas,
    avituallamientos, lo que queda); los revisas y cambias los textos.
 5. **App del móvil:** escaneas el código QR y baja todo para ir sin cobertura.
+6. **La ruta en el reloj (opcional):** un botón descarga el GPX con altitudes y, como
+   puntos de control, los avituallamientos y las subidas, para importarlo en Huawei Health,
+   Zepp, Garmin o Coros.
 
 Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
 (`carrera.json`, `route.geojson`, `elevation.json`, `aid_stations.json`,
@@ -104,22 +111,41 @@ Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
 | `ocultar_m` | Si la salida o la meta son en tu casa: a menos de estos metros no se publica tu posición | `500` |
 | `slug` | Dirección de la carrera al archivarla (opcional) | `"2027-mi-carrera"` |
 
-Tu **foto** se sube en el panel (Preparar → 1 · Datos → «Cambiar la foto»): se
+Tu **foto** se sube en el panel (pestaña **Preparar** → Datos de la carrera → «Cambiar la foto»): se
 recorta cuadrada en el navegador y sale en el mapa y en la ficha (`rider.png`).
 
 Sin panel, las mismas herramientas desde la consola:
 `python herramientas/preparar_ruta.py ruta.gpx --distancia 21.1` y
 `python herramientas/plan_avisos.py`.
 
+### Invitados: las rutas de un amigo, en su reloj
+
+Para que un amigo prepare **sus** rutas y se las lleve al reloj sin ver nada de tu
+carrera: en el panel, pestaña **Resultado** → **Invitados**, creas un usuario con
+un código que caduca (30 días por defecto; puedes renovarlo o quitarlo). Él entra
+en `https://tu-dominio/mis-rutas.html` desde cualquier móvil (iPhone incluido), sube
+un GPX, pone sus avituallamientos y descarga el GPX para el reloj. No hay
+seguimiento ni se guarda su GPX original (solo la ruta simplificada y su perfil);
+al día siguiente de caducar se borra todo lo suyo (usuario y rutas). Máximo 20 invitados y 5 rutas
+cada uno. Cada ruta es **privada hasta que su dueño la publica**: lo público se ve
+recortado (por defecto sin los primeros y últimos 300 m, donde suele estar su casa) y
+deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Rutas** del panel,
+ves todo lo publicado y puedes quitarlo.
+
+La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
+las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada
+ruta tiene su página (`/r/…`) con mapa, perfil, avituallamientos, subidas y el GPX para el reloj.
+Tipografía Anton (SIL OFL) servida desde `fonts/`.
+
 ## 4. Elegir cómo se manda tu posición
 
-<p align="center"><img src="docs/capturas/app.jpg" width="640" alt="App Android: plan listo, siguiendo la carrera y avisos"></p>
+<p align="center"><img src="docs/capturas/app.jpg" width="640" alt="App Android: las rutas, una ruta con su perfil y el seguimiento de la carrera"></p>
 
 Puedes usar una sola o varias a la vez; la web decide sola cuál usar.
 
 | Opción | Ventaja | Cómo |
 |---|---|---|
-| **App Sígueme CC** (Android, recomendada) | Lanza los avisos a la pulsera **sin cobertura** y guarda tu posición hasta que vuelve | APK en la [última release](../../releases/latest). En el panel, «5 · App del móvil»: escanea el código con la cámara y pulsa «Abrir en la app». |
+| **App Sígueme CC** (Android, recomendada) | Lanza los avisos a la pulsera **sin cobertura** y guarda tu posición hasta que vuelve | APK en la [última release](../../releases/latest). En el panel, pestaña **Móvil** → «App del móvil»: escanea el código con la cámara y pulsa «Abrir en la app». |
 | **Traccar Client** (Android/iPhone, gratis) | Sin cobertura guarda los puntos y los manda al volver | En la app: dirección `https://tu-dominio/api/gps`, identificador = el del panel (Móvil → «Sin la app…» → Ver la configuración), frecuencia 10 s, precisión alta. En Android, quítale el ahorro de batería. |
 | **Reloj Amazfit** (Zepp OS 3) | No dependes del móvil en la mano; manda también el pulso | Miniapp de [`amazfit/`](amazfit/README.md) (de momento se instala en modo desarrollador, no está en la tienda). |
 | **iGPSPORT LiveTrack** | Pulso, cadencia y distancia del ciclocomputador | En la app de iGPSPORT, compartir el seguimiento en vivo y pegar el enlace en el panel. |
@@ -134,7 +160,7 @@ callan; el **pulso** del reloj manda sobre el de iGPSPORT.
    hora antes. Baja el plan al día y pone la carrera en marcha en la web; hasta
    la hora oficial la web dice «En la salida», el crono no corre y no hay
    avisos. Guarda el móvil: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar, reloj o iGPSPORT): en el panel, pestaña **Hoy**, pulsa
+2. Sin la app (Traccar, reloj o iGPSPORT): en el panel, pestaña **Carrera**, pulsa
    **Empezar a seguir** y arranca Traccar o el reloj antes de salir.
 3. Comparte el enlace con el botón de la cabecera de la web: en WhatsApp sale
    con su vista previa (con tu dominio; la imagen es `og.jpg`, cámbiala por la tuya).
@@ -151,13 +177,13 @@ caducado, sin datos desde hace X minutos…
 
 ## 6. Después de la carrera
 
-En el panel, pestaña **Más**, sube el **FIT** de tu reloj o ciclocomputador (en
+En el panel, pestaña **Resultado**, sube el **FIT** de tu reloj o ciclocomputador (en
 Garmin Connect, Strava o la app del reloj: exportar el original). La web pasa a
 **modo resultado**: tiempo oficial, paso por cada avituallamiento y repetición de
 la carrera. Desde la consola hace lo mismo
 `python herramientas/generar_resultado.py actividad.fit`.
 
-Después, en el panel (pestaña **Más**), **Archivar la carrera terminada**: se guarda en
+Después, en el panel (pestaña **Resultado**), **Archivar la carrera terminada**: se guarda en
 `carreras/<año-nombre>/` y queda en su propia dirección (`/2026-mi-carrera/`),
 con el mismo diseño en modo resultado, y en el índice **`/carreras/`**. La
 portada queda a cero para la siguiente: mientras no haya otra en marcha, lleva

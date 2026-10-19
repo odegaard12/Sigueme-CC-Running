@@ -123,6 +123,29 @@ try:
         except urllib.error.HTTPError as e:
             ok(e.code in (403, 404), f'{ruta} no se sirve ({e.code})')
 
+    # 5a) la ruta para el reloj: GPX con altitud y puntos de control, solo con sesión
+    import xml.etree.ElementTree as ET
+    def reloj(sesion=True):
+        r = urllib.request.Request(U + '/api/reloj.gpx', headers={'Cookie': galleta} if sesion else {})
+        try:
+            x = urllib.request.urlopen(r, timeout=30)
+            return x.status, x.read().decode('utf-8'), x.headers
+        except urllib.error.HTTPError as e:
+            return e.code, '', e.headers
+    st, _, _ = reloj(False)
+    ok(st == 403, 'GPX para el reloj sin sesión: 403')
+    st, cuerpo, h = reloj()
+    ns = {'g': 'http://www.topografix.com/GPX/1/1'}
+    raiz = ET.fromstring(cuerpo)
+    wpts, trk = raiz.findall('g:wpt', ns), raiz.findall('.//g:trkpt', ns)
+    avit = json.loads((W / 'aid_stations.json').read_text(encoding='utf-8'))
+    subidas = json.loads((W / 'avisos.json').read_text(encoding='utf-8'))['subidas']
+    ok(st == 200 and 'gpx' in h['Content-Type'] and 'attachment' in h.get('Content-Disposition', ''),
+       f"GPX para el reloj con sesión: {st}, {h.get('Content-Disposition')}")
+    ok(len(wpts) == len(avit) + 2 * len(subidas) and len(trk) > 100 and all(p.find('g:ele', ns) is not None for p in trk + wpts),
+       f'  {len(wpts)} puntos de control ({len(avit)} avituallamientos, {len(subidas)} subidas) y {len(trk)} puntos con altitud')
+    ok(any(w.findtext('g:name', namespaces=ns) == 'Cima 1' for w in wpts), '  con su cima')
+
     # 5b) EMPEZAR desde la app: otro día no toca la web; hoy sí, y una sola vez
     st, d, _ = pedir('/api/plan', {'device_id': ID, 'accion': 'empezar'}, cookie=False, origen=False)
     ok(st == 200 and d.get('estado') == 'otro_dia' and not json.load(urllib.request.urlopen(U + '/live.json')).get('started_at'),

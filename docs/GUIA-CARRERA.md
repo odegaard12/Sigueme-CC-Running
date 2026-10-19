@@ -87,12 +87,18 @@ En casa, con cobertura:
    app**: confirma tu servidor y baja la ruta, el perfil y los avisos. No hay
    que volver a escanear nada en las siguientes carreras (salvo si generas un
    identificador nuevo).
-3. En la app, «Listo para salir»: **Arreglar** en todo lo que no esté en verde
-   (ubicación, notificaciones, sin ahorro de batería). La app busca sola la app
-   de la pulsera, **Zepp** (Amazfit), **Mi Fitness** o **Zepp Life** (Xiaomi),
-   comprueba que tenga «Acceso a notificaciones» y dice qué activar y dónde.
-4. **Probar aviso**: llega a los 5 segundos; bloquea el móvil y mira la
-   pulsera (muchas apps solo pasan los avisos con la pantalla apagada).
+3. En la app, sigue el **Siguiente paso** de arriba hasta que ponga «Todo
+   listo»: ubicación, notificaciones, sin ahorro de batería, la app de la
+   pulsera (**Zepp**, **Mi Fitness** o **Zepp Life**, con su «Acceso a
+   notificaciones») y el aviso de prueba.
+4. **El aviso de prueba**: llega a los 5 segundos; bloquea el móvil y mira la
+   pulsera. Al volver, la app pregunta si llegó. **En Mi Fitness y en Zepp,
+   Sígueme CC viene desactivada**: en los ajustes de la pulsera →
+   notificaciones de apps, actívala (si no sale en la lista, prueba antes el
+   aviso una vez: la lista solo enseña las apps que ya han avisado). El panel
+   lo resume en la pestaña **Móvil**:
+
+<p align="center"><img src="capturas/pulsera.jpg" width="380" alt="Tarjeta «Que los avisos lleguen a la pulsera» del panel"></p>
 
 El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
 apagada y sin cobertura:
@@ -109,6 +115,22 @@ Mientras no tengas la app, la posición se puede mandar con **Traccar Client**
 (Android e iPhone) o el reloj Amazfit: en el README, «Elegir cómo se manda tu
 posición».
 
+## Opcional · La ruta en el reloj
+
+Para que el reloj te guíe por la ruta, sin móvil y sin cobertura:
+
+1. En el panel (pestaña **Preparar**, tarjeta «Ruta (GPX)») pulsa **Descargar GPX
+   para el reloj**. Lleva la altitud y, como puntos de control, los
+   avituallamientos y el principio y la cima de cada subida.
+2. **Huawei** (Watch Fit 4, GT…): en **Huawei Health** → Yo → Mi ruta → Importar
+   ruta, elige el fichero y, dentro de la ruta, «Enviar al reloj». En el reloj:
+   Entrenamiento → ajustes → Rutas → activa la navegación.
+3. **Amazfit, Garmin o Coros** importan el mismo GPX con su app (Zepp, Garmin
+   Connect, Coros).
+
+Los menús cambian según el modelo y la versión, y no todos los relojes enseñan
+los puntos de control o el perfil: si el tuyo no los enseña, la ruta se sigue igual.
+
 ## 6 · El día de la carrera
 
 1. En la app, **Empezar seguimiento** cuando quieras, aunque sea una hora antes
@@ -116,7 +138,7 @@ posición».
    cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
    oficial la web dice «En la salida», el crono no corre y no salen avisos.
    Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Empezar a seguir**.
+2. Sin la app (Traccar o el reloj): panel → **Carrera** → **Empezar a seguir**.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También
@@ -127,14 +149,14 @@ posición».
 
 ## 7 · El resultado
 
-Panel → **Más** → **Resultado de la carrera**: sube el FIT de tu reloj o
+Panel → **Resultado** → «Resultado de la carrera»: sube el FIT de tu reloj o
 ciclocomputador. La web pasa a modo resultado: tiempo oficial, paso por cada
 avituallamiento y la repetición. Si el FIT no vale (no llega a meta, es de otra
 carrera…), el panel dice por qué.
 
 ## 8 · Archivar
 
-Panel → **Más** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
+Panel → **Resultado** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
 `/carreras/` y la portada queda a cero para la siguiente.
 
 ---
