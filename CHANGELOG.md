@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.15.1 · 2026-10-19
+- Capturas nuevas: la app con el **siguiente paso**, y el panel en el
+  ordenador con las pestañas a lo ancho; las de la guía («Preparar la
+  carrera», datos, ruta, avituallamientos y avisos) con el diseño de ahora, y
+  una nueva de la tarjeta «Que los avisos lleguen a la pulsera».
+- README y guía con los nombres de las pestañas actuales (Preparar, Móvil,
+  Carrera y Resultado) y los títulos sin numerar. Sin cambios de código.
+
 ## v1.15.0 · 2026-10-19
 - **La app te lleva de la mano:** arriba sale el **siguiente paso** («Paso 6
   de 7: instala la app de tu pulsera») con un solo botón verde, hasta «Todo

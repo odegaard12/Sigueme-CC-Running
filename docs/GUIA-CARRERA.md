@@ -95,7 +95,10 @@ En casa, con cobertura:
    pulsera. Al volver, la app pregunta si llegó. **En Mi Fitness y en Zepp,
    Sígueme CC viene desactivada**: en los ajustes de la pulsera →
    notificaciones de apps, actívala (si no sale en la lista, prueba antes el
-   aviso una vez: la lista solo enseña las apps que ya han avisado).
+   aviso una vez: la lista solo enseña las apps que ya han avisado). El panel
+   lo resume en la pestaña **Móvil**:
+
+<p align="center"><img src="capturas/pulsera.jpg" width="380" alt="Tarjeta «Que los avisos lleguen a la pulsera» del panel"></p>
 
 El día de la carrera, **Empezar seguimiento** antes de salir. Con la pantalla
 apagada y sin cobertura:
@@ -119,7 +122,7 @@ posición».
    cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
    oficial la web dice «En la salida», el crono no corre y no salen avisos.
    Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar o el reloj): panel → **Hoy** → **Empezar a seguir**.
+2. Sin la app (Traccar o el reloj): panel → **Carrera** → **Empezar a seguir**.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También
@@ -130,14 +133,14 @@ posición».
 
 ## 7 · El resultado
 
-Panel → **Más** → **Resultado de la carrera**: sube el FIT de tu reloj o
+Panel → **Resultado** → «Resultado de la carrera»: sube el FIT de tu reloj o
 ciclocomputador. La web pasa a modo resultado: tiempo oficial, paso por cada
 avituallamiento y la repetición. Si el FIT no vale (no llega a meta, es de otra
 carrera…), el panel dice por qué.
 
 ## 8 · Archivar
 
-Panel → **Más** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
+Panel → **Resultado** → **Archivar la carrera terminada**. Queda en `/2027-mi-trail/`, sale en
 `/carreras/` y la portada queda a cero para la siguiente.
 
 ---
