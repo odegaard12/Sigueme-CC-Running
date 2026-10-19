@@ -2587,6 +2587,21 @@ if __name__ == "__main__":
     if live.get("livetrack_url") and tengo_la_vip():
         start_poller(live["livetrack_url"])
     threading.Thread(target=watch_live_file, daemon=True).start()
+
+    def purga_invitados():
+        # sin esperar a que alguien entre: lo caducado se borra solo (cada 6 h; solo la Pi que tiene la VIP)
+        import importlib.util
+        while True:
+            try:
+                if tengo_la_vip():
+                    spec = importlib.util.spec_from_file_location('invitados_purga', os.path.join(ROOT, 'herramientas', 'invitados.py'))
+                    m = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(m)
+                    m.purgar(ROOT)
+            except Exception as exc:
+                print(f"[invitado] purga: {exc}", flush=True)
+            time.sleep(6 * 3600)
+    threading.Thread(target=purga_invitados, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
     # petición cada vez, así que un móvil con mala cobertura dejaba clavado al
     # resto. Con la web abierta en varios teléfonos pidiendo live.json cada

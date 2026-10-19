@@ -289,7 +289,7 @@ try:
     (W / 'invitados' / 'fantasma').mkdir()
     st, _, _ = http('POST', '/api/invitado/login', {'usuario': 'ana', 'codigo': nuevo}, origen=False)   # entrar purga
     ok('ben' not in f.read_text(encoding='utf-8') and not (W / 'invitados' / 'ben').exists() and not (W / 'invitados' / 'fantasma').exists(),
-       'a los 7 días de caducar se borran su usuario y sus rutas (y carpetas huérfanas)')
+       'al caducar se borran su usuario y sus rutas (y carpetas huérfanas)')
     st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'ana'}, admin)
     ok(st == 200 and d['invitados'] == [] and not (W / 'invitados' / 'ana').exists(), f"quitar a ana borra también sus rutas: quedan {[x['usuario'] for x in d.get('invitados', [])]}, carpeta {(W / 'invitados' / 'ana').exists()}")
     st, d, _ = http('POST', '/api/live', {'action': 'invitado_borrar', 'usuario': 'ana'}, admin)

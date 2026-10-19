@@ -21,7 +21,7 @@ ALFABETO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"      # sin I, L, O, 0, 1: no se con
 MAX_USUARIOS = 20
 MAX_RUTAS = 5
 MAX_AVIT = 30
-MARGEN_DIAS = 7                                   # tras caducar, los datos se borran a los 7 días
+MARGEN_DIAS = 0                                   # el día siguiente a la fecha de caducidad se borra todo
 MAX_GPX = 8_000_000                               # bytes
 RESERVADOS = {"admin", "dueno"}
 SIN_CADUCIDAD = "2099-12-31"                      # días=0: una cuenta que no caduca (la del dueño)

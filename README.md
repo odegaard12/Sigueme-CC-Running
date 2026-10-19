@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.19.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.19.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -126,7 +126,7 @@ un código que caduca (30 días por defecto; puedes renovarlo o quitarlo). Él e
 en `https://tu-dominio/mis-rutas.html` desde cualquier móvil (iPhone incluido), sube
 un GPX, pone sus avituallamientos y descarga el GPX para el reloj. No hay
 seguimiento ni se guarda su GPX original (solo la ruta simplificada y su perfil);
-sus datos se borran siete días después de caducar. Máximo 20 invitados y 5 rutas
+al día siguiente de caducar se borra todo lo suyo (usuario y rutas). Máximo 20 invitados y 5 rutas
 cada uno. Cada ruta es **privada hasta que su dueño la publica**: lo público se ve
 recortado (por defecto sin los primeros y últimos 300 m, donde suele estar su casa) y
 deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Rutas** del panel,

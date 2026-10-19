@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.19.1 · 2026-10-19
+- **Al caducar un acceso se borra todo, y a tiempo:** el día siguiente a la fecha
+  de caducidad desaparecen el usuario, sus rutas y las que había publicado (antes
+  esperaba siete días y solo se limpiaba cuando alguien entraba). Ahora el servido
+  lo revisa solo cada 6 horas.
+
 ## v1.19.0 · 2026-10-19
 - **Una sola cabecera en todas las páginas** y el mismo diseño cartel (lima, negro,
   letra condensada) en la portada, la página de cada ruta, «Mis rutas» y el panel.
