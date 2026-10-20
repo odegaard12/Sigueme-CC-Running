@@ -43,6 +43,11 @@ function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  // el nombre de la carrera como titular y el del sitio (del dominio) en la barra
+  const tcd = document.getElementById('titulo-cd');
+  if (tcd && c.nombre) tcd.textContent = c.nombre;
+  const hostSitio = location.hostname.replace(/^www\./, '').split('.')[0], mcd = document.getElementById('marca-sitio');
+  if (mcd && hostSitio && !/^[\d.]+$/.test(location.hostname) && location.hostname !== 'localhost') mcd.textContent = hostSitio;
   // ?v= cambia al subir otra foto desde el panel: así nadie ve la vieja
   document.querySelectorAll('img[src^="rider.png"]').forEach(i => {
     i.src = 'rider.png?v=' + (Number(c.avatar_v) || 5);
@@ -371,7 +376,7 @@ function buildMap3D() {
     map3d.addLayer({
       id: 'route-line', type: 'line', source: 'route',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#8fe06a', 'line-width': 5, 'line-opacity': 0.95 }
+      paint: { 'line-color': '#d9f24a', 'line-width': 5, 'line-opacity': 0.95 }
     });
 
     map3d.addSource('traveled', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
@@ -527,7 +532,7 @@ function onMapReady() {
   aidStations.forEach((s, i) => {
     const pos = pointAtKm(s.km / (factorKm || 1));
     if (!pos) return;
-    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
+    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#d9f24a';
     const tipo = s.principal ? 'Avituallamiento principal'
       : s.taller ? 'Avituallamiento + asistencia mecánica'
       : 'Avituallamiento';
@@ -754,7 +759,7 @@ function drawElevationChart(profile, minEle, maxEle) {
     if (s.km > maxD) return;
     const px = x(s.km);
     const py = y(eleAtKm(s.km));
-    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
+    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#d9f24a';
     ctx.beginPath();
     ctx.arc(px, py, 3.5, 0, Math.PI * 2);
     ctx.fillStyle = color;

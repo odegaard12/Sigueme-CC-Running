@@ -48,9 +48,7 @@ adb exec-out screencap -p > capturas/5-banco-plan.png
 
 # un aviso del sistema («Pixel Launcher no responde») tapaba la app en el emulador
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null; sleep 1
-adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml /tmp/ui.xml
-XY=$(python3 -c "import re;s=open('/tmp/ui.xml',encoding='utf-8').read();m=re.search(r'text=.(?i:Empezar seguimiento).[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\]',s);a,b,c,d=map(int,m.groups());print((a+c)//2,(b+d)//2)")
-adb shell input tap $XY; sleep 5; adb shell input keyevent KEYCODE_BACK; sleep 1
+bash android/prueba/tocar.sh "Empezar seguimiento"; sleep 5; adb shell input keyevent KEYCODE_BACK; sleep 1
 [ -n "$(vivo started_at)" ] || mal "EMPEZAR no puso la carrera en marcha en la web"
 
 # 30 m cada 2 s (54 km/h: por debajo del tope de 90 del servidor)

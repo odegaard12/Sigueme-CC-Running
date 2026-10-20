@@ -4,6 +4,24 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.0 · 2026-10-20
+- **La página de la carrera en directo, con el diseño cartel:** franja lima con el
+  nombre de la carrera en letra condensada, cifras grandes, estado (en directo,
+  sin cobertura, resultado) y el mismo aspecto para las carreras archivadas y su
+  resultado. El nombre del sitio sale del dominio, como en el resto de páginas.
+- **La app Android, con el mismo diseño:** cabecera lima, botones y títulos en
+  letra condensada, colores lima y negro, esquinas rectas. La pantalla de la
+  carrera sigue enseñando el botón de empezar sin bajar.
+- **Icono nuevo** (app, web, pantalla de inicio del móvil y vista previa al
+  compartir): chincheta negra con «CC» sobre lima.
+- **Revisión de diseño:** el acento de «Sígueme» ya no pisa la línea de arriba en
+  el titular de la portada, los desplegables enseñan un «+», las casillas del
+  panel salen en lima y la página en directo ya no enseña «admin» ni la versión.
+- **Capturas del repo regeneradas** (portada, panel, guía paso a paso, rutas,
+  app) con una carrera inventada.
+- Banco del emulador: toca los botones sin distinguir mayúsculas y baja la
+  pantalla si el botón no se ve.
+
 ## v1.19.1 · 2026-10-19
 - **Al caducar un acceso se borra todo, y a tiempo:** el día siguiente a la fecha
   de caducidad desaparecen el usuario, sus rutas y las que había publicado (antes

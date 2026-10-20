@@ -16,7 +16,7 @@ a { color: inherit; }
 .barra a.marca { text-transform: uppercase; }
 .barra nav a { text-decoration: underline; text-underline-offset: 4px; }
 
-h1.gigante { font: 400 clamp(4.2rem, 17vw, 15rem)/.94 var(--display); text-transform: uppercase; margin: 6px 18px 0; letter-spacing: -.005em; }
+h1.gigante { font: 400 clamp(3.8rem, 13vw, 10.5rem)/1.16 var(--display); text-transform: uppercase; margin: 6px 18px 0; letter-spacing: -.005em; }
 .bajo { display: flex; justify-content: space-between; gap: 18px 28px; align-items: end; padding: 18px 22px 30px; flex-wrap: wrap; }
 .bajo p { margin: 0; max-width: 32ch; font-weight: 700; font-size: 1.15rem; }
 
@@ -71,6 +71,7 @@ h1.nombre-ruta.largo { font-size: clamp(2.4rem, 7vw, 5.6rem); }
   .cifras { grid-template-columns: repeat(2, auto); gap: 14px 30px; } h1.nombre-ruta { margin: 6px 16px 0; } .autor, .cifras, .acciones { margin-left: 0; padding-left: 16px; padding-right: 16px; }
   .fila.simple { grid-template-columns: 1fr 84px 84px; } .fila.simple .nombre { font-size: 1.4rem; } .fila.simple .cifra:last-of-type { display: block; } .boton { width: 100%; }
 }
+details.como summary::after { content: "+"; margin-left: auto; font: 400 1.8rem/1 var(--display); } details.como[open] summary::after { content: "–"; }
 details.como { padding: 4px 22px 24px; } details.como summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; font: 400 1.6rem/1 var(--display); text-transform: uppercase; }
 details.como p { max-width: 62ch; color: #dfe6d0; }
 

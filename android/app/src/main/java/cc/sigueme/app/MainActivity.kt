@@ -42,17 +42,18 @@ import kotlin.concurrent.thread
 class MainActivity : Activity() {
     // los colores de la web
     private val fondoC = Color.rgb(12, 15, 14)
-    private val tarjetaC = Color.rgb(22, 27, 25)
+    private val tarjetaC = Color.rgb(21, 27, 23)
     private val bordeC = Color.rgb(38, 48, 44)
-    private val textoC = Color.rgb(241, 243, 241)
-    private val apagadoC = Color.rgb(138, 150, 143)
-    private val verdeC = Color.rgb(127, 212, 106)
+    private val textoC = Color.rgb(244, 247, 230)
+    private val apagadoC = Color.rgb(181, 192, 106)
+    private val verdeC = Color.rgb(217, 242, 74)
     private val rojoC = Color.rgb(255, 138, 122)
     private val ambarC = Color.rgb(243, 201, 105)
-    private val guiaC = Color.rgb(27, 43, 31)
+    private val guiaC = Color.rgb(35, 44, 18)
     private val rojoFondoC = Color.rgb(58, 30, 27)
     private val botonC = Color.rgb(34, 42, 38)
     private val campoC = Color.rgb(17, 22, 20)
+    private val anton: Typeface by lazy { try { Typeface.createFromAsset(assets, "fonts/Anton-Regular.ttf") } catch (e: Exception) { Typeface.DEFAULT_BOLD } }
 
     private class Boton(val texto: String, val accion: () -> Unit)
     private class Paso(val ok: Boolean, val fila: String, val titulo: String, val texto: String, val boton: String, val accion: () -> Unit)
@@ -127,17 +128,16 @@ class MainActivity : Activity() {
         val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20.px(), 12.px(), 20.px(), 32.px()) }
 
         // cabecera
-        val cab = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.BOTTOM }
-        cab.addView(texto(26f, textoC).apply { text = "Sígueme "; typeface = Typeface.DEFAULT_BOLD })
-        cab.addView(texto(26f, apagadoC).apply { text = "CC" })
+        val cab = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = fondo(verdeC, 6); setPadding(16.px(), 6.px(), 16.px(), 10.px()) }
+        cab.addView(texto(38f, fondoC).apply { text = "SÍGUEME CC"; typeface = anton; includeFontPadding = false; setPadding(0, 4.px(), 0, 4.px()) })
+        carreraTxt = texto(15f, fondoC).apply { typeface = Typeface.DEFAULT_BOLD }
+        cab.addView(carreraTxt)
         caja.addView(cab)
-        carreraTxt = texto(15f, apagadoC)
-        caja.addView(carreraTxt)
 
         // el siguiente paso: la app te lleva de la mano
         guiaCard = tarjeta().apply { background = fondo(guiaC, 18) }
         guiaPaso = texto(14f, verdeC).apply { typeface = Typeface.DEFAULT_BOLD }
-        guiaTitulo = texto(21f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; setPadding(0, 4.px(), 0, 6.px()) }
+        guiaTitulo = texto(26f, textoC).apply { typeface = anton; isAllCaps = true; setPadding(0, 4.px(), 0, 6.px()) }
         guiaTexto = texto(16f, Color.rgb(205, 212, 207)).apply { setLineSpacing(0f, 1.15f) }
         guiaBoton = boton("", true, 56) {}
         guiaCard.addView(guiaPaso); guiaCard.addView(guiaTitulo); guiaCard.addView(guiaTexto)
@@ -151,7 +151,7 @@ class MainActivity : Activity() {
             setPadding(10.px(), 4.px(), 10.px(), 4.px())
         }
         estado.addView(pastilla, LinearLayout.LayoutParams(-2, -2))
-        kmTxt = texto(76f, textoC).apply { typeface = Typeface.DEFAULT_BOLD; letterSpacing = -0.03f; includeFontPadding = false; setPadding(0, 14.px(), 0, 2.px()) }
+        kmTxt = texto(68f, textoC).apply { typeface = anton; letterSpacing = 0f; includeFontPadding = false; setPadding(0, 6.px(), 0, 2.px()) }
         estado.addView(kmTxt)
         deTxt = texto(14f, apagadoC)
         estado.addView(deTxt)
@@ -169,7 +169,7 @@ class MainActivity : Activity() {
 
         // botón grande
         botonGrande = boton("", false, 64) { carrera() }
-        botonGrande.textSize = 20f
+        botonGrande.textSize = 25f
         caja.addView(botonGrande, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 14.px() })
 
         // acciones secundarias
@@ -180,14 +180,14 @@ class MainActivity : Activity() {
 
         // todas las comprobaciones
         val prep = tarjeta()
-        prep.addView(texto(20f, textoC).apply { text = "Comprobaciones"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 4.px()) })
+        prep.addView(texto(26f, textoC).apply { text = "Comprobaciones"; typeface = anton; isAllCaps = true; setPadding(0, 0, 0, 4.px()) })
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         prep.addView(lista)
         caja.addView(prep)
 
         // cómo funciona, en tres líneas
         val como = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(4.px(), 20.px(), 4.px(), 0) }
-        como.addView(texto(16f, textoC).apply { text = "Cómo funciona"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 6.px()) })
+        como.addView(texto(22f, textoC).apply { text = "Cómo funciona"; typeface = anton; isAllCaps = true; setPadding(0, 0, 0, 6.px()) })
         como.addView(texto(15f, apagadoC).apply {
             setLineSpacing(0f, 1.2f)
             text = "Con la pantalla apagada y sin cobertura, la app:\n" +
@@ -279,14 +279,14 @@ class MainActivity : Activity() {
 
     // ---------- piezas ----------
     private fun fondo(color: Int, radio: Int, borde: Int? = null) = GradientDrawable().apply {
-        setColor(color); cornerRadius = radio.px().toFloat(); if (borde != null) setStroke(1.px(), borde)
+        setColor(color); cornerRadius = (if (radio >= 10) 6 else radio).px().toFloat(); if (borde != null) setStroke(1.px(), borde)
     }
     private fun texto(tam: Float, color: Int) = TextView(this).apply { textSize = tam; setTextColor(color) }
     private fun fijar(v: TextView, t: String) { if (v.text.toString() != t) v.text = t }
     private fun tarjeta() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 18)
         setPadding(18.px(), 16.px(), 18.px(), 18.px())
-        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = 16.px() }
+        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = 12.px() }
     }
 
     /** Se encoge un poco al pulsarlo: se nota que ha respondido. */
@@ -300,7 +300,7 @@ class MainActivity : Activity() {
         }
     }
     private fun boton(txt: String, principal: Boolean, alto: Int, accion: () -> Unit) = TextView(this).apply {
-        text = txt; gravity = Gravity.CENTER; textSize = if (alto >= 56) 17f else 15f; typeface = Typeface.DEFAULT_BOLD; isClickable = true
+        text = txt; gravity = Gravity.CENTER; textSize = if (alto >= 56) 21f else 18f; typeface = anton; isAllCaps = true; isClickable = true
         setTextColor(if (principal) fondoC else textoC)
         background = fondo(if (principal) verdeC else tarjetaC, 16)
         minimumHeight = alto.px(); setPadding(14.px(), 12.px(), 14.px(), 12.px())
@@ -332,12 +332,12 @@ class MainActivity : Activity() {
         val caja = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; background = fondo(tarjetaC, 24); setPadding(22.px(), 22.px(), 22.px(), 18.px())
         }
-        if (!titulo.isNullOrEmpty()) caja.addView(texto(21f, textoC).apply { text = titulo; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 10.px()) })
+        if (!titulo.isNullOrEmpty()) caja.addView(texto(26f, textoC).apply { text = titulo; typeface = anton; isAllCaps = true; setPadding(0, 0, 0, 10.px()) })
         caja.addView(texto(16f, Color.rgb(205, 212, 207)).apply { text = texto; setLineSpacing(0f, 1.18f) })
         if (vista != null) caja.addView(vista, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 14.px() })
         botones.forEachIndexed { i, b ->
             val v = TextView(this).apply {
-                text = b.texto; gravity = Gravity.CENTER; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; isClickable = true
+                text = b.texto; gravity = Gravity.CENTER; textSize = 19f; typeface = anton; isAllCaps = true; isClickable = true
                 setTextColor(if (i == 0) fondoC else textoC)
                 background = fondo(if (i == 0) verdeC else botonC, 16)
                 minimumHeight = 52.px(); setPadding(14.px(), 12.px(), 14.px(), 12.px())

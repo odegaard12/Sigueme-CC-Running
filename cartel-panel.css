@@ -38,3 +38,6 @@ a { color: var(--accent); }
 .lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1d2412; }
 .inv-nuevo { background: #232c12; }
 @keyframes resalta { 0% { background: #3b4a14; } 100% { background: #151b17; } }
+
+/* casillas y selectores con el lima de la marca (antes salían en el azul del sistema) */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }

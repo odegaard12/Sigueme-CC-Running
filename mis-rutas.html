@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#d9f24a">
 <title>Mis rutas</title>
-<link rel="icon" href="/favicon.png">
+<link rel="icon" href="/favicon.png?v=4">
 <link rel="stylesheet" href="/cartel-panel.css">
 <style>
   * { box-sizing: border-box; }
@@ -38,6 +38,7 @@
   .avit { display: grid; grid-template-columns: 1fr 92px 44px; gap: 8px; margin-top: 8px; align-items: center; }
   .avit input { min-height: 44px; } .avit button { min-height: 44px; width: 44px; border: 0; border-radius: 4px; background: #232b26; color: #ff8a7a; font-size: 1.2rem; cursor: pointer; }
   .subidas { list-style: none; padding: 0; margin: 8px 0 0; } .subidas li { padding: 8px 0; border-top: 1px solid var(--border); font-size: .98rem; }
+  details > summary::after { content: "+"; margin-left: auto; font: 400 1.8rem/1 var(--display); } details[open] > summary::after { content: "–"; }
   details { margin-top: 12px; } summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font: 400 1.35rem/1 var(--display); text-transform: uppercase; }
   details p { color: #dfe6d0; font-size: .95rem; }
   svg { width: 100%; height: auto; display: block; margin-top: 10px; background: var(--panel-2); border-radius: 4px; }
