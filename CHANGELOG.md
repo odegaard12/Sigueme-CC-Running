@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.1 · 2026-10-21
+- **Índice de carreras (`/carreras/`) y página de la app (la del código QR) con el
+  diseño cartel**, la misma cabecera que el resto (nombre del sitio, Inicio, Admin).
+- **Arreglos:** el índice decía «Carrera en directo ahora» con una carrera solo
+  preparada para otro día; ahora solo cuando de verdad está en marcha. En la
+  portada, las carreras salen con el dibujo de su recorrido, el tiempo como en el
+  resto de la web («2h 32m») y, en el móvil, se ve el tiempo en vez de los km. La
+  fecha del índice, como en la portada («16 may 2027»). La página de la app ya no
+  habla de «Listo para salir / Arreglar» (pantalla vieja de la app) y nombra
+  Huawei Health.
+
 ## v1.20.0 · 2026-10-20
 - **La página de la carrera en directo, con el diseño cartel:** franja lima con el
   nombre de la carrera en letra condensada, cifras grandes, estado (en directo,

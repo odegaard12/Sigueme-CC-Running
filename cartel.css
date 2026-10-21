@@ -65,6 +65,8 @@ h1.nombre-ruta.largo { font-size: clamp(2.4rem, 7vw, 5.6rem); }
 .perfil { width: 100%; height: auto; display: block; background: var(--oscuro); border-radius: 6px; }
 .perfil text { fill: var(--apagado); font: 700 11px system-ui, sans-serif; }
 .marca-avit { min-width: 28px; height: 28px; border-radius: 14px; background: var(--campo); color: var(--tinta); border: 3px solid var(--tinta); font: 800 11px/22px system-ui, sans-serif; text-align: center; cursor: pointer; padding: 0 6px; }
+.fila.carrera { grid-template-columns: 1fr 140px 96px 150px; }
+@media (max-width: 640px) { .fila.carrera { grid-template-columns: 1fr 84px 112px; } .fila.carrera .cifra.km { display: none; } .fila.carrera .cifra.t { display: block; } .fila.carrera .cifra.t b { font-size: 1.7rem; } }
 .fila.simple { grid-template-columns: 1fr 130px 130px; cursor: default; } .fila.simple:hover { background: transparent; color: inherit; }
 .fila.simple:hover .nombre small, .fila.simple:hover .cifra span { color: var(--apagado); }
 @media (max-width: 640px) {

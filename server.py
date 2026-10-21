@@ -252,6 +252,16 @@ def traza_svg(slug):
     return '<span class="indice-traza" aria-hidden="true"></span>'      # el hueco, para que la fila no se descoloque
 
 
+def traza_puntos(slug, n=80):
+    """El recorrido archivado, ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
+    try:
+        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+            pts = json.load(f)["features"][0]["geometry"]["coordinates"]
+        return [[round(float(p[0]), 4), round(float(p[1]), 4)] for p in pts[::max(1, len(pts) // n)]]
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        return []
+
+
 
 # --- preparar la carrera desde el panel ------------------------------------
 # GPX → ruta y perfil, datos de la carrera, avituallamientos y plan de avisos
@@ -1549,25 +1559,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         for slug, c, r in carreras_archivadas():
             h, m = divmod(int(r.get("tiempo_oficial_s") or 0) // 60, 60)
             f = str(c.get("fecha") or "")
-            fecha = "/".join(reversed(f.split("-"))) if re.match(r"^\d{4}-\d{2}-\d{2}$", f) else f
+            fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
+                     if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
             datos = " · ".join(str(x) for x in (
                 fecha, c.get("lugar", ""),
                 f"{str(r.get('distancia_km', '')).replace('.', ',')} km" if r.get("distancia_km") else "",
                 f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
-            filas.append(f'<li style="--i:{min(len(filas), 12)}"><a href="/{esc(slug)}/">{traza_svg(slug)}<span class="indice-txt"><b>{esc(c.get("nombre") or slug)}</b>'
-                         f'<span>{esc(datos)}</span></span><strong class="indice-tiempo">{esc(tiempo)}</strong></a></li>')
-        en_marcha = '<p class="indice-vivo"><a href="/">● Carrera en directo ahora</a></p>' if hay_carrera_en_marcha() else ""
+            km = f"{str(r.get('distancia_km')).replace('.', ',')}" if r.get("distancia_km") else "–"
+            filas.append(f'<a class="fila carrera" href="/{esc(slug)}/"><div class="nombre">{esc(c.get("nombre") or slug)}<small>{esc(datos)}</small></div>'
+                         f'<div class="traza">{traza_svg(slug)}</div><div class="cifra km"><b>{esc(km)}</b><span>KM</span></div>'
+                         f'<div class="cifra t"><b>{esc(tiempo or "–")}</b><span>{"TIEMPO" if tiempo else ""}</span></div></a>')
+        sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
+        live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
+        en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
+        n = len(filas)
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                '<title>Carreras · Sígueme CC</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=3"><link rel="stylesheet" href="/style.css?v=indice3">'
-                '</head><body class="indice"><header class="topbar"><div class="marca"><h1>Sígueme <span>CC</span></h1>'
-                '</div></header><main class="indice-main">'
-                f'<h2 class="indice-titulo">Todas las carreras</h2>'
-                f'<p class="indice-cuenta">{len(filas)} {"carrera" if len(filas) == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p>'
-                f'{en_marcha}<ul class="indice-lista">{"".join(filas) or "<li>Todavía no hay carreras archivadas.</li>"}</ul>'
-                '</main></body></html>').encode("utf-8")
+                '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#d9f24a">'
+                f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=2">'
+                '</head><body class="cartel"><div class="campo">'
+                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Admin</a></nav></header>'
+                '<h1 class="gigante">Carreras</h1>'
+                f'<div class="bajo"><p>{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p></div></div>'
+                f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
+                f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
+                '<footer class="pie"><a href="/inicio">‹ Volver a las rutas</a></footer></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))
@@ -1858,7 +1875,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if ruta == "/api/carreras":
             lista = [{"slug": slug, "nombre": c.get("nombre"), "lugar": c.get("lugar"), "fecha": c.get("fecha"),
                       "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km"),
-                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s")}
+                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s"), "traza": traza_puntos(slug)}
                      for slug, c, r in carreras_archivadas()]
             c, live = carrera(), read_live()
             hoy = datetime.now(zona_carrera()).date().isoformat()
