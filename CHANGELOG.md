@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.3 · 2026-10-22
+- **Seguridad:** un JSON anidado a propósito (miles de niveles de `[[[[`) dejaba
+  la petición sin respuesta, también en `/api/gps` sin autenticar: ahora se
+  contesta como cualquier JSON malo (prueba nueva en `pruebas/servidor.py`).
+- **Servicio encerrado** (`despliegue/sigueme.service`): solo escribe en su
+  carpeta, sin privilegios nuevos, `/tmp` propio y el sistema de solo lectura.
+- **CI:** acciones de GitHub fijadas por commit (una etiqueta se puede mover) y
+  sin guardar las credenciales del checkout.
+- Revisado frente a php2shell (CVE-2026-109618 y CVE-2026-109619): el proyecto no
+  usa PHP; no le afecta.
+
 ## v1.20.2 · 2026-10-22
 - **App Android al día:** Android Gradle Plugin 9.4.1 y Kotlin 2.4.21 (las dos
   PR de Dependabot, juntas: por separado no compilan). Con AGP 9 Kotlin va

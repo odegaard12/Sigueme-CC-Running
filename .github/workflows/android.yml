@@ -19,10 +19,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with: { persist-credentials: false }
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6  # v6
         with: { gradle-version: 'current' }
       - name: Firma
         env: { FIRMA_P12: '${{ secrets.FIRMA_P12 }}' }
@@ -38,7 +39,7 @@ jobs:
           VERSION_CODE: '${{ github.run_number }}'
         run: gradle -p android --no-daemon test assembleRelease
       - run: cp android/app/build/outputs/apk/release/app-release.apk sigueme-cc.apk
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with: { name: sigueme-cc-apk, path: sigueme-cc.apk }
       - name: Subir a la release
         if: github.ref_type == 'tag'
@@ -57,10 +58,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.ref_name == 'app-android'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with: { persist-credentials: false }
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6  # v6
         with: { gradle-version: 'current' }
       - run: gradle -p android --no-daemon assembleDebug
       - name: KVM
@@ -69,7 +71,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - run: mkdir -p capturas
-      - uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d  # v2
         with:
           api-level: 34
           target: google_apis
@@ -78,7 +80,7 @@ jobs:
           disable-animations: true
           script: bash android/prueba/emulador.sh
       # la carrera, con un emulador nuevo (tras la primera prueba el de CI se quedaba colgado)
-      - uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d  # v2
         with:
           api-level: 34
           target: google_apis
@@ -86,7 +88,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: bash android/prueba/carrera.sh
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         if: always()
         with: { name: capturas-emulador, path: capturas }
       - run: grep -q AVISOS_OK capturas/resultado.txt

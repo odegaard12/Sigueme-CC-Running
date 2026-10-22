@@ -286,6 +286,14 @@ try:
     # tope del cuerpo
     st, d, _ = pedir('/api/live', {'action': 'guardar_avisos', 'avisos': [{'id': 1, 'texto': 'x' * 100}] * 700})
     ok(st == 413, f'cuerpo de más de 64 KB: {st}')
+    # JSON anidado a propósito (miles de niveles): respuesta normal, no una petición sin contestar
+    anidado = b'[' * 5000 + b']' * 5000
+    for ruta in ('/api/gps', '/api/live', '/api/plan', '/api/invitado/login'):
+        try:
+            st = pedir(ruta, anidado)[0]
+        except Exception as e:
+            st = type(e).__name__
+        ok(isinstance(st, int) and st < 500, f'JSON anidado en {ruta}: {st}')
 finally:
     srv.terminate()
     err = srv.stderr.read().decode(errors='replace')

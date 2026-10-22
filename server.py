@@ -972,7 +972,7 @@ def puntos_traccar(query, cuerpo):
     if cuerpo:
         try:
             j = json.loads(cuerpo)
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             j = None
         if isinstance(j, dict):
             ident = j.get("device_id") or j.get("id")
@@ -1733,7 +1733,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return None
         try:
             d = json.loads(self.rfile.read(largo) or b"{}")
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             return None
         return d if isinstance(d, dict) else None
 
@@ -2199,7 +2199,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
             cuerpo = json.loads(self.rfile.read(largo) if 0 < largo <= 4096 else b"{}")
             ident = str(cuerpo.get("device_id") or "")
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, RecursionError):
             cuerpo, ident = {}, ""
         clave = clave_gps()
         if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
@@ -2252,7 +2252,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
-        except (json.JSONDecodeError, UnicodeDecodeError):
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             self._send_json(400, {"error": "invalid json"})
             return
 
