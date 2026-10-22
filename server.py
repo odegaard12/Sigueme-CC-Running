@@ -1563,10 +1563,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                      if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
             datos = " · ".join(str(x) for x in (
                 fecha, c.get("lugar", ""),
-                f"{str(r.get('distancia_km', '')).replace('.', ',')} km" if r.get("distancia_km") else "",
+                "",
                 f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
-            km = f"{str(r.get('distancia_km')).replace('.', ',')}" if r.get("distancia_km") else "–"
+            dist = c.get("distancia_km") or r.get("distancia_km")      # la oficial, como en la portada
+            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else "–"
             filas.append(f'<a class="fila carrera" href="/{esc(slug)}/"><div class="nombre">{esc(c.get("nombre") or slug)}<small>{esc(datos)}</small></div>'
                          f'<div class="traza">{traza_svg(slug)}</div><div class="cifra km"><b>{esc(km)}</b><span>KM</span></div>'
                          f'<div class="cifra t"><b>{esc(tiempo or "–")}</b><span>{"TIEMPO" if tiempo else ""}</span></div></a>')

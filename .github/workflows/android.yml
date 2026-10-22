@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v6
-        with: { gradle-version: '8.7' }
+        with: { gradle-version: 'current' }
       - name: Firma
         env: { FIRMA_P12: '${{ secrets.FIRMA_P12 }}' }
         run: |
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v6
-        with: { gradle-version: '8.7' }
+        with: { gradle-version: 'current' }
       - run: gradle -p android --no-daemon assembleDebug
       - name: KVM
         run: |

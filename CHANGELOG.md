@@ -4,6 +4,15 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.2 · 2026-10-22
+- **App Android al día:** Android Gradle Plugin 9.4.1 y Kotlin 2.4.21 (las dos
+  PR de Dependabot, juntas: por separado no compilan). Con AGP 9 Kotlin va
+  dentro del plugin de Android y el CI compila con la última versión de Gradle.
+  Probado en el emulador (avisos sin cobertura y carrera completa).
+- La misma distancia de cada carrera en la portada y en `/carreras/` (la oficial;
+  la recorrida sale en su resultado). En la página en directo, el enlace de
+  arriba se llama «Inicio», como en el resto.
+
 ## v1.20.1 · 2026-10-21
 - **Índice de carreras (`/carreras/`) y página de la app (la del código QR) con el
   diseño cartel**, la misma cabecera que el resto (nombre del sitio, Inicio, Admin).
