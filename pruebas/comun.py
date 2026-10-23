@@ -3,7 +3,7 @@ inventado (nunca una ruta real: el repo es público)."""
 import math, pathlib, shutil, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
-WEB = ('server.py', 'index.html', 'app.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
+WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
        'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'mis-rutas.js', 'inicio.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css')
 
 

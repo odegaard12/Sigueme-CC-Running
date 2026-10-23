@@ -562,7 +562,7 @@ function onMapReady() {
 }
 
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
-  .then(c => { if (c) CARRERA = Object.assign(CARRERA, c); pintarCarrera(); });
+  .then(c => { if (c) { CARRERA = Object.assign(CARRERA, c); gestionarSW(); } pintarCarrera(); });
 
 precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
@@ -1177,6 +1177,36 @@ function fetchConTiempo(url, ms = 8000) {
   return fetch(url, { signal: control.signal, cache: 'no-store' }).finally(() => clearTimeout(reloj));
 }
 
+let desdeCache = 0, yaPintado = false, ultimoLiveOk = 0;
+const CLAVE_LIVE = 'sigueme.live';
+function guardarLive(txt) {
+  ultimoLiveOk = Date.now();
+  try { localStorage.setItem(CLAVE_LIVE, JSON.stringify({ t: ultimoLiveOk, d: txt })); } catch (e) {}
+}
+function liveGuardado() {
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_LIVE));
+    if (g && g.d && Date.now() - g.t < 12 * 3600000) return g;      // de más de 12 h ya no vale
+  } catch (e) {}
+  return null;
+}
+function haceTxt(t) {
+  const m = Math.max(1, Math.round((Date.now() - t) / 60000));
+  return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min';
+}
+
+// «modo sin cobertura» (carrera.json: modo_offline, casilla del panel). Desactivado = lo de siempre: SIN service worker y
+// el que hubiera quedado de versiones antiguas se desinstala (tres versiones antiguas acabaron sirviendo código viejo).
+function gestionarSW() {
+  if (!('serviceWorker' in navigator) || ARCHIVADA) return;
+  if (CARRERA.modo_offline === true) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  } else {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+  }
+}
+
 function avisoConexion(mal) {
   let el = document.getElementById('aviso-conexion');
   if (!el) {
@@ -1187,8 +1217,11 @@ function avisoConexion(mal) {
     el.hidden = true;
     document.body.appendChild(el);
   }
-  if (mal) el.textContent = navigator.onLine === false
-    ? 'Sin conexión · reintentando…' : 'No llegan datos · reintentando…';
+  if (mal) {
+    const t = ultimoLiveOk || (liveGuardado() || {}).t;
+    el.textContent = (navigator.onLine === false ? 'Sin conexión' : 'No llegan datos') +
+      (t ? ' · último dato hace ' + haceTxt(t) : '') + ' · reintentando…';
+  }
   el.hidden = !mal;
 }
 
@@ -1209,11 +1242,19 @@ function pollLive() {
       // el cronómetro de quien miraba se atrasaba esos mismos minutos
       const fecha = Date.parse(r.headers.get('Date'));
       if (!isNaN(fecha)) desfaseReloj = Date.now() - fecha;
-      return r.json();
+      return r.text().then(txt => { const d = JSON.parse(txt); guardarLive(txt); desdeCache = 0; return d; });
+    })
+    .catch(err => {
+      // sin red al abrir la web (un túnel, el avión): se pinta el último estado guardado en este móvil
+      const g = yaPintado ? null : liveGuardado();
+      if (!g) throw err;
+      desdeCache = g.t;
+      return JSON.parse(g.d);
     })
     .then(data => {
-      fallosSeguidos = 0;
-      avisoConexion(false);
+      yaPintado = true;
+      fallosSeguidos = desdeCache ? 2 : 0;
+      avisoConexion(!!desdeCache);
       lastStartedAt = data.started_at || null;
       document.querySelector('.metricas').classList.remove('esqueleto');
 
@@ -1403,6 +1444,7 @@ function pollLive() {
       // seguidos (~10 s sin datos) sí
       fallosSeguidos++;
       if (fallosSeguidos >= 2) avisoConexion(true);
+      if (fallosSeguidos === 8 && ritmoActual === 5000) ritmoSondeo(15000);      // mucho rato sin red: menos batería
       if (!(err instanceof TypeError) && err.name !== 'AbortError' && !/^HTTP/.test(err.message)) {
         console.error('pollLive:', err);   // fallo del código, no de la red
       }
@@ -1582,4 +1624,5 @@ ritmoSondeo(5000);
 // que esperar al siguiente turno, y en segundo plano el navegador los frena)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
 window.addEventListener('online', pollLive);
+window.addEventListener('offline', () => avisoConexion(true));
 window.addEventListener('offline', () => avisoConexion(true));

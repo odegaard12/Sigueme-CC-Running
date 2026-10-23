@@ -286,6 +286,15 @@ try:
     # tope del cuerpo
     st, d, _ = pedir('/api/live', {'action': 'guardar_avisos', 'avisos': [{'id': 1, 'texto': 'x' * 100}] * 700})
     ok(st == 413, f'cuerpo de más de 64 KB: {st}')
+    # el service worker se sirve como JavaScript y no es una puerta a nada más
+    r = urllib.request.urlopen(U + '/sw.js')
+    ok(r.status == 200 and 'javascript' in r.headers.get('Content-Type', '') and b'sigueme-v' in r.read(), 'sw.js: se sirve como JavaScript')
+    # la casilla «web sin cobertura»: se guarda solo si está marcada
+    base_c = {'nombre': 'Trail de prueba', 'fecha': '2027-03-14', 'hora_salida': '09:00'}
+    st, d, _ = pedir('/api/live', {'action': 'guardar_carrera', 'carrera': dict(base_c, modo_offline=True)})
+    ok(st == 200 and d['carrera'].get('modo_offline') is True, 'modo sin cobertura: se guarda activado')
+    st, d, _ = pedir('/api/live', {'action': 'guardar_carrera', 'carrera': dict(base_c, modo_offline=False)})
+    ok(st == 200 and 'modo_offline' not in d['carrera'], 'modo sin cobertura: desactivado no deja rastro (lo de siempre)')
     # JSON anidado a propósito (miles de niveles): respuesta normal, no una petición sin contestar
     anidado = b'[' * 5000 + b']' * 5000
     for ruta in ('/api/gps', '/api/live', '/api/plan', '/api/invitado/login'):

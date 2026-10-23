@@ -385,6 +385,8 @@ def limpiar_carrera(d):
                 c[k] = _numero_en(d[k], lo, hi)
                 if c[k] is not None and k in ("desnivel_m", "ocultar_m"):
                     c[k] = int(c[k])
+        if "modo_offline" in d:
+            c["modo_offline"] = True if d["modo_offline"] is True else None      # None: se quita (por defecto, desactivado)
         if "slug" in d:
             c["slug"] = _texto(d["slug"], 65).lower()
             if c["slug"] and not re.fullmatch(r"\d{4}-[a-z0-9-]{1,60}", c["slug"]):

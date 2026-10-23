@@ -4,6 +4,21 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.23.0 · 2026-10-23
+- **La web en directo con cortes de cobertura:**
+  - **El último dato se guarda en el móvil de quien mira** (siempre activo): si abre
+    la web sin red, ve el último estado en vez de una pantalla vacía, y el aviso
+    dice cuánto hace: «Sin conexión · último dato hace 12 min · reintentando…». Tras
+    mucho rato sin red, la web pregunta menos (cada 15 s) para gastar menos batería.
+  - **«Web que se abre sin cobertura» (experimental, casilla en Datos de la
+    carrera; desactivada por defecto):** un service worker guarda la página, la
+    ruta, el perfil y las teselas del mapa que ya se vieron, y la web se abre aunque
+    no haya red. Probado en un navegador real: abrir, cortar la red, recargar, volve
+    la red, y que una versión nueva del código llegue aunque lo tenga todo guardado
+    (el fallo de las tres versiones antiguas). Lo vivo (`live.json`, `/api/`) nunca se
+    guarda. Desactivada, la web funciona como siempre: sin service worker y
+    desinstalando el que hubiera quedado de versiones antiguas.
+
 ## v1.22.0 · 2026-10-23
 - **Xiaomi, Huawei y Amazfit:**
   - **Resultado desde un GPX:** además del FIT, el panel acepta el GPX que

@@ -370,6 +370,10 @@
       <div class="field"><label for="c-club">Club o equipo (opcional)</label><input id="c-club" maxlength="60"></div>
       <div class="field"><label for="c-categoria">Categoría (opcional)</label><input id="c-categoria" maxlength="40" placeholder="Absoluta, Veterano A…"></div>
     </div>
+    <div class="field" style="margin-top:6px"><label style="display:flex;gap:10px;align-items:flex-start;color:inherit"><input type="checkbox" id="c-offline" style="margin-top:4px">
+      <span><b>Web que se abre sin cobertura</b> (experimental). Quien mira la web desde el móvil la guarda y la ve aunque se le corte la red,
+      con el último dato y «hace cuánto». Desactivado, la web funciona como siempre: en versiones antiguas un service worker llegó a servir código
+      viejo, así que actívalo solo si lo vas a probar antes de la carrera.</span></label></div>
     <div class="foto-fila">
       <img id="foto-ver" src="rider.png" alt="Foto del corredor">
       <div><label class="btn" for="foto">Cambiar la foto</label>
@@ -819,6 +823,7 @@ const CAMPOS = { nombre: 'c-nombre', lugar: 'c-lugar', modalidad: 'c-modalidad',
   ocultar_m: 'c-ocultar', zona_horaria: 'c-zona', slug: 'c-slug' };
 function pintarFormCarrera(c) {
   for (const [k, id] of Object.entries(CAMPOS)) $(id).value = c[k] ?? '';
+  $('c-offline').checked = c.modo_offline === true;
   $('c-corredor').value = (c.corredor || {}).nombre || '';
   $('c-dorsal').value = (c.corredor || {}).dorsal || '';
   $('c-club').value = (c.corredor || {}).club || '';
@@ -841,6 +846,7 @@ $('guardar-carrera').addEventListener('click', () => {
   const piezas = {};
   $('c-piezas').value.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) piezas[l.slice(0, i).trim()] = l.slice(i + 1).trim(); });
   c.bici = { modelo: $('c-bici').value.trim(), piezas };
+  c.modo_offline = $('c-offline').checked;
   accion({ action: 'guardar_carrera', carrera: c });
 });
 
