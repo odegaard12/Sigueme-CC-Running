@@ -42,7 +42,7 @@ $('salir').addEventListener('click', async () => { try { await post('/logout', {
 // ---- lista de rutas
 async function lista() {
   const d = await api('/rutas');
-  $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + '. Tu acceso vale hasta el ' + fecha(d.caduca) + '.';
+  $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '.');
   $('salir').hidden = !!d.dueno;
   const cont = $('lista'); cont.textContent = '';
   $('lista-vacia').hidden = d.rutas.length > 0;
@@ -63,6 +63,7 @@ async function lista() {
 $('subir').addEventListener('click', async () => {
   const f = $('gpx').files[0];
   if (!f) { aviso('msg-lista', 'Elige primero un fichero GPX.', 'err'); return; }
+  if (f.size === 0) { aviso('msg-lista', 'El fichero está vacío.', 'err'); return; }
   if (f.size > 8000000) { aviso('msg-lista', 'El GPX pesa demasiado (máximo 8 MB).', 'err'); return; }
   const b = $('subir'); b.disabled = true; aviso('msg-lista', 'Subiendo y preparando la ruta…');
   try {
@@ -139,7 +140,7 @@ function pintarPublicacion(r) {
 async function publicacion(publica) {
   const b = publica ? $('publicar') : $('despublicar'); b.disabled = true; aviso('msg-pub', publica ? 'Publicando…' : 'Quitando…');
   try {
-    const d = await post('/ruta', { id: actual.id, publica, ocultar_m: Number($('pub-ocultar').value), autor: $('pub-autor').value });
+    const d = await post('/ruta', { id: actual.id, publica, ocultar_m: Number($('pub-ocultar').value || 300), autor: $('pub-autor').value });
     actual = d.ruta; pintarPublicacion(actual);
     aviso('msg-pub', publica ? 'Publicada. Ya sale en la portada.' : 'Ya no es pública.', 'ok');
   } catch (err) { if (err.message !== 'sesion') aviso('msg-pub', err.message, 'err'); }

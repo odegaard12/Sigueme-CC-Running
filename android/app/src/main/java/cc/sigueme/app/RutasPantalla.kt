@@ -111,6 +111,8 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
     private val contDetalle = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL }
     private val scrollDetalle = ScrollView(act).apply { setBackgroundColor(tinta); addView(contDetalle); visibility = View.GONE }
     private var cargando = false
+    private var abierta: String? = null     // la ruta que se está viendo
+    private var bajando = false             // una descarga del GPX a la vez (el doble toque bajaba dos copias)
 
     init { vista.addView(scrollLista); vista.addView(scrollDetalle) }
 
@@ -248,12 +250,13 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
         scrollLista.visibility = View.GONE
         scrollDetalle.visibility = View.VISIBLE
         scrollDetalle.scrollTo(0, 0)
+        abierta = r.id
         pintarDetalle(r, null, true)
         val u = url() ?: return
         thread {
             val d = Rutas.detalle(u, r.id)
             act.runOnUiThread {
-                if (!act.isFinishing && !act.isDestroyed && scrollDetalle.visibility == View.VISIBLE) pintarDetalle(r, d, false)
+                if (!act.isFinishing && !act.isDestroyed && scrollDetalle.visibility == View.VISIBLE && abierta == r.id) pintarDetalle(r, d, false)
             }
         }
     }
@@ -320,18 +323,24 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
     // ---------------------------------------------------------------- el GPX para el reloj
     private fun bajarGpx(r: Rutas.Resumen) {
         val u = url() ?: return
+        if (bajando) return
+        bajando = true
         Toast.makeText(act, "Bajando la ruta…", Toast.LENGTH_SHORT).show()
         thread {
             val uri = Rutas.guardarGpx(act, u, r.id, r.nombre)
             act.runOnUiThread {
+                bajando = false
                 if (act.isFinishing || act.isDestroyed) return@runOnUiThread
                 if (uri != null) {
                     avisar("Ruta guardada en Descargas",
                         "Ahora ábrela con la app de tu reloj:\n\n•  Huawei Health: Yo → Mi ruta → Importar ruta\n•  Zepp, Garmin Connect o Coros: importar GPX",
                         listOf("Abrir con…" to { abrirGpx(uri) }, "Compartir" to { compartirGpx(uri) }, "Cerrar" to {}))
-                } else {
-                    // Android antiguo o sin permiso para guardar: lo baja el navegador
+                } else if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                    // Android 8 o 9: la app no puede guardar en Descargas; lo baja el navegador
                     abrirEnNavegador("$u/api/ruta-publica/reloj.gpx?id=${r.id}")
+                } else {
+                    avisar("No se pudo bajar la ruta", "Sin cobertura o la ruta ya no está publicada. Prueba otra vez cuando tengas red.",
+                        listOf("Reintentar" to { bajarGpx(r) }, "Cerrar" to {}))
                 }
             }
         }

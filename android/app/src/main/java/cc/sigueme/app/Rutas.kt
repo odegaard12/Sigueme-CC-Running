@@ -84,17 +84,20 @@ object Rutas {
     /** Baja el GPX para el reloj y lo deja en Descargas (Android 10 o más); devuelve su dirección, o null si no se pudo. */
     fun guardarGpx(c: Context, url: String, id: String, nombre: String): Uri? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        val bytes = try { get("$url/api/ruta-publica/reloj.gpx?id=$id") } catch (e: Exception) { return null }
+        val valores = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, nombreFichero(nombre))
+            put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val uri = try { c.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, valores) } catch (e: Exception) { null } ?: return null
         return try {
-            val bytes = get("$url/api/ruta-publica/reloj.gpx?id=$id")
-            val valores = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, nombreFichero(nombre))
-                put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-            val uri = c.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, valores) ?: return null
-            c.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } ?: return null
+            c.contentResolver.openOutputStream(uri)!!.use { it.write(bytes) }
+            c.contentResolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
             uri
         } catch (e: Exception) {
+            try { c.contentResolver.delete(uri, null, null) } catch (e2: Exception) {}
             null
         }
     }

@@ -576,9 +576,17 @@ def invitados_mod():
     return _inv_mod
 
 
+def _inv_huella(usuario):
+    """Un trozo del hash del código del invitado (el dueño, fijo): cambia con un código nuevo o una cuenta nueva."""
+    inv = invitados_mod()
+    if usuario == inv.DUENO:
+        return "dueno"
+    return str((inv._registro(ROOT, usuario) or {}).get("hash", ""))[-16:]
+
+
 def _inv_firma(usuario, exp):
     clave = hashlib.sha256(b"sesion-invitado\0" + ADMIN_HASH.encode()).digest()
-    return hmac.new(clave, f"{usuario}.{exp}".encode(), hashlib.sha256).hexdigest()
+    return hmac.new(clave, f"{usuario}.{exp}.{_inv_huella(usuario)}".encode(), hashlib.sha256).hexdigest()
 
 
 def nueva_sesion_invitado(usuario):
@@ -1472,7 +1480,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
         if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
-        if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() \
+        if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() and not directo_ahora() \
                 and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             # sin carrera en marcha: la portada lleva al último resultado (302,
             # no 301: cuando empiece la siguiente carrera, la portada será ella)
@@ -1850,6 +1858,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
         except ValueError:
             largo = -1
+        if largo == 0:
+            self._send_json(400, {"error": "el fichero está vacío"})
+            return
         if not 0 < largo <= inv.MAX_GPX:
             self._send_json(413, {"error": f"el GPX tiene que pesar menos de {inv.MAX_GPX // 1_000_000} MB"})
             return
@@ -1875,7 +1886,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if ruta == "/api/carreras":
             lista = [{"slug": slug, "nombre": c.get("nombre"), "lugar": c.get("lugar"), "fecha": c.get("fecha"),
-                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km"),
+                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km") or r.get("distancia_km"),
                       "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s"), "traza": traza_puntos(slug)}
                      for slug, c, r in carreras_archivadas()]
             c, live = carrera(), read_live()
@@ -1978,6 +1989,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
         except ValueError:
             largo = -1
+        if largo == 0:
+            self._send_json(400, {"error": "el fichero está vacío"})
+            return
         if not 0 < largo <= MAX_GPX:
             self._send_json(413, {"error": "el GPX tiene que pesar menos de 20 MB"})
             return
@@ -2608,14 +2622,10 @@ if __name__ == "__main__":
 
     def purga_invitados():
         # sin esperar a que alguien entre: lo caducado se borra solo (cada 6 h; solo la Pi que tiene la VIP)
-        import importlib.util
         while True:
             try:
                 if tengo_la_vip():
-                    spec = importlib.util.spec_from_file_location('invitados_purga', os.path.join(ROOT, 'herramientas', 'invitados.py'))
-                    m = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(m)
-                    m.purgar(ROOT)
+                    invitados_mod().purgar(ROOT)
             except Exception as exc:
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)

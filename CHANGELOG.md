@@ -4,6 +4,24 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.4 · 2026-10-23
+- **Invitados:**
+  - La purga automática de lo caducado usaba otra copia del módulo de invitados,
+    con su propio cerrojo: podía pisar una renovación, borrar la carpeta de un
+    invitado recién creado o dejar el índice de rutas públicas desfasado.
+  - Con «Código nuevo», o al borrar un invitado y crear otro con el mismo nombre,
+    las sesiones abiertas seguían valiendo hasta 12 h (la nueva cuenta quedaba
+    abierta al anterior). Ahora dejan de valer al momento (prueba nueva).
+  - Publicar con un valor raro de «ocultar» mandaba 0 m y la ruta salía entera:
+    ahora 300 m. Un GPX vacío lo dice; un acceso sin caducidad ya no pone
+    «hasta el 31/12/2099»; `ocultar_m` infinito ya no deja la petición colgada.
+- **Portada:** con una carrera ya pasada y sin archivar, `/` saltaba al resultado
+  de la carrera anterior; ahora enseña esa carrera. La distancia de cada carrera,
+  igual en la portada y en `/carreras/` aunque falte en su `carrera.json`.
+- **App, pestaña Rutas:** sin cobertura avisa y deja reintentar (antes abría el
+  navegador); el doble toque ya no baja dos copias; un fallo a medias no deja un
+  GPX vacío en Descargas; abrir otra ruta deprisa ya no pinta la anterior.
+
 ## v1.20.3 · 2026-10-22
 - **Seguridad:** un JSON anidado a propósito (miles de niveles de `[[[[`) dejaba
   la petición sin respuesta, también en `/api/gps` sin autenticar: ahora se

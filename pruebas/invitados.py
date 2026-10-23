@@ -281,6 +281,8 @@ try:
     nuevo = d['codigo']
     st, _, _ = http('POST', '/api/invitado/login', {'usuario': 'ana', 'codigo': codigo_ana}, origen=False)
     ok(nuevo != codigo_ana and st == 403, 'código nuevo: el viejo deja de valer')
+    st, _, _ = http('GET', '/api/invitado/rutas', cookie=ana)
+    ok(st == 403, '  y la sesión que se abrió con el viejo, tampoco')
     st, _, _ = http('POST', '/api/invitado/login', {'usuario': 'ana', 'codigo': nuevo}, origen=False)
     ok(st == 200, '  y el nuevo vale')
     poner_caducidad('ben', -10)
