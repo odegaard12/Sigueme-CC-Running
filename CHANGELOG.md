@@ -4,6 +4,30 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.22.0 · 2026-10-23
+- **Xiaomi, Huawei y Amazfit:**
+  - **Resultado desde un GPX:** además del FIT, el panel acepta el GPX que
+    exportan Xiaomi Mi Fitness (Smart Band 8 Pro y otras), Huawei Health, Zepp o
+    Strava, si trae la hora de cada punto: tiempo oficial, pasos por avituallamiento,
+    pulso medio, desnivel y repetición (prueba nueva).
+  - **Consejos por marca en la app:** la guía de «activar Sígueme CC en la pulsera»
+    añade lo propio de Mi Fitness, Huawei Health y Zepp, y lo que hay que toca
+    en móviles Xiaomi (HyperOS/MIUI) y Huawei/Honor, que cierran las apps en
+    segundo plano.
+  - **Ruta en el reloj:** las páginas de cada ruta explican cómo importarla en
+    Amazfit con Zepp (GTR 4, GTS 4, Balance…) y avisan de que las Xiaomi Smart
+    Band no importan rutas (se usan los avisos de la app).
+- **Distancia oficial:** si cambias los km en el panel después de subir el GPX, el
+  perfil y la ruta se reescalan y el plan de avisos se rehace; antes los avisos
+  de la app y los km de la web quedaban en dos escalas y se desplazaban unos metros.
+- **EMPEZAR sin cobertura y sin hora oficial:** el crono cuenta desde que se pulsó
+  EMPEZAR, no desde que vuelve la cobertura (la app manda la hora; solo se acepta
+  si es de las últimas 6 h).
+- **Km en rutas con pocos puntos:** la app recibe la ruta con un punto como mucho
+  cada 100 m. Con un GPX de ruta (pocos puntos) o una ruta de más de 300 km
+  reducida a 1800 puntos, a mitad de tramo decía «fuera de la ruta» y el km
+  avanzaba a saltos.
+
 ## v1.21.0 · 2026-10-23
 - **Privacidad:** sin EMPEZAR (un día de prueba, o con el móvil en casa) la web
   ya no publica tu posición, y 15 min después de meta deja de moverse. Antes se

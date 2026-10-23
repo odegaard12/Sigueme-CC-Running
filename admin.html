@@ -461,10 +461,11 @@
 
   <div class="tarjeta primero" data-tab="mas">
     <h2>Resultado de la carrera</h2>
-    <div class="howto">Después de meta, sube el fichero FIT de tu reloj o ciclocomputador (en Garmin
-      Connect, Strava o la app del reloj: exportar o descargar el original). La web pasa a modo
-      resultado: tiempo oficial, paso por cada avituallamiento y la repetición de la carrera.</div>
-    <div class="field" style="margin-top:10px"><label for="fit">Fichero FIT</label><input type="file" id="fit" accept=".fit"></div>
+    <div class="howto">Después de meta, sube el fichero de tu reloj, pulsera o ciclocomputador: el <b>FIT</b>
+      (Garmin Connect, Coros, Strava: exportar el original) o el <b>GPX</b> (Xiaomi Mi Fitness, Huawei Health,
+      Zepp, Strava…). Tiene que traer la hora de cada punto. La web pasa a modo resultado: tiempo oficial,
+      paso por cada avituallamiento y la repetición de la carrera.</div>
+    <div class="field" style="margin-top:10px"><label for="fit">Fichero FIT o GPX</label><input type="file" id="fit" accept=".fit,.gpx"></div>
     <button class="save-btn" id="subir-fit" type="button">Subir y generar el resultado</button>
   </div>
 
@@ -1020,7 +1021,7 @@ $('foto').addEventListener('change', () => {
 
 $('subir-fit').addEventListener('click', async () => {
   const f = $('fit').files[0];
-  if (!f) { $('msg').textContent = 'Elige antes el fichero FIT'; $('msg').className = 'msg err'; return; }
+  if (!f) { $('msg').textContent = 'Elige antes el fichero FIT o GPX'; $('msg').className = 'msg err'; return; }
   const d = await accion(null, '/api/fit', { headers: { 'Content-Type': 'application/octet-stream' }, body: f });
   if (d) {
     const s = d.resultado.tiempo_oficial_s;

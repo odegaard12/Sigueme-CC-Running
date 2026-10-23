@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.21.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.22.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -91,7 +91,8 @@ La guía con capturas: **[Preparar una carrera, paso a paso](docs/GUIA-CARRERA.m
 5. **App del móvil:** escaneas el código QR y baja todo para ir sin cobertura.
 6. **La ruta en el reloj (opcional):** un botón descarga el GPX con altitudes y, como
    puntos de control, los avituallamientos y las subidas, para importarlo en Huawei Health,
-   Zepp, Garmin o Coros.
+   Zepp (Amazfit), Garmin o Coros. Las **Xiaomi Smart Band** no importan rutas: con ellas se usan los avisos
+   de la app (Mi Fitness los pasa a la banda) y el resultado se saca después del GPX de Mi Fitness.
 
 Todo queda en ficheros de la raíz que puedes editar a mano si prefieres
 (`carrera.json`, `route.geojson`, `elevation.json`, `aid_stations.json`,

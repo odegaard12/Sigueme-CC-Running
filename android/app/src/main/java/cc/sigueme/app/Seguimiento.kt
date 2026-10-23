@@ -269,7 +269,7 @@ class Seguimiento : Service(), LocationListener {
             if (bloqueado(c) || !empezando.compareAndSet(false, true)) return null
             try {
                 if (!p.getBoolean("empezar_pendiente", false)) return null      // PARAR entre medias
-                val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").toString()) }
+                val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").put("t", p.getLong("empezar_t", 0L)).toString()) }
                                     catch (e: Exception) { return null }
                 if (codigo == 403 || codigo == 429) {
                     bloquear(c, codigo)

@@ -433,6 +433,46 @@ def limpiar_avituallamientos(lista):
     return sorted(salida, key=lambda a: a["km"]), None
 
 
+def densificar(coords, paso_km=0.1, tope=40000):
+    """Un vértice como mucho cada 100 m (la app calcula su km sobre los vértices)."""
+    if len(coords) < 2:
+        return coords
+    salida = [coords[0]]
+    for a, b in zip(coords, coords[1:]):
+        n = int(km_entre((a[1], a[0]), (b[1], b[0])) / paso_km)
+        if n > 0 and len(salida) + n < tope:
+            for i in range(1, n + 1):
+                f = i / (n + 1)
+                salida.append([round(a[0] + (b[0] - a[0]) * f, 6), round(a[1] + (b[1] - a[1]) * f, 6)])
+        salida.append(b)
+    return salida
+
+
+def reescalar_ruta(nueva):
+    """La ruta y el perfil llevan los km OFICIALES con los que se prepararon: si se cambian en el panel, se
+    reescalan. Devuelve True si cambió algo."""
+    ruta = leer_json("route.geojson") or {}
+    elev = leer_json("elevation.json") or {}
+    try:
+        props = ruta["features"][0]["properties"]
+    except (KeyError, IndexError, TypeError):
+        return False
+    vieja = props.get("distance_km") or elev.get("distance_km")
+    if not vieja or not nueva or abs(nueva - vieja) < 0.005:
+        return False
+    f = nueva / vieja
+    if not 0.5 < f < 2:
+        return False
+    props["distance_km"] = round(nueva, 2)
+    escribir_json("route.geojson", ruta)
+    if elev.get("profile"):
+        for p in elev["profile"]:
+            p["d"] = round(p["d"] * f, 2)
+        elev["distance_km"] = round(nueva, 2)
+        escribir_json("elevation.json", elev)
+    return True
+
+
 def plan_para_la_app():
     """Todo lo que la app del móvil baja antes de salir para funcionar sin
     cobertura: carrera, ruta, perfil, avituallamientos y avisos."""
@@ -442,7 +482,7 @@ def plan_para_la_app():
     except (KeyError, IndexError, TypeError):
         coords = []
     plan = plan_avisos() or {}
-    return {"carrera": carrera(), "ruta": coords,
+    return {"carrera": carrera(), "ruta": densificar(coords),
             "perfil": [[p["d"], p["ele"]] for p in (leer_json("elevation.json") or {}).get("profile", [])],
             "avituallamientos": leer_json("aid_stations.json") or [],
             "avisos": plan.get("avisos", []), "subidas": plan.get("subidas", []),
@@ -2069,7 +2109,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _subir_fit(self):
         """El FIT del reloj o del ciclocomputador → resultado.json (modo resultado)."""
-        cuerpo = self._subida(40_000_000, "el FIT")
+        cuerpo = self._subida(40_000_000, "el fichero")
         if cuerpo is None:
             return
         if self._en_carrera():
@@ -2086,7 +2126,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         except Exception as exc:
             print(f"[fit] {exc!r}", flush=True)
-            self._send_json(400, {"error": "no se pudo sacar el resultado de ese FIT (¿la ruta subida es la de esta carrera?)"})
+            self._send_json(400, {"error": "no se pudo sacar el resultado de ese fichero (¿la ruta subida es la de esta carrera?)"})
             return
         escribir_json("resultado.json", res)
         apuntar_historial("resultado", tiempo_s=res["tiempo_oficial_s"])
@@ -2129,8 +2169,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             antes = carrera()
             escribir_json("carrera.json", c)
-            # el D+ oficial escala el "quedan +X m" de los avisos
-            plan = generar_plan() if c.get("desnivel_m") != antes.get("desnivel_m") else plan_avisos()
+            reescalada = bool(c.get("distancia_km")) and reescalar_ruta(float(c["distancia_km"]))
+            # el D+ oficial escala el "quedan +X m" de los avisos (y la distancia, sus km)
+            plan = generar_plan() if reescalada or c.get("desnivel_m") != antes.get("desnivel_m") else plan_avisos()
             self._send_json(200, {"ok": True, "carrera": c, "plan": plan, "preparacion": preparacion()})
             return
         if accion == "guardar_avituallamientos":
@@ -2178,7 +2219,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         escribir_json("avisos.json", plan)
         self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
 
-    def _empezar(self, hora, origen="panel"):
+    def _empezar(self, hora, origen="panel", desde=None):
         """Carrera en marcha: el crono cuenta desde la hora OFICIAL (si se empieza
         a las 09:45 para salir a las 10:00, la web dice «en la salida» hasta las
         10:00 y luego cuenta desde las 10:00, no desde las 09:45)."""
@@ -2188,7 +2229,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         apuntar_historial("empezar", hora_salida=hora, origen=origen)
         return merge_live({
             "status_label": "En carrera", "livetrack_url": None, "extract_status": None,
-            "started_at": inicio or datetime.now(timezone.utc).isoformat(),
+            "started_at": inicio or desde or datetime.now(timezone.utc).isoformat(),
             "hora_salida": hora or None, "finished_at": None, "elapsed": None,
             "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
             "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
@@ -2198,7 +2239,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "gps_origen": None, "gps_rechazado_at": None,
         })
 
-    def _empezar_desde_app(self):
+    def _empezar_desde_app(self, desde_ms=None):
         """EMPEZAR en la app = carrera en marcha en la web, sin abrir el panel.
         Solo el día de la carrera (otro día es una prueba: no toca la web) y una
         vez: si ya está en marcha hoy, no se reinicia."""
@@ -2217,7 +2258,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return "terminada", "La carrera de hoy ya está terminada en la web"
         if c.get("fecha") and c["fecha"] != hoy:
             return "otro_dia", f"La carrera es el {c['fecha']}: hoy es solo una prueba (la web no cambia)"
-        self._empezar(c.get("hora_salida") or "", origen="app")
+        desde = None
+        try:     # cuándo pulsó EMPEZAR (sin cobertura la petición llega tarde); solo si es creíble: últimas 6 h
+            t = float(desde_ms) / 1000
+            if time.time() - 6 * 3600 <= t <= time.time() + 120:
+                desde = datetime.fromtimestamp(t, timezone.utc).isoformat()
+        except (TypeError, ValueError, OverflowError):
+            pass
+        self._empezar(c.get("hora_salida") or "", origen="app", desde=desde)
         return "empezada", f"Carrera en marcha en la web (salida a las {c.get('hora_salida') or 'ya'})"
 
     def _plan_app(self):
@@ -2242,7 +2290,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         merge_live({"app_at": datetime.now(timezone.utc).isoformat()})
         respuesta = plan_para_la_app()
         if cuerpo.get("accion") == "empezar":
-            respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app()
+            respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app(cuerpo.get("t"))
         self._send_json(200, respuesta)
 
     def do_POST(self):

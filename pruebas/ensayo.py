@@ -78,6 +78,17 @@ try:
     pedir('/api/gps', {'device_id': ID, 'location': [casa]}, panel=False)
     ok(publico().get('lat') is None, 'sin EMPEZAR: la posición no se publica')
 
+    # la distancia oficial cambiada en el panel reescala el perfil (antes, avisos de la app y km de la web en dos escalas)
+    base = {'nombre': 'Ensayo 2027', 'lugar': 'Mi pueblo', 'fecha': ahora.strftime('%Y-%m-%d'), 'hora_salida': salida.strftime('%H:%M'),
+            'limite_h': 4, 'slug': '2027-ensayo', 'corredor': {'nombre': 'Corredor', 'dorsal': '7', 'club': 'Club'}}
+    for nueva in (21.5, 21.1):
+        pedir('/api/live', {'action': 'guardar_carrera', 'carrera': dict(base, distancia_km=nueva)})
+        _, pl, _ = pedir('/api/plan', {'device_id': ID}, panel=False)
+        ok(abs(pl['perfil'][-1][0] - nueva) < 0.02, f"distancia oficial {nueva}: el perfil acaba en el km {pl['perfil'][-1][0]}")
+    # la app recibe la ruta con un vértice como mucho cada 100 m
+    huecos = [max(abs(a[1] - b[1]), abs(a[0] - b[0])) * 111.2 for a, b in zip(pl['ruta'], pl['ruta'][1:])]
+    ok(len(pl['ruta']) > 10 and max(huecos) < 0.13, f"ruta para la app: {len(pl['ruta'])} puntos, hueco máximo {max(huecos) * 1000:.0f} m")
+
     # 2) EMPEZAR desde la app (sin panel)
     st, d, _ = pedir('/api/plan', {'device_id': ID, 'accion': 'empezar'}, panel=False)
     live = publico()
@@ -130,6 +141,19 @@ try:
     pedir('/api/live', {'action': 'stop'})
     ok(publico()['finished_at'] == antes, 'Finalizar: respeta la hora de meta detectada')
 
+    # 7a) el mismo recorrido como GPX con hora y pulso (lo que exporta Mi Fitness, Huawei Health o Zepp)
+    pts_gpx = ''.join(
+        f'<trkpt lat="{pts[i][0]:.6f}" lon="{pts[i][1]:.6f}"><ele>{pts[i][2]:.1f}</ele><time>{punto(i)["timestamp"]}</time>'
+        f'<extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"><gpxtpx:hr>150</gpxtpx:hr>'
+        f'</gpxtpx:TrackPointExtension></extensions></trkpt>' for i in range(0, len(pts), 5))
+    gpx_reloj = ('<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Mi Fitness"><trk><trkseg>' + pts_gpx + '</trkseg></trk></gpx>').encode()
+    st, d, _ = pedir('/api/fit', gpx_reloj, 'application/octet-stream')
+    guardado = json.loads((W / 'resultado.json').read_text(encoding='utf-8')) if (W / 'resultado.json').exists() else {}
+    ok(st == 200 and isinstance(d, dict) and d.get('pasos') == 3 and guardado.get('pulso_medio') == 150,
+       f"GPX del reloj → resultado: {guardado.get('tiempo_oficial_s')} s, pulso medio {guardado.get('pulso_medio')}, desnivel {guardado.get('desnivel_m')}")
+    st, d, _ = pedir('/api/fit', b'<?xml version="1.0"?><gpx version="1.1"><trk><trkseg><trkpt lat="1" lon="1"/></trkseg></trk></gpx>', 'application/octet-stream')
+    ok(st == 400, f'GPX sin horas ni posiciones: error claro ({st})')
+
     # 7) FIT y archivar
     TABLA = [0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401, 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400]
     def crc(datos, c=0):
@@ -170,6 +194,14 @@ try:
     c['nombre'] = r'Trail \d C:\x'
     (W / 'carreras/2027-ensayo/carrera.json').write_text(json.dumps(c), encoding='utf-8')
     ok(pedir('/2027-ensayo/', panel=False)[0] == 200 and pedir('/carreras/', panel=False)[0] == 200, 'nombre con «\»: archivo e índice siguen funcionando')
+
+    # 8b) sin hora oficial de salida, el crono cuenta desde que se pulsó EMPEZAR en la app, aunque la petición llegue tarde
+    pedir('/api/live', {'action': 'guardar_carrera', 'carrera': {'nombre': 'Sin hora 2027', 'fecha': datetime.now().strftime('%Y-%m-%d'), 'hora_salida': '', 'slug': '2027-sinhora'}})
+    pulsado = datetime.now(timezone.utc) - timedelta(minutes=25)
+    pedir('/api/plan', {'device_id': ID, 'accion': 'empezar', 't': int(pulsado.timestamp() * 1000)}, panel=False)
+    ini = datetime.fromisoformat(publico()['started_at'])
+    ok(abs((ini - pulsado).total_seconds()) < 5, f'EMPEZAR sin cobertura: el crono cuenta desde que se pulsó ({ini:%H:%M:%S})')
+    pedir('/api/live', {'action': 'reset'})
 
     # 9) carrera nueva preparada para hoy: la portada es ella, no el último resultado
     luego = (datetime.now().astimezone() + timedelta(minutes=30))

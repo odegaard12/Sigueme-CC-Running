@@ -611,8 +611,23 @@ class MainActivity : Activity() {
                 "3.  Busca «Sígueme CC» en la lista y actívala.\n" +
                 "4.  Vuelve aquí y prueba el aviso.\n\n" +
                 "Si no sale en la lista, pulsa antes «Probar aviso» una vez: la lista solo enseña las apps que ya han mandado una notificación. " +
-                "Los nombres de los menús cambian un poco según la versión.",
+                "Los nombres de los menús cambian un poco según la versión." + consejoMarca(pb.second) + consejoMovil(),
             *botones.toTypedArray())
+    }
+
+    /** Lo que suele fallar en cada marca de pulsera o reloj. */
+    private fun consejoMarca(app: String): String = when (app) {
+        "Mi Fitness" -> "\n\nXiaomi Smart Band (8, 8 Pro…): en Mi Fitness deja las notificaciones de apps activadas y pon Mi Fitness SIN restricciones de batería (Ajustes de Android → Apps → Mi Fitness → Batería) y con «Inicio automático». En la banda, sin «No molestar» ni modo sueño."
+        "Huawei Health" -> "\n\nHuawei: en Huawei Health activa las notificaciones de la app y deja Huawei Health sin restricciones de batería."
+        "Zepp", "Zepp Life" -> "\n\nAmazfit: en Zepp → tu reloj → Notificaciones y recordatorios → Notificaciones de apps → Sígueme CC. Deja Zepp sin restricciones de batería."
+        else -> ""
+    }
+
+    /** Móviles que cierran las apps en segundo plano aunque se lo pidas: lo que hay que tocar. */
+    private fun consejoMovil(): String = when (Build.MANUFACTURER.lowercase(Locale.ROOT)) {
+        "xiaomi", "redmi", "poco" -> "\n\nEn móviles Xiaomi (HyperOS o MIUI) el sistema mata las apps en segundo plano: en Ajustes → Apps → Sígueme CC activa «Inicio automático» y pon el ahorro de batería en «Sin restricciones»."
+        "huawei", "honor" -> "\n\nEn móviles Huawei u Honor: Ajustes → Batería → Inicio de aplicaciones → Sígueme CC → gestionar a mano y activa las tres opciones."
+        else -> ""
     }
 
     private fun accesoNotificaciones(pb: Pair<String, String>) {
@@ -669,7 +684,7 @@ class MainActivity : Activity() {
         // la app no encontraba la ruta y no daba más avisos. Carrera nueva si hace
         // más de 6 h del último km.
         val retomar = System.currentTimeMillis() - prefs.getLong("km_t", 0) < 6 * 3600_000L
-        val e = prefs.edit().putBoolean("empezar_pendiente", true).remove("web_estado")
+        val e = prefs.edit().putBoolean("empezar_pendiente", true).putLong("empezar_t", System.currentTimeMillis()).remove("web_estado")
         if (!retomar) e.putFloat("km", 0f).putInt("aviso", 0).remove("ultimo_aviso").remove("estado_km").remove("meta_t")
         e.apply()
         startForegroundService(servicio)
