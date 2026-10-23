@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.20.5 · 2026-10-23
+- La plantilla del servicio (`despliegue/sigueme.service`) también deja `/home` de
+  solo lectura salvo la carpeta del servidor: `ProtectSystem=strict` no cubre
+  `/home`, y sin `ProtectHome=read-only` el servidor aún podía escribir, po
+  ejemplo, en `~/.ssh`. Comprobado al encerrar el servicio de verdad en las dos Pis.
+
 ## v1.20.4 · 2026-10-23
 - **Invitados:**
   - La purga automática de lo caducado usaba otra copia del módulo de invitados,
