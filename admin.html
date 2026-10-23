@@ -1106,7 +1106,9 @@ async function tryLogin() {
       loginMsg.textContent = '';
       entrar();
     } else {
-      loginMsg.textContent = 'Usuario o clave incorrectos.';
+      let m = 'Usuario o clave incorrectos.';
+      if (res.status === 429 || res.status >= 500) { try { m = (await res.json()).error || m; } catch (e) {} }
+      loginMsg.textContent = m;
       loginMsg.className = 'msg err';
     }
   } catch (e) {

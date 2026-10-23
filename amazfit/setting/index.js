@@ -13,7 +13,7 @@ AppSettingsPage({
       fila([Text({ bold: true, paragraph: true }, 'Sígueme · reloj → web')]),
       fila([TextInput({
         label: 'Dirección del servidor',
-        placeholder: 'https://tu-dominio/api/gps',
+        placeholder: 'https://tu-dominio',
         value: s.getItem('url') || '',
         onChange: v => s.setItem('url', v),
       })]),

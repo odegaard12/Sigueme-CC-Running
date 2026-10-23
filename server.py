@@ -172,6 +172,8 @@ def live_publico():
     d = read_live()
     p = {k: d[k] for k in CAMPOS_PUBLICOS if k in d}
     p["en_seguimiento"] = bool(d.get("livetrack_url"))
+    if not d.get("started_at"):
+        p["lat"] = p["lon"] = None              # sin carrera empezada no se publica dónde está nadie
     # carrera.json "ocultar_m": si la salida o la meta son en casa, la posición
     # no se publica a menos de esos metros de ellas
     ocultar = carrera().get("ocultar_m") or 0
@@ -1077,13 +1079,24 @@ def recibir_gps(puntos):
             merge_live(extra)
         return
     ultimo = puntos[-1]
+    try:
+        salida_t = datetime.fromisoformat(live["started_at"]).timestamp() if live.get("started_at") else None
+    except ValueError:
+        salida_t = None
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
     # había ninguna, y la llegada a meta la necesita (km mínimos). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
+    # ⚠️ y lo de antes de la salida tampoco: con EMPEZAR en casa, los km hasta la
+    # salida (junto a la meta) ya superaban los mínimos y se daba la llegada en la salida
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
     velocidad = None
     for p in puntos:
+        antes_de_salir = salida_t is None or p["t"] < salida_t or (previo is not None and previo[2] < salida_t)
+        if previo and p["t"] > previo[2] and antes_de_salir:
+            previo = [p["lat"], p["lon"], p["t"]]     # referencia al día, sin sumar
+            p["_dist"] = dist
+            continue
         if previo and p["t"] > previo[2]:
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
             v = tramo / max(1.0, p["t"] - previo[2]) * 3600
@@ -1100,15 +1113,20 @@ def recibir_gps(puntos):
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
         p["_dist"] = dist                 # km hechos en este punto (meta dentro del lote)
-    hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
-    patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil", "gps_origen": manda,
+    patch = {"gps_t": ultimo["t"], "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
-    distancia = max(live.get("dist_km") or 0, dist)
+    # la posición publicada es la del último punto BUENO (no la de un salto imposible); solo con la
+    # carrera empezada (un día de prueba no enseña dónde estás) y hasta 15 min después de meta
     try:
-        salida_t = datetime.fromisoformat(live["started_at"]).timestamp() if live.get("started_at") else None
+        fin_t = datetime.fromisoformat(live["finished_at"]).timestamp() if live.get("finished_at") else None
     except ValueError:
-        salida_t = None
+        fin_t = None
+    if previo and salida_t is not None and not (fin_t and previo[2] > fin_t + 900):
+        hora = datetime.fromtimestamp(previo[2], timezone.utc).isoformat()
+        patch.update(lat=previo[0], lon=previo[1], gps_at=hora, data_at=hora)
+    distancia = max(live.get("dist_km") or 0, dist)
+    if salida_t is not None:
+        patch["dist_km"] = round(distancia, 2)       # el km hecho: la web lo usa de ancla (antes no se guardaba nunca)
     # ⚠️ antes de la salida no cuenta nada: con EMPEZAR a las 09:45 y la salida
     # junto a la meta, llegar a la salida «desde lejos» se daba por llegada
     # ⚠️ y solo los NUEVOS: si la app reenvía un lote que ya había llegado (se

@@ -139,6 +139,11 @@ function projectOntoRoute(lat, lon) {
   // ultimoKmConocido va en km oficiales; aquí se compara en km de la línea
   const ancla = ultimoKmConocido / (factorKm || 1);
   const cerca = candidatos.filter(c => c.distKm <= mejorDist + 0.05);
+  // ida y vuelta: en la vuelta el tramo de la ida está igual de cerca (y ganaba por ir antes). Como
+  // en la app: de lo que no va hacia atrás, la PRIMERA pasada (menor km, así tampoco salta a una
+  // pasada posterior por el mismo sitio); si no hay nada por delante, el más cercano al último km
+  const adelante = cerca.filter(c => c.alongKm >= ancla - 0.02);
+  if (adelante.length) return adelante.reduce((a, b) => (b.alongKm < a.alongKm ? b : a));
   let best = cerca[0];
   for (const c of cerca) {
     if (Math.abs(c.alongKm - ancla) < Math.abs(best.alongKm - ancla)) best = c;
@@ -642,7 +647,7 @@ precargado('elevation.json', () => fetch('elevation.json').then(r => r.json()))
 
 // Pendiente del tramo en el que va ahora mismo, sacada del propio perfil.
 function pendienteEn(km) {
-  if (!lastEleData) return '—';
+  if (!lastEleData || !lastEleData.profile || lastEleData.profile.length < 2) return '—';
   const perfil = lastEleData.profile;
   const maxD = perfil[perfil.length - 1].d;
   const i = Math.min(perfil.length - 1, Math.max(1, Math.round(km / maxD * (perfil.length - 1))));
@@ -666,6 +671,7 @@ function perfilSiCambia(km) {
 }
 
 function drawElevationChart(profile, minEle, maxEle) {
+  if (!profile || profile.length < 2) return;      // GPX sin altura: no hay perfil que dibujar
   const canvas = document.getElementById('elevation-chart');
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;

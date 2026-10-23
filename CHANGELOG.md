@@ -4,6 +4,26 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.21.0 · 2026-10-23
+- **Privacidad:** sin EMPEZAR (un día de prueba, o con el móvil en casa) la web
+  ya no publica tu posición, y 15 min después de meta deja de moverse. Antes se
+  veía en el mapa aunque el servidor dijera «otro día: la web no cambia».
+- **Meta falsa en la salida:** con EMPEZAR en casa, los km hasta la salida se
+  sumaban; en un recorrido circular superaban los mínimos y la web daba «En meta
+  · 0h 00m» nada más salir. Lo de antes de la salida ya no suma (prueba nueva).
+- **Directo:** en una ida y vuelta el km de la web iba hacia atrás toda la vuelta;
+  un salto imposible del GPS ya no se publica como posición; el km hecho se
+  guarda para quien abre la web a mitad de carrera; un GPX sin altura ya no
+  rompe la animación ni la repetición.
+- **App:** tras meta el seguimiento se para a los 15 min aunque ya no estés sobre
+  la ruta (camino del coche); una línea cortada de la cola ya no estropea la
+  siguiente.
+- **Panel:** bloqueado por intentos o servidor sin clave ya no se anuncian como
+  «usuario o clave incorrectos».
+- **Reloj Amazfit:** vale con escribir el dominio (se completa con `/api/gps`; antes
+  no llegaba ningún punto), la cola se guarda tras cada envío (sin reenvíos
+  repetidos) y colores del diseño cartel.
+
 ## v1.20.5 · 2026-10-23
 - La plantilla del servicio (`despliegue/sigueme.service`) también deja `/home` de
   solo lectura salvo la carpeta del servidor: `ProtectSystem=strict` no cubre

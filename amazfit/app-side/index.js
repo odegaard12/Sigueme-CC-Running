@@ -37,7 +37,9 @@ AppSideService(BaseSideService({
   async subir() {
     if (subiendo || !pendientes.length) return
     // sin dirección por defecto: cada uno pone la de SU web (antes iba a la del autor)
-    const url = (this.settings.getItem('url') || '').trim()
+    // vale con escribir solo el dominio: se completa con /api/gps (antes, sin él, no llegaba ningún punto)
+    let url = (this.settings.getItem('url') || '').trim().replace(/\/+$/, '')
+    if (url && !/\/api\/gps$/.test(url)) url += '/api/gps'
     const id = (this.settings.getItem('id') || '').trim()
     if (!url || !id) {
       this.settings.setItem('ultimo_error', 'Falta la dirección de tu web o el identificador en Ajustes')

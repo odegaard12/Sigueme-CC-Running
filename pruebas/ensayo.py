@@ -72,6 +72,12 @@ try:
         {'name': 'Avit 1', 'km': 7.5}, {'name': 'Avit 2', 'km': 14, 'principal': True}, {'name': 'Meta', 'km': 21.1}]})
     ok(st == 200, 'preparar: avituallamientos')
 
+    # sin EMPEZAR (un día de prueba, o desde casa): la posición NO sale en la web
+    casa = {'timestamp': (salida - timedelta(hours=3)).astimezone(timezone.utc).isoformat(),
+            'coords': {'latitude': 40.95, 'longitude': -4.15, 'speed': 0, 'accuracy': 5}, 'extras': {'origen': 'app'}}
+    pedir('/api/gps', {'device_id': ID, 'location': [casa]}, panel=False)
+    ok(publico().get('lat') is None, 'sin EMPEZAR: la posición no se publica')
+
     # 2) EMPEZAR desde la app (sin panel)
     st, d, _ = pedir('/api/plan', {'device_id': ID, 'accion': 'empezar'}, panel=False)
     live = publico()

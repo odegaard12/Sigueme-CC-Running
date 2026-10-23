@@ -18,7 +18,7 @@ const almacen = new LocalStorage()
 
 const GRIS = 0x7d8a83
 const BLANCO = 0xf1f3f1
-const VERDE = 0x7fd46a
+const VERDE = 0xd9f24a     // el lima de la web y la app
 const ROJO = 0xe0473a
 
 Page(BasePage({
@@ -51,7 +51,7 @@ Page(BasePage({
     })
     this.w.boton = createWidget(widget.BUTTON, {
       x: px(120), y: px(344), w: px(240), h: px(76), radius: px(38),
-      text: 'Empezar', text_size: px(30), normal_color: 0x1f6b35, press_color: 0x2f8a4a,
+      text: 'Empezar', text_size: px(30), color: 0x0c0f0e, normal_color: 0xd9f24a, press_color: 0xb8d03a,
       click_func: () => this.alternar(),
     })
     this.recuperar()
@@ -122,7 +122,7 @@ Page(BasePage({
     onGesture({ callback: (e) => { if (e === GESTURE_RIGHT) { aviso(); return true } return false } })
     onKey({ callback: (k, e) => { if (k === KEY_BACK && e === KEY_EVENT_CLICK) { aviso(); return true } return false } })
     this.state.reloj = setInterval(() => this.tomarYMandar(), CADA_MS)
-    this.w.boton.setProperty(prop.MORE, { text: 'Parar', normal_color: 0x6b1f1f, press_color: 0x8a2f2f })
+    this.w.boton.setProperty(prop.MORE, { text: 'Parar', color: 0xf1f3f1, normal_color: 0x6b1f1f, press_color: 0x8a2f2f })
     this.pintar()
   },
 
@@ -135,7 +135,7 @@ Page(BasePage({
     resetPageBrightTime()
     resetDropWristScreenOff()
     try { setWakeUpRelaunch({ relaunch: false }); offGesture(); offKey() } catch (e) {}
-    this.w.boton.setProperty(prop.MORE, { text: 'Empezar', normal_color: 0x1f6b35, press_color: 0x2f8a4a })
+    this.w.boton.setProperty(prop.MORE, { text: 'Empezar', color: 0x0c0f0e, normal_color: 0xd9f24a, press_color: 0xb8d03a })
     this.mandar()            // lo que quede en la cola
     this.guardar()
     this.pintar()
@@ -170,6 +170,7 @@ Page(BasePage({
         this.state.cola = this.state.cola.filter(q => !enviados.has(q))
         this.state.enviados += lote.length
         this.state.ultimoOk = Date.now()
+        this.guardar()
       })
       .catch(() => {})       // sin móvil al alcance: se reintenta en la próxima toma
       .finally(() => {
