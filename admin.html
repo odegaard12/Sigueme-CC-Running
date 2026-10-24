@@ -165,7 +165,7 @@
   .paso-sig p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
   .tarjeta.paso-sig .save-btn { width: auto; padding: 0 22px; min-height: 46px; white-space: nowrap; flex: 0 0 auto; }
   #msg { order: 98; }
-  #panel > .quick-actions { order: 99; }
+  .cuerpo > .quick-actions { order: 99; }
   .tarjeta:not([hidden]) { animation: entra 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   .tarjeta.resalta:not([hidden]) { animation: resalta 1.8s ease-out; }
   @keyframes entra { from { opacity: 0; transform: translateY(10px); } }
@@ -196,10 +196,14 @@
   @media (min-width: 1000px) {
     .topbar { max-width: 1240px; margin: 0 auto; padding: 16px 32px 6px; }
     .admin-wrap { max-width: 1240px; padding: 14px 32px 70px; }
-    #panel.abierto { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
-    #panel.abierto > .tarjeta { margin-bottom: 0; }
-    #panel.abierto > .pestanas, #panel.abierto > #msg, #panel.abierto > .quick-actions,
-    #panel.abierto > .paso-sig, #t-prep { grid-column: 1 / -1; }
+    /* los pasos, en una barra lateral que se queda fija; a su derecha el resumen y las tarjetas en dos columnas */
+    #panel.abierto { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+    #panel.abierto > .pestanas { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 6px; margin: 0; }
+    #panel.abierto > .cuerpo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .cuerpo > .tarjeta { margin-bottom: 0; }
+    .cuerpo > .resumen, .cuerpo > #msg, .cuerpo > .quick-actions,
+    .cuerpo > .paso-sig, #t-prep { grid-column: 1 / -1; }
+    .cuerpo > .resumen { margin-bottom: 0; }
     #t-carrera { grid-column: 1; grid-row: span 3; }
     #sec-ruta, #sec-avit, #sec-avisos { grid-column: 2; }
     .howto, ol.guia li { font-size: 0.95rem; }
@@ -208,6 +212,25 @@
     .qr { width: min(260px, 100%); }
   }
   @media (max-width: 519px) { .pestanas button { font-size: 0.76rem; padding: 0 2px; } }
+  /* v1.27.0: el cuerpo del panel y el resumen de arriba */
+  .cuerpo { display: flex; flex-direction: column; min-width: 0; }
+  .resumen { order: -3; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px;
+    animation: entra 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .r-estado { background: var(--campo); color: var(--tinta); border-radius: 8px; padding: 18px 20px; }
+  .r-estado .pill-panel { background: var(--tinta); color: var(--accent); }
+  .r-estado h2 { font: 400 clamp(2rem, 5vw, 3rem)/1 var(--display); text-transform: uppercase; margin: 10px 0 6px; color: var(--tinta); overflow-wrap: anywhere; }
+  .r-estado p { margin: 0; font-weight: 700; }
+  .r-ir { margin-top: 14px; background: var(--tinta); color: var(--campo); border: 0; border-radius: 6px; padding: 14px 22px;
+    font: 400 1.2rem/1 var(--display); text-transform: uppercase; cursor: pointer; transition: transform 0.15s; }
+  .r-ir:active { transform: scale(0.97); }
+  .r-ir:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+  .r-cifras { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .r-cifras div { background: var(--panel); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; justify-content: space-between; }
+  .r-cifras small { color: var(--muted); font-size: 0.85rem; }
+  .r-cifras b { font: 400 1.9rem/1.1 var(--display); color: var(--papel); text-transform: uppercase; }
+  .r-cifras b.falta { color: #f3c969; }
+  @media (max-width: 759px) { .resumen { grid-template-columns: 1fr; } .r-ir { width: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .resumen { animation: none; } }
   /* invitados */
   .inv-sin { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; color: #cdd4cf; font-size: 0.92rem; }
   .inv-sin input { width: 22px; height: 22px; min-height: 0; accent-color: #d9f24a; }
@@ -222,7 +245,7 @@
   .inv-nuevo .btn { margin-top: 8px; }
   .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #d9f24a; user-select: all; margin: 8px 0; }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css">
+<link rel="stylesheet" href="/cartel-panel.css?v=2">
 </head>
 <body>
 <div class="campo-cartel">
@@ -255,6 +278,22 @@
     <button type="button" role="tab" data-tab="mas" data-n="4"><span class="n" aria-hidden="true">4</span><span class="t"><b>Resultado</b><small id="est-mas">Subir el FIT y archivar</small></span></button>
     <button type="button" role="tab" data-tab="rutas" data-n="5"><span class="n" aria-hidden="true">5</span><span class="t"><b>Rutas</b><small id="est-rutas">Invitados y rutas públicas</small></span></button>
   </nav>
+
+  <div class="cuerpo">
+  <section class="resumen" id="resumen" aria-label="Resumen de la carrera">
+    <div class="r-estado">
+      <span class="pill-panel" id="r-pill"></span>
+      <h2 id="r-nombre"></h2>
+      <p id="r-linea"></p>
+      <button type="button" class="r-ir" id="r-ir"></button>
+    </div>
+    <div class="r-cifras">
+      <div><small>Listo</small><b id="r-listo">–</b></div>
+      <div><small>Móvil</small><b id="r-movil">–</b></div>
+      <div><small>Avisos a la pulsera</small><b id="r-avisos">–</b></div>
+      <div><small>Ruta</small><b id="r-ruta">–</b></div>
+    </div>
+  </section>
 
   <div class="tarjeta" id="t-empezar" data-tab="hoy">
     <h2>El día de la carrera</h2>
@@ -581,6 +620,7 @@
     <a class="btn" href="/inicio">← Volver a la portada</a>
     <button class="btn" id="salir">Cerrar sesión</button>
   </div>
+  </div>
 </div>
 
 <script src="lib/qrcode-generator-1.4.4.js"></script>
@@ -639,6 +679,28 @@ fetch('carrera.json').then(r => r.ok ? r.json() : null).then(c => {
 }).catch(() => {});
 $('hora-salida').addEventListener('input', () => { horaTocada = true; });
 
+// ---------- resumen de arriba: estado, botón y cifras (todo con textContent) ----------
+let heroEstado = 'previo', heroPrep = null;
+function pintarResumen() {
+  const p = (heroPrep && heroPrep.p) || {};
+  const km = v => v != null ? String(v).replace('.', ',') : '';
+  const pill = $('r-pill');
+  pill.textContent = heroEstado === 'fin' ? 'En meta' : heroEstado === 'vivo' ? 'En carrera' : 'Sin empezar';
+  $('r-nombre').textContent = p.nombre || 'Sin nombre';
+  let dia = '';
+  if (p.fecha) { const d = new Date(p.fecha + 'T12:00:00'); if (!isNaN(d)) dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); }
+  $('r-linea').textContent = [dia, p.hora_salida ? 'sale a las ' + p.hora_salida : '', p.ruta_km ? km(p.ruta_km) + ' km' : ''].filter(Boolean).join(' · ');
+  const ir = $('r-ir');
+  const destino = heroEstado === 'fin' ? 'mas' : 'hoy';
+  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : 'Ir a empezar ▶';
+  ir.onclick = () => { verPestana(destino); window.scrollTo({ top: 0 }); };
+  if (!heroPrep) return;
+  $('r-listo').textContent = heroPrep.listos + ' / ' + heroPrep.total;
+  const m = $('r-movil'); m.textContent = p.app_at ? 'Conectado' : 'Sin app'; m.classList.toggle('falta', !p.app_at);
+  $('r-avisos').textContent = String(p.avisos || 0);
+  $('r-ruta').textContent = p.ruta_km ? km(p.ruta_km) + ' km' : '—';
+}
+
 function refreshStatus(live) {
   $('status-text').textContent = live.status_label || '—';
   $('est-hoy').textContent = live.finished_at ? 'Carrera terminada' : live.started_at ? 'En directo' : 'Sin empezar';
@@ -646,6 +708,8 @@ function refreshStatus(live) {
   const pill = $('pill-panel');
   pill.textContent = live.finished_at ? 'En meta' : live.started_at ? 'En carrera' : 'Sin empezar';
   pill.className = 'pill-panel ' + (live.finished_at ? '' : live.started_at ? 'vivo' : '');
+  heroEstado = live.finished_at ? 'fin' : live.started_at ? 'vivo' : 'previo';
+  pintarResumen();
   // en «Hoy», primero lo que toca: empezar antes de la carrera, el estado durante
   $('t-estado').classList.toggle('primero', !!live.started_at);
   $('t-empezar').classList.toggle('primero', !live.started_at);
@@ -769,6 +833,8 @@ function pintarPreparacion(p) {
   marcarPestana('preparar', listos === pasos.length);
   $('est-movil').textContent = p.app_at ? 'App conectada' : 'Falta instalar la app';
   marcarPestana('movil', !!p.app_at && !!p.id_largo);
+  heroPrep = { p, listos, total: pasos.length };
+  pintarResumen();
   const sig = pasos.find(x => !x.ok && !x.depende);
   const cuadro = $('siguiente');
   cuadro.hidden = false;

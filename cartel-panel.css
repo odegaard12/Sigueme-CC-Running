@@ -14,9 +14,9 @@ body { background: #0c0f0e; background-attachment: scroll; }
 .barra-cartel nav { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
 .barra-cartel nav a { text-decoration: underline; text-underline-offset: 4px; }
 .barra-cartel .marca-cartel { text-transform: uppercase; letter-spacing: 0.02em; }
-.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 20px;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-.campo-cartel .topbar h1 { font: 400 clamp(3.6rem, 14vw, 8rem)/0.94 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
+.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 12px;
+  display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+.campo-cartel .topbar h1 { font: 400 clamp(1.9rem, 5vw, 2.6rem)/1 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
 .campo-cartel .topbar h1 span { color: inherit; }
 .campo-cartel .pill-panel { background: var(--tinta); color: var(--accent); border-color: var(--tinta); font-weight: 700; }
 .campo-cartel .pill-panel.vivo { background: var(--tinta); color: var(--accent); }

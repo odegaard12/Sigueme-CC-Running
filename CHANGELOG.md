@@ -4,6 +4,13 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.27.0 · 2026-10-24
+- **Panel de administración nuevo:**
+  - Cabecera fina (antes, un «ADMIN» gigante que ocupaba un tercio de la pantalla).
+  - En el PC, los cinco pasos van en una barra lateral que se queda fija; en el móvil siguen arriba, en pestañas.
+  - Arriba del todo, el resumen de la carrera: estado, nombre, fecha, hora y km, un botón grande («Ir a empezar»,
+    «Ver el directo» o «Subir el resultado» según toque) y cuatro cifras: listo, móvil, avisos a la pulsera y ruta.
+
 ## v1.26.0 · 2026-10-24
 - **Seguimiento automático:** al abrir una carrera en directo la cámara ya va con el corredor
   (zoom cercano); si arrastras o haces zoom en el mapa, deja de seguir y respeta tu vista.
