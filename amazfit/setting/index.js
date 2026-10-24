@@ -12,10 +12,14 @@ AppSettingsPage({
     return Section({}, [
       fila([Text({ bold: true, paragraph: true }, 'Sígueme · reloj → web')]),
       fila([TextInput({
-        label: 'Dirección del servidor',
+        label: 'Dirección del servidor (o pega el enlace de configuración del panel)',
         placeholder: 'https://tu-dominio',
         value: s.getItem('url') || '',
-        onChange: v => s.setItem('url', v),
+        onChange: v => {
+          // el enlace de configuración del panel trae la dirección y el identificador: se rellenan los dos solos
+          const m = /^(https?:\/\/[^\/#\s]+).*#id=([\w-]{8,100})/.exec((v || '').trim())
+          if (m) { s.setItem('url', m[1] + '/api/gps'); s.setItem('id', m[2]) } else s.setItem('url', v)
+        },
       })]),
       fila([TextInput({
         label: 'Identificador (panel: Móvil → Ver la configuración)',

@@ -448,6 +448,8 @@
       <li><span>En la app, sigue el <b>«Siguiente paso»</b> hasta que ponga «Todo listo».</span></li>
     </ol>
     <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
+    <button class="btn" id="copiar-enlace" type="button" style="margin-top:8px">Copiar el enlace de configuración</button>
+    <div class="howto" style="margin-top:6px">Para configurar sin escanear: pégalo en la miniapp del reloj Amazfit (Zepp → Sígueme CC → Ajustes) o ábrelo en el móvil. Lleva la dirección y el identificador juntos.</div>
     <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
     <div class="howto" style="margin-top:8px">Se hace una sola vez. Solo si generas un identificador nuevo hay que volver a escanear.</div>
   </div>
@@ -998,6 +1000,7 @@ $('guardar-avisos').addEventListener('click', () => accion({ action: 'guardar_av
 
 // código QR para la app: dirección del servidor + identificador
 function pintarQR(id) {
+  window.__gpsId = id;
   if (!id || typeof qrcode !== 'function') { $('qr').textContent = ''; return; }
   const q = qrcode(0, 'M');
   // a una página de esta web (la cámara del móvil abre https; siguemecc:// no siempre):
@@ -1006,6 +1009,14 @@ function pintarQR(id) {
   q.make();
   $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
 }
+
+$('copiar-enlace').onclick = async () => {
+  const id = window.__gpsId;
+  if (!id) { $('msg').textContent = 'Aún no hay identificador'; $('msg').className = 'msg err'; return; }
+  const enlace = location.origin + '/app.html#id=' + encodeURIComponent(id);
+  try { await navigator.clipboard.writeText(enlace); $('msg').textContent = 'Enlace copiado. Pégalo en la miniapp del reloj o ábrelo en el móvil.'; $('msg').className = 'msg ok'; }
+  catch (e) { $('msg').textContent = enlace; $('msg').className = 'msg'; }
+};
 
 // la foto se recorta cuadrada y se reduce a 256 px aquí, en el navegador: al
 // servidor solo llega un PNG pequeño (y sin los datos EXIF de la cámara)

@@ -6,7 +6,7 @@ import hashlib, json, math, os, pathlib, shutil, struct, subprocess, sys, time, 
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from comun import RAIZ, carpeta, gpx_inventado
+from comun import RAIZ, carpeta, gpx_inventado, puerto_libre
 W = carpeta('ensayo')
 ID = 'odg-' + 'e' * 32
 (W / 'gps.clave').write_text(ID + '\n')
@@ -18,9 +18,10 @@ def ok(c, t):
 sal = os.urandom(16)
 env = dict(os.environ, ADMIN_USER='prueba', BIND_HOST='127.0.0.1', PYTHONIOENCODING='utf-8',
            ADMIN_HASH='scrypt:' + sal.hex() + ':' + hashlib.scrypt(b'clave', salt=sal, n=2**14, r=8, p=1, dklen=32).hex())
-srv = subprocess.Popen([sys.executable, 'server.py', '8798'], cwd=W, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+PUERTO = puerto_libre()
+srv = subprocess.Popen([sys.executable, 'server.py', str(PUERTO)], cwd=W, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 import atexit; atexit.register(srv.terminate)   # que un fallo a medias no deje el servidor vivo
-U = 'http://127.0.0.1:8798'
+U = f'http://127.0.0.1:{PUERTO}'
 for _ in range(60):
     try:
         urllib.request.urlopen(U + '/robots.txt', timeout=1); break
@@ -71,6 +72,9 @@ try:
     st, d, _ = pedir('/api/live', {'action': 'guardar_avituallamientos', 'avituallamientos': [
         {'name': 'Avit 1', 'km': 7.5}, {'name': 'Avit 2', 'km': 14, 'principal': True}, {'name': 'Meta', 'km': 21.1}]})
     ok(st == 200, 'preparar: avituallamientos')
+    r = urllib.request.urlopen(U + '/ruta-carrera.gpx'); g = r.read().decode()
+    ok(r.status == 200 and 'gpx' in r.headers.get('Content-Type', '') and g.count('<wpt') >= 3 and g.count('<trkpt') > 100,
+       f"GPX público de la carrera: {g.count('<trkpt')} puntos y {g.count('<wpt')} puntos de control")
 
     # sin EMPEZAR (un día de prueba, o desde casa): la posición NO sale en la web
     casa = {'timestamp': (salida - timedelta(hours=3)).astimezone(timezone.utc).isoformat(),
@@ -170,6 +174,8 @@ try:
     ok(st == 200 and isinstance(d, dict) and d.get('pasos') == 3, f"FIT → resultado: {d.get('resultado') if isinstance(d, dict) else d}")
     st, d, _ = pedir('/api/live', {'action': 'archivar'})
     ok(st == 200 and d.get('archivada') == '2027-ensayo' and (W / 'carreras/2027-ensayo/resultado.json').exists(), f"archivada en /{d.get('archivada') if isinstance(d, dict) else d}/")
+    r = urllib.request.urlopen(U + '/2027-ensayo/ruta-carrera.gpx')
+    ok(r.status == 200 and b'<trkpt' in r.read(), 'el GPX de una carrera archivada también se descarga')
     live = publico()
     ok(not live.get('started_at') and live.get('status_label') == 'Sin iniciar', 'tras archivar: portada a cero')
     r = sin_red.open(U + '/')

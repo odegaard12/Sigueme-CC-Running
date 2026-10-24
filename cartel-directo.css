@@ -98,3 +98,28 @@ footer a { color: var(--papel); }
 
 /* el botón de la ficha del corredor dice «Mi ficha» también en el móvil (cabe a partir de 380 px) */
 @media (min-width: 380px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }
+
+/* cabecera compacta: la mitad de alta que antes; el mapa y las cifras, antes en pantalla */
+.cd-cab { padding-bottom: 12px; }
+.cd-titulo { font-size: clamp(2.2rem, 5.2vw, 4rem); line-height: 1; margin: 2px 0 0; }
+.cd-datos { padding-top: 10px; gap: 8px 22px; }
+.cd-datos .pill-estado { font-size: 0.78rem; padding: 6px 12px; }
+.cd-ruta b { font-size: 1.7rem; }
+.cd-ruta span { font-size: 0.78rem; }
+.cd-cab .live-updated { margin-top: 8px; font-size: 0.9rem; }
+@media (max-width: 560px) {
+  .cd-titulo { font-size: clamp(1.9rem, 8.4vw, 2.5rem); }
+  .cd-datos { gap: 6px 14px; padding-top: 8px; }
+  .cd-ruta b { font-size: 1.35rem; }
+  .cd-ruta span { font-size: 0.68rem; gap: 5px; }
+}
+
+/* animaciones con sentido: la cifra o el estado que cambian «laten» una vez; el aviso de conexión entra y sale */
+@keyframes cambio-cifra { 0% { background: #34441a; transform: scale(1.025); } 100% { background: var(--panel); transform: none; } }
+@keyframes cambio-estado { 0% { opacity: 0.35; transform: scale(0.92); } 100% { opacity: 1; transform: none; } }
+.metrica.cambia { animation: cambio-cifra 0.8s ease-out; }
+.pill-estado.cambia { animation: cambio-estado 0.5s ease-out; }
+.aviso-conexion { transition: opacity 0.28s ease, transform 0.28s ease; background: var(--tinta); color: var(--campo); border: 2px solid var(--campo); font-weight: 800; }
+.aviso-conexion:not(.visible) { opacity: 0; transform: translate(-50%, -14px); pointer-events: none; }
+.aviso-conexion.ok { background: var(--campo); color: var(--tinta); }
+@media (prefers-reduced-motion: reduce) { .metrica.cambia, .pill-estado.cambia { animation: none; } }

@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import date, timedelta
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from comun import RAIZ, carpeta, gpx_inventado
+from comun import RAIZ, carpeta, gpx_inventado, puerto_libre
 W = carpeta('invitados')
 _c = json.loads((W / 'carrera.json').read_text(encoding='utf-8')); _c['fecha'] = '2099-01-01'
 (W / 'carrera.json').write_text(json.dumps(_c), encoding='utf-8')     # una carrera lejana: la portada es la de rutas
@@ -20,7 +20,7 @@ def ok(c, t):
 sal = os.urandom(16)
 env = dict(os.environ, ADMIN_USER='prueba', BIND_HOST='127.0.0.1', PYTHONIOENCODING='utf-8',
            ADMIN_HASH='scrypt:' + sal.hex() + ':' + hashlib.scrypt(b'clave', salt=sal, n=2**14, r=8, p=1, dklen=32).hex())
-PORT = 8795
+PORT = puerto_libre()
 srv = subprocess.Popen([sys.executable, 'server.py', str(PORT)], cwd=W, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 atexit.register(srv.terminate)
 U = f'http://127.0.0.1:{PORT}'

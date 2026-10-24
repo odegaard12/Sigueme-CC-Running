@@ -1,10 +1,10 @@
 """Lo común de las pruebas: una carpeta limpia con la web del repo y un GPX
 inventado (nunca una ruta real: el repo es público)."""
-import math, pathlib, shutil, tempfile
+import math, pathlib, shutil, socket, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
-       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'mis-rutas.js', 'inicio.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css')
+       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'mis-rutas.js', 'inicio.html', 'pulseras.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css')
 
 
 def carpeta(prefijo, datos=('carrera.json',)):
@@ -33,3 +33,11 @@ def gpx_inventado(km=100, lat0=40.6, lon0=-4.2):
                    f'<ele>{ele:.1f}</ele></trkpt>')
     return ('<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>'
             + ''.join(pts) + '</trkseg></trk></gpx>').encode()
+
+
+def puerto_libre():
+    s = socket.socket()
+    s.bind(('127.0.0.1', 0))
+    p = s.getsockname()[1]
+    s.close()
+    return p

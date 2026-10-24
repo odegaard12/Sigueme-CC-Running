@@ -1220,6 +1220,7 @@ function gestionarSW() {
   }
 }
 
+let avisoVisto = false, avisoTimer = 0;
 function avisoConexion(mal) {
   let el = document.getElementById('aviso-conexion');
   if (!el) {
@@ -1227,15 +1228,24 @@ function avisoConexion(mal) {
     el.id = 'aviso-conexion';
     el.className = 'aviso-conexion';
     el.setAttribute('role', 'status');
-    el.hidden = true;
     document.body.appendChild(el);
   }
+  clearTimeout(avisoTimer);
   if (mal) {
     const t = ultimoLiveOk || (liveGuardado() || {}).t;
     el.textContent = (navigator.onLine === false ? 'Sin conexión' : 'No llegan datos') +
       (t ? ' · último dato hace ' + haceTxt(t) : '') + ' · reintentando…';
+    el.classList.remove('ok');
+    el.classList.add('visible');
+    avisoVisto = true;
+  } else if (avisoVisto) {                       // volvió la red: se avisa un momento y se va solo
+    el.textContent = 'Conexión recuperada ✓';
+    el.classList.add('ok', 'visible');
+    avisoVisto = false;
+    avisoTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+  } else {
+    el.classList.remove('visible');
   }
-  el.hidden = !mal;
 }
 
 function pollLive() {
@@ -1639,3 +1649,20 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) poll
 window.addEventListener('online', pollLive);
 window.addEventListener('offline', () => avisoConexion(true));
 window.addEventListener('offline', () => avisoConexion(true));
+
+// las cifras y el estado «laten» una vez cuando cambian: se nota que la web está viva (sin movimiento si el sistema lo pide).
+// El crono, que cambia cada segundo, no late.
+if (!QUIETO) {
+  const vistos = new WeakMap();
+  new MutationObserver(muts => {
+    for (const m of muts) {
+      const el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+      const caja = el && el.closest && el.closest('.metrica, #pill-estado');
+      if (!caja || caja.dataset.tile === 'time') continue;
+      const t = caja.textContent;
+      if (vistos.get(caja) === t) continue;
+      if (vistos.has(caja)) { caja.classList.remove('cambia'); void caja.offsetWidth; caja.classList.add('cambia'); }
+      vistos.set(caja, t);
+    }
+  }).observe(document.body, { childList: true, characterData: true, subtree: true });
+}

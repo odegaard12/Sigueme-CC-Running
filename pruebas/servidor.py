@@ -3,7 +3,7 @@ avisos) y plan para la app. Servidor local en una carpeta limpia."""
 import hashlib, json, os, pathlib, shutil, subprocess, sys, time, urllib.request, urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from comun import RAIZ, carpeta, gpx_inventado
+from comun import RAIZ, carpeta, gpx_inventado, puerto_libre
 W = carpeta('servidor')
 ID = 'odg-' + 'f' * 32
 (W / 'gps.clave').write_text(ID + '\n')
@@ -15,7 +15,7 @@ def ok(c, t):
 sal = os.urandom(16)
 env = dict(os.environ, ADMIN_USER='prueba', BIND_HOST='127.0.0.1', PYTHONIOENCODING='utf-8',
            ADMIN_HASH='scrypt:' + sal.hex() + ':' + hashlib.scrypt(b'clave', salt=sal, n=2**14, r=8, p=1, dklen=32).hex())
-PORT = 8794
+PORT = puerto_libre()
 srv = subprocess.Popen([sys.executable, 'server.py', str(PORT)], cwd=W, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 import atexit; atexit.register(srv.terminate)   # que un fallo a medias no deje el servidor vivo
 U = f'http://127.0.0.1:{PORT}'
@@ -286,6 +286,9 @@ try:
     # tope del cuerpo
     st, d, _ = pedir('/api/live', {'action': 'guardar_avisos', 'avisos': [{'id': 1, 'texto': 'x' * 100}] * 700})
     ok(st == 413, f'cuerpo de más de 64 KB: {st}')
+    # la guía de pulseras y relojes
+    r = urllib.request.urlopen(U + '/pulseras'); html = r.read()
+    ok(r.status == 200 and b'Xiaomi' in html and b'Huawei' in html and b'Amazfit' in html, '/pulseras: la guía de pulseras y relojes')
     # el service worker se sirve como JavaScript y no es una puerta a nada más
     r = urllib.request.urlopen(U + '/sw.js')
     ok(r.status == 200 and 'javascript' in r.headers.get('Content-Type', '') and b'sigueme-v' in r.read(), 'sw.js: se sirve como JavaScript')

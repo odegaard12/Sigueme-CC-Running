@@ -4,6 +4,15 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.25.0 · 2026-10-24
+- **Cabecera compacta** en la página en directo: ocupa mucho menos alto y deja el mapa a la vista.
+- **Animaciones con sentido:** los números se resaltan un momento cuando cambian.
+- **Cortes y reconexión:** aviso «Sin conexión · último dato hace N min · reintentando…» y, al volver la red, «Conexión recuperada ✓», que se va solo.
+- **GPX de la ruta público** (`/ruta-carrera.gpx`, también de carreras archivadas) para cargarlo en cualquier reloj.
+- **Guía «Pulseras y relojes»** (`/pulseras`): Xiaomi, Huawei, Amazfit y el resto.
+- **Sincronizar sin teclear claves:** el panel copia un enlace de configuración y la miniapp de Amazfit lo acepta pegado.
+- Las pruebas usan puertos libres.
+
 ## v1.24.0 · 2026-10-24
 - **La página en directo, más clara:**
   - **Lo importante, donde se ve:** la frase de estado («Sin cobertura desde las

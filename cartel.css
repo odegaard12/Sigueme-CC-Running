@@ -81,3 +81,16 @@ details.como p { max-width: 62ch; color: #dfe6d0; }
 .entra { opacity: 0; transform: translateY(14px); animation: entra .45s cubic-bezier(.2, .7, .2, 1) forwards; animation-delay: calc(var(--i, 0) * 55ms); }
 @keyframes entra { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .entra { animation: none; opacity: 1; transform: none; } .fila, .boton, .traza { transition: none; } html { scroll-behavior: auto; } }
+
+/* la guía de pulseras y relojes */
+.pul { max-width: 1100px; margin: 0 auto; padding: 0 22px 36px; }
+.pul h2.titulo { margin-left: 0; margin-right: 0; }
+.cuatro, .pasos-guia { padding-left: 1.2em; margin: 10px 0 0; } .cuatro li, .pasos-guia li { margin: 8px 0; max-width: 70ch; }
+.marcas { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; margin-top: 12px; }
+.marca-tarj { background: var(--oscuro); border-radius: 6px; padding: 18px; }
+.marca-tarj h3 { font: 400 1.9rem/1 var(--display); text-transform: uppercase; margin: 0; }
+.marca-tarj .modelos { color: var(--apagado); font-size: 0.9rem; margin: 4px 0 6px; }
+.marca-tarj dl { margin: 0; } .marca-tarj dt { font-weight: 800; margin-top: 12px; display: flex; gap: 8px; align-items: center; } .marca-tarj dd { margin: 3px 0 0; color: #dfe6d0; font-size: 0.95rem; }
+.si, .no { font: 400 0.95rem/1 var(--display); text-transform: uppercase; padding: 3px 7px; border-radius: 3px; }
+.si { background: var(--campo); color: var(--tinta); } .no { background: transparent; color: var(--apagado); box-shadow: inset 0 0 0 2px var(--apagado); }
+.pul .nota { color: var(--apagado); font-size: 0.9rem; max-width: 70ch; }

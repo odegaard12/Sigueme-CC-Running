@@ -1525,6 +1525,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._publico_get(crudo)
         if crudo == "/inicio":
             return self._pagina("inicio.html")
+        if crudo == "/pulseras":
+            return self._pagina("pulseras.html")
+        if crudo == "/ruta-carrera.gpx":
+            return self._gpx_publico(ROOT)
         m_ruta = re.fullmatch(r"/r/([0-9a-f]{12})", crudo)
         if m_ruta:
             return self._pagina_ruta(m_ruta.group(1))
@@ -1607,6 +1611,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         si no, el de la web (app.js, estilos, librería)."""
         if nombre in ("", "index.html"):
             return self._index_resultado(os.path.join(ARCHIVO_DIR, slug), slug)
+        if nombre == "ruta-carrera.gpx":
+            return self._gpx_publico(os.path.join(ARCHIVO_DIR, slug), slug)
         if ".." in nombre or nombre.startswith(".") or os.path.splitext(nombre)[1].lower() not in EXTENSIONES_PUBLICAS:
             return self.send_error(404)
         propio = os.path.join(ARCHIVO_DIR, slug, nombre)
@@ -2012,6 +2018,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         else:
             titulo, desc = "Ruta no disponible", "Esta ruta ya no está disponible."
         return self._pagina("ruta.html", {"TITULO": titulo, "DESC": desc}, 200 if d else 404)
+
+    def _gpx_publico(self, base, slug=""):
+        """La ruta de la carrera (la de hoy o una archivada) como GPX para el reloj, con los avituallamientos y las
+        subidas como puntos de control. Es pública: la ruta ya se ve en el mapa de la web."""
+        try:
+            cuerpo = herramienta("gpx_reloj").desde_ficheros(base).encode("utf-8")
+        except (ValueError, OSError):
+            return self.send_error(404)
+        nombre = re.sub(r"[^a-z0-9-]+", "-", (slug or slug_de(carrera()) or "ruta").lower()).strip("-") or "ruta"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{nombre}-reloj.gpx"')
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "public, max-age=300")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
 
     def _gpx_reloj(self):
         """La ruta con altitud y los avituallamientos y subidas como puntos de control,

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d9f24a">
+<title>Pulseras y relojes · {{SITIO}}</title>
+<meta name="description" content="Qué puede hacer cada pulsera o reloj (Xiaomi, Huawei, Amazfit, Garmin, Coros) con Sígueme CC y cómo se configura.">
+<link rel="icon" href="/favicon.png?v=4">
+<link rel="stylesheet" href="/cartel.css">
+</head>
+<body class="cartel">
+<div class="campo">
+  <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Admin</a></nav></header>
+  <h1 class="gigante">Pulseras y relojes</h1>
+  <div class="bajo"><p>Qué puede hacer cada una con Sígueme CC y cómo se configura.</p><p>Xiaomi · Huawei · Amazfit · Garmin · Coros</p></div>
+</div>
+<main class="pul">
+  <h2 class="titulo">Cuatro cosas distintas</h2>
+  <ul class="cuatro">
+    <li><b>Avisos en la pulsera.</b> La app Sígueme CC lanza cada aviso (subida, avituallamiento, lo que queda) como una notificación del móvil, y la app de tu pulsera la repite en la muñeca. Funciona sin cobertura.</li>
+    <li><b>Ruta en el reloj.</b> Un GPX con la ruta, su altura y, como puntos de control, los avituallamientos y las subidas. Se importa con la app de tu reloj.</li>
+    <li><b>Seguimiento desde el reloj.</b> Que el propio reloj mande la posición y el pulso a la web (solo Amazfit, con su miniapp).</li>
+    <li><b>Resultado al terminar.</b> Subes al panel el fichero de tu actividad (GPX o FIT) y la web enseña tiempo, pasos por avituallamiento y la repetición de la carrera.</li>
+  </ul>
+
+  <h2 class="titulo">Cada marca</h2>
+  <div class="marcas">
+    <article class="marca-tarj">
+      <h3>Xiaomi</h3><p class="modelos">Smart Band 8, 8 Pro y otras · app Mi Fitness</p>
+      <dl>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Mi Fitness los pasa a la banda. En Mi Fitness activa las notificaciones de apps (que salga «Sígueme CC») y deja Mi Fitness sin restricciones de batería.</dd>
+        <dt><span class="no">No</span> Ruta en el reloj</dt><dd>Las bandas Xiaomi no importan rutas GPX. Graba la carrera en la propia banda.</dd>
+        <dt><span class="no">No</span> Seguimiento desde la banda</dt><dd>Lo hace el móvil con la app Sígueme CC.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>Mi Fitness permite pedir tus datos: llega un fichero con un enlace GPX por entreno. Sube ese GPX al panel (tiene que traer la hora de cada punto).</dd>
+      </dl>
+    </article>
+    <article class="marca-tarj">
+      <h3>Huawei</h3><p class="modelos">Watch Fit 4, GT, Band… · app Huawei Health</p>
+      <dl>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Huawei Health los pasa al reloj. Activa las notificaciones de la app y deja Huawei Health sin restricciones de batería.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>Huawei Health → Yo → Mi ruta → Importar ruta, elige el GPX y, dentro de la ruta, «Enviar al reloj». En el reloj: Entrenamiento → ajustes → Rutas.</dd>
+        <dt><span class="no">No</span> Seguimiento desde el reloj</dt><dd>Lo hace el móvil.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>El GPX o el FIT que exporte tu app o Strava, con la hora de cada punto.</dd>
+      </dl>
+    </article>
+    <article class="marca-tarj">
+      <h3>Amazfit</h3><p class="modelos">GTR 4, GTS 4, Balance… · app Zepp</p>
+      <dl>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Zepp → tu reloj → Notificaciones y recordatorios → Notificaciones de apps → Sígueme CC.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>Abre el GPX con Zepp (7.2 o más) → «Guardar ruta» → «Enviar al reloj». En el reloj: deporte al aire libre → ajustes → Navegación.</dd>
+        <dt><span class="si">Sí</span> Seguimiento desde el reloj</dt><dd>Miniapp de Zepp OS 3 (hoy en modo desarrollador). Se configura pegando el enlace de configuración del panel, sin escribir nada más.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>GPX o FIT desde Zepp o Strava.</dd>
+      </dl>
+    </article>
+    <article class="marca-tarj">
+      <h3>Garmin y Coros</h3><p class="modelos">Garmin Connect · Coros</p>
+      <dl>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Si tu reloj muestra las notificaciones del móvil, llegan igual.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>Importa el mismo GPX con Garmin Connect o con la app de Coros.</dd>
+        <dt><span class="no">No</span> Seguimiento desde el reloj</dt><dd>Lo hace el móvil.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>El FIT original de tu actividad.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <h2 class="titulo">Si no llegan los avisos</h2>
+  <ol class="pasos-guia">
+    <li>En la app Sígueme CC pulsa «Probar aviso» una vez: así la app aparece en la lista de apps de la pulsera.</li>
+    <li>En la app de la pulsera, activa las notificaciones de «Sígueme CC».</li>
+    <li>Quita el ahorro de batería a Sígueme CC y a la app de la pulsera. En móviles Xiaomi, Huawei u Honor, activa además el inicio automático.</li>
+    <li>Sin «No molestar» ni modo sueño en la pulsera.</li>
+  </ol>
+  <p class="nota">Los menús cambian según el modelo y la versión de la app de tu pulsera. Si una opción no está donde decimos, busca el nombre parecido.</p>
+  <div class="acciones"><a class="boton" href="/ruta-carrera.gpx" download>Descargar la ruta de la carrera (GPX)</a><a class="boton claro" href="/inicio">Ver las rutas</a></div>
+</main>
+<footer class="pie"><span>{{SITIO}}</span><small>Esta guía sale de las instrucciones de cada marca; los menús pueden variar.</small></footer>
+</body>
+</html>
