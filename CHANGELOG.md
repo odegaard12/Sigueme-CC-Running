@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.25.1 · 2026-10-24
+- **Seguimiento más fluido:** con 🎯 la cámara va pegada al corredor en cada fotograma (antes, un
+  movimiento por segundo que se reiniciaba a mitad y daba tirones); la foto se mueve a ~30 fps.
+- **La portada no repite la carrera:** si una ruta publicada es la misma que una carrera
+  archivada (mismo nombre y distancia), solo sale la carrera.
+
 ## v1.25.0 · 2026-10-24
 - **Cabecera compacta** en la página en directo: ocupa mucho menos alto y deja el mapa a la vista.
 - **Animaciones con sentido:** los números se resaltan un momento cuando cambian.

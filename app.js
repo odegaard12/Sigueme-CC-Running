@@ -887,12 +887,10 @@ function seguirCorredor(pos) {
   if (!siguiendo || !mapReady || !pos) return;
   // si está haciendo zoom o girando con los dedos, no pelearse con su gesto
   if (map3d.isZooming() || map3d.isRotating()) return;
-  const ahora = performance.now();
-  // una vez por segundo con un deslizamiento de un segundo: la cámara va
-  // continua y no se fuerza al móvil a redibujar el relieve 60 veces/s
-  if (ahora - ultimoSeguimiento < 1000) return;
-  ultimoSeguimiento = ahora;
-  map3d.easeTo({ center: [pos[1], pos[0]], duration: 1000, easing: t => t });
+  // en el mismo fotograma que la foto: la foto queda quieta en pantalla y el mapa se desliza por debajo, sin los
+  // tirones de un easeTo por segundo que se reiniciaba a mitad de camino
+  if (performance.now() < ultimoSeguimiento) return;     // el botón 🎯 acaba de lanzar su propio viaje
+  map3d.jumpTo({ center: [pos[1], pos[0]] });
 }
 
 function recenterOnRider() {
@@ -1085,7 +1083,7 @@ function moverSuave(km, pos, pegado) {
     // a ritmo de bici la foto avanza unos pocos píxeles por segundo: con 20
     // fotogramas por segundo se ve igual de suave y el móvil recompone la
     // pantalla un tercio de veces (batería durante toda la carrera)
-    if (t < 1 && ahora - ultimoFotograma < 50 && duracion > 2000) {
+    if (t < 1 && ahora - ultimoFotograma < 33 && duracion > 2000) {
       animacion = requestAnimationFrame(paso);
       return;
     }

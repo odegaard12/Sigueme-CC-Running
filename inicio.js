@@ -42,7 +42,10 @@ async function json(url) { try { const r = await fetch(url); return r.ok ? await
 (async () => {
   const [rutas, carreras] = await Promise.all([json('/api/rutas-publicas'), json('/api/carreras')]);
   const lista = $('rutas');
-  const rs = (rutas && rutas.rutas) || [];
+  const hechas0 = (carreras && carreras.carreras) || [];
+  const clave = (n, d) => String(n || '').trim().toLowerCase() + '|' + Math.round(d || 0);
+  const archivadas = new Set(hechas0.map(c => clave(c.nombre, c.distancia_km)));
+  const rs = ((rutas && rutas.rutas) || []).filter(r => !archivadas.has(clave(r.nombre, r.distancia_km)));
   rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [String(r.desnivel_m), 'D+'], i)));
   $('sin-rutas').hidden = rs.length > 0;
   if (carreras) {
