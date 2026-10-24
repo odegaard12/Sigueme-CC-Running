@@ -90,3 +90,11 @@ footer a { color: var(--papel); }
 .cd-cab { overflow-x: clip; }
 .cd-ruta span { flex: 0 0 auto; white-space: nowrap; }
 .estado-carrera:empty { display: none; }
+
+/* la frase de estado (última actualización, sin cobertura…) va en la cabecera, junto al estado */
+.cd-cab .live-updated { margin: 12px clamp(16px, 3vw, 36px) 0; padding: 0; text-align: left; color: var(--tinta); font-weight: 700; font-size: 0.95rem; line-height: 1.35; max-width: 60ch; }
+.cd-cab .live-updated:empty { display: none; }
+.cd-cab { padding-bottom: 18px; }
+
+/* el botón de la ficha del corredor dice «Mi ficha» también en el móvil (cabe a partir de 380 px) */
+@media (min-width: 380px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }

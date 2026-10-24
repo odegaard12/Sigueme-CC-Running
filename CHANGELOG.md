@@ -4,6 +4,26 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.24.0 · 2026-10-24
+- **La página en directo, más clara:**
+  - **Lo importante, donde se ve:** la frase de estado («Sin cobertura desde las
+    11:57, en el km 9,0. A su ritmo estará ahora hacia el km 12 (la marca
+    transparente del mapa)») pasa de debajo del mapa, fuera de pantalla en el
+    móvil, a la cabecera, junto al estado.
+  - **El botón de la ficha dice «Mi ficha»** también en el móvil (antes, un círculo
+    sin texto) cuando cabe (desde 380 px de ancho).
+  - **El perfil de altura lleva escala:** «Altura 900–1020 m · ruta 21,1 km».
+  - **Los números, iguales en todas partes:** 21,1 km (antes «21,10» arriba y
+    «21,1» en el resto) y 103,36 si hace falta; «tiempo de carrera» en vez de
+    «tiempo».
+  - **Antes de salir**, dice que la página se actualiza sola.
+- **Mis rutas:** el texto de entrada separa lo del invitado (su acceso caduca y, pasada
+  la fecha, se borra todo lo suyo) de lo del dueño; ya dentro, el invitado ve esa
+  misma advertencia; y el botón de «elegir fichero» tiene el diseño de la web, en
+  Mis rutas y en el panel (antes, el gris del navegador).
+- Capturas del repo al día (página en directo, datos de la carrera con la casilla
+  nueva y guía).
+
 ## v1.23.0 · 2026-10-23
 - **La web en directo con cortes de cobertura:**
   - **El último dato se guarda en el móvil de quien mira** (siempre activo): si abre

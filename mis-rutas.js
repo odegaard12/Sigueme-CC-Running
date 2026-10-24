@@ -42,7 +42,7 @@ $('salir').addEventListener('click', async () => { try { await post('/logout', {
 // ---- lista de rutas
 async function lista() {
   const d = await api('/rutas');
-  $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '.');
+  $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '; después se borra todo lo tuyo.');
   $('salir').hidden = !!d.dueno;
   const cont = $('lista'); cont.textContent = '';
   $('lista-vacia').hidden = d.rutas.length > 0;

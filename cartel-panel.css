@@ -41,3 +41,7 @@ a { color: var(--accent); }
 
 /* casillas y selectores con el lima de la marca (antes salían en el azul del sistema) */
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+
+/* el botón de «elegir fichero» con el diseño de la web (antes, el gris del navegador) */
+input[type="file"]::file-selector-button { background: var(--accent); color: var(--tinta); border: 0; border-radius: 4px; padding: 8px 14px; margin-right: 12px; font: inherit; font-weight: 800; cursor: pointer; }
+input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }

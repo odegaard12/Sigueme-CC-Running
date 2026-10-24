@@ -49,7 +49,7 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=1">
+<link rel="stylesheet" href="/cartel-directo.css?v=2">
 </head>
 <body>
 <header class="cd-cab">
@@ -74,6 +74,7 @@
       <span><b id="stat-limite">12 h</b> <i>para completar</i></span>
     </div>
   </div>
+  <p class="live-updated" id="live-updated" aria-live="polite"></p>
 </header>
 
 <section class="ficha" id="ficha" hidden>
@@ -132,7 +133,7 @@
     <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
     <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
     <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
-    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo</span></div>
+    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo de carrera</span></div>
   </div>
   <div class="progreso" data-tile="dist" aria-hidden="true"><i id="progreso-barra"></i></div>
   <div class="metricas-sec">
@@ -152,7 +153,6 @@
   </div>
 </section>
 
-<p class="live-updated" id="live-updated"></p>
 </div>
 </div>
 
@@ -162,6 +162,6 @@
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=84"></script>
+<script src="app.js?v=85"></script>
 </body>
 </html>

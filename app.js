@@ -9,6 +9,8 @@ let aidStations = [];
 // números en formato español: 102,1 km, 11,8 km/h
 const num = (v, dec = 1) => (v == null || v === '' || isNaN(v)) ? '—'
   : Number(v).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const numKm = v => (v == null || v === '' || isNaN(v)) ? '—'
+  : Number(v).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.round(v));
 
 // Datos pedidos desde el <head> (index.html) para no esperar a la librería
@@ -568,7 +570,7 @@ precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
-    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
+    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = numKm(props.distance_km);
     if (!document.getElementById('stat-gain').dataset.real) document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
     totalRouteKm = props.distance_km;
 
@@ -783,6 +785,17 @@ function drawElevationChart(profile, minEle, maxEle) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+
+  // la escala, en el hueco de arriba: de qué altura a qué altura, y cuántos km
+  ctx.save();
+  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.fillStyle = '#f4f7e6';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 3;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'right';        // a la derecha: a la izquierda, sobre el gráfico, van los botones del mapa
+  ctx.fillText('Altura ' + Math.round(minEle) + '–' + Math.round(maxEle) + ' m · ruta ' + numKm(maxD) + ' km', cssW - padR - 4, 2);
+  ctx.restore();
 }
 
 let anchoPerfil = 0;
@@ -1386,7 +1399,7 @@ function pollLive() {
           ponerTexto('estado-carrera', 'Sale a las ' + hora + ' · ' + (quien ? quien + ' ya está' : 'ya está') + ' en la salida');
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : ''));
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '') + ' · esta página se actualiza sola');
           estado.classList.add('previo');
         } else {
           const pr = previsiones(doneKm, data.data_at);
@@ -1412,8 +1425,8 @@ function pollLive() {
         else pildora('En directo', 'vivo');
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
-          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
-            ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
+          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ', en el km ' + num(doneKm) + '. ' +
+            'A su ritmo estará ahora hacia el km ' + num(pr.est, 0) + ' (la marca transparente del mapa).';
         } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
@@ -1499,7 +1512,7 @@ function cabeceraReal(r) {
     b.dataset.real = '1';
     b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' de ' + previsto : '');   // como «2h 00m de 5 h»
   };
-  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
+  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? numKm(CARRERA.distancia_km) : '');
   pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
       CARRERA.desnivel_m ? Number(CARRERA.desnivel_m).toLocaleString('es-ES') : '');
 }
