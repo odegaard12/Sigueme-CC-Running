@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.26.0 · 2026-10-24
+- **Seguimiento automático:** al abrir una carrera en directo la cámara ya va con el corredor
+  (zoom cercano); si arrastras o haces zoom en el mapa, deja de seguir y respeta tu vista.
+- **Botones del mapa con texto:** «Seguir» / «Siguiendo» (el icono late mientras sigue) y
+  «Vista 2D» / «Vista 3D», en vez de un icono suelto y un «2D» críptico.
+
 ## v1.25.1 · 2026-10-24
 - **Seguimiento más fluido:** con 🎯 la cámara va pegada al corredor en cada fotograma (antes, un
   movimiento por segundo que se reiniciaba a mitad y daba tirones); la foto se mueve a ~30 fps.

@@ -51,6 +51,12 @@ body { background: var(--tinta); color: var(--papel); }
 
 /* ---- el mapa y sus botones */
 .map-wrap { border-radius: var(--radio); }
+.mapa-botones .btn-flotante { width: auto; min-width: 44px; height: 40px; padding: 0 14px 0 11px; border-radius: 20px; gap: 7px; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.02em; }
+.mapa-botones .btn-vista { padding: 0 14px; }
+.btn-flotante .t { white-space: nowrap; }
+#btn-recenter.activo svg { animation: late 1.8s ease-in-out infinite; }
+@keyframes late { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { #btn-recenter.activo svg { animation: none; } }
 .btn-flotante { background: var(--tinta); color: var(--campo); border: 2px solid var(--campo); }
 .btn-flotante.activo { background: var(--campo); color: var(--tinta); border-color: var(--campo); }
 .map-hint { color: var(--muted); }

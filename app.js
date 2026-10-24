@@ -253,7 +253,7 @@ const btnRecenter = document.getElementById('btn-recenter');
 if (btnRecenter) {
   btnRecenter.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
+    '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg><span class="t">Seguir</span>';
 }
 const geoHint = document.getElementById('geo-hint');
 
@@ -881,6 +881,21 @@ function marcarSiguiendo(si) {
   siguiendo = si;
   btnRecenter.classList.toggle('activo', si);
   btnRecenter.setAttribute('aria-pressed', si ? 'true' : 'false');
+  const t = btnRecenter.querySelector('.t');
+  if (t) t.textContent = si ? 'Siguiendo' : 'Seguir';
+}
+
+// Al abrir una carrera en directo la cámara ya va con el corredor, salvo que quien mira haya tocado el mapa antes:
+// el botón sigue ahí para dejar de seguir (arrastrar el mapa) o volver a seguir.
+let tocoElMapa = false, autoSeguido = false;
+map3dDiv.addEventListener('pointerdown', () => { tocoElMapa = true; }, { passive: true });
+map3dDiv.addEventListener('wheel', () => { tocoElMapa = true; }, { passive: true });
+function autoSeguirDirecto() {
+  if (autoSeguido || tocoElMapa || siguiendo || !mapReady || !riderMarkerPos) return;
+  autoSeguido = true;
+  marcarSiguiendo(true);
+  ultimoSeguimiento = performance.now() + 900;
+  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: 900 });
 }
 
 function seguirCorredor(pos) {
@@ -913,7 +928,7 @@ btnRecenter.addEventListener('click', recenterOnRider);
 const btnVista = document.getElementById('btn-vista');
 let vista3d = true;
 function pintarBotonVista() {
-  btnVista.textContent = vista3d ? '2D' : '3D';
+  btnVista.textContent = vista3d ? 'Vista 2D' : 'Vista 3D';
   btnVista.setAttribute('aria-label', vista3d ? 'Ver el mapa en 2D' : 'Ver el mapa en 3D');
 }
 pintarBotonVista();
@@ -1430,7 +1445,7 @@ function pollLive() {
         }
         else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de salir', 'previo');
         else if (hueco > 240000) pildora('Sin cobertura', 'sin');
-        else pildora('En directo', 'vivo');
+        else { pildora('En directo', 'vivo'); autoSeguirDirecto(); }
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
           pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ', en el km ' + num(doneKm) + '. ' +
