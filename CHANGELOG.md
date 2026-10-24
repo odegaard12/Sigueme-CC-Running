@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.29.0 · 2026-10-24
+- **Textos de ayuda del panel más cortos:** las explicaciones de Carrera, Móvil (app, pulsera, Traccar y
+  Amazfit), Preparar (ruta, reloj, avisos), Resultado, Archivar y Rutas dicen lo mismo con menos palabras:
+  una idea por frase y el paso concreto primero.
+
 ## v1.28.0 · 2026-10-24
 - **Guía de primera vez en el panel:** al entrar por primera vez se abre sola una visita de 5 pasos
   (bienvenida, resumen, los 5 pasos, «qué toca ahora» y listo), señalando cada cosa en pantalla. Se puede

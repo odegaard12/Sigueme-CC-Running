@@ -325,18 +325,16 @@
       <button class="btn" id="hoy-ir" type="button">Ir ›</button>
     </div>
     <ol class="guia">
-      <li><span><b>En la app del móvil, «Empezar seguimiento».</b> Vale desde una hora antes de la salida.
-        Después guarda el móvil: sigue solo con la pantalla apagada.</span></li>
-      <li><span><b>La web te sigue sola.</b> Hasta la hora de salida pone «En la salida»;
-        después cuenta el tiempo y la posición.</span></li>
-      <li><span><b>Al llegar,</b> la web da la meta sola. Si no, usa «Finalizar seguimiento».</span></li>
+      <li><span><b>En la app, «Empezar seguimiento».</b> Vale desde 1 h antes de la salida. Luego guarda el móvil.</span></li>
+      <li><span><b>La web te sigue sola.</b> Antes de salir pone «En la salida»; luego, tiempo y posición.</span></li>
+      <li><span><b>Al llegar,</b> la web da la meta sola. Si no, «Finalizar seguimiento».</span></li>
     </ol>
     <input type="hidden" id="hora-salida">
     <p class="estado-fila" style="margin:10px 0 4px"><span>Salida oficial: <b id="hora-txt">—</b>
-      · el crono cuenta desde ahí (se cambia en Preparar → Datos)</span></p>
+      · el crono cuenta desde ahí (cambiar: Preparar → Datos)</span></p>
     <details class="sin-app">
       <summary>No uso la app (iGPSPORT)</summary>
-      <div class="howto">En la app de iGPSPORT, compartir seguimiento en vivo, y pega el enlace aquí.</div>
+      <div class="howto">En iGPSPORT, comparte el seguimiento en vivo y pega el enlace.</div>
       <div class="field link-field" style="margin-top:12px">
         <label for="livetrack">Enlace LiveTrack</label>
         <input type="url" id="livetrack" placeholder="https://...">
@@ -363,23 +361,18 @@
       <input type="time" id="hora-llegada">
     </div>
     <div class="howto" style="margin-top:6px">
-      Si el directo se cortó y la web se quedó atrás, pon la hora a la que
-      llegaste: la web te pondrá en meta con ese tiempo final. Vacío = la que
-      detectó el GPS o, si no, ahora.
+      Si el directo se cortó, pon la hora a la que llegaste: la web te pone en meta con ese tiempo. Vacío = la que detectó el GPS.
     </div>
     <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
   </div>
 
   <div class="tarjeta" data-tab="movil">
     <h2>Sin la app: iPhone, Traccar o reloj</h2>
-    <div class="howto">Con la app Android no hace falta nada de esto. Para iPhone (Traccar Client)
-      o el reloj Amazfit, y para generar un identificador nuevo:</div>
+    <div class="howto">Para iPhone (Traccar Client) o el reloj Amazfit. Con la app Android no hace falta nada de esto.</div>
     <details>
     <summary>Ver la configuración</summary>
     <div class="howto">
-      Posición directa desde el móvil, más fiable que la de iGPSPORT con mala
-      cobertura: sin señal guarda los puntos y los manda al volver. Instala
-      <b>Traccar Client</b> (gratis, Android e iPhone) y pon:
+      Instala <b>Traccar Client</b> (gratis, Android e iPhone) y pon:
     </div>
     <div class="field" style="margin-top:10px">
       <label>Dirección del servidor</label>
@@ -391,14 +384,10 @@
       <button class="btn" id="rotar-gps" type="button" style="margin-top:8px">Generar identificador nuevo</button>
     </div>
     <div class="howto" style="margin-top:8px">
-      Frecuencia: 10 s · Precisión: alta · Distancia: 0 · y activa el servicio.
-      En Android, quita el ahorro de batería a Traccar Client. iGPSPORT sigue
-      dando el pulso y la cadencia.
+      Frecuencia 10 s · Precisión alta · Distancia 0 · activa el servicio. En Android, quítale el ahorro de batería.
     </div>
     <div class="howto" style="margin-top:8px">
-      <b>Reloj Amazfit</b> (miniapp Sígueme CC): en la app Zepp → Sígueme CC → Ajustes,
-      la misma dirección y el mismo identificador. Manda posición y pulso; si
-      llevas móvil con Traccar y reloj a la vez, la posición la da uno solo.
+      <b>Reloj Amazfit:</b> en Zepp → Sígueme CC → Ajustes, la misma dirección y el mismo identificador. Con Traccar y reloj a la vez, la posición la da uno solo.
     </div>
     </details>
   </div>
@@ -410,8 +399,7 @@
       <button class="save-btn" id="siguiente-ir" type="button">Ir ›</button>
     </div>
     <ul class="lista-prep" id="lista-prep"><li>Cargando…</li></ul>
-    <div class="howto" style="margin-top:8px">Sigue el siguiente paso de arriba, o pulsa cualquier fila para ir a su
-      sitio. Se prepara en casa, con cobertura. Con una carrera en marcha no se pueden cambiar la ruta ni los datos.</div>
+    <div class="howto" style="margin-top:8px">Sigue el siguiente paso o pulsa una fila. Se prepara en casa, con cobertura; con la carrera en marcha no se cambian ruta ni datos.</div>
   </div>
 
   <div class="tarjeta" id="t-carrera" data-tab="preparar">
@@ -457,16 +445,13 @@
 
   <div class="tarjeta" id="sec-ruta" data-tab="preparar">
     <h2>Ruta (GPX)</h2>
-    <div class="howto">El GPX de la organización, o el que exportas de Strava, Komoot o Wikiloc. Salen
-      el trazado del mapa y el perfil, y se rehace el plan de avisos.</div>
+    <div class="howto">El GPX de la organización o de Strava, Komoot o Wikiloc. De él salen el mapa, el perfil y los avisos.</div>
     <p class="estado-fila" style="margin-top:8px"><span id="ruta-text">—</span></p>
     <div class="field" style="margin-top:8px"><label for="gpx">Fichero GPX</label><input type="file" id="gpx" accept=".gpx,application/gpx+xml"></div>
     <div class="field"><label for="gpx-dist">Km oficiales (opcional, si no coinciden con los del GPX)</label><input type="number" step="0.01" min="0.1" id="gpx-dist"></div>
     <button class="save-btn" id="subir-gpx" type="button">Subir ruta</button>
     <div id="reloj-gpx" hidden>
-      <div class="howto" style="margin-top:16px"><b>La ruta en el reloj (opcional).</b> Con altitud y, como puntos
-        de control, los avituallamientos y las subidas. Impórtala en Huawei Health (Yo → Mi ruta → Importar ruta →
-        Enviar al reloj), Zepp, Garmin o Coros.</div>
+      <div class="howto" style="margin-top:16px"><b>La ruta en el reloj (opcional).</b> Con altitud y puntos de control. Impórtala en Huawei Health (Yo → Mi ruta → Importar ruta), Zepp, Garmin o Coros.</div>
       <a class="btn" id="bajar-reloj" href="/api/reloj.gpx" download style="margin-top:10px">Descargar GPX para el reloj</a>
     </div>
   </div>
@@ -483,9 +468,7 @@
 
   <div class="tarjeta" id="sec-avisos" data-tab="preparar">
     <h2>Avisos a la pulsera</h2>
-    <div class="howto"><b>Normalmente no hay que tocar nada aquí:</b> se crean solos al subir la ruta (antes de cada
-      subida, en la cima, antes de cada avituallamiento y el último km). La app los baja y los lanza
-      <b>sin cobertura</b>; Zepp o Mi Fitness los pasan a la pulsera.</div>
+    <div class="howto"><b>Normalmente no hay que tocar nada:</b> los avisos se crean solos al subir la ruta. La app los lanza <b>sin cobertura</b> y Zepp o Mi Fitness los pasan a la pulsera.</div>
     <div class="row2" style="margin-top:10px">
       <div class="field"><label for="av-antes">Avisar antes (m)</label><input type="number" min="50" max="2000" step="50" id="av-antes" placeholder="300"></div>
       <div class="field"><label for="av-cada">Resumen cada (km)</label><input type="number" min="1" max="100" id="av-cada" placeholder="según la distancia"></div>
@@ -494,8 +477,7 @@
     <p class="estado-fila" style="margin-top:10px"><span id="avisos-text">—</span></p>
     <details id="det-avisos">
       <summary>Ver y cambiar los textos</summary>
-      <div class="howto">Texto vacío = ese aviso se quita. «{dist}» se cambia por lo que falta al avituallamiento.
-        Rehacer el plan (o cambiar la ruta o los avituallamientos) vuelve a los textos automáticos.</div>
+      <div class="howto">Texto vacío = se quita ese aviso. «{dist}» = lo que falta al avituallamiento. «Rehacer el plan» vuelve a los textos automáticos.</div>
       <div id="lista-avisos" class="lista-avisos"></div>
       <button class="save-btn" id="guardar-avisos" type="button" style="margin-top:8px">Guardar textos</button>
     </details>
@@ -511,28 +493,25 @@
     </ol>
     <div id="qr" class="qr" aria-label="Código QR de configuración de la app"></div>
     <button class="btn" id="copiar-enlace" type="button" style="margin-top:8px">Copiar el enlace de configuración</button>
-    <div class="howto" style="margin-top:6px">Para configurar sin escanear: pégalo en la miniapp del reloj Amazfit (Zepp → Sígueme CC → Ajustes) o ábrelo en el móvil. Lleva la dirección y el identificador juntos.</div>
+    <div class="howto" style="margin-top:6px">Sin escanear: pégalo en la miniapp Amazfit (Zepp → Sígueme CC → Ajustes) o ábrelo en el móvil.</div>
     <p class="estado-fila"><span id="app-text">La app aún no ha bajado el plan</span></p>
-    <div class="howto" style="margin-top:8px">Se hace una sola vez. Solo si generas un identificador nuevo hay que volver a escanear.</div>
+    <div class="howto" style="margin-top:8px">Solo una vez. Si generas un identificador nuevo, vuelve a escanear.</div>
   </div>
 
   <div class="tarjeta primero" id="sec-pulsera" data-tab="movil">
     <h2>Que los avisos lleguen a la pulsera</h2>
     <ol class="guia">
-      <li><span>Instala <b>Mi Fitness</b> (Xiaomi), <b>Zepp</b> (Amazfit) o <b>Huawei Health</b> (Huawei) y enlaza tu pulsera.</span></li>
-      <li><span>En la app Sígueme CC pulsa <b>«Probar aviso»</b> una vez. Hasta entonces Sígueme CC no sale en la lista de apps de la pulsera.</span></li>
-      <li><span>En Mi Fitness, Zepp o Huawei Health, abre los ajustes de tu pulsera → notificaciones de apps y <b>activa Sígueme CC</b>: viene desactivada.</span></li>
+      <li><span>Instala <b>Mi Fitness</b> (Xiaomi), <b>Zepp</b> (Amazfit) o <b>Huawei Health</b> y enlaza tu pulsera.</span></li>
+      <li><span>En la app Sígueme CC pulsa <b>«Probar aviso»</b> una vez: así aparece en la lista de apps de la pulsera.</span></li>
+      <li><span>En la app de tu pulsera: ajustes → notificaciones de apps → <b>activa Sígueme CC</b> (viene apagada).</span></li>
       <li><span>Bloquea el móvil, pulsa «Probar aviso» otra vez y mira la pulsera.</span></li>
     </ol>
-    <div class="howto">Los nombres de los menús cambian un poco según la versión de la app de la pulsera.</div>
+    <div class="howto">Los menús cambian un poco según la versión de la app.</div>
   </div>
 
   <div class="tarjeta primero" data-tab="mas">
     <h2>Resultado de la carrera</h2>
-    <div class="howto">Después de meta, sube el fichero de tu reloj, pulsera o ciclocomputador: el <b>FIT</b>
-      (Garmin Connect, Coros, Strava: exportar el original) o el <b>GPX</b> (Xiaomi Mi Fitness, Huawei Health,
-      Zepp, Strava…). Tiene que traer la hora de cada punto. La web pasa a modo resultado: tiempo oficial,
-      paso por cada avituallamiento y la repetición de la carrera.</div>
+    <div class="howto">Tras la meta, sube el fichero de tu reloj: <b>FIT</b> (Garmin, Coros, Strava: el original) o <b>GPX</b> (Mi Fitness, Huawei Health, Zepp, Strava…). Debe traer la hora de cada punto. La web pasa a modo resultado: tiempo oficial, avituallamientos y repetición.</div>
     <div class="field" style="margin-top:10px"><label for="fit">Fichero FIT o GPX</label><input type="file" id="fit" accept=".fit,.gpx"></div>
     <button class="save-btn" id="subir-fit" type="button">Subir y generar el resultado</button>
   </div>
@@ -540,9 +519,7 @@
   <div class="tarjeta" id="sec-archivar" data-tab="mas">
     <h2>Archivar</h2>
     <!-- archivar: la carrera terminada pasa a su carpeta y la portada queda libre -->
-    <div class="howto"><b>Archivar la carrera terminada</b>: pasa a su propia
-      dirección (por ejemplo /2027-mi-carrera/) y sale en «Todas las carreras».
-      Necesita el resultado (arriba) y deja todo a cero para la siguiente.</div>
+    <div class="howto"><b>Archivar la carrera terminada:</b> pasa a su propia dirección (p. ej. /2027-mi-carrera/) y sale en «Todas las carreras». Necesita el resultado y deja todo a cero.</div>
     <div class="quick-actions" style="margin:10px 0 14px">
       <button class="btn" id="archivar" type="button">Archivar la carrera terminada</button>
     </div>
@@ -561,22 +538,19 @@
 
     <div class="tarjeta primero" id="sec-mis" data-tab="rutas">
     <h2>Mis rutas</h2>
-    <div class="howto">Tus propias rutas, las del dueño de la web: sube un GPX, ponle avituallamientos, llévatelo al reloj o publícalo
-      en la portada. No necesitas otro usuario: entras directo.</div>
+    <div class="howto">Tus propias rutas: sube un GPX, ponle avituallamientos, llévatelo al reloj o publícalo en la portada.</div>
     <a class="save-btn" href="/mis-rutas.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Abrir Mis rutas</a>
   </div>
 
   <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
     <h2>Rutas publicadas</h2>
-    <div class="howto">Lo que tus invitados han publicado en la web: cualquiera puede verlo. Si algo no debe estar,
-      quítalo aquí. Se ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>.</div>
+    <div class="howto">Lo que han publicado tus invitados; cualquiera lo ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita lo que no deba estar.</div>
     <div id="pub-lista"></div>
   </div>
 
   <div class="tarjeta" id="sec-invitados" data-tab="rutas">
     <h2>Invitados</h2>
-    <div class="howto">Para que un amigo prepare <b>sus</b> rutas y se las lleve al reloj, sin ver nada de tu carrera ni de tu panel.
-      Le das un usuario y un código que caduca; él entra en <b id="inv-url"></b>.</div>
+    <div class="howto">Para que un amigo prepare <b>sus</b> rutas sin ver tu carrera ni tu panel. Le das un usuario y un código que caduca; entra en <b id="inv-url"></b>.</div>
     <div id="inv-lista"></div>
     <div class="row2" style="margin-top:12px">
       <div class="field"><label for="inv-usuario">Usuario nuevo</label>
