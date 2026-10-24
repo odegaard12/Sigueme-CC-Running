@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const fecha = iso => { const [a, m, d] = String(iso || '').split('-'); return a && m && d ? Number(d) + ' ' + MESES[Number(m) - 1] + ' ' + a : ''; };
-const tiempo = s => { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60); return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+const tiempo = s => { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60); return h + 'h ' + String(m).padStart(2, '0') + 'm'; };
 const ns = 'http://www.w3.org/2000/svg';
 
 function traza(puntos) {
@@ -42,7 +42,10 @@ async function json(url) { try { const r = await fetch(url); return r.ok ? await
 (async () => {
   const [rutas, carreras] = await Promise.all([json('/api/rutas-publicas'), json('/api/carreras')]);
   const lista = $('rutas');
-  const rs = (rutas && rutas.rutas) || [];
+  const hechas0 = (carreras && carreras.carreras) || [];
+  const clave = (n, d) => String(n || '').trim().toLowerCase() + '|' + Math.round(d || 0);
+  const archivadas = new Set(hechas0.map(c => clave(c.nombre, c.distancia_km)));
+  const rs = ((rutas && rutas.rutas) || []).filter(r => !archivadas.has(clave(r.nombre, r.distancia_km)));
   rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [String(r.desnivel_m), 'D+'], i)));
   $('sin-rutas').hidden = rs.length > 0;
   if (carreras) {
@@ -57,8 +60,12 @@ async function json(url) { try { const r = await fetch(url); return r.ok ? await
     const hechas = carreras.carreras || [];
     if (hechas.length) {
       $('carreras-sec').hidden = false;
-      hechas.forEach((c, i) => $('carreras').append(fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), null,
-        [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i)));
+      hechas.forEach((c, i) => {
+        const f = fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), c.traza,
+          [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i);
+        f.classList.add('carrera'); f.children[2].classList.add('km'); f.children[3].classList.add('t');   // en el móvil se queda el tiempo
+        $('carreras').append(f);
+      });
     }
   }
 })();

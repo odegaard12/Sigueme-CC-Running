@@ -9,6 +9,8 @@ let aidStations = [];
 // números en formato español: 102,1 km, 11,8 km/h
 const num = (v, dec = 1) => (v == null || v === '' || isNaN(v)) ? '—'
   : Number(v).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const numKm = v => (v == null || v === '' || isNaN(v)) ? '—'
+  : Number(v).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const entero = v => (v == null || v === '' || isNaN(v)) ? '—' : String(Math.round(v));
 
 // Datos pedidos desde el <head> (index.html) para no esperar a la librería
@@ -43,6 +45,11 @@ function pintarCarrera() {
   const c = CARRERA, corredor = c.corredor || {};
   const sl = document.getElementById('stat-limite');
   if (sl && /^\d+ h$/.test(sl.textContent)) sl.textContent = c.limite_h + ' h';
+  // el nombre de la carrera como titular y el del sitio (del dominio) en la barra
+  const tcd = document.getElementById('titulo-cd');
+  if (tcd && c.nombre) tcd.textContent = c.nombre;
+  const hostSitio = location.hostname.replace(/^www\./, '').split('.')[0], mcd = document.getElementById('marca-sitio');
+  if (mcd && hostSitio && !/^[\d.]+$/.test(location.hostname) && location.hostname !== 'localhost') mcd.textContent = hostSitio;
   // ?v= cambia al subir otra foto desde el panel: así nadie ve la vieja
   document.querySelectorAll('img[src^="rider.png"]').forEach(i => {
     i.src = 'rider.png?v=' + (Number(c.avatar_v) || 5);
@@ -134,6 +141,11 @@ function projectOntoRoute(lat, lon) {
   // ultimoKmConocido va en km oficiales; aquí se compara en km de la línea
   const ancla = ultimoKmConocido / (factorKm || 1);
   const cerca = candidatos.filter(c => c.distKm <= mejorDist + 0.05);
+  // ida y vuelta: en la vuelta el tramo de la ida está igual de cerca (y ganaba por ir antes). Como
+  // en la app: de lo que no va hacia atrás, la PRIMERA pasada (menor km, así tampoco salta a una
+  // pasada posterior por el mismo sitio); si no hay nada por delante, el más cercano al último km
+  const adelante = cerca.filter(c => c.alongKm >= ancla - 0.02);
+  if (adelante.length) return adelante.reduce((a, b) => (b.alongKm < a.alongKm ? b : a));
   let best = cerca[0];
   for (const c of cerca) {
     if (Math.abs(c.alongKm - ancla) < Math.abs(best.alongKm - ancla)) best = c;
@@ -241,7 +253,7 @@ const btnRecenter = document.getElementById('btn-recenter');
 if (btnRecenter) {
   btnRecenter.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
+    '<circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg><span class="t">Seguir</span>';
 }
 const geoHint = document.getElementById('geo-hint');
 
@@ -371,7 +383,7 @@ function buildMap3D() {
     map3d.addLayer({
       id: 'route-line', type: 'line', source: 'route',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#8fe06a', 'line-width': 5, 'line-opacity': 0.95 }
+      paint: { 'line-color': '#d9f24a', 'line-width': 5, 'line-opacity': 0.95 }
     });
 
     map3d.addSource('traveled', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
@@ -527,7 +539,7 @@ function onMapReady() {
   aidStations.forEach((s, i) => {
     const pos = pointAtKm(s.km / (factorKm || 1));
     if (!pos) return;
-    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
+    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#d9f24a';
     const tipo = s.principal ? 'Avituallamiento principal'
       : s.taller ? 'Avituallamiento + asistencia mecánica'
       : 'Avituallamiento';
@@ -552,13 +564,13 @@ function onMapReady() {
 }
 
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
-  .then(c => { if (c) CARRERA = Object.assign(CARRERA, c); pintarCarrera(); });
+  .then(c => { if (c) { CARRERA = Object.assign(CARRERA, c); gestionarSW(); } pintarCarrera(); });
 
 precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
-    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = num(props.distance_km, 2);
+    if (!document.getElementById('stat-dist').dataset.real) document.getElementById('stat-dist').textContent = numKm(props.distance_km);
     if (!document.getElementById('stat-gain').dataset.real) document.getElementById('stat-gain').textContent = Number(props.elevation_gain_m).toLocaleString('es-ES');
     totalRouteKm = props.distance_km;
 
@@ -637,7 +649,7 @@ precargado('elevation.json', () => fetch('elevation.json').then(r => r.json()))
 
 // Pendiente del tramo en el que va ahora mismo, sacada del propio perfil.
 function pendienteEn(km) {
-  if (!lastEleData) return '—';
+  if (!lastEleData || !lastEleData.profile || lastEleData.profile.length < 2) return '—';
   const perfil = lastEleData.profile;
   const maxD = perfil[perfil.length - 1].d;
   const i = Math.min(perfil.length - 1, Math.max(1, Math.round(km / maxD * (perfil.length - 1))));
@@ -661,6 +673,7 @@ function perfilSiCambia(km) {
 }
 
 function drawElevationChart(profile, minEle, maxEle) {
+  if (!profile || profile.length < 2) return;      // GPX sin altura: no hay perfil que dibujar
   const canvas = document.getElementById('elevation-chart');
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
@@ -754,7 +767,7 @@ function drawElevationChart(profile, minEle, maxEle) {
     if (s.km > maxD) return;
     const px = x(s.km);
     const py = y(eleAtKm(s.km));
-    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#8fe06a';
+    const color = s.principal ? '#e08a3a' : s.taller ? '#5cc2e8' : '#d9f24a';
     ctx.beginPath();
     ctx.arc(px, py, 3.5, 0, Math.PI * 2);
     ctx.fillStyle = color;
@@ -772,6 +785,17 @@ function drawElevationChart(profile, minEle, maxEle) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+
+  // la escala, en el hueco de arriba: de qué altura a qué altura, y cuántos km
+  ctx.save();
+  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.fillStyle = '#f4f7e6';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 3;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'right';        // a la derecha: a la izquierda, sobre el gráfico, van los botones del mapa
+  ctx.fillText('Altura ' + Math.round(minEle) + '–' + Math.round(maxEle) + ' m · ruta ' + numKm(maxD) + ' km', cssW - padR - 4, 2);
+  ctx.restore();
 }
 
 let anchoPerfil = 0;
@@ -857,18 +881,31 @@ function marcarSiguiendo(si) {
   siguiendo = si;
   btnRecenter.classList.toggle('activo', si);
   btnRecenter.setAttribute('aria-pressed', si ? 'true' : 'false');
+  const t = btnRecenter.querySelector('.t');
+  if (t) t.textContent = si ? 'Siguiendo' : 'Seguir';
+}
+
+// Al abrir una carrera en directo la cámara ya va con el corredor, salvo que quien mira haya tocado el mapa antes:
+// el botón sigue ahí para dejar de seguir (arrastrar el mapa) o volver a seguir.
+let tocoElMapa = false, autoSeguido = false;
+map3dDiv.addEventListener('pointerdown', () => { tocoElMapa = true; }, { passive: true });
+map3dDiv.addEventListener('wheel', () => { tocoElMapa = true; }, { passive: true });
+function autoSeguirDirecto() {
+  if (autoSeguido || tocoElMapa || siguiendo || !mapReady || !riderMarkerPos) return;
+  autoSeguido = true;
+  marcarSiguiendo(true);
+  ultimoSeguimiento = performance.now() + 900;
+  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: 900 });
 }
 
 function seguirCorredor(pos) {
   if (!siguiendo || !mapReady || !pos) return;
   // si está haciendo zoom o girando con los dedos, no pelearse con su gesto
   if (map3d.isZooming() || map3d.isRotating()) return;
-  const ahora = performance.now();
-  // una vez por segundo con un deslizamiento de un segundo: la cámara va
-  // continua y no se fuerza al móvil a redibujar el relieve 60 veces/s
-  if (ahora - ultimoSeguimiento < 1000) return;
-  ultimoSeguimiento = ahora;
-  map3d.easeTo({ center: [pos[1], pos[0]], duration: 1000, easing: t => t });
+  // en el mismo fotograma que la foto: la foto queda quieta en pantalla y el mapa se desliza por debajo, sin los
+  // tirones de un easeTo por segundo que se reiniciaba a mitad de camino
+  if (performance.now() < ultimoSeguimiento) return;     // el botón 🎯 acaba de lanzar su propio viaje
+  map3d.jumpTo({ center: [pos[1], pos[0]] });
 }
 
 function recenterOnRider() {
@@ -891,7 +928,7 @@ btnRecenter.addEventListener('click', recenterOnRider);
 const btnVista = document.getElementById('btn-vista');
 let vista3d = true;
 function pintarBotonVista() {
-  btnVista.textContent = vista3d ? '2D' : '3D';
+  btnVista.textContent = vista3d ? 'Vista 2D' : 'Vista 3D';
   btnVista.setAttribute('aria-label', vista3d ? 'Ver el mapa en 2D' : 'Ver el mapa en 3D');
 }
 pintarBotonVista();
@@ -1061,7 +1098,7 @@ function moverSuave(km, pos, pegado) {
     // a ritmo de bici la foto avanza unos pocos píxeles por segundo: con 20
     // fotogramas por segundo se ve igual de suave y el móvil recompone la
     // pantalla un tercio de veces (batería durante toda la carrera)
-    if (t < 1 && ahora - ultimoFotograma < 50 && duracion > 2000) {
+    if (t < 1 && ahora - ultimoFotograma < 33 && duracion > 2000) {
       animacion = requestAnimationFrame(paso);
       return;
     }
@@ -1166,6 +1203,37 @@ function fetchConTiempo(url, ms = 8000) {
   return fetch(url, { signal: control.signal, cache: 'no-store' }).finally(() => clearTimeout(reloj));
 }
 
+let desdeCache = 0, yaPintado = false, ultimoLiveOk = 0;
+const CLAVE_LIVE = 'sigueme.live';
+function guardarLive(txt) {
+  ultimoLiveOk = Date.now();
+  try { localStorage.setItem(CLAVE_LIVE, JSON.stringify({ t: ultimoLiveOk, d: txt })); } catch (e) {}
+}
+function liveGuardado() {
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_LIVE));
+    if (g && g.d && Date.now() - g.t < 12 * 3600000) return g;      // de más de 12 h ya no vale
+  } catch (e) {}
+  return null;
+}
+function haceTxt(t) {
+  const m = Math.max(1, Math.round((Date.now() - t) / 60000));
+  return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min';
+}
+
+// «modo sin cobertura» (carrera.json: modo_offline, casilla del panel). Desactivado = lo de siempre: SIN service worker y
+// el que hubiera quedado de versiones antiguas se desinstala (tres versiones antiguas acabaron sirviendo código viejo).
+function gestionarSW() {
+  if (!('serviceWorker' in navigator) || ARCHIVADA) return;
+  if (CARRERA.modo_offline === true) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  } else {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+  }
+}
+
+let avisoVisto = false, avisoTimer = 0;
 function avisoConexion(mal) {
   let el = document.getElementById('aviso-conexion');
   if (!el) {
@@ -1173,12 +1241,24 @@ function avisoConexion(mal) {
     el.id = 'aviso-conexion';
     el.className = 'aviso-conexion';
     el.setAttribute('role', 'status');
-    el.hidden = true;
     document.body.appendChild(el);
   }
-  if (mal) el.textContent = navigator.onLine === false
-    ? 'Sin conexión · reintentando…' : 'No llegan datos · reintentando…';
-  el.hidden = !mal;
+  clearTimeout(avisoTimer);
+  if (mal) {
+    const t = ultimoLiveOk || (liveGuardado() || {}).t;
+    el.textContent = (navigator.onLine === false ? 'Sin conexión' : 'No llegan datos') +
+      (t ? ' · último dato hace ' + haceTxt(t) : '') + ' · reintentando…';
+    el.classList.remove('ok');
+    el.classList.add('visible');
+    avisoVisto = true;
+  } else if (avisoVisto) {                       // volvió la red: se avisa un momento y se va solo
+    el.textContent = 'Conexión recuperada ✓';
+    el.classList.add('ok', 'visible');
+    avisoVisto = false;
+    avisoTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+  } else {
+    el.classList.remove('visible');
+  }
 }
 
 function pollLive() {
@@ -1198,11 +1278,19 @@ function pollLive() {
       // el cronómetro de quien miraba se atrasaba esos mismos minutos
       const fecha = Date.parse(r.headers.get('Date'));
       if (!isNaN(fecha)) desfaseReloj = Date.now() - fecha;
-      return r.json();
+      return r.text().then(txt => { const d = JSON.parse(txt); guardarLive(txt); desdeCache = 0; return d; });
+    })
+    .catch(err => {
+      // sin red al abrir la web (un túnel, el avión): se pinta el último estado guardado en este móvil
+      const g = yaPintado ? null : liveGuardado();
+      if (!g) throw err;
+      desdeCache = g.t;
+      return JSON.parse(g.d);
     })
     .then(data => {
-      fallosSeguidos = 0;
-      avisoConexion(false);
+      yaPintado = true;
+      fallosSeguidos = desdeCache ? 2 : 0;
+      avisoConexion(!!desdeCache);
       lastStartedAt = data.started_at || null;
       document.querySelector('.metricas').classList.remove('esqueleto');
 
@@ -1334,7 +1422,7 @@ function pollLive() {
           ponerTexto('estado-carrera', 'Sale a las ' + hora + ' · ' + (quien ? quien + ' ya está' : 'ya está') + ' en la salida');
           estado.classList.add('previo');
         } else if (!haArrancado) {
-          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : ''));
+          ponerTexto('estado-carrera', 'Sale a las ' + hora + (diaCarrera() ? ' · ' + diaCarrera() : '') + ' · esta página se actualiza sola');
           estado.classList.add('previo');
         } else {
           const pr = previsiones(doneKm, data.data_at);
@@ -1357,11 +1445,11 @@ function pollLive() {
         }
         else if (!haArrancado) pildora(data.lat != null ? 'En la salida' : 'Antes de salir', 'previo');
         else if (hueco > 240000) pildora('Sin cobertura', 'sin');
-        else pildora('En directo', 'vivo');
+        else { pildora('En directo', 'vivo'); autoSeguirDirecto(); }
         pintarFantasma(pr ? pr.est : null);
         if (pr) {
-          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ' (km ' + num(doneKm) + ')' +
-            ' · a su ritmo irá por el km ~' + num(pr.est, 0) + ' (marca transparente)';
+          pie.textContent = 'Sin cobertura desde las ' + fmtTime(ultimoDato) + ', en el km ' + num(doneKm) + '. ' +
+            'A su ritmo estará ahora hacia el km ' + num(pr.est, 0) + ' (la marca transparente del mapa).';
         } else if (ultimoDato && hueco > 240000 && data.status_label === 'En carrera') {
           pie.textContent = 'Sin datos nuevos desde las ' + fmtTime(ultimoDato) +
             ' · parado o sin cobertura';
@@ -1392,6 +1480,7 @@ function pollLive() {
       // seguidos (~10 s sin datos) sí
       fallosSeguidos++;
       if (fallosSeguidos >= 2) avisoConexion(true);
+      if (fallosSeguidos === 8 && ritmoActual === 5000) ritmoSondeo(15000);      // mucho rato sin red: menos batería
       if (!(err instanceof TypeError) && err.name !== 'AbortError' && !/^HTTP/.test(err.message)) {
         console.error('pollLive:', err);   // fallo del código, no de la red
       }
@@ -1446,7 +1535,7 @@ function cabeceraReal(r) {
     b.dataset.real = '1';
     b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' de ' + previsto : '');   // como «2h 00m de 5 h»
   };
-  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? num(CARRERA.distancia_km, 2) : '');
+  pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? numKm(CARRERA.distancia_km) : '');
   pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
       CARRERA.desnivel_m ? Number(CARRERA.desnivel_m).toLocaleString('es-ES') : '');
 }
@@ -1572,3 +1661,21 @@ ritmoSondeo(5000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
 window.addEventListener('online', pollLive);
 window.addEventListener('offline', () => avisoConexion(true));
+window.addEventListener('offline', () => avisoConexion(true));
+
+// las cifras y el estado «laten» una vez cuando cambian: se nota que la web está viva (sin movimiento si el sistema lo pide).
+// El crono, que cambia cada segundo, no late.
+if (!QUIETO) {
+  const vistos = new WeakMap();
+  new MutationObserver(muts => {
+    for (const m of muts) {
+      const el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+      const caja = el && el.closest && el.closest('.metrica, #pill-estado');
+      if (!caja || caja.dataset.tile === 'time') continue;
+      const t = caja.textContent;
+      if (vistos.get(caja) === t) continue;
+      if (vistos.has(caja)) { caja.classList.remove('cambia'); void caja.offsetWidth; caja.classList.add('cambia'); }
+      vistos.set(caja, t);
+    }
+  }).observe(document.body, { childList: true, characterData: true, subtree: true });
+}

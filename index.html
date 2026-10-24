@@ -38,38 +38,43 @@
   });
 </script>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b1210">
+<meta name="theme-color" content="#d9f24a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sígueme CC">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
-<link rel="icon" type="image/png" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
+<link rel="icon" type="image/png" href="favicon.png?v=4">
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=68">
+<link rel="stylesheet" href="style.css?v=69">
+<link rel="stylesheet" href="/cartel-directo.css?v=4">
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-fila">
-    <div class="marca">
-      <h1>Sígueme <span>CC</span></h1>
-      <p class="marca-sub">by <b>Odegaard12</b></p>
-    </div>
+<header class="cd-cab">
+  <div class="cd-barra">
+    <a class="cd-marca" id="marca-sitio" href="/inicio">Sígueme CC</a>
+    <nav class="cd-nav">
+      <a href="/inicio">Inicio</a>
+      <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+      </button>
+      <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
+        <img src="rider.png?v=5" alt="Avatar del corredor"><span id="ver-ficha-txt">Mi ficha</span>
+      </button>
+    </nav>
+  </div>
+  <h1 class="cd-titulo" id="titulo-cd">En directo</h1>
+  <div class="cd-datos">
     <span class="pill-estado" id="pill-estado" hidden></span>
-    <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
-    </button>
-    <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
-      <img src="rider.png?v=5" alt="Avatar del corredor"><span id="ver-ficha-txt">Mi ficha</span>
-    </button>
+    <div class="cd-ruta">
+      <span><b id="stat-dist">—</b> km</span>
+      <span><b id="stat-gain">—</b> m+</span>
+      <span><b id="stat-limite">12 h</b> <i>para completar</i></span>
+    </div>
   </div>
-  <div class="cd-ruta">
-    <span><b id="stat-dist">—</b> km</span>
-    <span><b id="stat-gain">—</b> m+</span>
-    <span><b id="stat-limite">12 h</b> <i>para completar</i></span>
-  </div>
+  <p class="live-updated" id="live-updated" aria-live="polite"></p>
 </header>
 
 <section class="ficha" id="ficha" hidden>
@@ -128,7 +133,7 @@
     <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
     <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
     <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
-    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo</span></div>
+    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo de carrera</span></div>
   </div>
   <div class="progreso" data-tile="dist" aria-hidden="true"><i id="progreso-barra"></i></div>
   <div class="metricas-sec">
@@ -148,29 +153,15 @@
   </div>
 </section>
 
-<p class="live-updated" id="live-updated"></p>
 </div>
 </div>
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/admin.html">admin</a> · Sígueme CC v1.13.10</p>
+  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/inicio">Rutas</a> · <a href="ruta-carrera.gpx" download>Ruta para el reloj (GPX)</a> · <a href="/pulseras">Pulseras y relojes</a></p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=82"></script>
-<script>
-  // SIN service worker a propósito. Tuvo tres versiones y en todas acabó
-  // sirviendo código viejo a móviles que ya habían abierto la web (pantalla
-  // de "Cargando" pegada, diseño antiguo...). Para una web que solo sirve
-  // datos en vivo no aporta nada y el riesgo el día de la carrera es enorme.
-  // Esto además DESINSTALA el que se hubiera quedado instalado antes.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-      .then(rs => rs.forEach(r => r.unregister()))
-      .catch(() => {});
-    if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
-  }
-</script>
+<script src="app.js?v=88"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
   --bg: #0c0f0e;
   --panel: #141917;
   --panel-2: #191f1d;
-  --accent: #7fd46a;        /* solo mapa, foto y detalles mínimos */
+  --accent: #d9f24a;        /* solo mapa, foto y detalles mínimos */
   --accent-dark: #06210c;
   --accent-2: #5cc2e8;
   --danger: #e0473a;
@@ -144,7 +144,7 @@ body {
 }
 .btn-flotante:active { transform: scale(0.94); }
 /* 🎯 encendido: la cámara va siguiendo al corredor */
-.btn-flotante.activo { background: #8fe06a; color: #0b1210; border-color: #8fe06a; }
+.btn-flotante.activo { background: #d9f24a; color: #0b1210; border-color: #d9f24a; }
 .btn-vista { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; }
 
 /* perfil de altimetría incrustado en la parte baja del mapa */
@@ -700,7 +700,7 @@ footer a { color: var(--muted); }
 .cd-ruta span, .chip, .leyenda, .globo-tipo, .ficha-specs dt { font-size: 0.72rem; }
 .creditos { opacity: 1; font-size: 0.7rem; }
 /* se ve dónde está el foco al navegar con teclado */
-:focus-visible { outline: 2px solid var(--accent, #7fd46a); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent, #d9f24a); outline-offset: 2px; }
 /* botones fáciles de pulsar (44 px) */
 .compartir { width: 44px; height: 44px; }
 .ver-ficha { min-height: 40px; }
@@ -723,7 +723,7 @@ body.indice { min-height: 100svh; }
 .indice-lista a:hover { border-color: rgba(255,255,255,0.28); }
 .indice-lista b { font-size: 1.05rem; }
 .indice-lista span { color: var(--muted); font-size: 0.85rem; }
-.indice-vivo a { display: inline-block; margin-bottom: 12px; color: #7fd46a; font-weight: 700; }
+.indice-vivo a { display: inline-block; margin-bottom: 12px; color: #d9f24a; font-weight: 700; }
 
 
 /* ===================== v1.11: rediseño ======================================
@@ -735,7 +735,7 @@ body.indice { min-height: 100svh; }
   --panel-2: #1a211e;
   --border: rgba(255, 255, 255, 0.08);
   --muted: #8a968f;
-  --accent: #7fd46a;
+  --accent: #d9f24a;
   --radio: 16px;
 }
 body {

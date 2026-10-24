@@ -13,6 +13,18 @@ Environment=SIGUEME_VIP=IP_FLOTANTE
 ExecStart=/usr/bin/python3 /home/USUARIO/sigueme/server.py 8710
 Restart=always
 RestartSec=5
+# encerrado: solo puede escribir en su carpeta (los temporales también van ahí), sin privilegios nuevos
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+# /home aparte: ProtectSystem=strict no lo cubre (sin esto podía escribir en ~/.ssh)
+ProtectHome=read-only
+ReadWritePaths=/home/USUARIO/sigueme
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target

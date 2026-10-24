@@ -343,7 +343,7 @@ def guardar_ruta(raiz, usuario, id_, nombre=None, avituallamientos=None, publica
         if ocultar_m is not None:
             try:
                 r["ocultar_m"] = int(ocultar_m)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 raise ValueError("los metros a ocultar tienen que ser un número")
             if not 0 <= r["ocultar_m"] <= 1000:
                 raise ValueError("se pueden ocultar de 0 a 1000 m")
@@ -463,7 +463,8 @@ _cache_indice = {"mtime": None, "datos": []}
 
 def _leer_indice(raiz):
     try:
-        m = os.stat(_indice(raiz)).st_mtime_ns
+        st = os.stat(_indice(raiz))
+        m = (st.st_mtime_ns, st.st_size, st.st_ino)
     except OSError:
         return []
     if m != _cache_indice["mtime"]:

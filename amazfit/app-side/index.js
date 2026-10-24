@@ -37,8 +37,14 @@ AppSideService(BaseSideService({
   async subir() {
     if (subiendo || !pendientes.length) return
     // sin dirección por defecto: cada uno pone la de SU web (antes iba a la del autor)
-    const url = (this.settings.getItem('url') || '').trim()
-    const id = (this.settings.getItem('id') || '').trim()
+    // vale con escribir solo el dominio: se completa con /api/gps (antes, sin él, no llegaba ningún punto)
+    let url = (this.settings.getItem('url') || '').trim()
+    let id = (this.settings.getItem('id') || '').trim()
+    // vale pegar el enlace de configuración del panel (…/app.html#id=odg-…): saca de él la dirección y el identificador
+    const enlace = /^(https?:\/\/[^\/#\s]+).*#id=([\w-]{8,100})/.exec(url)
+    if (enlace) { url = enlace[1]; if (!id) id = enlace[2] }
+    url = url.replace(/\/+$/, '')
+    if (url && !/\/api\/gps$/.test(url)) url += '/api/gps'
     if (!url || !id) {
       this.settings.setItem('ultimo_error', 'Falta la dirección de tu web o el identificador en Ajustes')
       return

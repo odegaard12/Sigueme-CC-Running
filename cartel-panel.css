@@ -14,9 +14,9 @@ body { background: #0c0f0e; background-attachment: scroll; }
 .barra-cartel nav { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
 .barra-cartel nav a { text-decoration: underline; text-underline-offset: 4px; }
 .barra-cartel .marca-cartel { text-transform: uppercase; letter-spacing: 0.02em; }
-.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 20px;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-.campo-cartel .topbar h1 { font: 400 clamp(3.6rem, 14vw, 8rem)/0.94 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
+.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 12px;
+  display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+.campo-cartel .topbar h1 { font: 400 clamp(1.9rem, 5vw, 2.6rem)/1 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
 .campo-cartel .topbar h1 span { color: inherit; }
 .campo-cartel .pill-panel { background: var(--tinta); color: var(--accent); border-color: var(--tinta); font-weight: 700; }
 .campo-cartel .pill-panel.vivo { background: var(--tinta); color: var(--accent); }
@@ -38,3 +38,10 @@ a { color: var(--accent); }
 .lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1d2412; }
 .inv-nuevo { background: #232c12; }
 @keyframes resalta { 0% { background: #3b4a14; } 100% { background: #151b17; } }
+
+/* casillas y selectores con el lima de la marca (antes salían en el azul del sistema) */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+
+/* el botón de «elegir fichero» con el diseño de la web (antes, el gris del navegador) */
+input[type="file"]::file-selector-button { background: var(--accent); color: var(--tinta); border: 0; border-radius: 4px; padding: 8px 14px; margin-right: 12px; font: inherit; font-weight: 800; cursor: pointer; }
+input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }

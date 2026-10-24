@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#d9f24a">
 <title>Mis rutas</title>
-<link rel="icon" href="/favicon.png">
+<link rel="icon" href="/favicon.png?v=4">
 <link rel="stylesheet" href="/cartel-panel.css">
 <style>
   * { box-sizing: border-box; }
@@ -38,6 +38,7 @@
   .avit { display: grid; grid-template-columns: 1fr 92px 44px; gap: 8px; margin-top: 8px; align-items: center; }
   .avit input { min-height: 44px; } .avit button { min-height: 44px; width: 44px; border: 0; border-radius: 4px; background: #232b26; color: #ff8a7a; font-size: 1.2rem; cursor: pointer; }
   .subidas { list-style: none; padding: 0; margin: 8px 0 0; } .subidas li { padding: 8px 0; border-top: 1px solid var(--border); font-size: .98rem; }
+  details > summary::after { content: "+"; margin-left: auto; font: 400 1.8rem/1 var(--display); } details[open] > summary::after { content: "–"; }
   details { margin-top: 12px; } summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font: 400 1.35rem/1 var(--display); text-transform: uppercase; }
   details p { color: #dfe6d0; font-size: .95rem; }
   svg { width: 100%; height: auto; display: block; margin-top: 10px; background: var(--panel-2); border-radius: 4px; }
@@ -56,7 +57,8 @@
 <main>
   <section class="tarjeta entra" id="vista-login">
     <h2>Entrar</h2>
-    <p class="sub">Con el usuario y el código que te han dado. El acceso caduca: cuando pase la fecha, pide otro. Si eres el dueño de la web, entra con tu usuario y tu clave del panel (o abre el panel y vuelve aquí).</p>
+    <p class="sub">Entra con el usuario y el código que te dieron. Tu acceso caduca en la fecha que te dijeron: pasada, se borra todo lo tuyo y hay que pedir otro.</p>
+    <p class="sub">¿Eres el dueño de la web? Entra con tu usuario y tu clave del panel.</p>
     <form id="form-login" autocomplete="on">
       <label for="usuario">Usuario</label>
       <input type="text" id="usuario" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
@@ -112,9 +114,11 @@
       <details>
         <summary>Cómo meterla en mi reloj</summary>
         <p><b>Huawei</b> (Watch Fit 4, GT…): abre Huawei Health → Yo → Mi ruta → Importar ruta, elige el fichero y, dentro de la ruta, «Enviar al reloj». En el reloj: Entrenamiento → ajustes → Rutas.</p>
-        <p><b>Amazfit, Garmin o Coros:</b> importa el mismo GPX con su app (Zepp, Garmin Connect, Coros).</p>
+        <p><b>Amazfit</b> (GTR 4, GTS 4, Balance…, con Zepp 7.2 o más): abre el GPX con Zepp → «Guardar ruta» → «Enviar al reloj». En el reloj: deporte al aire libre → ajustes → Navegación.</p>
+        <p><b>Garmin o Coros:</b> importa el mismo GPX con su app (Garmin Connect, Coros).</p>
+        <p><b>Xiaomi Smart Band</b> (8, 8 Pro…): las bandas Xiaomi no importan rutas. Usa los avisos de la app Sígueme CC (le llegan por Mi Fitness) y graba la carrera en la propia banda.</p>
         <p><b>En iPhone</b> el fichero se guarda en la app Archivos: al importar en la app del reloj, elígelo desde ahí.</p>
-        <p class="sub">Los menús cambian según el modelo y la versión. Si tu reloj no enseña los puntos de control, la ruta se sigue igual.</p>
+        <p class="sub">Los menús cambian según el modelo y la versión. Si tu reloj no enseña los puntos de control, la ruta se sigue igual. <a href="/pulseras">Guía de pulseras y relojes</a></p>
       </details>
     </div>
     <div class="tarjeta entra" id="card-publicar">

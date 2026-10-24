@@ -143,6 +143,9 @@ class Seguimiento : Service(), LocationListener {
                 }
             }
         }
+        // lejos de la ruta después de meta (camino del coche): también se para a los 15 min
+        val metaT = p.getLong("meta_t", 0)
+        if (metaT > 0 && ahora - metaT > 15 * 60_000 && pendientes(this) == 0) { e.apply(); stopSelf(); return }
         e.putString("estado_km", texto).apply()
         // la notificación fija, una vez por minuto: cada 5 s gastaba y alguna app de
         // pulsera la podía reenviar
@@ -232,7 +235,13 @@ class Seguimiento : Service(), LocationListener {
                 .put("battery", JSONObject().put("level", bateria / 100.0))
                 .put("extras", JSONObject().put("origen", "app"))
             // con el móvil sin espacio no se cae el servicio: ese punto se pierde y ya
-            try { synchronized(cola) { File(c.filesDir, "cola.jsonl").appendText(o.toString() + "\n") } } catch (e: Exception) {}
+            try {
+                synchronized(cola) {
+                    val f = File(c.filesDir, "cola.jsonl")
+                    val corta = f.length() > 0 && java.io.RandomAccessFile(f, "r").use { it.seek(f.length() - 1); it.read() } != '\n'.code
+                    f.appendText((if (corta) "\n" else "") + o.toString() + "\n")
+                }
+            } catch (e: Exception) {}
         }
 
         fun pendientes(c: Context): Int = synchronized(cola) {
@@ -260,7 +269,7 @@ class Seguimiento : Service(), LocationListener {
             if (bloqueado(c) || !empezando.compareAndSet(false, true)) return null
             try {
                 if (!p.getBoolean("empezar_pendiente", false)) return null      // PARAR entre medias
-                val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").toString()) }
+                val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").put("t", p.getLong("empezar_t", 0L)).toString()) }
                                     catch (e: Exception) { return null }
                 if (codigo == 403 || codigo == 429) {
                     bloquear(c, codigo)

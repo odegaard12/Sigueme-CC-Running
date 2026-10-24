@@ -172,6 +172,8 @@ def live_publico():
     d = read_live()
     p = {k: d[k] for k in CAMPOS_PUBLICOS if k in d}
     p["en_seguimiento"] = bool(d.get("livetrack_url"))
+    if not d.get("started_at"):
+        p["lat"] = p["lon"] = None              # sin carrera empezada no se publica dónde está nadie
     # carrera.json "ocultar_m": si la salida o la meta son en casa, la posición
     # no se publica a menos de esos metros de ellas
     ocultar = carrera().get("ocultar_m") or 0
@@ -250,6 +252,16 @@ def traza_svg(slug):
     except (OSError, ValueError, KeyError, IndexError, TypeError):
         pass
     return '<span class="indice-traza" aria-hidden="true"></span>'      # el hueco, para que la fila no se descoloque
+
+
+def traza_puntos(slug, n=80):
+    """El recorrido archivado, ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
+    try:
+        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+            pts = json.load(f)["features"][0]["geometry"]["coordinates"]
+        return [[round(float(p[0]), 4), round(float(p[1]), 4)] for p in pts[::max(1, len(pts) // n)]]
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        return []
 
 
 
@@ -373,6 +385,8 @@ def limpiar_carrera(d):
                 c[k] = _numero_en(d[k], lo, hi)
                 if c[k] is not None and k in ("desnivel_m", "ocultar_m"):
                     c[k] = int(c[k])
+        if "modo_offline" in d:
+            c["modo_offline"] = True if d["modo_offline"] is True else None      # None: se quita (por defecto, desactivado)
         if "slug" in d:
             c["slug"] = _texto(d["slug"], 65).lower()
             if c["slug"] and not re.fullmatch(r"\d{4}-[a-z0-9-]{1,60}", c["slug"]):
@@ -421,6 +435,46 @@ def limpiar_avituallamientos(lista):
     return sorted(salida, key=lambda a: a["km"]), None
 
 
+def densificar(coords, paso_km=0.1, tope=40000):
+    """Un vértice como mucho cada 100 m (la app calcula su km sobre los vértices)."""
+    if len(coords) < 2:
+        return coords
+    salida = [coords[0]]
+    for a, b in zip(coords, coords[1:]):
+        n = int(km_entre((a[1], a[0]), (b[1], b[0])) / paso_km)
+        if n > 0 and len(salida) + n < tope:
+            for i in range(1, n + 1):
+                f = i / (n + 1)
+                salida.append([round(a[0] + (b[0] - a[0]) * f, 6), round(a[1] + (b[1] - a[1]) * f, 6)])
+        salida.append(b)
+    return salida
+
+
+def reescalar_ruta(nueva):
+    """La ruta y el perfil llevan los km OFICIALES con los que se prepararon: si se cambian en el panel, se
+    reescalan. Devuelve True si cambió algo."""
+    ruta = leer_json("route.geojson") or {}
+    elev = leer_json("elevation.json") or {}
+    try:
+        props = ruta["features"][0]["properties"]
+    except (KeyError, IndexError, TypeError):
+        return False
+    vieja = props.get("distance_km") or elev.get("distance_km")
+    if not vieja or not nueva or abs(nueva - vieja) < 0.005:
+        return False
+    f = nueva / vieja
+    if not 0.5 < f < 2:
+        return False
+    props["distance_km"] = round(nueva, 2)
+    escribir_json("route.geojson", ruta)
+    if elev.get("profile"):
+        for p in elev["profile"]:
+            p["d"] = round(p["d"] * f, 2)
+        elev["distance_km"] = round(nueva, 2)
+        escribir_json("elevation.json", elev)
+    return True
+
+
 def plan_para_la_app():
     """Todo lo que la app del móvil baja antes de salir para funcionar sin
     cobertura: carrera, ruta, perfil, avituallamientos y avisos."""
@@ -430,7 +484,7 @@ def plan_para_la_app():
     except (KeyError, IndexError, TypeError):
         coords = []
     plan = plan_avisos() or {}
-    return {"carrera": carrera(), "ruta": coords,
+    return {"carrera": carrera(), "ruta": densificar(coords),
             "perfil": [[p["d"], p["ele"]] for p in (leer_json("elevation.json") or {}).get("profile", [])],
             "avituallamientos": leer_json("aid_stations.json") or [],
             "avisos": plan.get("avisos", []), "subidas": plan.get("subidas", []),
@@ -566,9 +620,17 @@ def invitados_mod():
     return _inv_mod
 
 
+def _inv_huella(usuario):
+    """Un trozo del hash del código del invitado (el dueño, fijo): cambia con un código nuevo o una cuenta nueva."""
+    inv = invitados_mod()
+    if usuario == inv.DUENO:
+        return "dueno"
+    return str((inv._registro(ROOT, usuario) or {}).get("hash", ""))[-16:]
+
+
 def _inv_firma(usuario, exp):
     clave = hashlib.sha256(b"sesion-invitado\0" + ADMIN_HASH.encode()).digest()
-    return hmac.new(clave, f"{usuario}.{exp}".encode(), hashlib.sha256).hexdigest()
+    return hmac.new(clave, f"{usuario}.{exp}.{_inv_huella(usuario)}".encode(), hashlib.sha256).hexdigest()
 
 
 def nueva_sesion_invitado(usuario):
@@ -962,7 +1024,7 @@ def puntos_traccar(query, cuerpo):
     if cuerpo:
         try:
             j = json.loads(cuerpo)
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             j = None
         if isinstance(j, dict):
             ident = j.get("device_id") or j.get("id")
@@ -1059,13 +1121,24 @@ def recibir_gps(puntos):
             merge_live(extra)
         return
     ultimo = puntos[-1]
+    try:
+        salida_t = datetime.fromisoformat(live["started_at"]).timestamp() if live.get("started_at") else None
+    except ValueError:
+        salida_t = None
     # Distancia recorrida con el GPS del móvil: sin enlace de iGPSPORT no
     # había ninguna, y la llegada a meta la necesita (km mínimos). Los
     # saltos imposibles (más de 90 km/h entre dos puntos) no suman.
+    # ⚠️ y lo de antes de la salida tampoco: con EMPEZAR en casa, los km hasta la
+    # salida (junto a la meta) ya superaban los mínimos y se daba la llegada en la salida
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
     velocidad = None
     for p in puntos:
+        antes_de_salir = salida_t is None or p["t"] < salida_t or (previo is not None and previo[2] < salida_t)
+        if previo and p["t"] > previo[2] and antes_de_salir:
+            previo = [p["lat"], p["lon"], p["t"]]     # referencia al día, sin sumar
+            p["_dist"] = dist
+            continue
         if previo and p["t"] > previo[2]:
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
             v = tramo / max(1.0, p["t"] - previo[2]) * 3600
@@ -1082,15 +1155,20 @@ def recibir_gps(puntos):
         if not previo or p["t"] > previo[2]:
             previo = [p["lat"], p["lon"], p["t"]]
         p["_dist"] = dist                 # km hechos en este punto (meta dentro del lote)
-    hora = datetime.fromtimestamp(ultimo["t"], timezone.utc).isoformat()
-    patch = {"lat": ultimo["lat"], "lon": ultimo["lon"], "gps_t": ultimo["t"],
-             "gps_at": hora, "data_at": hora, "fuente_posicion": "movil", "gps_origen": manda,
+    patch = {"gps_t": ultimo["t"], "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
-    distancia = max(live.get("dist_km") or 0, dist)
+    # la posición publicada es la del último punto BUENO (no la de un salto imposible); solo con la
+    # carrera empezada (un día de prueba no enseña dónde estás) y hasta 15 min después de meta
     try:
-        salida_t = datetime.fromisoformat(live["started_at"]).timestamp() if live.get("started_at") else None
+        fin_t = datetime.fromisoformat(live["finished_at"]).timestamp() if live.get("finished_at") else None
     except ValueError:
-        salida_t = None
+        fin_t = None
+    if previo and salida_t is not None and not (fin_t and previo[2] > fin_t + 900):
+        hora = datetime.fromtimestamp(previo[2], timezone.utc).isoformat()
+        patch.update(lat=previo[0], lon=previo[1], gps_at=hora, data_at=hora)
+    distancia = max(live.get("dist_km") or 0, dist)
+    if salida_t is not None:
+        patch["dist_km"] = round(distancia, 2)       # el km hecho: la web lo usa de ancla (antes no se guardaba nunca)
     # ⚠️ antes de la salida no cuenta nada: con EMPEZAR a las 09:45 y la salida
     # junto a la meta, llegar a la salida «desde lejos» se daba por llegada
     # ⚠️ y solo los NUEVOS: si la app reenvía un lote que ya había llegado (se
@@ -1447,6 +1525,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._publico_get(crudo)
         if crudo == "/inicio":
             return self._pagina("inicio.html")
+        if crudo == "/pulseras":
+            return self._pagina("pulseras.html")
+        if crudo == "/ruta-carrera.gpx":
+            return self._gpx_publico(ROOT)
         m_ruta = re.fullmatch(r"/r/([0-9a-f]{12})", crudo)
         if m_ruta:
             return self._pagina_ruta(m_ruta.group(1))
@@ -1462,7 +1544,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
         if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
-        if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() \
+        if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() and not directo_ahora() \
                 and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             # sin carrera en marcha: la portada lleva al último resultado (302,
             # no 301: cuando empiece la siguiente carrera, la portada será ella)
@@ -1529,6 +1611,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         si no, el de la web (app.js, estilos, librería)."""
         if nombre in ("", "index.html"):
             return self._index_resultado(os.path.join(ARCHIVO_DIR, slug), slug)
+        if nombre == "ruta-carrera.gpx":
+            return self._gpx_publico(os.path.join(ARCHIVO_DIR, slug), slug)
         if ".." in nombre or nombre.startswith(".") or os.path.splitext(nombre)[1].lower() not in EXTENSIONES_PUBLICAS:
             return self.send_error(404)
         propio = os.path.join(ARCHIVO_DIR, slug, nombre)
@@ -1549,25 +1633,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         for slug, c, r in carreras_archivadas():
             h, m = divmod(int(r.get("tiempo_oficial_s") or 0) // 60, 60)
             f = str(c.get("fecha") or "")
-            fecha = "/".join(reversed(f.split("-"))) if re.match(r"^\d{4}-\d{2}-\d{2}$", f) else f
+            fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
+                     if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
             datos = " · ".join(str(x) for x in (
                 fecha, c.get("lugar", ""),
-                f"{str(r.get('distancia_km', '')).replace('.', ',')} km" if r.get("distancia_km") else "",
+                "",
                 f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
-            filas.append(f'<li style="--i:{min(len(filas), 12)}"><a href="/{esc(slug)}/">{traza_svg(slug)}<span class="indice-txt"><b>{esc(c.get("nombre") or slug)}</b>'
-                         f'<span>{esc(datos)}</span></span><strong class="indice-tiempo">{esc(tiempo)}</strong></a></li>')
-        en_marcha = '<p class="indice-vivo"><a href="/">● Carrera en directo ahora</a></p>' if hay_carrera_en_marcha() else ""
+            dist = c.get("distancia_km") or r.get("distancia_km")      # la oficial, como en la portada
+            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else "–"
+            filas.append(f'<a class="fila carrera" href="/{esc(slug)}/"><div class="nombre">{esc(c.get("nombre") or slug)}<small>{esc(datos)}</small></div>'
+                         f'<div class="traza">{traza_svg(slug)}</div><div class="cifra km"><b>{esc(km)}</b><span>KM</span></div>'
+                         f'<div class="cifra t"><b>{esc(tiempo or "–")}</b><span>{"TIEMPO" if tiempo else ""}</span></div></a>')
+        sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
+        live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
+        en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
+        n = len(filas)
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                '<title>Carreras · Sígueme CC</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=3"><link rel="stylesheet" href="/style.css?v=indice3">'
-                '</head><body class="indice"><header class="topbar"><div class="marca"><h1>Sígueme <span>CC</span></h1>'
-                '</div></header><main class="indice-main">'
-                f'<h2 class="indice-titulo">Todas las carreras</h2>'
-                f'<p class="indice-cuenta">{len(filas)} {"carrera" if len(filas) == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p>'
-                f'{en_marcha}<ul class="indice-lista">{"".join(filas) or "<li>Todavía no hay carreras archivadas.</li>"}</ul>'
-                '</main></body></html>').encode("utf-8")
+                '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#d9f24a">'
+                f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=2">'
+                '</head><body class="cartel"><div class="campo">'
+                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Admin</a></nav></header>'
+                '<h1 class="gigante">Carreras</h1>'
+                f'<div class="bajo"><p>{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p></div></div>'
+                f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
+                f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
+                '<footer class="pie"><a href="/inicio">‹ Volver a las rutas</a></footer></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))
@@ -1715,7 +1807,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return None
         try:
             d = json.loads(self.rfile.read(largo) or b"{}")
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             return None
         return d if isinstance(d, dict) else None
 
@@ -1832,6 +1924,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
         except ValueError:
             largo = -1
+        if largo == 0:
+            self._send_json(400, {"error": "el fichero está vacío"})
+            return
         if not 0 < largo <= inv.MAX_GPX:
             self._send_json(413, {"error": f"el GPX tiene que pesar menos de {inv.MAX_GPX // 1_000_000} MB"})
             return
@@ -1857,8 +1952,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if ruta == "/api/carreras":
             lista = [{"slug": slug, "nombre": c.get("nombre"), "lugar": c.get("lugar"), "fecha": c.get("fecha"),
-                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km"),
-                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s")}
+                      "modalidad": c.get("modalidad"), "distancia_km": c.get("distancia_km") or r.get("distancia_km"),
+                      "desnivel_m": c.get("desnivel_m"), "tiempo_s": r.get("tiempo_oficial_s"), "traza": traza_puntos(slug)}
                      for slug, c, r in carreras_archivadas()]
             c, live = carrera(), read_live()
             hoy = datetime.now(zona_carrera()).date().isoformat()
@@ -1924,6 +2019,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             titulo, desc = "Ruta no disponible", "Esta ruta ya no está disponible."
         return self._pagina("ruta.html", {"TITULO": titulo, "DESC": desc}, 200 if d else 404)
 
+    def _gpx_publico(self, base, slug=""):
+        """La ruta de la carrera (la de hoy o una archivada) como GPX para el reloj, con los avituallamientos y las
+        subidas como puntos de control. Es pública: la ruta ya se ve en el mapa de la web."""
+        try:
+            cuerpo = herramienta("gpx_reloj").desde_ficheros(base).encode("utf-8")
+        except (ValueError, OSError):
+            return self.send_error(404)
+        nombre = re.sub(r"[^a-z0-9-]+", "-", (slug or slug_de(carrera()) or "ruta").lower()).strip("-") or "ruta"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{nombre}-reloj.gpx"')
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.send_header("Cache-Control", "public, max-age=300")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(cuerpo)
+
     def _gpx_reloj(self):
         """La ruta con altitud y los avituallamientos y subidas como puntos de control,
         para importarla en el reloj (Huawei Health, Zepp, Garmin...). Solo con sesión."""
@@ -1960,6 +2072,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
         except ValueError:
             largo = -1
+        if largo == 0:
+            self._send_json(400, {"error": "el fichero está vacío"})
+            return
         if not 0 < largo <= MAX_GPX:
             self._send_json(413, {"error": "el GPX tiene que pesar menos de 20 MB"})
             return
@@ -2019,7 +2134,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _subir_fit(self):
         """El FIT del reloj o del ciclocomputador → resultado.json (modo resultado)."""
-        cuerpo = self._subida(40_000_000, "el FIT")
+        cuerpo = self._subida(40_000_000, "el fichero")
         if cuerpo is None:
             return
         if self._en_carrera():
@@ -2036,7 +2151,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         except Exception as exc:
             print(f"[fit] {exc!r}", flush=True)
-            self._send_json(400, {"error": "no se pudo sacar el resultado de ese FIT (¿la ruta subida es la de esta carrera?)"})
+            self._send_json(400, {"error": "no se pudo sacar el resultado de ese fichero (¿la ruta subida es la de esta carrera?)"})
             return
         escribir_json("resultado.json", res)
         apuntar_historial("resultado", tiempo_s=res["tiempo_oficial_s"])
@@ -2079,8 +2194,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             antes = carrera()
             escribir_json("carrera.json", c)
-            # el D+ oficial escala el "quedan +X m" de los avisos
-            plan = generar_plan() if c.get("desnivel_m") != antes.get("desnivel_m") else plan_avisos()
+            reescalada = bool(c.get("distancia_km")) and reescalar_ruta(float(c["distancia_km"]))
+            # el D+ oficial escala el "quedan +X m" de los avisos (y la distancia, sus km)
+            plan = generar_plan() if reescalada or c.get("desnivel_m") != antes.get("desnivel_m") else plan_avisos()
             self._send_json(200, {"ok": True, "carrera": c, "plan": plan, "preparacion": preparacion()})
             return
         if accion == "guardar_avituallamientos":
@@ -2128,7 +2244,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         escribir_json("avisos.json", plan)
         self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
 
-    def _empezar(self, hora, origen="panel"):
+    def _empezar(self, hora, origen="panel", desde=None):
         """Carrera en marcha: el crono cuenta desde la hora OFICIAL (si se empieza
         a las 09:45 para salir a las 10:00, la web dice «en la salida» hasta las
         10:00 y luego cuenta desde las 10:00, no desde las 09:45)."""
@@ -2138,7 +2254,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         apuntar_historial("empezar", hora_salida=hora, origen=origen)
         return merge_live({
             "status_label": "En carrera", "livetrack_url": None, "extract_status": None,
-            "started_at": inicio or datetime.now(timezone.utc).isoformat(),
+            "started_at": inicio or desde or datetime.now(timezone.utc).isoformat(),
             "hora_salida": hora or None, "finished_at": None, "elapsed": None,
             "speed_kmh": None, "speed_kmh_avg": None, "hr": None, "hr_avg": None,
             "cadence": None, "cadence_avg": None, "dist_km": None, "data_at": None,
@@ -2148,7 +2264,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "gps_origen": None, "gps_rechazado_at": None,
         })
 
-    def _empezar_desde_app(self):
+    def _empezar_desde_app(self, desde_ms=None):
         """EMPEZAR en la app = carrera en marcha en la web, sin abrir el panel.
         Solo el día de la carrera (otro día es una prueba: no toca la web) y una
         vez: si ya está en marcha hoy, no se reinicia."""
@@ -2167,7 +2283,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return "terminada", "La carrera de hoy ya está terminada en la web"
         if c.get("fecha") and c["fecha"] != hoy:
             return "otro_dia", f"La carrera es el {c['fecha']}: hoy es solo una prueba (la web no cambia)"
-        self._empezar(c.get("hora_salida") or "", origen="app")
+        desde = None
+        try:     # cuándo pulsó EMPEZAR (sin cobertura la petición llega tarde); solo si es creíble: últimas 6 h
+            t = float(desde_ms) / 1000
+            if time.time() - 6 * 3600 <= t <= time.time() + 120:
+                desde = datetime.fromtimestamp(t, timezone.utc).isoformat()
+        except (TypeError, ValueError, OverflowError):
+            pass
+        self._empezar(c.get("hora_salida") or "", origen="app", desde=desde)
         return "empezada", f"Carrera en marcha en la web (salida a las {c.get('hora_salida') or 'ya'})"
 
     def _plan_app(self):
@@ -2181,7 +2304,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             largo = int(self.headers.get("Content-Length", 0))
             cuerpo = json.loads(self.rfile.read(largo) if 0 < largo <= 4096 else b"{}")
             ident = str(cuerpo.get("device_id") or "")
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, RecursionError):
             cuerpo, ident = {}, ""
         clave = clave_gps()
         if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
@@ -2192,7 +2315,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         merge_live({"app_at": datetime.now(timezone.utc).isoformat()})
         respuesta = plan_para_la_app()
         if cuerpo.get("accion") == "empezar":
-            respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app()
+            respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app(cuerpo.get("t"))
         self._send_json(200, respuesta)
 
     def do_POST(self):
@@ -2234,7 +2357,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
-        except (json.JSONDecodeError, UnicodeDecodeError):
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             self._send_json(400, {"error": "invalid json"})
             return
 
@@ -2590,14 +2713,10 @@ if __name__ == "__main__":
 
     def purga_invitados():
         # sin esperar a que alguien entre: lo caducado se borra solo (cada 6 h; solo la Pi que tiene la VIP)
-        import importlib.util
         while True:
             try:
                 if tengo_la_vip():
-                    spec = importlib.util.spec_from_file_location('invitados_purga', os.path.join(ROOT, 'herramientas', 'invitados.py'))
-                    m = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(m)
-                    m.purgar(ROOT)
+                    invitados_mod().purgar(ROOT)
             except Exception as exc:
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)

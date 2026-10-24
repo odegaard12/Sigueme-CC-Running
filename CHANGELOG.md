@@ -4,6 +4,196 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.29.0 · 2026-10-24
+- **Textos de ayuda del panel más cortos:** las explicaciones de Carrera, Móvil (app, pulsera, Traccar y
+  Amazfit), Preparar (ruta, reloj, avisos), Resultado, Archivar y Rutas dicen lo mismo con menos palabras:
+  una idea por frase y el paso concreto primero.
+
+## v1.28.0 · 2026-10-24
+- **Guía de primera vez en el panel:** al entrar por primera vez se abre sola una visita de 5 pasos
+  (bienvenida, resumen, los 5 pasos, «qué toca ahora» y listo), señalando cada cosa en pantalla. Se puede
+  saltar o cerrar con Esc, no vuelve a salir sola y se repite con el botón «? Guía» de la cabecera.
+
+## v1.27.0 · 2026-10-24
+- **Panel de administración nuevo:**
+  - Cabecera fina (antes, un «ADMIN» gigante que ocupaba un tercio de la pantalla).
+  - En el PC, los cinco pasos van en una barra lateral que se queda fija; en el móvil siguen arriba, en pestañas.
+  - Arriba del todo, el resumen de la carrera: estado, nombre, fecha, hora y km, un botón grande («Ir a empezar»,
+    «Ver el directo» o «Subir el resultado» según toque) y cuatro cifras: listo, móvil, avisos a la pulsera y ruta.
+
+## v1.26.0 · 2026-10-24
+- **Seguimiento automático:** al abrir una carrera en directo la cámara ya va con el corredor
+  (zoom cercano); si arrastras o haces zoom en el mapa, deja de seguir y respeta tu vista.
+- **Botones del mapa con texto:** «Seguir» / «Siguiendo» (el icono late mientras sigue) y
+  «Vista 2D» / «Vista 3D», en vez de un icono suelto y un «2D» críptico.
+
+## v1.25.1 · 2026-10-24
+- **Seguimiento más fluido:** con 🎯 la cámara va pegada al corredor en cada fotograma (antes, un
+  movimiento por segundo que se reiniciaba a mitad y daba tirones); la foto se mueve a ~30 fps.
+- **La portada no repite la carrera:** si una ruta publicada es la misma que una carrera
+  archivada (mismo nombre y distancia), solo sale la carrera.
+
+## v1.25.0 · 2026-10-24
+- **Cabecera compacta** en la página en directo: ocupa mucho menos alto y deja el mapa a la vista.
+- **Animaciones con sentido:** los números se resaltan un momento cuando cambian.
+- **Cortes y reconexión:** aviso «Sin conexión · último dato hace N min · reintentando…» y, al volver la red, «Conexión recuperada ✓», que se va solo.
+- **GPX de la ruta público** (`/ruta-carrera.gpx`, también de carreras archivadas) para cargarlo en cualquier reloj.
+- **Guía «Pulseras y relojes»** (`/pulseras`): Xiaomi, Huawei, Amazfit y el resto.
+- **Sincronizar sin teclear claves:** el panel copia un enlace de configuración y la miniapp de Amazfit lo acepta pegado.
+- Las pruebas usan puertos libres.
+
+## v1.24.0 · 2026-10-24
+- **La página en directo, más clara:**
+  - **Lo importante, donde se ve:** la frase de estado («Sin cobertura desde las
+    11:57, en el km 9,0. A su ritmo estará ahora hacia el km 12 (la marca
+    transparente del mapa)») pasa de debajo del mapa, fuera de pantalla en el
+    móvil, a la cabecera, junto al estado.
+  - **El botón de la ficha dice «Mi ficha»** también en el móvil (antes, un círculo
+    sin texto) cuando cabe (desde 380 px de ancho).
+  - **El perfil de altura lleva escala:** «Altura 900–1020 m · ruta 21,1 km».
+  - **Los números, iguales en todas partes:** 21,1 km (antes «21,10» arriba y
+    «21,1» en el resto) y 103,36 si hace falta; «tiempo de carrera» en vez de
+    «tiempo».
+  - **Antes de salir**, dice que la página se actualiza sola.
+- **Mis rutas:** el texto de entrada separa lo del invitado (su acceso caduca y, pasada
+  la fecha, se borra todo lo suyo) de lo del dueño; ya dentro, el invitado ve esa
+  misma advertencia; y el botón de «elegir fichero» tiene el diseño de la web, en
+  Mis rutas y en el panel (antes, el gris del navegador).
+- Capturas del repo al día (página en directo, datos de la carrera con la casilla
+  nueva y guía).
+
+## v1.23.0 · 2026-10-23
+- **La web en directo con cortes de cobertura:**
+  - **El último dato se guarda en el móvil de quien mira** (siempre activo): si abre
+    la web sin red, ve el último estado en vez de una pantalla vacía, y el aviso
+    dice cuánto hace: «Sin conexión · último dato hace 12 min · reintentando…». Tras
+    mucho rato sin red, la web pregunta menos (cada 15 s) para gastar menos batería.
+  - **«Web que se abre sin cobertura» (experimental, casilla en Datos de la
+    carrera; desactivada por defecto):** un service worker guarda la página, la
+    ruta, el perfil y las teselas del mapa que ya se vieron, y la web se abre aunque
+    no haya red. Probado en un navegador real: abrir, cortar la red, recargar, volve
+    la red, y que una versión nueva del código llegue aunque lo tenga todo guardado
+    (el fallo de las tres versiones antiguas). Lo vivo (`live.json`, `/api/`) nunca se
+    guarda. Desactivada, la web funciona como siempre: sin service worker y
+    desinstalando el que hubiera quedado de versiones antiguas.
+
+## v1.22.0 · 2026-10-23
+- **Xiaomi, Huawei y Amazfit:**
+  - **Resultado desde un GPX:** además del FIT, el panel acepta el GPX que
+    exportan Xiaomi Mi Fitness (Smart Band 8 Pro y otras), Huawei Health, Zepp o
+    Strava, si trae la hora de cada punto: tiempo oficial, pasos por avituallamiento,
+    pulso medio, desnivel y repetición (prueba nueva).
+  - **Consejos por marca en la app:** la guía de «activar Sígueme CC en la pulsera»
+    añade lo propio de Mi Fitness, Huawei Health y Zepp, y lo que hay que toca
+    en móviles Xiaomi (HyperOS/MIUI) y Huawei/Honor, que cierran las apps en
+    segundo plano.
+  - **Ruta en el reloj:** las páginas de cada ruta explican cómo importarla en
+    Amazfit con Zepp (GTR 4, GTS 4, Balance…) y avisan de que las Xiaomi Smart
+    Band no importan rutas (se usan los avisos de la app).
+- **Distancia oficial:** si cambias los km en el panel después de subir el GPX, el
+  perfil y la ruta se reescalan y el plan de avisos se rehace; antes los avisos
+  de la app y los km de la web quedaban en dos escalas y se desplazaban unos metros.
+- **EMPEZAR sin cobertura y sin hora oficial:** el crono cuenta desde que se pulsó
+  EMPEZAR, no desde que vuelve la cobertura (la app manda la hora; solo se acepta
+  si es de las últimas 6 h).
+- **Km en rutas con pocos puntos:** la app recibe la ruta con un punto como mucho
+  cada 100 m. Con un GPX de ruta (pocos puntos) o una ruta de más de 300 km
+  reducida a 1800 puntos, a mitad de tramo decía «fuera de la ruta» y el km
+  avanzaba a saltos.
+
+## v1.21.0 · 2026-10-23
+- **Privacidad:** sin EMPEZAR (un día de prueba, o con el móvil en casa) la web
+  ya no publica tu posición, y 15 min después de meta deja de moverse. Antes se
+  veía en el mapa aunque el servidor dijera «otro día: la web no cambia».
+- **Meta falsa en la salida:** con EMPEZAR en casa, los km hasta la salida se
+  sumaban; en un recorrido circular superaban los mínimos y la web daba «En meta
+  · 0h 00m» nada más salir. Lo de antes de la salida ya no suma (prueba nueva).
+- **Directo:** en una ida y vuelta el km de la web iba hacia atrás toda la vuelta;
+  un salto imposible del GPS ya no se publica como posición; el km hecho se
+  guarda para quien abre la web a mitad de carrera; un GPX sin altura ya no
+  rompe la animación ni la repetición.
+- **App:** tras meta el seguimiento se para a los 15 min aunque ya no estés sobre
+  la ruta (camino del coche); una línea cortada de la cola ya no estropea la
+  siguiente.
+- **Panel:** bloqueado por intentos o servidor sin clave ya no se anuncian como
+  «usuario o clave incorrectos».
+- **Reloj Amazfit:** vale con escribir el dominio (se completa con `/api/gps`; antes
+  no llegaba ningún punto), la cola se guarda tras cada envío (sin reenvíos
+  repetidos) y colores del diseño cartel.
+
+## v1.20.5 · 2026-10-23
+- La plantilla del servicio (`despliegue/sigueme.service`) también deja `/home` de
+  solo lectura salvo la carpeta del servidor: `ProtectSystem=strict` no cubre
+  `/home`, y sin `ProtectHome=read-only` el servidor aún podía escribir, po
+  ejemplo, en `~/.ssh`. Comprobado al encerrar el servicio de verdad en las dos Pis.
+
+## v1.20.4 · 2026-10-23
+- **Invitados:**
+  - La purga automática de lo caducado usaba otra copia del módulo de invitados,
+    con su propio cerrojo: podía pisar una renovación, borrar la carpeta de un
+    invitado recién creado o dejar el índice de rutas públicas desfasado.
+  - Con «Código nuevo», o al borrar un invitado y crear otro con el mismo nombre,
+    las sesiones abiertas seguían valiendo hasta 12 h (la nueva cuenta quedaba
+    abierta al anterior). Ahora dejan de valer al momento (prueba nueva).
+  - Publicar con un valor raro de «ocultar» mandaba 0 m y la ruta salía entera:
+    ahora 300 m. Un GPX vacío lo dice; un acceso sin caducidad ya no pone
+    «hasta el 31/12/2099»; `ocultar_m` infinito ya no deja la petición colgada.
+- **Portada:** con una carrera ya pasada y sin archivar, `/` saltaba al resultado
+  de la carrera anterior; ahora enseña esa carrera. La distancia de cada carrera,
+  igual en la portada y en `/carreras/` aunque falte en su `carrera.json`.
+- **App, pestaña Rutas:** sin cobertura avisa y deja reintentar (antes abría el
+  navegador); el doble toque ya no baja dos copias; un fallo a medias no deja un
+  GPX vacío en Descargas; abrir otra ruta deprisa ya no pinta la anterior.
+
+## v1.20.3 · 2026-10-22
+- **Seguridad:** un JSON anidado a propósito (miles de niveles de `[[[[`) dejaba
+  la petición sin respuesta, también en `/api/gps` sin autenticar: ahora se
+  contesta como cualquier JSON malo (prueba nueva en `pruebas/servidor.py`).
+- **Servicio encerrado** (`despliegue/sigueme.service`): solo escribe en su
+  carpeta, sin privilegios nuevos, `/tmp` propio y el sistema de solo lectura.
+- **CI:** acciones de GitHub fijadas por commit (una etiqueta se puede mover) y
+  sin guardar las credenciales del checkout.
+- Revisado frente a php2shell (CVE-2026-109618 y CVE-2026-109619): el proyecto no
+  usa PHP; no le afecta.
+
+## v1.20.2 · 2026-10-22
+- **App Android al día:** Android Gradle Plugin 9.4.1 y Kotlin 2.4.21 (las dos
+  PR de Dependabot, juntas: por separado no compilan). Con AGP 9 Kotlin va
+  dentro del plugin de Android y el CI compila con la última versión de Gradle.
+  Probado en el emulador (avisos sin cobertura y carrera completa).
+- La misma distancia de cada carrera en la portada y en `/carreras/` (la oficial;
+  la recorrida sale en su resultado). En la página en directo, el enlace de
+  arriba se llama «Inicio», como en el resto.
+
+## v1.20.1 · 2026-10-21
+- **Índice de carreras (`/carreras/`) y página de la app (la del código QR) con el
+  diseño cartel**, la misma cabecera que el resto (nombre del sitio, Inicio, Admin).
+- **Arreglos:** el índice decía «Carrera en directo ahora» con una carrera solo
+  preparada para otro día; ahora solo cuando de verdad está en marcha. En la
+  portada, las carreras salen con el dibujo de su recorrido, el tiempo como en el
+  resto de la web («2h 32m») y, en el móvil, se ve el tiempo en vez de los km. La
+  fecha del índice, como en la portada («16 may 2027»). La página de la app ya no
+  habla de «Listo para salir / Arreglar» (pantalla vieja de la app) y nombra
+  Huawei Health.
+
+## v1.20.0 · 2026-10-20
+- **La página de la carrera en directo, con el diseño cartel:** franja lima con el
+  nombre de la carrera en letra condensada, cifras grandes, estado (en directo,
+  sin cobertura, resultado) y el mismo aspecto para las carreras archivadas y su
+  resultado. El nombre del sitio sale del dominio, como en el resto de páginas.
+- **La app Android, con el mismo diseño:** cabecera lima, botones y títulos en
+  letra condensada, colores lima y negro, esquinas rectas. La pantalla de la
+  carrera sigue enseñando el botón de empezar sin bajar.
+- **Icono nuevo** (app, web, pantalla de inicio del móvil y vista previa al
+  compartir): chincheta negra con «CC» sobre lima.
+- **Revisión de diseño:** el acento de «Sígueme» ya no pisa la línea de arriba en
+  el titular de la portada, los desplegables enseñan un «+», las casillas del
+  panel salen en lima y la página en directo ya no enseña «admin» ni la versión.
+- **Capturas del repo regeneradas** (portada, panel, guía paso a paso, rutas,
+  app) con una carrera inventada.
+- Banco del emulador: toca los botones sin distinguir mayúsculas y baja la
+  pantalla si el botón no se ve.
+
 ## v1.19.1 · 2026-10-19
 - **Al caducar un acceso se borra todo, y a tiempo:** el día siguiente a la fecha
   de caducidad desaparecen el usuario, sus rutas y las que había publicado (antes

@@ -8,7 +8,7 @@ de salida, la distancia y el nombre salen de carrera.json.
 El panel hace lo mismo al subir el FIT (pestaña «Más»). Necesita fitdecode
 (pip install fitdecode)."""
 import io, json, math, pathlib, sys
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 # la web (route.geojson, aid_stations.json, resultado.json) está en la raíz del repo
@@ -22,10 +22,72 @@ def hav(a, b):
     return 2 * 6371 * math.asin(math.sqrt(h))
 
 
+def _es_gpx(datos):
+    if isinstance(datos, (str, pathlib.Path)):
+        return str(datos).lower().endswith('.gpx')
+    return b'.FIT' not in datos[:16] and b'<gpx' in datos[:4096].lower()
+
+
+def _leer_gpx(datos):
+    """GPX de un reloj o pulsera (Mi Fitness, Huawei Health, Zepp, Strava…) → (puntos [(hora, lat, lon)], sesión).
+    Necesita la hora de cada punto; el pulso y la altura, si los trae."""
+    import xml.etree.ElementTree as ET
+    if not isinstance(datos, bytes):
+        datos = pathlib.Path(datos).read_bytes()
+    try:
+        raiz = ET.fromstring(datos)
+    except ET.ParseError as exc:
+        raise ValueError(f'no se pudo leer el GPX ({str(exc)[:60]})')
+    local = lambda e: e.tag.rsplit('}', 1)[-1]
+    recs, hrs, alts = [], [], []
+    for pt in raiz.iter():
+        if local(pt) != 'trkpt':
+            continue
+        try:
+            la, lo = float(pt.get('lat')), float(pt.get('lon'))
+        except (TypeError, ValueError):
+            continue
+        hora = ele = hr = None
+        for h in pt.iter():
+            n = local(h)
+            try:
+                if n == 'time' and h.text:
+                    hora = datetime.fromisoformat(h.text.strip().replace('Z', '+00:00'))
+                elif n == 'ele' and h.text:
+                    ele = float(h.text)
+                elif n == 'hr' and h.text:
+                    hr = float(h.text)
+            except ValueError:
+                pass
+        if hora is None:
+            continue
+        if hora.tzinfo is None:
+            hora = hora.replace(tzinfo=timezone.utc)
+        recs.append((hora, la, lo))
+        if hr and 30 < hr < 250:
+            hrs.append(hr)
+        if ele is not None:
+            alts.append(ele)
+    recs.sort(key=lambda r: r[0])
+    mov = 0.0                      # tiempo en movimiento: tramos de menos de 1 min a más de 1 km/h
+    for a, b in zip(recs, recs[1:]):
+        dt = (b[0] - a[0]).total_seconds()
+        if 0 < dt <= 60 and hav(a[1:], b[1:]) / dt * 3600 > 1:
+            mov += dt
+    sube, ref = 0.0, alts[0] if alts else 0.0       # desnivel con 3 m de histéresis (el ruido del barómetro no suma)
+    for e in alts:
+        if e - ref >= 3:
+            sube += e - ref
+            ref = e
+        elif ref - e >= 3:
+            ref = e
+    return recs, {'total_timer_time': mov, 'total_ascent': round(sube) if alts else None,
+                  'avg_heart_rate': round(sum(hrs) / len(hrs)) if hrs else None}
+
+
 def generar(fit, raiz=RAIZ):
-    """FIT (ruta o bytes) → diccionario de resultado.json. ValueError con el
-    motivo en castellano si el FIT no vale para esta carrera."""
-    import fitdecode
+    """FIT o GPX (ruta o bytes) → diccionario de resultado.json. ValueError con el
+    motivo en castellano si el fichero no vale para esta carrera."""
     carrera = json.loads((raiz / 'carrera.json').read_text(encoding='utf-8'))
     try:
         salida_oficial = datetime.fromisoformat(f"{carrera['fecha']}T{carrera['hora_salida']}").replace(
@@ -54,20 +116,24 @@ def generar(fit, raiz=RAIZ):
         return ruta[-1]
 
     recs, sesion = [], {}
-    try:
-        with fitdecode.FitReader(io.BytesIO(fit) if isinstance(fit, bytes) else str(fit)) as fr:
-            for f in fr:
-                if isinstance(f, fitdecode.FitDataMessage):
-                    d = {x.name: x.value for x in f.fields}
-                    if (f.name == 'record' and d.get('position_lat') is not None
-                            and d.get('position_long') is not None and d.get('timestamp')):
-                        recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
-                    elif f.name == 'session':
-                        sesion = d
-    except Exception as exc:
-        raise ValueError(f'no se pudo leer el FIT ({exc.__class__.__name__})')
+    if _es_gpx(fit):
+        recs, sesion = _leer_gpx(fit)
+    else:
+        import fitdecode
+        try:
+            with fitdecode.FitReader(io.BytesIO(fit) if isinstance(fit, bytes) else str(fit)) as fr:
+                for f in fr:
+                    if isinstance(f, fitdecode.FitDataMessage):
+                        d = {x.name: x.value for x in f.fields}
+                        if (f.name == 'record' and d.get('position_lat') is not None
+                                and d.get('position_long') is not None and d.get('timestamp')):
+                            recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
+                        elif f.name == 'session':
+                            sesion = d
+        except Exception as exc:
+            raise ValueError(f'no se pudo leer el FIT ({exc.__class__.__name__})')
     if len(recs) < 10:
-        raise ValueError('el FIT no trae posiciones GPS')
+        raise ValueError('el fichero no trae posiciones GPS con hora')
 
     # km de ruta de cada punto, siempre hacia delante (como la web), en km oficiales
     # ventana que solo avanza: antes recorría la ruta entera por cada punto y un
