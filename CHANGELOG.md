@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.33.0 · 2026-10-25
+- **El resultado calcula el tiempo en movimiento, el desnivel, el pulso medio y la cadencia solo del tramo salida-meta.** Antes salían de toda la actividad grabada: con calentamiento, trayecto al coche o vuelta a casa en el fichero, la velocidad media y el D+ publicados no eran los de la carrera (en una prueba inventada, 6,7 km/h y 131 ppm en vez de 10,0 km/h y 160 ppm). Si el fichero es casi todo carrera (menos de un 5 % de más), se siguen usando los datos del reloj. Vale para FIT y GPX.
+- **El historial no apunta dos veces el mismo punto GPS** cuando el móvil o el reloj reenvían un lote porque no les llegó la respuesta.
+- Nueva prueba `pruebas/resultado_tramo.py`.
+
 ## v1.32.0 · 2026-10-25
 App Android y CI tras la auditoría:
 - **Un 403 de la red ya no bloquea el envío para siempre:** solo se considera «identificador no válido» (y pide volver a escanear) si el servidor lo dice; un 403 de un cortafuegos o de Cloudflare se reintenta a los 15 minutos, con su aviso propio.

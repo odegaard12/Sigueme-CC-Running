@@ -24,6 +24,11 @@ ok(server._clave_ip('2001:db8:1:2::1') == server._clave_ip('2001:db8:1:2:ffff::9
 ok(server._clave_ip('2001:db8:1:3::1') != server._clave_ip('2001:db8:1:2::1'), '/64 distintos, claves distintas')
 ok(server._clave_ip('203.0.113.5') == '203.0.113.5', 'IPv4 sin cambios')
 
+# un punto GPS reenviado (respuesta perdida, cola reintentada) no se apunta dos veces
+_p = {'t': 1000.0, 'lat': 41.0, 'lon': -3.0, 'hr': None}
+ok(not server._repetido(dict(_p)) and server._repetido(dict(_p)), 'un punto GPS reenviado se reconoce como repetido')
+ok(not server._repetido(dict(_p, t=1010.0)), 'otro punto distinto no se confunde con el anterior')
+
 with tempfile.TemporaryDirectory() as t:
     t = pathlib.Path(t)
     # live.json corrupto: siempre un dict

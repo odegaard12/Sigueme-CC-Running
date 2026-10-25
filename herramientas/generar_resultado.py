@@ -28,6 +28,28 @@ def _es_gpx(datos):
     return b'.FIT' not in datos[:16] and b'<gpx' in datos[:4096].lower()
 
 
+def _movimiento(recs):
+    """Tiempo en movimiento: tramos de menos de 1 min a más de 1 km/h."""
+    mov = 0.0
+    for a, b in zip(recs, recs[1:]):
+        dt = (b[0] - a[0]).total_seconds()
+        if 0 < dt <= 60 and hav(a[1:], b[1:]) / dt * 3600 > 1:
+            mov += dt
+    return mov
+
+
+def _desnivel(alts):
+    """Desnivel positivo con 3 m de histéresis (el ruido del barómetro no suma)."""
+    sube, ref = 0.0, alts[0] if alts else 0.0
+    for e in alts:
+        if e - ref >= 3:
+            sube += e - ref
+            ref = e
+        elif ref - e >= 3:
+            ref = e
+    return sube
+
+
 def _leer_gpx(datos):
     """GPX de un reloj o pulsera (Mi Fitness, Huawei Health, Zepp, Strava…) → (puntos [(hora, lat, lon)], sesión).
     Necesita la hora de cada punto; el pulso y la altura, si los trae."""
@@ -43,7 +65,7 @@ def _leer_gpx(datos):
     except ET.ParseError as exc:
         raise ValueError(f'no se pudo leer el GPX ({str(exc)[:60]})')
     local = lambda e: e.tag.rsplit('}', 1)[-1]
-    recs, hrs, alts = [], [], []
+    recs, hrs, alts, extra = [], [], [], []
     for pt in raiz.iter():
         if local(pt) != 'trkpt':
             continue
@@ -68,25 +90,17 @@ def _leer_gpx(datos):
         if hora.tzinfo is None:
             hora = hora.replace(tzinfo=timezone.utc)
         recs.append((hora, la, lo))
+        extra.append((ele, hr if hr and 30 < hr < 250 else None, None))
         if hr and 30 < hr < 250:
             hrs.append(hr)
         if ele is not None:
             alts.append(ele)
-    recs.sort(key=lambda r: r[0])
-    mov = 0.0                      # tiempo en movimiento: tramos de menos de 1 min a más de 1 km/h
-    for a, b in zip(recs, recs[1:]):
-        dt = (b[0] - a[0]).total_seconds()
-        if 0 < dt <= 60 and hav(a[1:], b[1:]) / dt * 3600 > 1:
-            mov += dt
-    sube, ref = 0.0, alts[0] if alts else 0.0       # desnivel con 3 m de histéresis (el ruido del barómetro no suma)
-    for e in alts:
-        if e - ref >= 3:
-            sube += e - ref
-            ref = e
-        elif ref - e >= 3:
-            ref = e
-    return recs, {'total_timer_time': mov, 'total_ascent': round(sube) if alts else None,
-                  'avg_heart_rate': round(sum(hrs) / len(hrs)) if hrs else None}
+    orden = sorted(range(len(recs)), key=lambda i: recs[i][0])
+    recs = [recs[i] for i in orden]
+    extra = [extra[i] for i in orden]
+    sube = _desnivel(alts)
+    return recs, {'total_timer_time': _movimiento(recs), 'total_ascent': round(sube) if alts else None,
+                  'avg_heart_rate': round(sum(hrs) / len(hrs)) if hrs else None, '_extra': extra}
 
 
 def generar(fit, raiz=RAIZ):
@@ -119,9 +133,10 @@ def generar(fit, raiz=RAIZ):
                 return (ruta[i][0] + t * (ruta[i + 1][0] - ruta[i][0]), ruta[i][1] + t * (ruta[i + 1][1] - ruta[i][1]))
         return ruta[-1]
 
-    recs, sesion = [], {}
+    recs, sesion, extra = [], {}, []
     if _es_gpx(fit):
         recs, sesion = _leer_gpx(fit)
+        extra = sesion.pop('_extra', [])
     else:
         import fitdecode
         try:
@@ -132,6 +147,9 @@ def generar(fit, raiz=RAIZ):
                         if (f.name == 'record' and d.get('position_lat') is not None
                                 and d.get('position_long') is not None and d.get('timestamp')):
                             recs.append((d['timestamp'], d['position_lat'] * SC, d['position_long'] * SC))
+                            alt = d.get('enhanced_altitude') if d.get('enhanced_altitude') is not None else d.get('altitude')
+                            hrr = d.get('heart_rate')
+                            extra.append((alt, hrr if hrr and 30 < hrr < 250 else None, d.get('cadence')))
                         elif f.name == 'session':
                             sesion = d
         except Exception as exc:
@@ -172,6 +190,19 @@ def generar(fit, raiz=RAIZ):
 
     tramo = recs[i0:i1 + 1]
     dist = sum(hav(a[1:], b[1:]) for a, b in zip(tramo, tramo[1:]))
+
+    # ⚠️ La distancia es salida-meta, pero el tiempo en movimiento, el desnivel y el pulso salían de TODA la actividad:
+    # con calentamiento, trayecto al coche o vuelta a casa en el fichero, la velocidad media y el D+ no eran los de la
+    # carrera. Si el fichero es bastante más largo que la carrera (más de un 5 %), se recalculan solo con el tramo.
+    if extra and len(extra) == len(recs) and len(tramo) < 0.95 * len(recs):
+        ex = extra[i0:i1 + 1]
+        altos = [e[0] for e in ex if e[0] is not None]
+        pulsos = [e[1] for e in ex if e[1]]
+        cads = [e[2] for e in ex if e[2]]
+        sesion = {'total_timer_time': _movimiento(tramo),
+                  'total_ascent': round(_desnivel(altos)) if altos else None,
+                  'avg_heart_rate': round(sum(pulsos) / len(pulsos)) if pulsos else None,
+                  'avg_cadence': round(sum(cads) / len(cads)) if cads else None}
 
     # pasos por avituallamiento: momento de máxima cercanía a la chincheta
     pasos, desde = [], i0

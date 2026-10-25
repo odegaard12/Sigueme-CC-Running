@@ -1137,8 +1137,25 @@ def puntos_traccar(query, cuerpo):
     return ident, puntos
 
 
+_puntos_vistos = {}      # los últimos puntos recibidos (hora, lat, lon, pulso): un reenvío no se repite en el historial
+
+
+def _repetido(p):
+    k = (round(p["t"], 1), p["lat"], p["lon"], p["hr"])
+    if k in _puntos_vistos:
+        return True
+    _puntos_vistos[k] = True
+    if len(_puntos_vistos) > 6000:
+        for viejo in list(_puntos_vistos)[:1000]:
+            del _puntos_vistos[viejo]
+    return False
+
+
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
+    puntos[:] = [p for p in puntos if not _repetido(p)]
+    if not puntos:
+        return
     for p in puntos:
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
