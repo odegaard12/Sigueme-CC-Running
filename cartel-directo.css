@@ -70,6 +70,40 @@ body { background: var(--tinta); color: var(--papel); }
 .progreso i { background: var(--campo); }
 .chip { background: var(--panel); border: 0; border-radius: 4px; color: var(--muted); font-weight: 700; }
 .chip b { font: 400 1.15rem/1 var(--display); color: var(--papel); letter-spacing: 0; }
+/* pestañas del móvil: Mapa · Datos · Ritmo */
+.pestanas-cd { display: none; }
+@media (max-width: 759px) {
+  /* un control segmentado fino (antes, tres bloques gruesos): pegado bajo la cabecera y fijo al bajar */
+  .pestanas-cd { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; position: sticky; top: 0; z-index: 7; padding: 8px 12px; background: var(--tinta); }
+  .pestanas-cd button { min-height: 44px; border: 0; border-radius: 0; background: var(--panel); color: var(--muted, #b5c06a); font: 800 0.95rem/1 system-ui, sans-serif; letter-spacing: 0.01em; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .pestanas-cd button:first-child { border-radius: 10px 0 0 10px; }
+  .pestanas-cd button:last-child { border-radius: 0 10px 10px 0; }
+  .pestanas-cd button[aria-selected="true"] { background: var(--campo); color: var(--tinta); }
+  /* sin franja vacía bajo las pestañas */
+  body[data-tab] .map-hint:empty { display: none; }
+  body[data-tab] .metricas { padding-top: 4px; }
+  /* cabecera con aire: el título largo en dos líneas, el estado, las cifras y la hora iban casi pegados */
+  /* (con «body» delante: más abajo en el fichero están las reglas de la cabecera compacta y las pisarían) */
+  body .cd-titulo { line-height: 1.06; margin-top: 6px; }
+  body .cd-datos { gap: 10px 16px; padding-top: 12px; }
+  body .cd-cab .live-updated { margin-top: 10px; }
+  body .cd-cab { padding-bottom: 14px; }
+  .pestanas-cd button:focus-visible { outline: 3px solid var(--papel); outline-offset: 2px; }
+  body[data-tab="mapa"] .lateral { display: none; }
+  body[data-tab="datos"] .map-wrap, body[data-tab="datos"] .leyenda, body[data-tab="datos"] #ritmo, body[data-tab="datos"] #ritmo-vacio { display: none; }
+  body[data-tab="ritmo"] .map-wrap, body[data-tab="ritmo"] .leyenda, body[data-tab="ritmo"] .metricas-top, body[data-tab="ritmo"] .progreso,
+  body[data-tab="ritmo"] .metricas-sec, body[data-tab="ritmo"] .estado-carrera { display: none; }
+}
+.ritmo-vacio { color: var(--muted, #b5c06a); margin: 10px 0; }
+.ritmo-vacio[hidden] { display: none; }
+@media (min-width: 760px) { .ritmo-vacio { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pestanas-cd button { transition: none; } }
+
+/* anillo que late bajo la foto del corredor */
+.map3d-rider::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--campo); opacity: 0; pointer-events: none; animation: anillo-corredor 2.2s ease-out infinite; }
+@keyframes anillo-corredor { 0% { transform: scale(0.8); opacity: 0.85; } 100% { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .map3d-rider::before { animation: none; } }
+
 /* tarjeta de ritmo: ritmo medio, llegada prevista y ritmo de cada km */
 .ritmo { background: var(--panel); border-radius: var(--radio); padding: 14px 16px; margin: 10px 0; }
 .ritmo[hidden] { display: none; }

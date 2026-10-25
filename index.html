@@ -49,7 +49,7 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=6">
+<link rel="stylesheet" href="/cartel-directo.css?v=7">
 </head>
 <body>
 <header class="cd-cab">
@@ -99,6 +99,12 @@
   <p class="aviso-sub" id="aviso-sub"></p>
   <button class="btn-repeticion" id="btn-repeticion" title="La carrera entera en 1 minuto" aria-label="Ver la carrera en 1 minuto"><span class="ico">▶</span><span class="txt"> Ver la carrera</span></button>
 </section>
+
+<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Secciones de la carrera">
+  <button type="button" role="tab" data-tab="mapa" aria-selected="true">Mapa</button>
+  <button type="button" role="tab" data-tab="datos" aria-selected="false">Datos</button>
+  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
+</nav>
 
 <div class="panel-pc">
 <section class="map-wrap">
@@ -155,6 +161,7 @@
     <div class="ritmo-barras" id="r-barras" role="img" aria-label="Ritmo de cada kilómetro" hidden></div>
     <p class="ritmo-pie" id="r-pie" hidden>Ritmo de cada kilómetro: cuanto más alta la barra, más lento.</p>
   </div>
+  <p class="ritmo-vacio" id="ritmo-vacio" hidden>El ritmo y la llegada prevista salen en cuanto el corredor lleva un kilómetro.</p>
   <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
   <div class="resultado" id="resultado" hidden>
     <h3>Paso por los avituallamientos</h3>
@@ -171,6 +178,6 @@
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=90"></script>
+<script src="app.js?v=91"></script>
 </body>
 </html>

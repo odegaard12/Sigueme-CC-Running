@@ -4,6 +4,16 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.36.0 · 2026-10-25
+- **Pestañas en el móvil: Mapa · Datos · Ritmo.** Un control segmentado fino que se queda fijo arriba al bajar; menos scroll. En el PC sigue todo a la vez. Se recuerda la pestaña y el mapa recupera su tamaño al volver a él.
+- **Cabecera con aire en el móvil:** un nombre de carrera largo en dos líneas, el estado, las cifras y la hora ya no van casi pegados.
+- **Animaciones del mapa 3D** (todas respetan «movimiento reducido»):
+  - **Vuelo de entrada:** al abrir una carrera en directo, la cámara recorre la ruta desde la salida hasta el corredor en unos 3 s y se queda siguiéndole. Si tocas el mapa, se corta.
+  - **Rastro de cometa:** el último kilómetro recorrido brilla en la cabeza y se apaga hacia atrás, y un anillo late bajo la foto del corredor.
+  - **Relieve vivo:** el relieve sube suave al abrir y las sombras del terreno siguen al sol de la hora real (de noche, casi sin sombras).
+- **Miniapp para relojes Garmin (Connect IQ), EXPERIMENTAL** en `garmin/`: graba la actividad y manda posición y pulso a la web por el móvil, como la de Amazfit. **Sin compilar ni probar en un reloj real**; el servidor ya acepta su formato (probado). Instrucciones y limitaciones en `garmin/README.md`.
+- La guía de Garmin lo menciona.
+
 ## v1.35.0 · 2026-10-25
 - **Guías para todas las marcas y móviles**, con botones de marca (Xiaomi, Huawei, Amazfit, Garmin, Coros, Android, iPhone) arriba de la guía y en las pantallas de ruta (la pública y la de «Mis rutas»), que llevan directos a su tarjeta:
   - **Garmin** (nueva, separada de Coros): avisos desde Garmin Connect, importar la ruta como Curso en connect.garmin.com, por qué el LiveTrack de Garmin no vale para el directo (lo da el móvil) y cómo exportar el FIT original para el resultado.

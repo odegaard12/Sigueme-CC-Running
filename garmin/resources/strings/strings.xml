@@ -1,0 +1,5 @@
+<resources>
+  <string id="AppName">Sígueme</string>
+  <string id="TituloUrl">Dirección de tu web (o pega el enlace de configuración del panel)</string>
+  <string id="TituloId">Identificador (panel: Móvil → Ver la configuración)</string>
+</resources>
