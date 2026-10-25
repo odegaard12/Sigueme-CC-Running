@@ -31,6 +31,9 @@ jobs:
           if [ -n "$FIRMA_P12" ]; then
             echo "$FIRMA_P12" | base64 -d > "$RUNNER_TEMP/firma.p12"
             echo "FIRMA_FICHERO=$RUNNER_TEMP/firma.p12" >> "$GITHUB_ENV"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "::error::falta el secreto FIRMA_P12: una release no puede salir firmada con la clave de depuración"
+            exit 1
           fi
       - name: Pruebas y APK
         env:

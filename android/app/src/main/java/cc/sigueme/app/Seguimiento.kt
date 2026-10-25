@@ -244,18 +244,27 @@ class Seguimiento : Service(), LocationListener {
             } catch (e: Exception) {}
         }
 
+        private var cacheLong = -1L
+        private var cacheCuenta = 0
         fun pendientes(c: Context): Int = synchronized(cola) {
-            File(c.filesDir, "cola.jsonl").takeIf { it.exists() }?.useLines { it.count() } ?: 0
+            val f = File(c.filesDir, "cola.jsonl")
+            if (!f.exists()) { cacheLong = -1L; cacheCuenta = 0 }
+            else if (f.length() != cacheLong) { cacheLong = f.length(); cacheCuenta = f.useLines { it.count() } }
+            cacheCuenta
         }
 
         /** ¿El servidor nos ha dicho que paremos? 403 = identificador no válido (hasta
          *  volver a configurar), 429 = demasiados intentos (15 min). Insistir solo
          *  alargaba el bloqueo de la IP. */
         private fun bloqueado(c: Context) = System.currentTimeMillis() < prefs(c).getLong("bloqueado_hasta", 0)
-        private fun bloquear(c: Context, codigo: Int) {
-            val hasta = if (codigo == 403) Long.MAX_VALUE else System.currentTimeMillis() + 15 * 60_000
+        private fun identificadorMalo(codigo: Int, cuerpo: String) = codigo == 403 && cuerpo.contains("identificador")
+        private fun bloquear(c: Context, codigo: Int, cuerpo: String = "") {
+            // un 403 de la red (WAF, Cloudflare) viene con HTML y es pasajero: no hay que volver a escanear nada
+            val permanente = identificadorMalo(codigo, cuerpo)
+            val hasta = if (permanente) Long.MAX_VALUE else System.currentTimeMillis() + 15 * 60_000
             prefs(c).edit().putLong("bloqueado_hasta", hasta).putString("web_estado",
-                if (codigo == 403) "identificador no válido: vuelve a escanear el código del panel"
+                if (permanente) "identificador no válido: vuelve a escanear el código del panel"
+                else if (codigo == 403) "la red rechazó el acceso: se reintenta en 15 min"
                 else "demasiados intentos: se reintenta en 15 min").apply()
         }
 
@@ -272,9 +281,11 @@ class Seguimiento : Service(), LocationListener {
                 val (codigo, txt) = try { post("$url/api/plan", JSONObject().put("device_id", id).put("accion", "empezar").put("t", p.getLong("empezar_t", 0L)).toString()) }
                                     catch (e: Exception) { return null }
                 if (codigo == 403 || codigo == 429) {
-                    bloquear(c, codigo)
-                    if (codigo == 403) p.edit().putBoolean("empezar_pendiente", false).apply()
-                    return if (codigo == 403) "El servidor no reconoce el identificador: vuelve a escanear el código del panel (pestaña Móvil)."
+                    bloquear(c, codigo, txt)
+                    val malo = identificadorMalo(codigo, txt)
+                    if (malo) p.edit().putBoolean("empezar_pendiente", false).apply()
+                    return if (malo) "El servidor no reconoce el identificador: vuelve a escanear el código del panel (pestaña Móvil)."
+                           else if (codigo == 403) "La red rechazó la petición (403): la app lo reintenta sola en 15 minutos."
                            else "Demasiados intentos fallidos: la app lo reintenta sola en 15 minutos."
                 }
                 if (codigo != 200) return null
@@ -320,8 +331,10 @@ class Seguimiento : Service(), LocationListener {
                         val puntos = lote.mapNotNull { try { JSONObject(it) } catch (e: Exception) { null } }
                         if (puntos.isNotEmpty()) {
                             val cuerpo = JSONObject().put("device_id", id).put("location", JSONArray(puntos))
-                            val codigo = try { post("$url/api/gps", cuerpo.toString()).first } catch (e: Exception) { fallo(); return }
-                            if (codigo == 403 || codigo == 429) { bloquear(c, codigo); return }
+                            val (codigo, respuesta) = try { post("$url/api/gps", cuerpo.toString()) } catch (e: Exception) { fallo(); return }
+                            if (codigo == 403 || codigo == 429) { bloquear(c, codigo, respuesta); return }
+                            // el servidor no acepta ESE lote y reintentar no lo arregla: se descarta, o taparía los de detrás
+                            if (codigo == 400 || codigo == 413 || codigo == 422) { hechas += lote.size; continue }
                             if (codigo != 200) { fallo(); return }
                         }
                         hechas += lote.size

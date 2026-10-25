@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.32.0 · 2026-10-25
+App Android y CI tras la auditoría:
+- **Un 403 de la red ya no bloquea el envío para siempre:** solo se considera «identificador no válido» (y pide volver a escanear) si el servidor lo dice; un 403 de un cortafuegos o de Cloudflare se reintenta a los 15 minutos, con su aviso propio.
+- **Un lote que el servidor rechaza (400, 413, 422) ya no atasca la cola:** se descarta y se sigue con los de detrás.
+- **La pantalla ya no lee el fichero de la cola cada 2 s:** solo lo cuenta cuando cambia de tamaño (con horas sin cobertura podía congelarse).
+- **Enlace de configuración (`siguemecc://`):** solo vale con el dominio (sin ruta ni parámetros) y el aviso de confirmación enseña también el principio del identificador.
+- **CI:** una etiqueta sin el secreto de firma falla en vez de publicar un APK firmado con la clave de depuración, que no actualiza a los ya instalados.
+
 ## v1.31.0 · 2026-10-25
 Arreglos de cliente tras la auditoría:
 - **Sin cobertura de verdad:** si el túnel o la Pi caen y devuelven un error 5xx, el service worker enseña la última copia guardada en vez de la página de error.

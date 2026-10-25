@@ -515,13 +515,15 @@ class MainActivity : Activity() {
     }
 
     private fun configurar(u: String, id: String) {
-        val host = Uri.parse(u).host
-        // solo https: Android no deja mandar datos sin cifrar, y así no van en claro
-        if (!u.startsWith("https://") || host.isNullOrBlank() || id.length < 8) {
+        val uri = Uri.parse(u)
+        val host = uri.host
+        // solo https: Android no deja mandar datos sin cifrar, y así no van en claro; y solo el dominio, sin ruta ni parámetros
+        if (!u.startsWith("https://") || host.isNullOrBlank() || id.length < 8
+            || !(uri.path.isNullOrEmpty() || uri.path == "/") || uri.query != null || uri.fragment != null) {
             dialogo("Configuración no válida", "La dirección tiene que empezar por https:// y el identificador tiene que ser el que enseña el panel.")
             return
         }
-        mostrar("¿Usar este servidor?", "Tu posición se mandará a:\n\n$host",
+        mostrar("¿Usar este servidor?", "Tu posición se mandará a:\n\n$host\n\nIdentificador: ${id.take(8)}…",
             Boton("Sí, usarlo") {
                 prefs.edit().putString("url", u).putString("id", id).remove("bloqueado_hasta").apply()
                 bajarPlan()
