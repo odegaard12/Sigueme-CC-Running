@@ -566,7 +566,13 @@ function onMapReady() {
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
   .then(c => { if (c) { CARRERA = Object.assign(CARRERA, c); gestionarSW(); } pintarCarrera(); });
 
-precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
+// la ruta y el perfil son imprescindibles: si fallan (404/5xx, sin red) se reintentan solos, cada vez más espaciados
+function jsonConReintento(url, intento = 0) {
+  return fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .catch(() => new Promise(ok => setTimeout(ok, Math.min(30000, 2000 * 2 ** intento))).then(() => jsonConReintento(url, intento + 1)));
+}
+
+precargado('route.geojson', () => jsonConReintento('route.geojson'))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
@@ -641,7 +647,7 @@ function gradColor(g) {
 let lastEleData = null;
 let currentKm = 0; // hasta dónde ha avanzado el corredor, para completar el perfil
 
-precargado('elevation.json', () => fetch('elevation.json').then(r => r.json()))
+precargado('elevation.json', () => jsonConReintento('elevation.json'))
   .then(data => {
     lastEleData = data;
     drawElevationChart(data.profile, data.min_ele_m, data.max_ele_m);
@@ -895,7 +901,7 @@ function autoSeguirDirecto() {
   autoSeguido = true;
   marcarSiguiendo(true);
   ultimoSeguimiento = performance.now() + 900;
-  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: 900 });
+  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: QUIETO ? 0 : 900 });
 }
 
 function seguirCorredor(pos) {
@@ -913,11 +919,11 @@ function recenterOnRider() {
   if (riderMarkerPos) {
     marcarSiguiendo(true);
     ultimoSeguimiento = performance.now() + 600;
-    map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 14), duration: 600 });
+    map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 14), duration: QUIETO ? 0 : 600 });
   } else if (routeBounds) {
     // sin corredor en pantalla, el botón devuelve la vista a la ruta entera
     map3d.fitBounds([[routeBounds[0], routeBounds[1]], [routeBounds[2], routeBounds[3]]],
-      { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: 600 });
+      { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 600 });
   }
 }
 btnRecenter.addEventListener('click', recenterOnRider);
@@ -936,7 +942,7 @@ btnVista.addEventListener('click', () => {
   vista3d = !vista3d;
   pintarBotonVista();
   if (!mapReady) return;
-  map3d.easeTo({ pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: 700 });
+  map3d.easeTo({ pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 700 });
 });
 
 function fmtTime(iso) {
@@ -1086,7 +1092,7 @@ function moverSuave(km, pos, pegado) {
   // un salto grande (recarga, simulación acelerada, cambio de enlace) se
   // recorre deprisa en vez de plantarse de golpe
   const salto = Math.abs(km - km0);
-  const duracion = salto > 8 ? 1500
+  const duracion = QUIETO ? 1 : salto > 8 ? 1500
     : (ponerseAlDia || salto > 0.6) ? 2500
     : intervaloDatos * 1.1;
   ponerseAlDia = false;
@@ -1612,7 +1618,7 @@ function repetirCarrera() {
   const tr = resultado.traza, total = tr[tr.length - 1][2];
   const salida = new Date(resultado.salida).getTime();
   if (mapReady) {
-    map3d.easeTo({ center: [tr[0][1], tr[0][0]], zoom: 12.5, duration: 800 });
+    map3d.easeTo({ center: [tr[0][1], tr[0][0]], zoom: 12.5, duration: QUIETO ? 0 : 800 });
     marcarSiguiendo(true);
     ultimoSeguimiento = performance.now() + 800;
   }
@@ -1649,7 +1655,7 @@ function repetirCarrera() {
 }
 document.getElementById('btn-repeticion').addEventListener('click', repetirCarrera);
 
-precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(r => r.ok ? r.json() : null))
+precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now(), 8000).then(r => r.ok ? r.json() : null))
   .catch(() => null)
   .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
 

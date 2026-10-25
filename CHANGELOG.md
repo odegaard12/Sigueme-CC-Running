@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.31.0 · 2026-10-25
+Arreglos de cliente tras la auditoría:
+- **Sin cobertura de verdad:** si el túnel o la Pi caen y devuelven un error 5xx, el service worker enseña la última copia guardada en vez de la página de error.
+- **La ruta y el perfil se reintentan solos** (cada vez más espaciados) si fallan; antes, un fallo dejaba la web sin km hasta recargar. El resultado de la carrera tiene tiempo límite y ya no puede dejar la página congelada.
+- **Movimiento reducido:** con esa opción del sistema, la cámara y la foto del corredor no se animan (antes solo algunos movimientos).
+- **Portada:** un fallo de red ya no dice «todavía no hay rutas publicadas»; lo dice claro.
+- **Ficha de una ruta:** sin WebGL el mapa se oculta en vez de quedar un recuadro vacío.
+- **Botones táctiles de 44 px** (botones del mapa, pestañas del panel, avituallamientos) y marcas de avituallamiento con área pulsable más grande.
+- **Panel:** la sesión caducada se detecta aunque el 403 no traiga JSON y también en Invitados; el sondeo no se solapa, tiene tiempo límite y se calla con la pestaña oculta; el foco del teclado no se pierde al repintar los pasos; la guía devuelve el foco al botón, no deja escapar el Tab y su marco sigue al scroll.
+- **Reloj Amazfit:** un punto malformado o un envío colgado ya no bloquean las subidas para siempre, el móvil no duplica puntos si el reloj reenvía un lote, vale pegar el enlace de configuración también en el campo del identificador, se completa `https://` si falta, y el reloj no reescribe toda la cola en la memoria tras cada envío.
+
 ## v1.30.0 · 2026-10-25
 Endurecimiento del servidor tras una auditoría completa:
 - **Enlace de seguimiento (SSRF):** ya no se siguen las redirecciones, que podían llevar al servidor a pedir páginas de la red de casa.

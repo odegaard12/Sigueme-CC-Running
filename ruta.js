@@ -56,7 +56,7 @@ function dibujarPerfil(r) {
 
 function dibujarMapa(r) {
   const cont = $('mapa');
-  const arrancar = () => {
+  const arrancarMapa = () => {
     if (!window.maplibregl) { cont.hidden = true; return; }
     const acum = acumulados(r.coords, r.distancia_km);
     const map = new maplibregl.Map({
@@ -78,6 +78,7 @@ function dibujarMapa(r) {
       }
     });
   };
+  const arrancar = () => { try { arrancarMapa(); } catch (e) { cont.hidden = true; } };
   if (window.maplibregl) { arrancar(); return; }
   const s = document.createElement('script'); s.src = '/lib/maplibre-gl-4.7.1.js'; s.async = true; s.onload = arrancar; s.onerror = () => { cont.hidden = true; };
   document.head.append(s);
