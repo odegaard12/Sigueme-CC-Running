@@ -34,6 +34,10 @@ def _leer_gpx(datos):
     import xml.etree.ElementTree as ET
     if not isinstance(datos, bytes):
         datos = pathlib.Path(datos).read_bytes()
+    if bytes(1) in datos or datos[:2] in (bytes([0xFF, 0xFE]), bytes([0xFE, 0xFF])):
+        raise ValueError('el GPX está en UTF-16: expórtalo en UTF-8')
+    if b'<!ENTITY' in datos or b'<!DOCTYPE' in datos:
+        raise ValueError('el GPX trae declaraciones DOCTYPE/ENTITY: no se admite')
     try:
         raiz = ET.fromstring(datos)
     except ET.ParseError as exc:

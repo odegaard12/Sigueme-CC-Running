@@ -4,6 +4,18 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.30.0 · 2026-10-25
+Endurecimiento del servidor tras una auditoría completa:
+- **Enlace de seguimiento (SSRF):** ya no se siguen las redirecciones, que podían llevar al servidor a pedir páginas de la red de casa.
+- **Freno a la fuerza bruta:** un /64 de IPv6 cuenta como una sola persona y la tabla de intentos no puede crecer sin fin.
+- **GPS:** los números infinitos o NaN ya no dejan `live.json` inválido para el navegador, un entero enorme no tumba el hilo, y adivinar el identificador de `/api/gps` tiene freno (30 malos por minuto).
+- **`live.json` corrupto** (bytes nulos tras un apagón, `null`, una lista): se trata como vacío en vez de tumbar la web y todas las escrituras.
+- **Invitados:** si la lista de usuarios no se puede leer, ya no se purga ni se crea nada (antes se podían borrar las rutas de todos).
+- **GPX del resultado:** misma defensa que el de la ruta (sin DOCTYPE/ENTITY ni UTF-16).
+- **Clave GPS:** se escribe de forma atómica y con permisos 0600; los temporales fallidos se borran.
+- **Peticiones raras:** una línea de petición rota o una ruta con byte nulo ya no dejan trazas.
+- Nueva prueba `pruebas/endurecimiento.py` con cada una de estas defensas.
+
 ## v1.29.0 · 2026-10-24
 - **Textos de ayuda del panel más cortos:** las explicaciones de Carrera, Móvil (app, pulsera, Traccar y
   Amazfit), Preparar (ruta, reloj, avisos), Resultado, Archivar y Rutas dicen lo mismo con menos palabras:

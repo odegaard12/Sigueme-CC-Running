@@ -139,6 +139,16 @@ intentos = {}   # ip -> [fallos, momento_del_ultimo_fallo]
 castigo_lock = threading.Lock()
 
 
+def _clave_ip(ip):
+    """Quien tiene IPv6 tiene un /64 entero: se cuenta por red, no por dirección."""
+    try:
+        if ipaddress.ip_address(ip).version == 6:
+            return str(ipaddress.ip_network(f"{ip}/64", strict=False).network_address)
+    except ValueError:
+        pass
+    return ip
+
+
 def segundos_de_castigo(ip):
     with intentos_lock:
         fallos, ultimo = intentos.get(ip, (0, 0))
@@ -152,6 +162,10 @@ def segundos_de_castigo(ip):
 
 def fallo_de(ip):
     with intentos_lock:
+        if len(intentos) > 2000:                       # rotar IPs no puede llenar la memoria
+            viejas = [k for k, v in intentos.items() if time.time() - v[1] > 3600]
+            for k in viejas:
+                del intentos[k]
         fallos, _ = intentos.get(ip, (0, 0))
         intentos[ip] = (fallos + 1, time.time())
 
@@ -301,11 +315,18 @@ def escribir_json(nombre, datos):
     """Atómico, como live.json: o el fichero viejo entero o el nuevo entero.
     Temporal con punto (no se sirve), .tmp (no se replica) y nombre único."""
     fd, tmp = tempfile.mkstemp(dir=ROOT, prefix="." + nombre + ".", suffix=".tmp")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=1)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, os.path.join(ROOT, nombre))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(datos, f, ensure_ascii=False, indent=1)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, os.path.join(ROOT, nombre))
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def plan_avisos():
@@ -819,15 +840,24 @@ def fetch_page(url):
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with urllib.request.build_opener(_SinRedireccion).open(req, timeout=10) as resp:
         return resp.read(2_000_000).decode("utf-8", errors="ignore")
 
 
+class _SinRedireccion(urllib.request.HTTPRedirectHandler):
+    """Comprobamos que el host es público, pero una redirección saltaba esa comprobación."""
+    def redirect_request(self, *a, **k):
+        return None
+
+
 def read_live():
+    """Siempre un dict: con el fichero corrupto (bytes nulos tras un apagón, «null», una lista) devuelve {} en vez de
+    tumbar /live.json y todas las escrituras."""
     try:
         with open(LIVE_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
         return {}
 
 
@@ -947,6 +977,26 @@ GPS_VIGENTE = 120      # s: con un punto del móvil más reciente, no se usa el 
 PRECISION_MAXIMA = 100  # m: puntos peores se descartan (arranque en frío, túneles)
 
 
+gps_fallos_lock = threading.Lock()
+gps_fallos = {}     # ip -> (identificadores malos en esta ventana, inicio de la ventana)
+
+
+def escribir_clave_gps(texto):
+    """Atómica y solo legible por el dueño (antes, 0644 y con un hueco vacío mientras se escribía)."""
+    fd, tmp = tempfile.mkstemp(dir=ROOT, prefix=".gps.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(texto + "\n")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, GPS_CLAVE_PATH)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def clave_gps():
     try:
         with open(GPS_CLAVE_PATH, encoding="utf-8") as f:
@@ -1003,9 +1053,10 @@ def _segundos(valor):
 
 def _numero(valor):
     try:
-        return float(valor)
-    except (TypeError, ValueError):
+        n = float(valor)
+    except (TypeError, ValueError, OverflowError):
         return None
+    return n if math.isfinite(n) else None
 
 
 def _fraccion(valor):
@@ -1451,10 +1502,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             real = self.headers.get("CF-Connecting-IP", "").strip()
             if privada and real:
                 ipaddress.ip_address(real)
-                return real
+                return _clave_ip(real)
         except ValueError:
             pass
-        return directa
+        return _clave_ip(directa)
 
     def mismo_origen(self):
         """Protección CSRF: un navegador siempre manda Origin (o Referer) en un
@@ -1475,6 +1526,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def _ruta_publica(self):
+        if "\x00" in unquote(self.path):
+            return False
         if self.path.split("?")[0].endswith("/") and self.path.split("?")[0] != "/":
             return False                 # nada de listados de directorio
         ruta = self._ruta()
@@ -1489,9 +1542,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _gps(self, cuerpo=b""):
         _, _, query = self.path.partition("?")
-        ident, puntos = puntos_traccar(query, cuerpo)
+        ip = self.ip_cliente()
+        with gps_fallos_lock:
+            n, t0 = gps_fallos.get(ip, (0, 0))
+            if time.time() - t0 > 60:
+                n, t0 = 0, time.time()
+            if n >= 30:                     # 30 identificadores malos en un minuto: a esperar
+                self._send_json(429, {"error": "demasiados intentos"})
+                return
+        try:
+            ident, puntos = puntos_traccar(query, cuerpo)
+        except Exception as exc:
+            print(f"[gps] petición ilegible: {exc!r}", flush=True)
+            self._send_json(400, {"error": "petición no válida"})
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
+            with gps_fallos_lock:
+                if len(gps_fallos) > 2000:
+                    gps_fallos.clear()
+                gps_fallos[ip] = (n + 1, t0)
             # El panel avisa: con el identificador mal copiado, Traccar o el
             # reloj mandaban y la web no se movía, sin pista de por qué. Solo
             # la hora (live.json es público) y como mucho una vez por minuto.
@@ -1712,7 +1782,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # El navegador se quedaba con el css/js viejo y el usuario veía la web
         # rota después de desplegar. Con no-cache revalida siempre: para
         # ficheros de 16 KB no cuesta nada y evita enseñar una versión antigua.
-        ruta = self._ruta()
+        ruta = self._ruta() if hasattr(self, "path") else ""
         if ruta.startswith("/lib/"):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
@@ -2456,8 +2526,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # identificador nuevo (32 caracteres al azar) para cada carrera: el
             # viejo deja de valer al momento; hay que ponerlo en Traccar/reloj
             nueva = "odg-" + secrets.token_urlsafe(24)
-            with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
-                f.write(nueva + "\n")
+            escribir_clave_gps(nueva)
             apuntar_historial("gps_rotado")
             self._send_json(200, {"ok": True, "gps_id": nueva, "live": read_live()})
             return
@@ -2699,8 +2768,7 @@ def watch_live_file():
 
 def asegurar_clave_gps():
     if not clave_gps():
-        with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
-            f.write("odg-" + secrets.token_urlsafe(24) + "\n")
+        escribir_clave_gps("odg-" + secrets.token_urlsafe(24))
         print("[gps] identificador nuevo creado (se cambia en el panel: Móvil → Ver la configuración)", flush=True)
 
 

@@ -64,6 +64,20 @@ def _usuarios(raiz):
     return _leer(_fichero(raiz), {}).get("usuarios", {})
 
 
+def _usuarios_seguro(raiz):
+    """Como _usuarios, pero devuelve None si el fichero EXISTE y no se puede leer (SD con errores, apagón):
+    quien borra o sobrescribe tiene que parar en ese caso."""
+    try:
+        with open(_fichero(raiz), encoding="utf-8") as f:
+            d = json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError):
+        return None
+    u = d.get("usuarios") if isinstance(d, dict) else None
+    return u if isinstance(u, dict) else None
+
+
 def _guardar(raiz, usuarios):
     _escribir(_fichero(raiz), {"usuarios": usuarios})
 
@@ -105,7 +119,9 @@ def crear(raiz, usuario, dias=30, nombre=""):
     """Devuelve el código (solo se ve ahora: en disco queda su hash)."""
     usuario, dias = _usuario_valido(usuario), _dias(dias, cero=True)
     with _lock:
-        todos = _usuarios(raiz)
+        todos = _usuarios_seguro(raiz)
+        if todos is None:
+            raise ValueError("no se pudo leer la lista de invitados: no se crea nada para no perderla")
         if usuario in todos:
             raise ValueError("ese usuario ya existe")
         if len(todos) >= MAX_USUARIOS:
@@ -209,7 +225,9 @@ def purgar(raiz):
     """Borra a quien lleva más de MARGEN_DIAS caducado. Devuelve cuántos."""
     limite = (date.today() - timedelta(days=MARGEN_DIAS)).isoformat()
     with _lock:
-        todos = _usuarios(raiz)
+        todos = _usuarios_seguro(raiz)
+        if todos is None:
+            return 0                     # lista ilegible: no se borra nada
         viejos = [u for u, r in todos.items() if r["caduca"] < limite]
         for u in viejos:
             del todos[u]
