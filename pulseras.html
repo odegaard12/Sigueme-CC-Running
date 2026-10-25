@@ -13,7 +13,7 @@
 <div class="campo">
   <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Admin</a></nav></header>
   <h1 class="gigante">Pulseras y relojes</h1>
-  <div class="bajo"><p>Qué puede hacer cada una con Sígueme CC y cómo se configura.</p><p>Xiaomi · Huawei · Amazfit · Garmin · Coros</p></div>
+  <div class="bajo"><p>Qué puede hacer cada una con Sígueme CC y cómo se configura.</p><p>Xiaomi · Huawei · Amazfit · Garmin · Coros · Android · iPhone</p></div>
 </div>
 <main class="pul">
   <h2 class="titulo">Cuatro cosas distintas</h2>
@@ -24,9 +24,12 @@
     <li><b>Resultado al terminar.</b> Subes al panel el fichero de tu actividad (GPX o FIT) y la web enseña tiempo, pasos por avituallamiento y la repetición de la carrera.</li>
   </ul>
 
-  <h2 class="titulo">Cada marca</h2>
+  <h2 class="titulo">Elige tu marca</h2>
+  <nav class="chips-marcas" aria-label="Elige tu marca de reloj o tu móvil">
+    <a href="#xiaomi">Xiaomi</a><a href="#huawei">Huawei</a><a href="#amazfit">Amazfit</a><a href="#garmin">Garmin</a><a href="#coros">Coros</a><a href="#android">Android</a><a href="#iphone">iPhone</a>
+  </nav>
   <div class="marcas">
-    <article class="marca-tarj">
+    <article class="marca-tarj" id="xiaomi">
       <h3>Xiaomi</h3><p class="modelos">Smart Band 8, 8 Pro y otras · app Mi Fitness</p>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Mi Fitness los pasa a la banda. En Mi Fitness activa las notificaciones de apps (que salga «Sígueme CC») y deja Mi Fitness sin restricciones de batería.</dd>
@@ -35,7 +38,7 @@
         <dt><span class="si">Sí</span> Resultado</dt><dd>Mi Fitness permite pedir tus datos: llega un fichero con un enlace GPX por entreno. Sube ese GPX al panel (tiene que traer la hora de cada punto).</dd>
       </dl>
     </article>
-    <article class="marca-tarj">
+    <article class="marca-tarj" id="huawei">
       <h3>Huawei</h3><p class="modelos">Watch Fit 4, GT, Band… · app Huawei Health</p>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Huawei Health los pasa al reloj. Activa las notificaciones de la app y deja Huawei Health sin restricciones de batería.</dd>
@@ -44,7 +47,7 @@
         <dt><span class="si">Sí</span> Resultado</dt><dd>El GPX o el FIT que exporte tu app o Strava, con la hora de cada punto.</dd>
       </dl>
     </article>
-    <article class="marca-tarj">
+    <article class="marca-tarj" id="amazfit">
       <h3>Amazfit</h3><p class="modelos">GTR 4, GTS 4, Balance… · app Zepp</p>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Zepp → tu reloj → Notificaciones y recordatorios → Notificaciones de apps → Sígueme CC.</dd>
@@ -53,13 +56,41 @@
         <dt><span class="si">Sí</span> Resultado</dt><dd>GPX o FIT desde Zepp o Strava.</dd>
       </dl>
     </article>
-    <article class="marca-tarj">
-      <h3>Garmin y Coros</h3><p class="modelos">Garmin Connect · Coros</p>
+    <article class="marca-tarj" id="garmin">
+      <h3>Garmin</h3><p class="modelos">Forerunner, Fenix, Venu, Instinct… · Garmin Connect</p>
       <dl>
-        <dt><span class="si">Sí</span> Avisos</dt><dd>Si tu reloj muestra las notificaciones del móvil, llegan igual.</dd>
-        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>Importa el mismo GPX con Garmin Connect o con la app de Coros.</dd>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Garmin Connect repite en el reloj las notificaciones del móvil: en los ajustes de tu reloj busca Notificaciones (o Notificaciones inteligentes) → Apps y activa Sígueme CC. Sale tras pulsar «Probar aviso» una vez.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>En el ordenador, en connect.garmin.com: Entrenamiento → Cursos → Importar, elige el GPX y «Enviar al dispositivo». Sincroniza el reloj y búscala en Navegación → Cursos. (La app del móvil no importa ficheros GPX en todos los modelos.)</dd>
+        <dt><span class="no">No</span> Seguimiento desde el reloj</dt><dd>El LiveTrack de Garmin manda su propio enlace y la web no lo lee. El directo lo da el móvil: la app Sígueme CC (Android) o Traccar Client (iPhone), mientras el Garmin graba la actividad.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>Lo mejor: el FIT original. En connect.garmin.com abre la actividad → engranaje ⚙ → «Exportar original» (llega un .zip; dentro está el .fit) y súbelo al panel.</dd>
+      </dl>
+      <p class="nota">¿Eres invitado con Garmin? Sube tu GPX en «Mis rutas», descárgalo con el botón de reloj e impórtalo en Garmin Connect como arriba.</p>
+    </article>
+    <article class="marca-tarj" id="coros">
+      <h3>Coros</h3><p class="modelos">Pace, Apex, Vertix… · app Coros</p>
+      <dl>
+        <dt><span class="si">Sí</span> Avisos</dt><dd>Si activas las notificaciones del móvil en los ajustes del reloj, elige Sígueme CC en la lista de apps.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>App Coros → Rutas: importa el GPX y envíalo al reloj. En el reloj: Navegación → Rutas. El nombre del menú cambia según la versión de la app.</dd>
         <dt><span class="no">No</span> Seguimiento desde el reloj</dt><dd>Lo hace el móvil.</dd>
-        <dt><span class="si">Sí</span> Resultado</dt><dd>El FIT original de tu actividad.</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>El FIT o el GPX que exporte la app Coros o Strava.</dd>
+      </dl>
+    </article>
+    <article class="marca-tarj" id="android">
+      <h3>Android</h3><p class="modelos">Cualquier móvil con Android 8 o más</p>
+      <dl>
+        <dt><span class="si">Sí</span> Instalar</dt><dd>Descarga <a href="https://github.com/odegaard12/Sigueme-CC-Running/releases/latest">sigueme-cc.apk</a> de la última versión y ábrelo. Si Android avisa, permite instalar desde esa fuente solo esta vez.</dd>
+        <dt><span class="si">Sí</span> Configurar</dt><dd>En el panel, pestaña Móvil, escanea el código QR con la cámara: se abre la app y se configura sola.</dd>
+        <dt><span class="si">Sí</span> Que siga con la pantalla apagada</dt><dd>Quítale el ahorro de batería a Sígueme CC y, en Xiaomi, Huawei u Honor, activa también el inicio automático.</dd>
+        <dt><span class="si">Sí</span> Con tu reloj</dt><dd>Avisos, ruta y resultado: mira la tarjeta de tu marca.</dd>
+      </dl>
+    </article>
+    <article class="marca-tarj" id="iphone">
+      <h3>iPhone</h3><p class="modelos">Seguimiento con Traccar Client</p>
+      <dl>
+        <dt><span class="si">Sí</span> Seguimiento en directo</dt><dd>Instala Traccar Client (gratis, App Store). En el panel, pestaña Móvil → «Sin la app: iPhone, Traccar o reloj» están la dirección y el identificador que hay que poner. Frecuencia 10 s y precisión alta.</dd>
+        <dt><span class="no">No</span> Avisos de subida y avituallamiento</dt><dd>Todavía no hay app Sígueme CC para iPhone, así que no salen avisos en el reloj. El directo sí funciona.</dd>
+        <dt><span class="si">Sí</span> Ruta en el reloj</dt><dd>El GPX se guarda en la app Archivos: ábrelo desde la app de tu reloj (Garmin Connect, Zepp, Huawei Health o Coros).</dd>
+        <dt><span class="si">Sí</span> Resultado</dt><dd>GPX o FIT de tu reloj o de Strava.</dd>
       </dl>
     </article>
   </div>

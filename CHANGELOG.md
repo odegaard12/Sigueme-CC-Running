@@ -4,6 +4,15 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.35.0 · 2026-10-25
+- **Guías para todas las marcas y móviles**, con botones de marca (Xiaomi, Huawei, Amazfit, Garmin, Coros, Android, iPhone) arriba de la guía y en las pantallas de ruta (la pública y la de «Mis rutas»), que llevan directos a su tarjeta:
+  - **Garmin** (nueva, separada de Coros): avisos desde Garmin Connect, importar la ruta como Curso en connect.garmin.com, por qué el LiveTrack de Garmin no vale para el directo (lo da el móvil) y cómo exportar el FIT original para el resultado.
+  - **Coros** (tarjeta propia).
+  - **Android**: instalar el APK de la última versión, configurar con el QR del panel y quitar el ahorro de batería.
+  - **iPhone**: seguimiento en directo con Traccar Client y, dicho claramente, que todavía no hay avisos de subida ni de avituallamiento (no hay app para iPhone).
+- La tarjeta de la marca elegida se resalta al llegar desde un botón.
+- Nueva prueba `pruebas/guias.py`.
+
 ## v1.34.0 · 2026-10-25
 - **Tarjeta de ritmo en la página en directo:**
   - **Ritmo medio** desde la salida («6:37 /km») y **llegada prevista** a la hora de meta, con un margen aproximado.

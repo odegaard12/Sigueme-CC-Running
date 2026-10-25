@@ -45,3 +45,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* el botón de «elegir fichero» con el diseño de la web (antes, el gris del navegador) */
 input[type="file"]::file-selector-button { background: var(--accent); color: var(--tinta); border: 0; border-radius: 4px; padding: 8px 14px; margin-right: 12px; font: inherit; font-weight: 800; cursor: pointer; }
 input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }
+
+/* botones de marca: llevan a la guía de cada reloj o móvil */
+.chips-marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.chips-marcas a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--campo); color: var(--tinta); font-weight: 800; text-decoration: none; transition: transform 0.15s; }
+.chips-marcas a:active { transform: scale(0.96); }
+.chips-marcas a:focus-visible { outline: 3px solid var(--papel, #f4f7e6); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .chips-marcas a { transition: none; } }
