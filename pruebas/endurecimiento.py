@@ -74,6 +74,23 @@ with tempfile.TemporaryDirectory() as t:
         pass
     ok(not [p for p in t.iterdir() if p.name.endswith('.tmp')], 'escribir_json fallido no deja temporales')
 
+# ritmo por km: el servidor apunta a qué hora se cruza cada kilómetro entero (10 km/h = 360 s por km)
+import time
+from datetime import datetime, timezone
+with tempfile.TemporaryDirectory() as t2:
+    t2 = pathlib.Path(t2)
+    server.ROOT = str(t2); server.LIVE_PATH = str(t2 / 'live.json'); server.HISTORIAL_PATH = str(t2 / 'historial.jsonl')
+    _salida = time.time() - 3000
+    server.escribir_json('live.json', {'started_at': datetime.fromtimestamp(_salida, timezone.utc).isoformat(), 'status_label': 'En carrera'})
+    _pts = [{'lat': 40.0 + (10 * (i * 10) / 3600) / 111.19, 'lon': -4.0, 't': _salida + 60 + i * 10, 'kmh': 10.0, 'precision': 5,
+             'bateria': None, 'hr': None, 'origen': 'movil'} for i in range(240)]
+    server.recibir_gps(_pts)
+    _kt = server.read_live().get('km_t') or []
+    ok(len(_kt) == 6, f'6,6 km recorridos: 6 cruces de kilómetro apuntados ({len(_kt)})')
+    ok(all(abs((b - a) - 360) <= 2 for a, b in zip(_kt, _kt[1:])), 'cada km a 10 km/h son 360 s entre cruces')
+    server.recibir_gps([dict(p) for p in _pts])      # el mismo lote reenviado no añade cruces
+    ok(len(server.read_live().get('km_t') or []) == 6, 'un lote reenviado no duplica los cruces')
+
 # GPX del resultado: DOCTYPE no
 try:
     generar_resultado._leer_gpx(b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "b">]><gpx></gpx>')

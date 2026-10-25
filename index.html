@@ -49,7 +49,7 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=5">
+<link rel="stylesheet" href="/cartel-directo.css?v=6">
 </head>
 <body>
 <header class="cd-cab">
@@ -146,6 +146,15 @@
     <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
     <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
   </div>
+  <div class="ritmo" id="ritmo" hidden>
+    <div class="ritmo-datos">
+      <div><small>Ritmo medio</small><b id="r-ritmo">—</b></div>
+      <div><small>Llegada prevista</small><b id="r-llegada">—</b></div>
+    </div>
+    <p class="ritmo-nota" id="r-nota"></p>
+    <div class="ritmo-barras" id="r-barras" role="img" aria-label="Ritmo de cada kilómetro" hidden></div>
+    <p class="ritmo-pie" id="r-pie" hidden>Ritmo de cada kilómetro: cuanto más alta la barra, más lento.</p>
+  </div>
   <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
   <div class="resultado" id="resultado" hidden>
     <h3>Paso por los avituallamientos</h3>
@@ -162,6 +171,6 @@
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=89"></script>
+<script src="app.js?v=90"></script>
 </body>
 </html>

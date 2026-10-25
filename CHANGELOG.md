@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.34.0 · 2026-10-25
+- **Tarjeta de ritmo en la página en directo:**
+  - **Ritmo medio** desde la salida («6:37 /km») y **llegada prevista** a la hora de meta, con un margen aproximado.
+  - **Gráfico del ritmo de cada kilómetro** (los últimos 12): cuanto más alta la barra, más lento ese km; la última, resaltada. Con descripción para lectores de pantalla.
+  - Sale solo cuando hay datos (desde el km 1) y se queda con la carrera terminada.
+- **Servidor:** apunta a qué hora se cruza cada kilómetro (`km_t`, interpolada entre dos puntos GPS; no duplica con un lote reenviado) y lo publica en `/live.json`. Se borra al reiniciar o empezar otra carrera.
+- Pruebas nuevas del cálculo de cruces por km.
+
 ## v1.33.0 · 2026-10-25
 - **El resultado calcula el tiempo en movimiento, el desnivel, el pulso medio y la cadencia solo del tramo salida-meta.** Antes salían de toda la actividad grabada: con calentamiento, trayecto al coche o vuelta a casa en el fichero, la velocidad media y el D+ publicados no eran los de la carrera (en una prueba inventada, 6,7 km/h y 131 ppm en vez de 10,0 km/h y 160 ppm). Si el fichero es casi todo carrera (menos de un 5 % de más), se siguen usando los datos del reloj. Vale para FIT y GPX.
 - **El historial no apunta dos veces el mismo punto GPS** cuando el móvil o el reloj reenvían un lote porque no les llegó la respuesta.

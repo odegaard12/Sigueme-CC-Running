@@ -974,6 +974,49 @@ function previsiones(km, datoIso) {
   return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
 }
 
+// ---------- tarjeta de ritmo: ritmo medio, llegada prevista y ritmo de cada km ----------
+const mmss = s => { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function pintarRitmo(data, km, haArrancado, enMeta) {
+  const caja = document.getElementById('ritmo');
+  if (!caja) return;
+  const t = data.data_at ? new Date(data.data_at).getTime() : NaN;
+  const salida = lastStartedAt ? new Date(lastStartedAt).getTime() : NaN;
+  if (!haArrancado || !(km >= 1) || !isFinite(t) || !isFinite(salida) || t <= salida) { caja.hidden = true; return; }
+  const sKm = (t - salida) / 1000 / km;                       // segundos por km, con las paradas incluidas
+  if (!(sKm > 120 && sKm < 3600)) { caja.hidden = true; return; }
+  caja.hidden = false;
+  ponerTexto('r-ritmo', mmss(sKm) + ' /km');
+  const pr = enMeta ? null : previsiones(km, data.data_at);
+  ponerTexto('r-llegada', enMeta ? 'En meta' : pr ? pr.horaMeta : '—');
+  let nota = '';
+  if (pr && totalRouteKm) {
+    const margen = Math.max(2, Math.ceil(Math.max(0, totalRouteKm - km) * sKm / 60 * 0.1));
+    nota = 'Si mantiene este ritmo · margen aprox. ±' + margen + ' min';
+  }
+  ponerTexto('r-nota', nota);
+  // ritmo de cada km completo (el servidor apunta a qué hora se cruza cada uno)
+  const kt = (Array.isArray(data.km_t) ? data.km_t : []).filter(Number.isFinite);
+  const parciales = kt.map((v, i) => v - (i ? kt[i - 1] : salida / 1000)).filter(s => s > 60 && s < 7200).slice(-12);
+  const cont = document.getElementById('r-barras'), pie = document.getElementById('r-pie');
+  if (parciales.length < 2) { cont.hidden = true; pie.hidden = true; return; }
+  const max = Math.max(...parciales), min = Math.min(...parciales);
+  const firma = parciales.join(',');
+  if (cont.dataset.f !== firma) {
+    cont.dataset.f = firma;
+    cont.textContent = '';
+    parciales.forEach((s, i) => {
+      const col = document.createElement('div'); col.className = 'col' + (i === parciales.length - 1 ? ' ultimo' : '');
+      const barra = document.createElement('i'); barra.style.height = Math.max(15, 25 + 70 * (s - 0.5 * max) / (0.5 * max)) + '%';   // proporcional: 4 s de diferencia no parecen un mundo
+      const et = document.createElement('em'); et.textContent = mmss(s);
+      col.title = mmss(s) + ' /km';
+      col.append(barra, et); cont.append(col);
+    });
+  }
+  cont.setAttribute('aria-label', 'Ritmo de cada kilómetro: el último ' + mmss(parciales[parciales.length - 1]) +
+    ', el mejor ' + mmss(min) + ' y el más lento ' + mmss(max));
+  cont.hidden = false; pie.hidden = false;
+}
+
 function pintarFantasma(km) {
   const p = km != null && mapReady ? pointAtKm(km / (factorKm || 1)) : null;
   if (!p) {
@@ -1436,6 +1479,8 @@ function pollLive() {
             'Meta ~' + pr.horaMeta : '');
         }
       }
+
+      pintarRitmo(data, doneKm, haArrancado, enMeta);
 
       // pie de estado: en meta, sin señal o la hora del último dato
       const pie = document.getElementById('live-updated');

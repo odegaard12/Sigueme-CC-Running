@@ -70,6 +70,22 @@ body { background: var(--tinta); color: var(--papel); }
 .progreso i { background: var(--campo); }
 .chip { background: var(--panel); border: 0; border-radius: 4px; color: var(--muted); font-weight: 700; }
 .chip b { font: 400 1.15rem/1 var(--display); color: var(--papel); letter-spacing: 0; }
+/* tarjeta de ritmo: ritmo medio, llegada prevista y ritmo de cada km */
+.ritmo { background: var(--panel); border-radius: var(--radio); padding: 14px 16px; margin: 10px 0; }
+.ritmo[hidden] { display: none; }
+.ritmo-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ritmo-datos small { color: var(--muted, #b5c06a); display: block; }
+.ritmo-datos b { font: 400 1.7rem/1.1 var(--display, Anton, Impact, sans-serif); text-transform: uppercase; color: var(--papel); }
+.ritmo-nota { margin: 8px 0 0; color: var(--muted, #b5c06a); font-size: 0.9rem; }
+.ritmo-nota:empty { display: none; }
+.ritmo-barras { display: flex; align-items: flex-end; gap: 4px; height: 96px; margin-top: 14px; }
+.ritmo-barras[hidden], .ritmo-pie[hidden] { display: none; }
+.ritmo-barras .col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 3px; }
+.ritmo-barras .col i { display: block; background: var(--campo); border-radius: 3px 3px 0 0; opacity: 0.6; transition: height 0.4s ease; }
+.ritmo-barras .col.ultimo i { opacity: 1; }
+.ritmo-barras .col em { font-style: normal; font-size: 0.62rem; line-height: 1; text-align: center; color: var(--muted, #b5c06a); font-variant-numeric: tabular-nums; }
+.ritmo-pie { margin: 8px 0 0; color: var(--muted, #b5c06a); font-size: 0.8rem; }
+@media (prefers-reduced-motion: reduce) { .ritmo-barras .col i { transition: none; } }
 .estado-carrera { background: var(--panel); border-radius: var(--radio); border: 0; color: var(--papel); font-weight: 700; }
 .estado-carrera.previo { background: var(--campo); color: var(--tinta); }
 .live-updated { color: var(--muted); }

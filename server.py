@@ -179,7 +179,7 @@ def acierto_de(ip):
 # avisos, contadores internos). Al público solo va lo que pinta la web.
 CAMPOS_PUBLICOS = ("status_label", "started_at", "finished_at", "data_at", "updated", "lat", "lon",
                    "dist_km", "elapsed", "speed_kmh", "speed_kmh_avg", "hr", "hr_avg", "hr_at",
-                   "cadence", "cadence_avg", "igpsport_at", "fuente_posicion")
+                   "cadence", "cadence_avg", "igpsport_at", "fuente_posicion", "km_t")
 
 
 def live_publico():
@@ -1201,6 +1201,8 @@ def recibir_gps(puntos):
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
     velocidad = None
+    cruces = [x for x in (live.get("km_t") or []) if isinstance(x, (int, float))]    # hora de cada km entero cruzado
+    cruces_antes = len(cruces)
     for p in puntos:
         antes_de_salir = salida_t is None or p["t"] < salida_t or (previo is not None and previo[2] < salida_t)
         if previo and p["t"] > previo[2] and antes_de_salir:
@@ -1211,7 +1213,12 @@ def recibir_gps(puntos):
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
             v = tramo / max(1.0, p["t"] - previo[2]) * 3600
             if v < 90:
+                antes = dist
                 dist += tramo
+                while tramo > 0 and len(cruces) < int(dist) < 1000:
+                    k = len(cruces) + 1
+                    frac = min(1.0, max(0.0, (k - antes) / tramo))
+                    cruces.append(round(previo[2] + frac * (p["t"] - previo[2])))
                 # el reloj no manda velocidad: se saca de los dos últimos
                 # puntos (si no, se quedaba la última de iGPSPORT, de horas antes)
                 velocidad = v if p["t"] - previo[2] <= 120 else None
@@ -1225,6 +1232,8 @@ def recibir_gps(puntos):
         p["_dist"] = dist                 # km hechos en este punto (meta dentro del lote)
     patch = {"gps_t": ultimo["t"], "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
+    if len(cruces) != cruces_antes:
+        patch["km_t"] = cruces
     # la posición publicada es la del último punto BUENO (no la de un salto imposible); solo con la
     # carrera empezada (un día de prueba no enseña dónde estás) y hasta 15 min después de meta
     try:
@@ -2348,7 +2357,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
             "gps_t": None, "gps_at": None, "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
             "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None,
-            "gps_origen": None, "gps_rechazado_at": None,
+            "gps_origen": None, "gps_rechazado_at": None, "km_t": None,
         })
 
     def _empezar_desde_app(self, desde_ms=None):
@@ -2625,7 +2634,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
-                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
+                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None, "km_t": None,
                 "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None, "aviso_km": None,
             })
             self._send_json(200, {"ok": True, "live": current, "archivada": archivada})
@@ -2688,7 +2697,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 # carrera nueva: fuera los km y el pulso de la anterior (o de una
                 # prueba en casa), como en _empezar; si no, se sumaba casa→salida
                 patch.update({"gps_dist_km": 0, "gps_ult": None, "gps_t": None, "gps_at": None, "gps_origen": None,
-                              "hr_suma": None, "hr_n": None, "hr_t": None, "hr_at": None, "dist_km": None,
+                              "hr_suma": None, "hr_n": None, "hr_t": None, "hr_at": None, "dist_km": None, "km_t": None,
                               "ruta_km": None, "lejos_de_meta": None, "aviso_id": None, "aviso_t": None,
                               "aviso_texto": None, "elapsed": None})
                 actual["started_at"] = None
