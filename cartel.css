@@ -64,6 +64,7 @@ h1.nombre-ruta.largo { font-size: clamp(2.4rem, 7vw, 5.6rem); }
 .mapa .maplibregl-ctrl-attrib { font-size: 11px; }
 .perfil { width: 100%; height: auto; display: block; background: var(--oscuro); border-radius: 6px; }
 .perfil text { fill: var(--apagado); font: 700 11px system-ui, sans-serif; }
+.marca-avit::after { content: ""; position: absolute; inset: -8px; }   /* el área pulsable llega a 44 px sin cambiar el dibujo */
 .marca-avit { min-width: 28px; height: 28px; border-radius: 14px; background: var(--campo); color: var(--tinta); border: 3px solid var(--tinta); font: 800 11px/22px system-ui, sans-serif; text-align: center; cursor: pointer; padding: 0 6px; }
 .fila.carrera { grid-template-columns: 1fr 140px 96px 150px; }
 @media (max-width: 640px) { .fila.carrera { grid-template-columns: 1fr 84px 112px; } .fila.carrera .cifra.km { display: none; } .fila.carrera .cifra.t { display: block; } .fila.carrera .cifra.t b { font-size: 1.7rem; } }
@@ -94,3 +95,14 @@ details.como p { max-width: 62ch; color: #dfe6d0; }
 .si, .no { font: 400 0.95rem/1 var(--display); text-transform: uppercase; padding: 3px 7px; border-radius: 3px; }
 .si { background: var(--campo); color: var(--tinta); } .no { background: transparent; color: var(--apagado); box-shadow: inset 0 0 0 2px var(--apagado); }
 .pul .nota { color: var(--apagado); font-size: 0.9rem; max-width: 70ch; }
+
+/* botones de marca: llevan a la guía de cada reloj o móvil */
+.chips-marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.chips-marcas a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--campo); color: var(--tinta); font-weight: 800; text-decoration: none; transition: transform 0.15s; }
+.chips-marcas a:active { transform: scale(0.96); }
+.chips-marcas a:focus-visible { outline: 3px solid var(--papel, #f4f7e6); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .chips-marcas a { transition: none; } }
+.marca-tarj { scroll-margin-top: 16px; }
+.marca-tarj:target { box-shadow: inset 0 0 0 3px var(--campo); }
+.marca-tarj .nota { margin: 12px 0 0; font-size: 0.88rem; }
+.marca-tarj a { color: var(--campo); }

@@ -139,6 +139,16 @@ intentos = {}   # ip -> [fallos, momento_del_ultimo_fallo]
 castigo_lock = threading.Lock()
 
 
+def _clave_ip(ip):
+    """Quien tiene IPv6 tiene un /64 entero: se cuenta por red, no por dirección."""
+    try:
+        if ipaddress.ip_address(ip).version == 6:
+            return str(ipaddress.ip_network(f"{ip}/64", strict=False).network_address)
+    except ValueError:
+        pass
+    return ip
+
+
 def segundos_de_castigo(ip):
     with intentos_lock:
         fallos, ultimo = intentos.get(ip, (0, 0))
@@ -152,6 +162,10 @@ def segundos_de_castigo(ip):
 
 def fallo_de(ip):
     with intentos_lock:
+        if len(intentos) > 2000:                       # rotar IPs no puede llenar la memoria
+            viejas = [k for k, v in intentos.items() if time.time() - v[1] > 3600]
+            for k in viejas:
+                del intentos[k]
         fallos, _ = intentos.get(ip, (0, 0))
         intentos[ip] = (fallos + 1, time.time())
 
@@ -165,7 +179,7 @@ def acierto_de(ip):
 # avisos, contadores internos). Al público solo va lo que pinta la web.
 CAMPOS_PUBLICOS = ("status_label", "started_at", "finished_at", "data_at", "updated", "lat", "lon",
                    "dist_km", "elapsed", "speed_kmh", "speed_kmh_avg", "hr", "hr_avg", "hr_at",
-                   "cadence", "cadence_avg", "igpsport_at", "fuente_posicion")
+                   "cadence", "cadence_avg", "igpsport_at", "fuente_posicion", "km_t")
 
 
 def live_publico():
@@ -301,11 +315,18 @@ def escribir_json(nombre, datos):
     """Atómico, como live.json: o el fichero viejo entero o el nuevo entero.
     Temporal con punto (no se sirve), .tmp (no se replica) y nombre único."""
     fd, tmp = tempfile.mkstemp(dir=ROOT, prefix="." + nombre + ".", suffix=".tmp")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=1)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, os.path.join(ROOT, nombre))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(datos, f, ensure_ascii=False, indent=1)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, os.path.join(ROOT, nombre))
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def plan_avisos():
@@ -584,22 +605,80 @@ def _firma(exp):
     return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
 
 
+REVOCADAS = ".sesiones_revocadas"       # oculto (no se sirve); la réplica lo lleva a la otra Pi
+_revocadas_cache = {"mtime": None, "datos": {}}
+
+
+def _revocadas():
+    """{nonce: caducidad} de las sesiones cerradas. Cacheado por fecha del fichero."""
+    ruta = os.path.join(ROOT, REVOCADAS)
+    try:
+        m = os.path.getmtime(ruta)
+    except OSError:
+        return {}
+    if m != _revocadas_cache["mtime"]:
+        try:
+            with open(ruta, encoding="utf-8") as f:
+                d = json.load(f)
+            _revocadas_cache.update(mtime=m, datos=d if isinstance(d, dict) else {})
+        except (OSError, ValueError):
+            _revocadas_cache.update(mtime=m, datos={})
+    return _revocadas_cache["datos"]
+
+
 def nueva_sesion():
     exp = int(time.time()) + SESION_HORAS * 3600
-    return f"{exp}.{_firma(exp)}"
+    nonce = secrets.token_hex(8)
+    return f"{exp}.{nonce}.{_firma(f'{exp}.{nonce}')}"
+
+
+def _partes_sesion(cabecera_cookie):
+    """(exp, nonce|None, firma, mensaje_firmado) de la cookie adm, o None si no está o es ilegible."""
+    for trozo in (cabecera_cookie or "").split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "adm":
+            p = valor.split(".")
+            if len(p) == 2:                       # sesiones anteriores a v1.38 (sin identificador): valen hasta caducar
+                exp, firma, nonce, msg = p[0], p[1], None, p[0]
+            elif len(p) == 3:
+                exp, nonce, firma = p
+                msg = f"{exp}.{nonce}"
+                if not (nonce.isascii() and nonce.isalnum() and len(nonce) <= 32):
+                    return None
+            else:
+                return None
+            if exp.isascii() and exp.isdigit() and len(exp) < 15:
+                return int(exp), nonce, firma, msg
+    return None
 
 
 def sesion_valida(cabecera_cookie):
     if not ADMIN_HASH or not cabecera_cookie:
         return False
-    for trozo in cabecera_cookie.split(";"):
-        nombre, _, valor = trozo.strip().partition("=")
-        if nombre == "adm":
-            exp, _, firma = valor.partition(".")
-            if exp.isascii() and exp.isdigit() and len(exp) < 15 and int(exp) > time.time() \
-                    and compare_digest(firma.encode(), _firma(int(exp)).encode()):
-                return True
-    return False
+    p = _partes_sesion(cabecera_cookie)
+    if not p:
+        return False
+    exp, nonce, firma, msg = p
+    if exp <= time.time() or not compare_digest(firma.encode(), _firma(msg).encode()):
+        return False
+    return not (nonce and nonce in _revocadas())
+
+
+def revocar_sesion(cabecera_cookie):
+    """Cerrar sesión de verdad: la cookie robada o copiada deja de valer en las dos Pis."""
+    p = _partes_sesion(cabecera_cookie)
+    if not p or not p[1]:
+        return
+    exp, nonce, firma, msg = p
+    if not compare_digest(firma.encode(), _firma(msg).encode()):
+        return
+    ahora = time.time()
+    datos = {k: v for k, v in _revocadas().items() if isinstance(v, (int, float)) and v > ahora}
+    datos[nonce] = exp
+    try:
+        escribir_json(REVOCADAS, datos)
+    except OSError:
+        pass
 
 
 # --- invitados: rutas para el reloj de un amigo ------------------------------
@@ -819,15 +898,24 @@ def fetch_page(url):
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with urllib.request.build_opener(_SinRedireccion).open(req, timeout=10) as resp:
         return resp.read(2_000_000).decode("utf-8", errors="ignore")
 
 
+class _SinRedireccion(urllib.request.HTTPRedirectHandler):
+    """Comprobamos que el host es público, pero una redirección saltaba esa comprobación."""
+    def redirect_request(self, *a, **k):
+        return None
+
+
 def read_live():
+    """Siempre un dict: con el fichero corrupto (bytes nulos tras un apagón, «null», una lista) devuelve {} en vez de
+    tumbar /live.json y todas las escrituras."""
     try:
         with open(LIVE_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
         return {}
 
 
@@ -947,6 +1035,26 @@ GPS_VIGENTE = 120      # s: con un punto del móvil más reciente, no se usa el 
 PRECISION_MAXIMA = 100  # m: puntos peores se descartan (arranque en frío, túneles)
 
 
+gps_fallos_lock = threading.Lock()
+gps_fallos = {}     # ip -> (identificadores malos en esta ventana, inicio de la ventana)
+
+
+def escribir_clave_gps(texto):
+    """Atómica y solo legible por el dueño (antes, 0644 y con un hueco vacío mientras se escribía)."""
+    fd, tmp = tempfile.mkstemp(dir=ROOT, prefix=".gps.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(texto + "\n")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, GPS_CLAVE_PATH)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def clave_gps():
     try:
         with open(GPS_CLAVE_PATH, encoding="utf-8") as f:
@@ -1003,9 +1111,10 @@ def _segundos(valor):
 
 def _numero(valor):
     try:
-        return float(valor)
-    except (TypeError, ValueError):
+        n = float(valor)
+    except (TypeError, ValueError, OverflowError):
         return None
+    return n if math.isfinite(n) else None
 
 
 def _fraccion(valor):
@@ -1086,8 +1195,25 @@ def puntos_traccar(query, cuerpo):
     return ident, puntos
 
 
+_puntos_vistos = {}      # los últimos puntos recibidos (hora, lat, lon, pulso): un reenvío no se repite en el historial
+
+
+def _repetido(p):
+    k = (round(p["t"], 1), p["lat"], p["lon"], p["hr"])
+    if k in _puntos_vistos:
+        return True
+    _puntos_vistos[k] = True
+    if len(_puntos_vistos) > 6000:
+        for viejo in list(_puntos_vistos)[:1000]:
+            del _puntos_vistos[viejo]
+    return False
+
+
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
+    puntos[:] = [p for p in puntos if not _repetido(p)]
+    if not puntos:
+        return
     for p in puntos:
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
@@ -1133,6 +1259,8 @@ def recibir_gps(puntos):
     dist = live.get("gps_dist_km") or 0.0
     previo = live.get("gps_ult")
     velocidad = None
+    cruces = [x for x in (live.get("km_t") or []) if isinstance(x, (int, float))]    # hora de cada km entero cruzado
+    cruces_antes = len(cruces)
     for p in puntos:
         antes_de_salir = salida_t is None or p["t"] < salida_t or (previo is not None and previo[2] < salida_t)
         if previo and p["t"] > previo[2] and antes_de_salir:
@@ -1143,7 +1271,12 @@ def recibir_gps(puntos):
             tramo = km_entre((previo[0], previo[1]), (p["lat"], p["lon"]))
             v = tramo / max(1.0, p["t"] - previo[2]) * 3600
             if v < 90:
+                antes = dist
                 dist += tramo
+                while tramo > 0 and len(cruces) < int(dist) < 1000:
+                    k = len(cruces) + 1
+                    frac = min(1.0, max(0.0, (k - antes) / tramo))
+                    cruces.append(round(previo[2] + frac * (p["t"] - previo[2])))
                 # el reloj no manda velocidad: se saca de los dos últimos
                 # puntos (si no, se quedaba la última de iGPSPORT, de horas antes)
                 velocidad = v if p["t"] - previo[2] <= 120 else None
@@ -1157,6 +1290,8 @@ def recibir_gps(puntos):
         p["_dist"] = dist                 # km hechos en este punto (meta dentro del lote)
     patch = {"gps_t": ultimo["t"], "fuente_posicion": "movil", "gps_origen": manda,
              "gps_dist_km": round(dist, 3), "gps_ult": previo}
+    if len(cruces) != cruces_antes:
+        patch["km_t"] = cruces
     # la posición publicada es la del último punto BUENO (no la de un salto imposible); solo con la
     # carrera empezada (un día de prueba no enseña dónde estás) y hasta 15 min después de meta
     try:
@@ -1451,10 +1586,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             real = self.headers.get("CF-Connecting-IP", "").strip()
             if privada and real:
                 ipaddress.ip_address(real)
-                return real
+                return _clave_ip(real)
         except ValueError:
             pass
-        return directa
+        return _clave_ip(directa)
 
     def mismo_origen(self):
         """Protección CSRF: un navegador siempre manda Origin (o Referer) en un
@@ -1475,6 +1610,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def _ruta_publica(self):
+        if "\x00" in unquote(self.path):
+            return False
         if self.path.split("?")[0].endswith("/") and self.path.split("?")[0] != "/":
             return False                 # nada de listados de directorio
         ruta = self._ruta()
@@ -1489,9 +1626,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _gps(self, cuerpo=b""):
         _, _, query = self.path.partition("?")
-        ident, puntos = puntos_traccar(query, cuerpo)
+        ip = self.ip_cliente()
+        with gps_fallos_lock:
+            n, t0 = gps_fallos.get(ip, (0, 0))
+            if time.time() - t0 > 60:
+                n, t0 = 0, time.time()
+            if n >= 30:                     # 30 identificadores malos en un minuto: a esperar
+                self._send_json(429, {"error": "demasiados intentos"})
+                return
+        try:
+            ident, puntos = puntos_traccar(query, cuerpo)
+        except Exception as exc:
+            print(f"[gps] petición ilegible: {exc!r}", flush=True)
+            self._send_json(400, {"error": "petición no válida"})
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
+            with gps_fallos_lock:
+                if len(gps_fallos) > 2000:
+                    gps_fallos.clear()
+                gps_fallos[ip] = (n + 1, t0)
             # El panel avisa: con el identificador mal copiado, Traccar o el
             # reloj mandaban y la web no se movía, sin pista de por qué. Solo
             # la hora (live.json es público) y como mucho una vez por minuto.
@@ -1712,7 +1866,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # El navegador se quedaba con el css/js viejo y el usuario veía la web
         # rota después de desplegar. Con no-cache revalida siempre: para
         # ficheros de 16 KB no cuesta nada y evita enseñar una versión antigua.
-        ruta = self._ruta()
+        ruta = self._ruta() if hasattr(self, "path") else ""
         if ruta.startswith("/lib/"):
             # la librería lleva la versión en el nombre y no cambia nunca: sin
             # esto, Cloudflare preguntaba a la Pi en cada visita (REVALIDATED)
@@ -2261,7 +2415,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "gps_dist_km": 0, "gps_ult": None, "igpsport_at": None, "igpsport_aviso": None,
             "gps_t": None, "gps_at": None, "lejos_de_meta": None, "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None,
             "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None,
-            "gps_origen": None, "gps_rechazado_at": None,
+            "gps_origen": None, "gps_rechazado_at": None, "km_t": None,
         })
 
     def _empezar_desde_app(self, desde_ms=None):
@@ -2319,6 +2473,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self._send_json(200, respuesta)
 
     def do_POST(self):
+        # la Pi de respaldo no recibe datos de carrera: la réplica desde la titular los borraría a los 20 s y el
+        # móvil creería que llegaron. Con 503 el móvil o Traccar los guardan y reintentan (la titular los coge).
+        if (self.path.startswith("/api/gps") or self.path == "/api/plan") and not soy_titular():
+            self._send_json(503, {"error": "esta Pi no es la titular: reintenta"})
+            return
         if self.path.startswith("/api/gps"):
             try:
                 largo = int(self.headers.get("Content-Length", 0))
@@ -2341,6 +2500,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._plan_app()
             return
         if self.path == "/api/logout":
+            revocar_sesion(self.headers.get("Cookie", ""))
             self._send_json(200, {"ok": True}, cookie="")
             return
         if self.path not in ("/api/live", "/api/login"):
@@ -2456,8 +2616,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # identificador nuevo (32 caracteres al azar) para cada carrera: el
             # viejo deja de valer al momento; hay que ponerlo en Traccar/reloj
             nueva = "odg-" + secrets.token_urlsafe(24)
-            with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
-                f.write(nueva + "\n")
+            escribir_clave_gps(nueva)
             apuntar_historial("gps_rotado")
             self._send_json(200, {"ok": True, "gps_id": nueva, "live": read_live()})
             return
@@ -2539,7 +2698,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "gps_t": None, "gps_at": None, "bateria_movil": None,
                 "gps_dist_km": None, "gps_ult": None, "igpsport_at": None,
                 "fuente_posicion": None, "igpsport_aviso": None, "lejos_de_meta": None,
-                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None,
+                "hr_t": None, "hr_at": None, "hr_suma": None, "hr_n": None, "gps_origen": None, "gps_rechazado_at": None, "km_t": None,
                 "ruta_km": None, "aviso_id": None, "aviso_t": None, "aviso_texto": None, "aviso_km": None,
             })
             self._send_json(200, {"ok": True, "live": current, "archivada": archivada})
@@ -2602,7 +2761,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 # carrera nueva: fuera los km y el pulso de la anterior (o de una
                 # prueba en casa), como en _empezar; si no, se sumaba casa→salida
                 patch.update({"gps_dist_km": 0, "gps_ult": None, "gps_t": None, "gps_at": None, "gps_origen": None,
-                              "hr_suma": None, "hr_n": None, "hr_t": None, "hr_at": None, "dist_km": None,
+                              "hr_suma": None, "hr_n": None, "hr_t": None, "hr_at": None, "dist_km": None, "km_t": None,
                               "ruta_km": None, "lejos_de_meta": None, "aviso_id": None, "aviso_t": None,
                               "aviso_texto": None, "elapsed": None})
                 actual["started_at"] = None
@@ -2645,6 +2804,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 # IP flotante (keepalived) de la instalación con dos Pis, desde la configuración
 # del servicio. Sin ella, una sola máquina: siempre es la que sirve.
 VIP = os.environ.get("SIGUEME_VIP", "")
+
+
+_titular = {"t": 0.0, "v": True}
+
+
+def soy_titular():
+    """tengo_la_vip() con caché de 2 s (abre un socket en cada llamada)."""
+    if time.time() - _titular["t"] > 2:
+        _titular.update(t=time.time(), v=tengo_la_vip())
+    return _titular["v"]
 
 
 def tengo_la_vip():
@@ -2699,8 +2868,7 @@ def watch_live_file():
 
 def asegurar_clave_gps():
     if not clave_gps():
-        with open(GPS_CLAVE_PATH, "w", encoding="utf-8") as f:
-            f.write("odg-" + secrets.token_urlsafe(24) + "\n")
+        escribir_clave_gps("odg-" + secrets.token_urlsafe(24))
         print("[gps] identificador nuevo creado (se cambia en el panel: Móvil → Ver la configuración)", flush=True)
 
 

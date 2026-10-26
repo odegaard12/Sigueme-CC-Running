@@ -87,7 +87,7 @@
   .fila-aviso textarea { font: inherit; font-size: 0.85rem; resize: vertical; }
   .fila-aviso span { font-size: 0.75rem; color: var(--muted); text-align: right; }
   .fila-avit label { font-size: 0.7rem; color: var(--muted); display: flex; gap: 4px; align-items: center; }
-  .fila-avit .btn { min-height: 40px; padding: 0; }
+  .fila-avit .btn { min-height: 44px; padding: 0; }
   .qr { background: #fff; border-radius: 12px; padding: 12px; width: min(240px, 100%); margin: 12px auto; }
   .qr svg { display: block; width: 100%; height: auto; }
   .qr:empty { display: none; }
@@ -106,7 +106,7 @@
   .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
     padding: 6px; margin: 0 0 14px; background: rgba(16,20,18,0.96); backdrop-filter: blur(10px); /* taste-skill-ignore: la única barra fija */
     border: 0; border-radius: 14px; }
-  .pestanas button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
+  .pestanas button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #8a968f;
     font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
   .pestanas button[aria-selected="true"] { background: #d9f24a; color: #0a0d0c; }
   .tarjeta { background: #161c19; border: 0; border-radius: 16px;
@@ -662,8 +662,8 @@ async function post(body) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
     });
-    const data = await res.json();
     if (res.status === 403) { sesionCaducada(); return; }
+    const data = await res.json();
     if (res.ok) {
       horaTocada = false;     // lo guardado ya es lo del servidor
       msg.textContent = 'Guardado';
@@ -808,7 +808,9 @@ function irA(id) {
 function pintarPreparacion(p) {
   if (!p) return;
   const km = v => v != null ? String(v).replace('.', ',') : '—';
-  const l = $('lista-prep'); l.textContent = '';
+  const l = $('lista-prep');
+  const focoIdx = [...l.children].indexOf(document.activeElement);   // para devolver el foco tras repintar
+  l.textContent = '';
   const app = p.app_at ? 'la app bajó el plan el ' + new Date(p.app_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   const pasos = [
     { ok: !!(p.nombre && p.fecha), ir: 't-carrera', paso: 'Pon el nombre, la fecha y la hora de salida',
@@ -836,6 +838,7 @@ function pintarPreparacion(p) {
     li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irA(x.ir); } });
     l.append(li);
   });
+  if (focoIdx >= 0 && l.children[focoIdx]) l.children[focoIdx].focus({ preventScroll: true });
   const listos = pasos.filter(x => x.ok).length;
   $('prep-progreso').textContent = listos + ' de ' + pasos.length + ' listos';
   $('est-preparar').textContent = listos === pasos.length ? 'Todo preparado' : listos + ' de ' + pasos.length + ' listos';
@@ -969,8 +972,8 @@ async function invPost(cuerpo) {
   try {
     const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cuerpo), signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined });
+    if (res.status === 403) { sesionCaducada(); return null; }
     const d = await res.json();
-    if (res.status === 403) return null;
     if (!res.ok) { m.textContent = d.error || 'No se pudo.'; m.className = 'msg err'; return null; }
     return d;
   } catch (e) { m.textContent = 'No se pudo conectar con el servidor.'; m.className = 'msg err'; return null; }
@@ -1133,16 +1136,24 @@ async function cargarConfig() {
   pintarAvisos(d.plan);
 }
 
+let sondeando = false;
 async function pollStatus() {
+  if (sondeando || document.hidden) return;
+  sondeando = true;
   try {
     const res = await fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'gps_info' }) });
+      body: JSON.stringify({ action: 'gps_info' }), signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined });
     if (res.status === 403) { sesionCaducada(); return; }
     const todo = await res.json();
     refreshStatus(todo.live || {});
     pintarPreparacion(todo.preparacion);
-  } catch (e) {}
+  } catch (e) {
+  } finally {
+    sondeando = false;
+  }
 }
+// al volver a la pestaña se pone al día al momento
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sondeo) pollStatus(); });
 
 // ⚠️ Antes cada entrada (sesión al cargar, login, volver a entrar tras caducar)
 // añadía otro setInterval: el panel acababa preguntando varias veces cada 5 s.
@@ -1213,6 +1224,7 @@ function guiaCerrar() {
   guiaSolo('guia-foco').hidden = true; guiaSolo('guia-tarjeta').hidden = true;
   try { localStorage.setItem('guia_admin', '1'); } catch (e) {}
   verPestana('preparar'); window.scrollTo({ top: 0 });
+  guiaSolo('btn-guia').focus({ preventScroll: true });
 }
 function guiaAbrir() { if (guiaPaso < 0) guiaMostrar(0); }
 guiaSolo('btn-guia').addEventListener('click', guiaAbrir);
@@ -1220,6 +1232,15 @@ guiaSolo('guia-saltar').addEventListener('click', guiaCerrar);
 guiaSolo('guia-atras').addEventListener('click', () => guiaMostrar(Math.max(0, guiaPaso - 1)));
 guiaSolo('guia-sig').addEventListener('click', () => guiaPaso >= GUIA.length - 1 ? guiaCerrar() : guiaMostrar(guiaPaso + 1));
 document.addEventListener('keydown', e => { if (guiaPaso >= 0 && e.key === 'Escape') guiaCerrar(); });
+document.addEventListener('keydown', e => {
+  if (guiaPaso < 0 || e.key !== 'Tab') return;
+  const bs = [...guiaSolo('guia-tarjeta').querySelectorAll('button')].filter(b => !b.hidden);
+  if (!bs.length) return;
+  const i = bs.indexOf(document.activeElement);
+  e.preventDefault();
+  bs[e.shiftKey ? (i <= 0 ? bs.length - 1 : i - 1) : (i === bs.length - 1 ? 0 : i + 1)].focus();
+});
+window.addEventListener('scroll', () => { if (guiaPaso >= 0) { const s = GUIA[guiaPaso].sel; guiaFoco(s ? document.querySelector(s) : null); } }, { passive: true });
 window.addEventListener('resize', () => { if (guiaPaso >= 0) { const s = GUIA[guiaPaso].sel; guiaFoco(s ? document.querySelector(s) : null); } });
 function guiaPrimeraVez() {
   guiaSolo('btn-guia').hidden = false;

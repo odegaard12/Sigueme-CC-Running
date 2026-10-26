@@ -11,6 +11,7 @@ let subiendo = false
 AppSideService(BaseSideService({
   onInit() {
     try { pendientes = JSON.parse(this.settings.getItem('pendientes') || '[]') } catch (e) { pendientes = [] }
+    pendientes = pendientes.filter(p => p && Number.isFinite(p.t))
     this.reintento = setInterval(() => this.subir(), 30000)
   },
 
@@ -19,7 +20,9 @@ AppSideService(BaseSideService({
       res({ message: 'método desconocido: ' + req.method })
       return
     }
-    const nuevos = (req.params && req.params.puntos) || []
+    // si el reloj reenvía un lote porque no le llegó el OK, no se duplica (misma hora = mismo punto)
+    const vistos = new Set(pendientes.map(p => p.t))
+    const nuevos = ((req.params && req.params.puntos) || []).filter(p => p && Number.isFinite(p.t) && !vistos.has(p.t))
     pendientes = pendientes.concat(nuevos).slice(-MAX_PENDIENTES)
     this.guardar()
     // al reloj se le contesta ya: los puntos quedan a salvo en el móvil
@@ -43,6 +46,9 @@ AppSideService(BaseSideService({
     // vale pegar el enlace de configuración del panel (…/app.html#id=odg-…): saca de él la dirección y el identificador
     const enlace = /^(https?:\/\/[^\/#\s]+).*#id=([\w-]{8,100})/.exec(url)
     if (enlace) { url = enlace[1]; if (!id) id = enlace[2] }
+    const enlaceId = /#id=([\w-]{8,100})/.exec(id)       // también vale pegar el enlace entero en el campo del identificador
+    if (enlaceId) id = enlaceId[1]
+    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url
     url = url.replace(/\/+$/, '')
     if (url && !/\/api\/gps$/.test(url)) url += '/api/gps'
     if (!url || !id) {
@@ -51,23 +57,23 @@ AppSideService(BaseSideService({
     }
     subiendo = true
     const lote = pendientes.slice(0, POR_SUBIDA)
-    const cuerpo = {
-      device_id: id,
-      location: lote.map(p => ({
-        timestamp: new Date(p.t).toISOString(),
-        coords: p.lat != null ? { latitude: p.lat, longitude: p.lon } : {},
-        extras: { hr: p.hr, origen: 'amazfit' },
-      })),
-    }
     // fuera LO ENVIADO, no los primeros: si el reloj manda puntos durante el envío
     // con la cola llena, el recorte del principio hacía borrar puntos sin mandar
     const sinLote = (lista, l) => { const fuera = new Set(l); return lista.filter(q => !fuera.has(q)) }
     try {
-      const r = await this.fetch({
-        url, method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cuerpo),
-      })
+      const cuerpo = {
+        device_id: id,
+        location: lote.map(p => ({
+          timestamp: new Date(p.t).toISOString(),
+          coords: p.lat != null ? { latitude: p.lat, longitude: p.lon } : {},
+          extras: { hr: p.hr, origen: 'amazfit' },
+        })),
+      }
+      // con tiempo límite propio: si el envío se cuelga, `subiendo` no se queda puesto para siempre
+      const r = await Promise.race([
+        this.fetch({ url, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }),
+        new Promise((_, no) => setTimeout(() => no(new Error('tiempo agotado')), 25000)),
+      ])
       if (r && r.status >= 200 && r.status < 300) {
         pendientes = sinLote(pendientes, lote)
         this.guardar()

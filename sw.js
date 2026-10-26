@@ -23,7 +23,11 @@ async function pagina(r) {
   const red = fetch(r);
   try {
     const resp = await conTope(red, 5000);
-    if (resp.ok && resp.type === 'basic' && !resp.redirected) {
+    if (!resp.ok) {                    // el túnel o la Pi caídos contestan rápido con un 5xx: mejor la última copia
+      const g = await c.match(clave);
+      return g || resp;
+    }
+    if (resp.type === 'basic' && !resp.redirected) {
       const copia = resp.clone();
       if ((await resp.clone().text()).includes('cd-cab')) guardar(c, clave, copia);
     }
@@ -40,7 +44,11 @@ async function datos(r, u) {
   const c = await caches.open(DATOS), clave = sinConsulta(u);
   try {
     const resp = await conTope(fetch(r), 4000);
-    if (resp.ok && resp.type === 'basic') guardar(c, clave, resp.clone());
+    if (!resp.ok) {                    // un 5xx no debe tapar la copia guardada
+      const g = await c.match(clave);
+      return g || resp;
+    }
+    if (resp.type === 'basic') guardar(c, clave, resp.clone());
     return resp;
   } catch (err) {
     const g = await c.match(clave);

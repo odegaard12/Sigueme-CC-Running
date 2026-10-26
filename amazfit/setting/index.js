@@ -25,7 +25,10 @@ AppSettingsPage({
         label: 'Identificador (panel: Móvil → Ver la configuración)',
         placeholder: 'odg-…',
         value: s.getItem('id') || '',
-        onChange: v => s.setItem('id', v),
+        onChange: v => {
+          const m = /#id=([\w-]{8,100})/.exec((v || '').trim())
+          s.setItem('id', m ? m[1] : (v || '').trim())
+        },
       })]),
       fila([Text({ paragraph: true, style: { color: '#7d8a83', fontSize: '13px' } },
         (estado.pendientes ? estado.pendientes + ' puntos esperando a subir · ' : '') +

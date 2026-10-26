@@ -48,6 +48,10 @@ async function json(url) { try { const r = await fetch(url); return r.ok ? await
   const rs = ((rutas && rutas.rutas) || []).filter(r => !archivadas.has(clave(r.nombre, r.distancia_km)));
   rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [String(r.desnivel_m), 'D+'], i)));
   $('sin-rutas').hidden = rs.length > 0;
+  if (rutas === null) {
+    $('sin-rutas').hidden = false;
+    $('sin-rutas').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
+  }
   if (carreras) {
     if (carreras.en_marcha) $('directo').hidden = false;
     const p = carreras.proxima;

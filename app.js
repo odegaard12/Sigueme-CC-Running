@@ -294,6 +294,49 @@ function quitarPantallaDeCarga() {
   setTimeout(() => { if (mapReady) intentosDeMapa = 0; }, 60000);
 }
 
+// Posición del sol (aproximada, sin ecuación del tiempo): sirve para que las sombras del relieve vayan con la hora real.
+function posicionSol(lat, lon, fecha) {
+  const rad = Math.PI / 180;
+  const dia = (fecha - Date.UTC(fecha.getUTCFullYear(), 0, 0)) / 864e5;
+  const decl = -23.44 * rad * Math.cos(2 * Math.PI / 365 * (dia + 10));
+  const hSolar = fecha.getUTCHours() + fecha.getUTCMinutes() / 60 + lon / 15;
+  const h = (hSolar - 12) * 15 * rad, la = lat * rad;
+  const alt = Math.asin(Math.sin(la) * Math.sin(decl) + Math.cos(la) * Math.cos(decl) * Math.cos(h));
+  const az = Math.atan2(Math.sin(h), Math.cos(h) * Math.sin(la) - Math.tan(decl) * Math.cos(la)) + Math.PI;
+  return { az: ((az / rad) % 360 + 360) % 360, alt: alt / rad };
+}
+
+function ponerSombras() {
+  if (!map3d || !map3d.getSource('terrain')) return;
+  const c = routeBounds ? [(routeBounds[1] + routeBounds[3]) / 2, (routeBounds[0] + routeBounds[2]) / 2] : [map3d.getCenter().lat, map3d.getCenter().lng];
+  const sol = posicionSol(c[0], c[1], new Date());
+  const fuerza = sol.alt > 0 ? Math.min(0.55, 0.15 + sol.alt / 120) : 0.1;      // de noche, casi sin sombras
+  const paint = { 'hillshade-illumination-direction': Math.round(sol.az), 'hillshade-exaggeration': fuerza };
+  if (map3d.getLayer('sombras')) {
+    for (const k in paint) map3d.setPaintProperty('sombras', k, paint[k]);
+  } else {
+    map3d.addLayer({ id: 'sombras', type: 'hillshade', source: 'terrain',
+      paint: Object.assign({ 'hillshade-illumination-anchor': 'map', 'hillshade-shadow-color': 'rgba(0,0,0,0.9)',
+        'hillshade-highlight-color': 'rgba(255,255,255,0.3)', 'hillshade-accent-color': 'rgba(0,0,0,0.25)' }, paint) },
+      map3d.getLayer('route-line') ? 'route-line' : undefined);
+  }
+}
+
+function relieveVivo() {
+  const meta = 1.4;
+  if (QUIETO) { map3d.setTerrain({ source: 'terrain', exaggeration: meta }); ponerSombras(); return; }
+  map3d.setTerrain({ source: 'terrain', exaggeration: 0.1 });
+  const t0 = performance.now();
+  const paso = ahora => {
+    const t = Math.min(1, (ahora - t0) / 1600);
+    map3d.setTerrain({ source: 'terrain', exaggeration: 0.1 + (meta - 0.1) * (1 - Math.pow(1 - t, 3)) });
+    if (t < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+  ponerSombras();
+  setInterval(ponerSombras, 10 * 60 * 1000);       // el sol se mueve
+}
+
 function buildMap3D() {
   map3d = new maplibregl.Map({
     container: 'map3d',
@@ -356,7 +399,7 @@ function buildMap3D() {
 
   // el relieve entra cuando el mapa plano ya está pintado
   map3d.once('idle', () => {
-    if (!map3d.getTerrain()) map3d.setTerrain({ source: 'terrain', exaggeration: 1.4 });
+    if (!map3d.getTerrain()) relieveVivo();
     quitarPantallaDeCarga();
   });
 
@@ -391,6 +434,15 @@ function buildMap3D() {
       id: 'traveled-line', type: 'line', source: 'traveled',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': '#5cc2e8', 'line-width': 6 }
+    });
+
+    // cometa: el último kilómetro, claro en la cabeza y apagándose hacia atrás (degradado fijo, no se anima: no cuesta nada)
+    map3d.addSource('cometa', { type: 'geojson', lineMetrics: true, data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+    map3d.addLayer({
+      id: 'cometa-line', type: 'line', source: 'cometa',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-width': 10, 'line-blur': 3,
+        'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, 'rgba(244,247,230,0)', 1, 'rgba(244,247,230,0.95)'] }
     });
 
     mapReady = true;
@@ -566,7 +618,13 @@ function onMapReady() {
 precargado('carrera.json', () => fetch('carrera.json').then(r => r.ok ? r.json() : null).catch(() => null))
   .then(c => { if (c) { CARRERA = Object.assign(CARRERA, c); gestionarSW(); } pintarCarrera(); });
 
-precargado('route.geojson', () => fetch('route.geojson').then(r => r.json()))
+// la ruta y el perfil son imprescindibles: si fallan (404/5xx, sin red) se reintentan solos, cada vez más espaciados
+function jsonConReintento(url, intento = 0) {
+  return fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .catch(() => new Promise(ok => setTimeout(ok, Math.min(30000, 2000 * 2 ** intento))).then(() => jsonConReintento(url, intento + 1)));
+}
+
+precargado('route.geojson', () => jsonConReintento('route.geojson'))
   .then(geojson => {
     routeGeojson = geojson;
     const props = geojson.features[0].properties;
@@ -641,7 +699,7 @@ function gradColor(g) {
 let lastEleData = null;
 let currentKm = 0; // hasta dónde ha avanzado el corredor, para completar el perfil
 
-precargado('elevation.json', () => fetch('elevation.json').then(r => r.json()))
+precargado('elevation.json', () => jsonConReintento('elevation.json'))
   .then(data => {
     lastEleData = data;
     drawElevationChart(data.profile, data.min_ele_m, data.max_ele_m);
@@ -823,6 +881,12 @@ function drawTraveledLine(doneKm) {
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: traveledPts.map(p => [p[1], p[0]]) }
       });
+      const cometa = map3d.getSource('cometa');
+      if (cometa) {
+        const desde = traveledIndex(Math.max(0, doneKm - 1) / (factorKm || 1));
+        const cola = routeLatLon.slice(desde, idx + 1).map(p => [p[1], p[0]]);
+        cometa.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: cola.length > 1 ? cola : [] } });
+      }
     }
   }
 }
@@ -887,19 +951,53 @@ function marcarSiguiendo(si) {
 
 // Al abrir una carrera en directo la cámara ya va con el corredor, salvo que quien mira haya tocado el mapa antes:
 // el botón sigue ahí para dejar de seguir (arrastrar el mapa) o volver a seguir.
-let tocoElMapa = false, autoSeguido = false;
+let tocoElMapa = false, autoSeguido = false, volando = false;
 map3dDiv.addEventListener('pointerdown', () => { tocoElMapa = true; }, { passive: true });
 map3dDiv.addEventListener('wheel', () => { tocoElMapa = true; }, { passive: true });
+// La cámara recorre la ruta (de la salida al corredor, en unos 3 s) y acaba con él. Si quien mira toca el mapa, se corta.
+function vueloEntrada(kmFin) {
+  volando = true;
+  const f = factorKm || 1, dur = 3400;
+  const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  let rumbo = map3d.getBearing();
+  const llegar = () => {
+    volando = false;
+    marcarSiguiendo(true);
+    ultimoSeguimiento = performance.now() + 900;
+    if (riderMarkerPos) map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: 14, pitch: vista3d ? 55 : 0, duration: 900 });
+  };
+  const salida = pointAtKm(0);
+  map3d.easeTo({ center: [salida[1], salida[0]], zoom: 13, pitch: vista3d ? 60 : 0, duration: 700 });
+  const t0 = performance.now() + 750;
+  const paso = ahora => {
+    if (tocoElMapa) { volando = false; return; }
+    const t = Math.max(0, Math.min(1, (ahora - t0) / dur));
+    const km = kmFin * ease(t);
+    const p = pointAtKm(km / f), q = pointAtKm(Math.min(kmFin, km + 0.4) / f);
+    if (p && q) {
+      const rad = Math.PI / 180, dl = (q[1] - p[1]) * rad;
+      const y = Math.sin(dl) * Math.cos(q[0] * rad);
+      const x = Math.cos(p[0] * rad) * Math.sin(q[0] * rad) - Math.sin(p[0] * rad) * Math.cos(q[0] * rad) * Math.cos(dl);
+      const objetivo = (Math.atan2(y, x) / rad + 360) % 360;
+      rumbo += (((objetivo - rumbo + 540) % 360) - 180) * 0.06;      // gira suave, sin latigazos
+      if (t > 0) map3d.jumpTo({ center: [p[1], p[0]], bearing: rumbo, pitch: vista3d ? 60 : 0, zoom: 13 + t });
+    }
+    if (t < 1) requestAnimationFrame(paso); else llegar();
+  };
+  requestAnimationFrame(paso);
+}
+
 function autoSeguirDirecto() {
   if (autoSeguido || tocoElMapa || siguiendo || !mapReady || !riderMarkerPos) return;
   autoSeguido = true;
+  if (!QUIETO && currentKm >= 1.5 && routeLatLon.length > 1 && map3dDiv.offsetParent !== null) { vueloEntrada(currentKm); return; }
   marcarSiguiendo(true);
   ultimoSeguimiento = performance.now() + 900;
-  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: 900 });
+  map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 13.5), duration: QUIETO ? 0 : 900 });
 }
 
 function seguirCorredor(pos) {
-  if (!siguiendo || !mapReady || !pos) return;
+  if (volando || !siguiendo || !mapReady || !pos) return;
   // si está haciendo zoom o girando con los dedos, no pelearse con su gesto
   if (map3d.isZooming() || map3d.isRotating()) return;
   // en el mismo fotograma que la foto: la foto queda quieta en pantalla y el mapa se desliza por debajo, sin los
@@ -913,11 +1011,11 @@ function recenterOnRider() {
   if (riderMarkerPos) {
     marcarSiguiendo(true);
     ultimoSeguimiento = performance.now() + 600;
-    map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 14), duration: 600 });
+    map3d.easeTo({ center: [riderMarkerPos[1], riderMarkerPos[0]], zoom: Math.max(map3d.getZoom(), 14), duration: QUIETO ? 0 : 600 });
   } else if (routeBounds) {
     // sin corredor en pantalla, el botón devuelve la vista a la ruta entera
     map3d.fitBounds([[routeBounds[0], routeBounds[1]], [routeBounds[2], routeBounds[3]]],
-      { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: 600 });
+      { padding: 30, pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 600 });
   }
 }
 btnRecenter.addEventListener('click', recenterOnRider);
@@ -936,7 +1034,7 @@ btnVista.addEventListener('click', () => {
   vista3d = !vista3d;
   pintarBotonVista();
   if (!mapReady) return;
-  map3d.easeTo({ pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: 700 });
+  map3d.easeTo({ pitch: vista3d ? 50 : 0, bearing: vista3d ? -20 : 0, duration: QUIETO ? 0 : 700 });
 });
 
 function fmtTime(iso) {
@@ -966,6 +1064,49 @@ function previsiones(km, datoIso) {
   const hora = k => fmtTime(new Date(Math.max(ahoraServidor(), t + (k - km) / v * 3600000)).toISOString());
   const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
   return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
+}
+
+// ---------- tarjeta de ritmo: ritmo medio, llegada prevista y ritmo de cada km ----------
+const mmss = s => { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function pintarRitmo(data, km, haArrancado, enMeta) {
+  const caja = document.getElementById('ritmo');
+  if (!caja) return;
+  const t = data.data_at ? new Date(data.data_at).getTime() : NaN;
+  const salida = lastStartedAt ? new Date(lastStartedAt).getTime() : NaN;
+  if (!haArrancado || !(km >= 1) || !isFinite(t) || !isFinite(salida) || t <= salida) { caja.hidden = true; return; }
+  const sKm = (t - salida) / 1000 / km;                       // segundos por km, con las paradas incluidas
+  if (!(sKm > 120 && sKm < 3600)) { caja.hidden = true; return; }
+  caja.hidden = false;
+  ponerTexto('r-ritmo', mmss(sKm) + ' /km');
+  const pr = enMeta ? null : previsiones(km, data.data_at);
+  ponerTexto('r-llegada', enMeta ? 'En meta' : pr ? pr.horaMeta : '—');
+  let nota = '';
+  if (pr && totalRouteKm) {
+    const margen = Math.max(2, Math.ceil(Math.max(0, totalRouteKm - km) * sKm / 60 * 0.1));
+    nota = 'Si mantiene este ritmo · margen aprox. ±' + margen + ' min';
+  }
+  ponerTexto('r-nota', nota);
+  // ritmo de cada km completo (el servidor apunta a qué hora se cruza cada uno)
+  const kt = (Array.isArray(data.km_t) ? data.km_t : []).filter(Number.isFinite);
+  const parciales = kt.map((v, i) => v - (i ? kt[i - 1] : salida / 1000)).filter(s => s > 60 && s < 7200).slice(-12);
+  const cont = document.getElementById('r-barras'), pie = document.getElementById('r-pie');
+  if (parciales.length < 2) { cont.hidden = true; pie.hidden = true; return; }
+  const max = Math.max(...parciales), min = Math.min(...parciales);
+  const firma = parciales.join(',');
+  if (cont.dataset.f !== firma) {
+    cont.dataset.f = firma;
+    cont.textContent = '';
+    parciales.forEach((s, i) => {
+      const col = document.createElement('div'); col.className = 'col' + (i === parciales.length - 1 ? ' ultimo' : '');
+      const barra = document.createElement('i'); barra.style.height = Math.max(15, 25 + 70 * (s - 0.5 * max) / (0.5 * max)) + '%';   // proporcional: 4 s de diferencia no parecen un mundo
+      const et = document.createElement('em'); et.textContent = mmss(s);
+      col.title = mmss(s) + ' /km';
+      col.append(barra, et); cont.append(col);
+    });
+  }
+  cont.setAttribute('aria-label', 'Ritmo de cada kilómetro: el último ' + mmss(parciales[parciales.length - 1]) +
+    ', el mejor ' + mmss(min) + ' y el más lento ' + mmss(max));
+  cont.hidden = false; pie.hidden = false;
 }
 
 function pintarFantasma(km) {
@@ -1086,7 +1227,7 @@ function moverSuave(km, pos, pegado) {
   // un salto grande (recarga, simulación acelerada, cambio de enlace) se
   // recorre deprisa en vez de plantarse de golpe
   const salto = Math.abs(km - km0);
-  const duracion = salto > 8 ? 1500
+  const duracion = QUIETO ? 1 : salto > 8 ? 1500
     : (ponerseAlDia || salto > 0.6) ? 2500
     : intervaloDatos * 1.1;
   ponerseAlDia = false;
@@ -1431,6 +1572,9 @@ function pollLive() {
         }
       }
 
+      pintarRitmo(data, doneKm, haArrancado, enMeta);
+      { const vacio = document.getElementById('ritmo-vacio'), cr = document.getElementById('ritmo'); if (vacio && cr) vacio.hidden = !cr.hidden; }
+
       // pie de estado: en meta, sin señal o la hora del último dato
       const pie = document.getElementById('live-updated');
       const hueco = ultimoDato ? (ahoraServidor() - new Date(ultimoDato)) : 0;
@@ -1612,7 +1756,7 @@ function repetirCarrera() {
   const tr = resultado.traza, total = tr[tr.length - 1][2];
   const salida = new Date(resultado.salida).getTime();
   if (mapReady) {
-    map3d.easeTo({ center: [tr[0][1], tr[0][0]], zoom: 12.5, duration: 800 });
+    map3d.easeTo({ center: [tr[0][1], tr[0][0]], zoom: 12.5, duration: QUIETO ? 0 : 800 });
     marcarSiguiendo(true);
     ultimoSeguimiento = performance.now() + 800;
   }
@@ -1649,9 +1793,47 @@ function repetirCarrera() {
 }
 document.getElementById('btn-repeticion').addEventListener('click', repetirCarrera);
 
-precargado('resultado.json', () => fetch('resultado.json?_=' + Date.now()).then(r => r.ok ? r.json() : null))
+precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now(), 8000).then(r => r.ok ? r.json() : null))
   .catch(() => null)
   .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
+
+// ---------- ayuda de primera vez: un aviso corto, una sola vez en este navegador ----------
+(function ayudaPrimeraVez() {
+  const caja = document.getElementById('ayuda-cd'), ok = document.getElementById('ayuda-cd-ok');
+  if (!caja || !ok) return;
+  let vista = false;
+  try { vista = localStorage.getItem('sigueme.ayuda') === '1'; } catch (e) {}
+  if (vista) return;
+  caja.hidden = false;
+  ok.addEventListener('click', () => {
+    caja.hidden = true;
+    try { localStorage.setItem('sigueme.ayuda', '1'); } catch (e) {}
+  });
+})();
+
+// ---------- pestañas del móvil: Mapa · Datos · Ritmo (en el PC no existen: todo a la vez) ----------
+(function pestanasMovil() {
+  const nav = document.getElementById('pestanas-cd');
+  if (!nav) return;
+  const botones = [...nav.querySelectorAll('button')];
+  const poner = (t, foco) => {
+    document.body.dataset.tab = t;
+    botones.forEach(b => { const si = b.dataset.tab === t; b.setAttribute('aria-selected', si ? 'true' : 'false'); b.tabIndex = si ? 0 : -1; if (si && foco) b.focus(); });
+    try { sessionStorage.setItem('sigueme.tab', t); } catch (e) {}
+    // el mapa estaba oculto: al volver hay que decirle su tamaño
+    if (t === 'mapa' && typeof map3d !== 'undefined' && map3d) requestAnimationFrame(() => { try { map3d.resize(); } catch (e) {} });
+  };
+  botones.forEach((b, i) => {
+    b.addEventListener('click', () => poner(b.dataset.tab, false));
+    b.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (d) { e.preventDefault(); poner(botones[(i + d + botones.length) % botones.length].dataset.tab, true); }
+    });
+  });
+  let inicial = 'mapa';
+  try { inicial = sessionStorage.getItem('sigueme.tab') || 'mapa'; } catch (e) {}
+  poner(botones.some(b => b.dataset.tab === inicial) ? inicial : 'mapa', false);
+})();
 
 pollLive();
 // con resultado (carrera terminada) basta con mirar cada minuto si empieza otra

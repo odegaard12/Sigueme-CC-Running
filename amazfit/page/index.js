@@ -170,7 +170,7 @@ Page(BasePage({
         this.state.cola = this.state.cola.filter(q => !enviados.has(q))
         this.state.enviados += lote.length
         this.state.ultimoOk = Date.now()
-        this.guardar()
+        if (this.state.cola.length === 0) this.guardar()      // con la cola vacía es barato; si no, basta el guardado periódico
       })
       .catch(() => {})       // sin móvil al alcance: se reintenta en la próxima toma
       .finally(() => {

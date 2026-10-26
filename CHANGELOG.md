@@ -4,6 +4,80 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.38.1 · 2026-10-26
+- **Capturas del repo al día** (`docs/capturas/`): el panel nuevo con barra lateral y resumen, la página en directo con la tarjeta de ritmo, el anillo del corredor y el rastro de cometa, la portada y las pantallas de ruta, todas con la carrera de ejemplo. Sin cambios de código.
+
+## v1.38.0 · 2026-10-26
+- **Cerrar sesión en el panel la cierra de verdad:** cada sesión lleva un identificador propio y «Cerrar sesión» lo revoca (en las dos Pis, por la réplica). Antes solo se borraba la cookie del navegador, y una cookie copiada seguía valiendo hasta 12 h. Las demás sesiones abiertas no se tocan, y las anteriores a esta versión siguen valiendo hasta caducar.
+- **Solo la Pi titular recibe datos de carrera:** `/api/gps` y `/api/plan` contestan 503 en la Pi que no tiene la IP flotante (el móvil o Traccar guardan los puntos y reintentan, y los coge la titular), en vez de aceptarlos para que la réplica los borrara a los 20 s. Sin la IP flotante configurada, no cambia nada.
+- Pruebas nuevas de ambas cosas.
+
+## v1.37.0 · 2026-10-26
+- **Ayuda de primera vez en la página en directo:** un aviso corto («esta página se actualiza sola; Datos y Ritmo tienen los números y la llegada prevista; Seguir lleva la cámara con el corredor») con botón «Entendido». Sale una sola vez en cada navegador.
+
+## v1.36.0 · 2026-10-25
+- **Pestañas en el móvil: Mapa · Datos · Ritmo.** Un control segmentado fino que se queda fijo arriba al bajar; menos scroll. En el PC sigue todo a la vez. Se recuerda la pestaña y el mapa recupera su tamaño al volver a él.
+- **Cabecera con aire en el móvil:** un nombre de carrera largo en dos líneas, el estado, las cifras y la hora ya no van casi pegados.
+- **Animaciones del mapa 3D** (todas respetan «movimiento reducido»):
+  - **Vuelo de entrada:** al abrir una carrera en directo, la cámara recorre la ruta desde la salida hasta el corredor en unos 3 s y se queda siguiéndole. Si tocas el mapa, se corta.
+  - **Rastro de cometa:** el último kilómetro recorrido brilla en la cabeza y se apaga hacia atrás, y un anillo late bajo la foto del corredor.
+  - **Relieve vivo:** el relieve sube suave al abrir y las sombras del terreno siguen al sol de la hora real (de noche, casi sin sombras).
+- **Miniapp para relojes Garmin (Connect IQ), EXPERIMENTAL** en `garmin/`: graba la actividad y manda posición y pulso a la web por el móvil, como la de Amazfit. **Sin compilar ni probar en un reloj real**; el servidor ya acepta su formato (probado). Instrucciones y limitaciones en `garmin/README.md`.
+- La guía de Garmin lo menciona.
+
+## v1.35.0 · 2026-10-25
+- **Guías para todas las marcas y móviles**, con botones de marca (Xiaomi, Huawei, Amazfit, Garmin, Coros, Android, iPhone) arriba de la guía y en las pantallas de ruta (la pública y la de «Mis rutas»), que llevan directos a su tarjeta:
+  - **Garmin** (nueva, separada de Coros): avisos desde Garmin Connect, importar la ruta como Curso en connect.garmin.com, por qué el LiveTrack de Garmin no vale para el directo (lo da el móvil) y cómo exportar el FIT original para el resultado.
+  - **Coros** (tarjeta propia).
+  - **Android**: instalar el APK de la última versión, configurar con el QR del panel y quitar el ahorro de batería.
+  - **iPhone**: seguimiento en directo con Traccar Client y, dicho claramente, que todavía no hay avisos de subida ni de avituallamiento (no hay app para iPhone).
+- La tarjeta de la marca elegida se resalta al llegar desde un botón.
+- Nueva prueba `pruebas/guias.py`.
+
+## v1.34.0 · 2026-10-25
+- **Tarjeta de ritmo en la página en directo:**
+  - **Ritmo medio** desde la salida («6:37 /km») y **llegada prevista** a la hora de meta, con un margen aproximado.
+  - **Gráfico del ritmo de cada kilómetro** (los últimos 12): cuanto más alta la barra, más lento ese km; la última, resaltada. Con descripción para lectores de pantalla.
+  - Sale solo cuando hay datos (desde el km 1) y se queda con la carrera terminada.
+- **Servidor:** apunta a qué hora se cruza cada kilómetro (`km_t`, interpolada entre dos puntos GPS; no duplica con un lote reenviado) y lo publica en `/live.json`. Se borra al reiniciar o empezar otra carrera.
+- Pruebas nuevas del cálculo de cruces por km.
+
+## v1.33.0 · 2026-10-25
+- **El resultado calcula el tiempo en movimiento, el desnivel, el pulso medio y la cadencia solo del tramo salida-meta.** Antes salían de toda la actividad grabada: con calentamiento, trayecto al coche o vuelta a casa en el fichero, la velocidad media y el D+ publicados no eran los de la carrera (en una prueba inventada, 6,7 km/h y 131 ppm en vez de 10,0 km/h y 160 ppm). Si el fichero es casi todo carrera (menos de un 5 % de más), se siguen usando los datos del reloj. Vale para FIT y GPX.
+- **El historial no apunta dos veces el mismo punto GPS** cuando el móvil o el reloj reenvían un lote porque no les llegó la respuesta.
+- Nueva prueba `pruebas/resultado_tramo.py`.
+
+## v1.32.0 · 2026-10-25
+App Android y CI tras la auditoría:
+- **Un 403 de la red ya no bloquea el envío para siempre:** solo se considera «identificador no válido» (y pide volver a escanear) si el servidor lo dice; un 403 de un cortafuegos o de Cloudflare se reintenta a los 15 minutos, con su aviso propio.
+- **Un lote que el servidor rechaza (400, 413, 422) ya no atasca la cola:** se descarta y se sigue con los de detrás.
+- **La pantalla ya no lee el fichero de la cola cada 2 s:** solo lo cuenta cuando cambia de tamaño (con horas sin cobertura podía congelarse).
+- **Enlace de configuración (`siguemecc://`):** solo vale con el dominio (sin ruta ni parámetros) y el aviso de confirmación enseña también el principio del identificador.
+- **CI:** una etiqueta sin el secreto de firma falla en vez de publicar un APK firmado con la clave de depuración, que no actualiza a los ya instalados.
+
+## v1.31.0 · 2026-10-25
+Arreglos de cliente tras la auditoría:
+- **Sin cobertura de verdad:** si el túnel o la Pi caen y devuelven un error 5xx, el service worker enseña la última copia guardada en vez de la página de error.
+- **La ruta y el perfil se reintentan solos** (cada vez más espaciados) si fallan; antes, un fallo dejaba la web sin km hasta recargar. El resultado de la carrera tiene tiempo límite y ya no puede dejar la página congelada.
+- **Movimiento reducido:** con esa opción del sistema, la cámara y la foto del corredor no se animan (antes solo algunos movimientos).
+- **Portada:** un fallo de red ya no dice «todavía no hay rutas publicadas»; lo dice claro.
+- **Ficha de una ruta:** sin WebGL el mapa se oculta en vez de quedar un recuadro vacío.
+- **Botones táctiles de 44 px** (botones del mapa, pestañas del panel, avituallamientos) y marcas de avituallamiento con área pulsable más grande.
+- **Panel:** la sesión caducada se detecta aunque el 403 no traiga JSON y también en Invitados; el sondeo no se solapa, tiene tiempo límite y se calla con la pestaña oculta; el foco del teclado no se pierde al repintar los pasos; la guía devuelve el foco al botón, no deja escapar el Tab y su marco sigue al scroll.
+- **Reloj Amazfit:** un punto malformado o un envío colgado ya no bloquean las subidas para siempre, el móvil no duplica puntos si el reloj reenvía un lote, vale pegar el enlace de configuración también en el campo del identificador, se completa `https://` si falta, y el reloj no reescribe toda la cola en la memoria tras cada envío.
+
+## v1.30.0 · 2026-10-25
+Endurecimiento del servidor tras una auditoría completa:
+- **Enlace de seguimiento (SSRF):** ya no se siguen las redirecciones, que podían llevar al servidor a pedir páginas de la red de casa.
+- **Freno a la fuerza bruta:** un /64 de IPv6 cuenta como una sola persona y la tabla de intentos no puede crecer sin fin.
+- **GPS:** los números infinitos o NaN ya no dejan `live.json` inválido para el navegador, un entero enorme no tumba el hilo, y adivinar el identificador de `/api/gps` tiene freno (30 malos por minuto).
+- **`live.json` corrupto** (bytes nulos tras un apagón, `null`, una lista): se trata como vacío en vez de tumbar la web y todas las escrituras.
+- **Invitados:** si la lista de usuarios no se puede leer, ya no se purga ni se crea nada (antes se podían borrar las rutas de todos).
+- **GPX del resultado:** misma defensa que el de la ruta (sin DOCTYPE/ENTITY ni UTF-16).
+- **Clave GPS:** se escribe de forma atómica y con permisos 0600; los temporales fallidos se borran.
+- **Peticiones raras:** una línea de petición rota o una ruta con byte nulo ya no dejan trazas.
+- Nueva prueba `pruebas/endurecimiento.py` con cada una de estas defensas.
+
 ## v1.29.0 · 2026-10-24
 - **Textos de ayuda del panel más cortos:** las explicaciones de Carrera, Móvil (app, pulsera, Traccar y
   Amazfit), Preparar (ruta, reloj, avisos), Resultado, Archivar y Rutas dicen lo mismo con menos palabras:
