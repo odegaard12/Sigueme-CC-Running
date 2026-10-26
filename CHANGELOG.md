@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.37.0 · 2026-10-26
+- **Ayuda de primera vez en la página en directo:** un aviso corto («esta página se actualiza sola; Datos y Ritmo tienen los números y la llegada prevista; Seguir lleva la cámara con el corredor») con botón «Entendido». Sale una sola vez en cada navegador.
+
 ## v1.36.0 · 2026-10-25
 - **Pestañas en el móvil: Mapa · Datos · Ritmo.** Un control segmentado fino que se queda fijo arriba al bajar; menos scroll. En el PC sigue todo a la vez. Se recuerda la pestaña y el mapa recupera su tamaño al volver a él.
 - **Cabecera con aire en el móvil:** un nombre de carrera largo en dos líneas, el estado, las cifras y la hora ya no van casi pegados.

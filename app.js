@@ -1797,6 +1797,20 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
   .catch(() => null)
   .then(d => { resultado = d; resultadoConsultado = true; pollLive(); });
 
+// ---------- ayuda de primera vez: un aviso corto, una sola vez en este navegador ----------
+(function ayudaPrimeraVez() {
+  const caja = document.getElementById('ayuda-cd'), ok = document.getElementById('ayuda-cd-ok');
+  if (!caja || !ok) return;
+  let vista = false;
+  try { vista = localStorage.getItem('sigueme.ayuda') === '1'; } catch (e) {}
+  if (vista) return;
+  caja.hidden = false;
+  ok.addEventListener('click', () => {
+    caja.hidden = true;
+    try { localStorage.setItem('sigueme.ayuda', '1'); } catch (e) {}
+  });
+})();
+
 // ---------- pestañas del móvil: Mapa · Datos · Ritmo (en el PC no existen: todo a la vez) ----------
 (function pestanasMovil() {
   const nav = document.getElementById('pestanas-cd');

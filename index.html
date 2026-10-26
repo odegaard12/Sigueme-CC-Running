@@ -49,7 +49,7 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=7">
+<link rel="stylesheet" href="/cartel-directo.css?v=8">
 </head>
 <body>
 <header class="cd-cab">
@@ -99,6 +99,11 @@
   <p class="aviso-sub" id="aviso-sub"></p>
   <button class="btn-repeticion" id="btn-repeticion" title="La carrera entera en 1 minuto" aria-label="Ver la carrera en 1 minuto"><span class="ico">▶</span><span class="txt"> Ver la carrera</span></button>
 </section>
+
+<aside class="ayuda-cd" id="ayuda-cd" hidden aria-label="Cómo leer esta página">
+  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Datos</b> y <b>Ritmo</b> tienen los números y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
+  <button type="button" id="ayuda-cd-ok">Entendido</button>
+</aside>
 
 <nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Secciones de la carrera">
   <button type="button" role="tab" data-tab="mapa" aria-selected="true">Mapa</button>
@@ -178,6 +183,6 @@
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=91"></script>
+<script src="app.js?v=92"></script>
 </body>
 </html>

@@ -70,6 +70,13 @@ body { background: var(--tinta); color: var(--papel); }
 .progreso i { background: var(--campo); }
 .chip { background: var(--panel); border: 0; border-radius: 4px; color: var(--muted); font-weight: 700; }
 .chip b { font: 400 1.15rem/1 var(--display); color: var(--papel); letter-spacing: 0; }
+/* ayuda de primera vez */
+.ayuda-cd { background: var(--campo); color: var(--tinta); margin: 10px clamp(12px, 3vw, 36px) 0; padding: 12px 14px; border-radius: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ayuda-cd[hidden] { display: none; }
+.ayuda-cd p { margin: 0; flex: 1 1 240px; font-size: 0.95rem; line-height: 1.4; }
+.ayuda-cd button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 6px; background: var(--tinta); color: var(--campo); font: 800 1rem system-ui, sans-serif; cursor: pointer; }
+.ayuda-cd button:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
 /* pestañas del móvil: Mapa · Datos · Ritmo */
 .pestanas-cd { display: none; }
 @media (max-width: 759px) {
