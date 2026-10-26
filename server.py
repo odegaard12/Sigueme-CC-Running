@@ -605,22 +605,80 @@ def _firma(exp):
     return hmac.new(clave, str(exp).encode(), hashlib.sha256).hexdigest()
 
 
+REVOCADAS = ".sesiones_revocadas"       # oculto (no se sirve); la réplica lo lleva a la otra Pi
+_revocadas_cache = {"mtime": None, "datos": {}}
+
+
+def _revocadas():
+    """{nonce: caducidad} de las sesiones cerradas. Cacheado por fecha del fichero."""
+    ruta = os.path.join(ROOT, REVOCADAS)
+    try:
+        m = os.path.getmtime(ruta)
+    except OSError:
+        return {}
+    if m != _revocadas_cache["mtime"]:
+        try:
+            with open(ruta, encoding="utf-8") as f:
+                d = json.load(f)
+            _revocadas_cache.update(mtime=m, datos=d if isinstance(d, dict) else {})
+        except (OSError, ValueError):
+            _revocadas_cache.update(mtime=m, datos={})
+    return _revocadas_cache["datos"]
+
+
 def nueva_sesion():
     exp = int(time.time()) + SESION_HORAS * 3600
-    return f"{exp}.{_firma(exp)}"
+    nonce = secrets.token_hex(8)
+    return f"{exp}.{nonce}.{_firma(f'{exp}.{nonce}')}"
+
+
+def _partes_sesion(cabecera_cookie):
+    """(exp, nonce|None, firma, mensaje_firmado) de la cookie adm, o None si no está o es ilegible."""
+    for trozo in (cabecera_cookie or "").split(";"):
+        nombre, _, valor = trozo.strip().partition("=")
+        if nombre == "adm":
+            p = valor.split(".")
+            if len(p) == 2:                       # sesiones anteriores a v1.38 (sin identificador): valen hasta caducar
+                exp, firma, nonce, msg = p[0], p[1], None, p[0]
+            elif len(p) == 3:
+                exp, nonce, firma = p
+                msg = f"{exp}.{nonce}"
+                if not (nonce.isascii() and nonce.isalnum() and len(nonce) <= 32):
+                    return None
+            else:
+                return None
+            if exp.isascii() and exp.isdigit() and len(exp) < 15:
+                return int(exp), nonce, firma, msg
+    return None
 
 
 def sesion_valida(cabecera_cookie):
     if not ADMIN_HASH or not cabecera_cookie:
         return False
-    for trozo in cabecera_cookie.split(";"):
-        nombre, _, valor = trozo.strip().partition("=")
-        if nombre == "adm":
-            exp, _, firma = valor.partition(".")
-            if exp.isascii() and exp.isdigit() and len(exp) < 15 and int(exp) > time.time() \
-                    and compare_digest(firma.encode(), _firma(int(exp)).encode()):
-                return True
-    return False
+    p = _partes_sesion(cabecera_cookie)
+    if not p:
+        return False
+    exp, nonce, firma, msg = p
+    if exp <= time.time() or not compare_digest(firma.encode(), _firma(msg).encode()):
+        return False
+    return not (nonce and nonce in _revocadas())
+
+
+def revocar_sesion(cabecera_cookie):
+    """Cerrar sesión de verdad: la cookie robada o copiada deja de valer en las dos Pis."""
+    p = _partes_sesion(cabecera_cookie)
+    if not p or not p[1]:
+        return
+    exp, nonce, firma, msg = p
+    if not compare_digest(firma.encode(), _firma(msg).encode()):
+        return
+    ahora = time.time()
+    datos = {k: v for k, v in _revocadas().items() if isinstance(v, (int, float)) and v > ahora}
+    datos[nonce] = exp
+    try:
+        escribir_json(REVOCADAS, datos)
+    except OSError:
+        pass
 
 
 # --- invitados: rutas para el reloj de un amigo ------------------------------
@@ -2415,6 +2473,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self._send_json(200, respuesta)
 
     def do_POST(self):
+        # la Pi de respaldo no recibe datos de carrera: la réplica desde la titular los borraría a los 20 s y el
+        # móvil creería que llegaron. Con 503 el móvil o Traccar los guardan y reintentan (la titular los coge).
+        if (self.path.startswith("/api/gps") or self.path == "/api/plan") and not soy_titular():
+            self._send_json(503, {"error": "esta Pi no es la titular: reintenta"})
+            return
         if self.path.startswith("/api/gps"):
             try:
                 largo = int(self.headers.get("Content-Length", 0))
@@ -2437,6 +2500,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._plan_app()
             return
         if self.path == "/api/logout":
+            revocar_sesion(self.headers.get("Cookie", ""))
             self._send_json(200, {"ok": True}, cookie="")
             return
         if self.path not in ("/api/live", "/api/login"):
@@ -2740,6 +2804,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 # IP flotante (keepalived) de la instalación con dos Pis, desde la configuración
 # del servicio. Sin ella, una sola máquina: siempre es la que sirve.
 VIP = os.environ.get("SIGUEME_VIP", "")
+
+
+_titular = {"t": 0.0, "v": True}
+
+
+def soy_titular():
+    """tengo_la_vip() con caché de 2 s (abre un socket en cada llamada)."""
+    if time.time() - _titular["t"] > 2:
+        _titular.update(t=time.time(), v=tengo_la_vip())
+    return _titular["v"]
 
 
 def tengo_la_vip():

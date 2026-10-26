@@ -91,6 +91,34 @@ with tempfile.TemporaryDirectory() as t2:
     server.recibir_gps([dict(p) for p in _pts])      # el mismo lote reenviado no añade cruces
     ok(len(server.read_live().get('km_t') or []) == 6, 'un lote reenviado no duplica los cruces')
 
+# sesiones del panel: cerrar sesión la revoca de verdad; las anteriores (sin identificador) siguen valiendo hasta caducar
+with tempfile.TemporaryDirectory() as t3:
+    server.ROOT = str(t3)
+    server.ADMIN_HASH = 'scrypt:prueba:prueba'
+    server._revocadas_cache.update(mtime=None, datos={})
+    _tok = server.nueva_sesion()
+    _ck = f'adm={_tok}; otra=1'
+    ok(server.sesion_valida(_ck), 'una sesión nueva es válida')
+    ok(not server.sesion_valida(f'adm={_tok}x'), 'una cookie con la firma alterada no vale')
+    _otra = server.nueva_sesion()
+    server.revocar_sesion(_ck)
+    ok(not server.sesion_valida(_ck), 'tras cerrar sesión, esa cookie ya no vale (aunque no haya caducado)')
+    ok(server.sesion_valida(f'adm={_otra}'), 'las demás sesiones siguen abiertas')
+    _exp = int(time.time()) + 3600
+    ok(server.sesion_valida(f'adm={_exp}.{server._firma(_exp)}'), 'una sesión anterior a v1.38 sigue valiendo hasta caducar')
+    server.revocar_sesion('adm=basura')           # no debe romper
+    ok(True, 'revocar con una cookie ilegible no rompe nada')
+
+# la Pi de respaldo no recibe datos de carrera (sin IP flotante configurada siempre es titular)
+server.VIP = ''
+server._titular.update(t=0.0, v=True)
+ok(server.soy_titular(), 'sin SIGUEME_VIP configurada: titular')
+server.VIP = '203.0.113.77'                       # una IP que esta máquina no tiene
+server._titular.update(t=0.0, v=True)
+ok(not server.soy_titular(), 'con una IP flotante que esta máquina no tiene: no titular')
+server.VIP = ''
+server._titular.update(t=0.0, v=True)
+
 # GPX del resultado: DOCTYPE no
 try:
     generar_resultado._leer_gpx(b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "b">]><gpx></gpx>')

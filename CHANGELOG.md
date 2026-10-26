@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.38.0 · 2026-10-26
+- **Cerrar sesión en el panel la cierra de verdad:** cada sesión lleva un identificador propio y «Cerrar sesión» lo revoca (en las dos Pis, por la réplica). Antes solo se borraba la cookie del navegador, y una cookie copiada seguía valiendo hasta 12 h. Las demás sesiones abiertas no se tocan, y las anteriores a esta versión siguen valiendo hasta caducar.
+- **Solo la Pi titular recibe datos de carrera:** `/api/gps` y `/api/plan` contestan 503 en la Pi que no tiene la IP flotante (el móvil o Traccar guardan los puntos y reintentan, y los coge la titular), en vez de aceptarlos para que la réplica los borrara a los 20 s. Sin la IP flotante configurada, no cambia nada.
+- Pruebas nuevas de ambas cosas.
+
 ## v1.37.0 · 2026-10-26
 - **Ayuda de primera vez en la página en directo:** un aviso corto («esta página se actualiza sola; Datos y Ritmo tienen los números y la llegada prevista; Seguir lleva la cámara con el corredor») con botón «Entendido». Sale una sola vez en cada navegador.
 
