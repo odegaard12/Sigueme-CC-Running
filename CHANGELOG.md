@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.42.0 · 2026-10-30
+- **Todo alineado:** un solo margen lateral en todas las páginas públicas (portada, rutas y relojes, carreras, guía de pulseras), el mismo que la página en directo: 16 px en el móvil y hasta 36 px en el ordenador. Antes se mezclaban 16, 18 y 22 px, y la guía de pulseras y «Llévala al reloj» iban en una columna centrada.
+
 ## v1.41.0 · 2026-10-29
 - **Botón «?» de ayuda en la página en directo:** en la cabecera, junto a «Compartir». Vuelve a enseñar el aviso de «cómo leer esta página» cuando se quiera (antes salía una sola vez y no había forma de repetirlo).
 - **Cabecera del móvil con sitio para todo:** el nombre «SÍGUEME CC» ya no se parte en dos líneas; «Mi ficha» enseña su texto solo desde 460 px de ancho (antes 380), y en pantallas estrechas queda solo la foto.

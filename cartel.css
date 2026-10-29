@@ -126,3 +126,12 @@ details.como p { max-width: 62ch; color: #dfe6d0; }
 .pul .acciones .boton:hover { background: #e6f77a; }
 .pul .acciones .boton.claro { background: transparent; color: var(--campo); box-shadow: inset 0 0 0 3px var(--campo); }
 .pul .acciones .boton.claro:hover { background: rgba(217, 242, 74, 0.1); }
+
+/* ---- un solo margen lateral en todas las páginas públicas: el de la página en directo ---- */
+:root { --margen: clamp(16px, 3vw, 36px); }
+.barra { padding-left: var(--margen); padding-right: var(--margen); }
+h1.gigante { margin-left: var(--margen); margin-right: var(--margen); }
+.bajo, .oscuro, .pie, .aviso { padding-left: var(--margen); padding-right: var(--margen); }
+h2.titulo { margin-left: var(--margen); margin-right: var(--margen); }
+.pul { max-width: none; margin: 0; padding-left: var(--margen); padding-right: var(--margen); }
+.campo .pill-hero, .campo .hero-linea, .campo .boton-hero { margin-left: var(--margen); margin-right: var(--margen); }
