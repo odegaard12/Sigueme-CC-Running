@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.39.1 · 2026-10-29
+- **Capturas del repo con la portada nueva** (`docs/capturas/`): la portada con la carrera primero (ordenador y móvil), la página «Rutas y relojes» y el resto al día, con la carrera de ejemplo. Sin cambios de código.
+
 ## v1.39.0 · 2026-10-29
 **La carrera primero.** Sígueme CC es una web de seguimiento; las rutas y los GPX son un extra y ya no ocupan la portada.
 - **Portada (`/inicio`):** la carrera, con su estado («En directo», «Próxima carrera» o «Última carrera») y un botón grande («Ver en directo», «Ver la carrera» o «Ver el resultado»). Debajo, las carreras anteriores.

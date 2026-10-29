@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.39.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.39.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -25,10 +25,13 @@
   <img src="docs/capturas/pc.jpg" width="900" alt="La web en el ordenador">
 </p>
 <p align="center">
+  <img src="docs/capturas/inicio.png" width="900" alt="La portada: la carrera primero, con su estado y un botón grande, en el ordenador y en el móvil">
+</p>
+<p align="center">
   <img src="docs/capturas/panel.png" width="820" alt="Panel en el ordenador: las pestañas son los pasos (Preparar, Móvil, Carrera, Resultado y Rutas) y dice cuál es el siguiente">
 </p>
 <p align="center">
-  <img src="docs/capturas/rutas.png" width="900" alt="La portada de rutas en el ordenador y la página de una ruta en el móvil">
+  <img src="docs/capturas/rutas.png" width="900" alt="La página «Rutas y relojes» en el ordenador y la página de una ruta en el móvil">
 </p>
 
 ---
