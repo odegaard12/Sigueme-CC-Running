@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.40.0 · 2026-10-29
+- **Guía de primera vez y botón «? Ayuda» en «Mis rutas»** (el espacio de los invitados), como la del panel: la primera vez que entran se abre sola una visita de 5 pasos (bienvenida, subir el GPX, avituallamientos, llevársela al reloj y **su fecha de caducidad**, con lo que pasa al caducar), señalando cada cosa en pantalla. Se puede saltar o cerrar con Esc, no vuelve a salir sola y se repite con el botón «? Ayuda» de la cabecera.
+
 ## v1.39.1 · 2026-10-29
 - **Capturas del repo con la portada nueva** (`docs/capturas/`): la portada con la carrera primero (ordenador y móvil), la página «Rutas y relojes» y el resto al día, con la carrera de ejemplo. Sin cambios de código.
 

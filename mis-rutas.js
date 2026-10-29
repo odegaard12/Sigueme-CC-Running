@@ -11,6 +11,7 @@ let actual = null;          // la ruta abierta
 function aviso(id, texto, tipo) { const m = $(id); m.textContent = texto || ''; m.className = 'msg' + (tipo ? ' ' + tipo : ''); }
 function ver(vista) {
   for (const v of ['login', 'lista', 'ruta']) $('vista-' + v).hidden = v !== vista;
+  if (vista === 'login') { const g = $('btn-guia'); if (g) g.hidden = true; }
   window.scrollTo(0, 0);
 }
 function fecha(iso) { const [a, m, d] = iso.split('-'); return d + '/' + m + '/' + a; }
@@ -44,6 +45,9 @@ async function lista() {
   const d = await api('/rutas');
   $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '; después se borra todo lo tuyo.');
   $('salir').hidden = !!d.dueno;
+  acceso = { caduca: d.caduca, dueno: !!d.dueno };
+  $('btn-guia').hidden = false;
+  guiaPrimeraVez();
   const cont = $('lista'); cont.textContent = '';
   $('lista-vacia').hidden = d.rutas.length > 0;
   for (const r of d.rutas) {
@@ -180,3 +184,77 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   const a = document.getElementById('nav-admin');
   if (a && d && d.dueno) a.hidden = false;
 }).catch(() => {});
+
+// ---------- guía de primera vez y botón «? Ayuda» ----------
+let acceso = { caduca: '', dueno: false };
+function textoAcceso() {
+  if (acceso.dueno) return 'Eres el dueño: tus rutas no caducan. Si publicas una, sale en «Rutas y relojes» para que cualquiera la vea.';
+  if (acceso.caduca === '2099-12-31') return 'Tu acceso no caduca. Si publicas una ruta, sale en «Rutas y relojes» para que cualquiera la vea.';
+  return 'Tu acceso vale hasta el ' + fecha(acceso.caduca) + '; después se borra todo lo tuyo. Si necesitas más tiempo, pídele al dueño «+30 días». Si publicas una ruta, sale en «Rutas y relojes».';
+}
+const GUIA = [
+  { t: 'Bienvenido a Mis rutas', x: 'Aquí subes tu ruta, le pones los avituallamientos y te la llevas al reloj. Son 4 pasos y te los enseño en un minuto. Siempre podrás volver a verlo con el botón «? Ayuda».' },
+  { t: 'Sube tu GPX', sel: () => $('gpx').closest('.tarjeta'), x: 'El fichero sale de Strava, Komoot, Wikiloc o de la web de la carrera. Ponle un nombre y pulsa «Subir ruta».' },
+  { t: 'Ponle avituallamientos', x: 'Al abrir una ruta puedes añadir cada avituallamiento con su nombre y su kilómetro. Se llevan al reloj como puntos de control.' },
+  { t: 'Llévatela al reloj', x: 'Descarga el GPX con el botón «Descargar GPX para el reloj» y súbelo con la app de tu reloj. Debajo tienes un botón por marca (Xiaomi, Huawei, Amazfit, Garmin, Coros…) que te explica cómo.' },
+  { t: 'Tu acceso', sel: null, x: null },
+];
+let guiaPaso = -1;
+const guiaId = id => document.getElementById(id);
+function guiaFoco(el) {
+  const f = guiaId('guia-foco');
+  if (el && el.offsetParent !== null) {
+    const r = el.getBoundingClientRect(), m = 6;
+    Object.assign(f.style, { left: (r.left - m) + 'px', top: (r.top - m) + 'px', width: (r.width + 2 * m) + 'px', height: (r.height + 2 * m) + 'px' });
+    guiaId('guia-tarjeta').classList.toggle('arriba', r.top + r.height / 2 > window.innerHeight * 0.55);
+  } else {
+    Object.assign(f.style, { left: '50%', top: '40%', width: '0px', height: '0px' });
+  }
+}
+function guiaElemento(p) { try { return p.sel ? p.sel() : null; } catch (e) { return null; } }
+function guiaMostrar(i) {
+  guiaPaso = i;
+  const p = GUIA[i];
+  if (p.t === 'Sube tu GPX') ver('lista');
+  const el = guiaElemento(p);
+  const quieto = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (el && el.offsetParent !== null) el.scrollIntoView({ block: 'center', behavior: quieto ? 'auto' : 'smooth' });
+  guiaId('guia-paso').textContent = 'Paso ' + (i + 1) + ' de ' + GUIA.length;
+  guiaId('guia-titulo').textContent = p.t;
+  guiaId('guia-texto').textContent = p.x === null ? textoAcceso() : p.x;
+  guiaId('guia-atras').hidden = i === 0;
+  guiaId('guia-saltar').hidden = i === GUIA.length - 1;
+  guiaId('guia-sig').textContent = i === GUIA.length - 1 ? 'Entendido' : 'Siguiente ›';
+  guiaId('guia-foco').hidden = false; guiaId('guia-tarjeta').hidden = false;
+  setTimeout(() => guiaFoco(el), quieto ? 0 : 350);
+  guiaId('guia-sig').focus({ preventScroll: true });
+}
+function guiaCerrar() {
+  guiaPaso = -1;
+  guiaId('guia-foco').hidden = true; guiaId('guia-tarjeta').hidden = true;
+  try { localStorage.setItem('guia_mis_rutas', '1'); } catch (e) {}
+  window.scrollTo({ top: 0 });
+  guiaId('btn-guia').focus({ preventScroll: true });
+}
+function guiaPrimeraVez() {
+  let vista = false;
+  try { vista = localStorage.getItem('guia_mis_rutas') === '1'; } catch (e) {}
+  if (!vista && guiaPaso < 0) setTimeout(() => { if (guiaPaso < 0) guiaMostrar(0); }, 900);
+}
+guiaId('btn-guia').addEventListener('click', () => { if (guiaPaso < 0) guiaMostrar(0); });
+guiaId('guia-saltar').addEventListener('click', guiaCerrar);
+guiaId('guia-atras').addEventListener('click', () => guiaMostrar(Math.max(0, guiaPaso - 1)));
+guiaId('guia-sig').addEventListener('click', () => guiaPaso >= GUIA.length - 1 ? guiaCerrar() : guiaMostrar(guiaPaso + 1));
+document.addEventListener('keydown', e => {
+  if (guiaPaso < 0) return;
+  if (e.key === 'Escape') { guiaCerrar(); return; }
+  if (e.key !== 'Tab') return;
+  const bs = [...guiaId('guia-tarjeta').querySelectorAll('button')].filter(b => !b.hidden);
+  if (!bs.length) return;
+  const i = bs.indexOf(document.activeElement);
+  e.preventDefault();
+  bs[e.shiftKey ? (i <= 0 ? bs.length - 1 : i - 1) : (i === bs.length - 1 ? 0 : i + 1)].focus();
+});
+const guiaRepintar = () => { if (guiaPaso >= 0) guiaFoco(guiaElemento(GUIA[guiaPaso])); };
+window.addEventListener('scroll', guiaRepintar, { passive: true });
+window.addEventListener('resize', guiaRepintar);

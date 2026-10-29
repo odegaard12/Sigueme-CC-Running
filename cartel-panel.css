@@ -52,3 +52,23 @@ input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }
 .chips-marcas a:active { transform: scale(0.96); }
 .chips-marcas a:focus-visible { outline: 3px solid var(--papel, #f4f7e6); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .chips-marcas a { transition: none; } }
+
+/* guía de primera vez y botón de ayuda */
+.btn-guia { margin-left: auto; background: var(--tinta); color: var(--campo); border: 0; border-radius: 20px; padding: 8px 16px; font: inherit; font-weight: 800; min-height: 44px; cursor: pointer; }
+.btn-guia[hidden] { display: none; }
+.btn-guia:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+#guia-foco { position: fixed; z-index: 60; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 10, 9, 0.78); outline: 3px solid var(--campo); pointer-events: none; transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s; }
+#guia-tarjeta { position: fixed; z-index: 61; left: 12px; right: 12px; bottom: 12px; background: var(--papel); color: var(--tinta); border-radius: 12px; padding: 18px 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+#guia-tarjeta.arriba { top: 12px; bottom: auto; }
+#guia-tarjeta[hidden], #guia-foco[hidden] { display: none; }
+.guia-paso { margin: 0 0 4px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #5a6320; }
+#guia-tarjeta h2 { font: 400 1.9rem/1.05 var(--display); text-transform: uppercase; margin: 0 0 8px; color: var(--tinta); }
+#guia-texto { margin: 0 0 14px; font-size: 1.02rem; line-height: 1.5; }
+.guia-botones { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.guia-botones button { font: inherit; font-weight: 800; border-radius: 8px; padding: 12px 18px; min-height: 44px; cursor: pointer; border: 2px solid var(--tinta); }
+.guia-sig { margin-left: auto; background: var(--tinta); color: var(--campo); }
+.guia-atras { background: transparent; color: var(--tinta); }
+.guia-saltar { background: transparent; color: #4a5217; border-color: transparent !important; text-decoration: underline; padding-left: 0 !important; }
+.guia-botones button:focus-visible { outline: 3px solid #5a6320; outline-offset: 2px; }
+@media (min-width: 760px) { #guia-tarjeta { left: auto; right: 24px; bottom: 24px; width: 440px; } #guia-tarjeta.arriba { top: 24px; bottom: auto; } }
+@media (prefers-reduced-motion: reduce) { #guia-foco { transition: none; } }

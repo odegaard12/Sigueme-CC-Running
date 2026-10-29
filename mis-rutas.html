@@ -51,7 +51,7 @@
 <body class="mis">
 <div class="campo-cartel">
   <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio">Sígueme CC</a><nav><a href="/inicio">Inicio</a><a href="/admin.html" id="nav-admin" hidden>Admin</a></nav></header>
-  <div class="topbar"><h1>Mis rutas</h1></div>
+  <div class="topbar"><h1>Mis rutas</h1><button type="button" class="btn-guia" id="btn-guia" hidden>? Ayuda</button></div>
   <p class="sub-cab" id="cabecera">Sube un GPX, pon los avituallamientos y llévate la ruta al reloj.</p>
 </div>
 <main>
@@ -148,6 +148,17 @@
     <button class="btn peligro" type="button" id="borrar">Borrar esta ruta</button>
   </section>
 </main>
+<div id="guia-foco" hidden aria-hidden="true"></div>
+<div id="guia-tarjeta" role="dialog" aria-modal="true" aria-labelledby="guia-titulo" hidden>
+  <p class="guia-paso" id="guia-paso"></p>
+  <h2 id="guia-titulo"></h2>
+  <p id="guia-texto"></p>
+  <div class="guia-botones">
+    <button type="button" class="guia-saltar" id="guia-saltar">Saltar la guía</button>
+    <button type="button" class="guia-atras" id="guia-atras">‹ Atrás</button>
+    <button type="button" class="guia-sig" id="guia-sig">Siguiente ›</button>
+  </div>
+</div>
 <script src="/mis-rutas.js"></script>
 </body>
 </html>
