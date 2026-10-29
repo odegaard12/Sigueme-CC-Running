@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#d9f24a">
+<title>Rutas y relojes · {{SITIO}}</title>
+<meta name="description" content="Rutas con mapa, perfil y GPX para tu reloj: Xiaomi, Huawei, Amazfit, Garmin o Coros.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rutas y relojes · {{SITIO}}">
+<meta property="og:description" content="Mira la ruta, descarga el GPX y sal.">
+<meta property="og:url" content="">
+<meta property="og:image" content="/og.jpg">
+<link rel="icon" href="/favicon.png?v=4">
+<link rel="stylesheet" href="/cartel.css">
+</head>
+<body class="cartel">
+<div class="campo">
+  <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a></nav></header>
+  <h1 class="gigante">Rutas y relojes</h1>
+  <div class="bajo"><p>Mira la ruta, descarga el GPX para tu reloj y sal.</p></div>
+</div>
+<main>
+  <section class="oscuro" aria-label="Rutas">
+    <div id="rutas"></div>
+    <p class="vacio" id="sin-rutas" hidden>Todavía no hay rutas publicadas. Si tienes un acceso, sube la tuya y publícala desde «Mis rutas».</p>
+  </section>
+  <div class="pul">
+    <h2 class="titulo">Llévala al reloj</h2>
+    <nav class="chips-marcas" aria-label="Guía de tu marca">
+      <a href="/pulseras#xiaomi">Xiaomi</a><a href="/pulseras#huawei">Huawei</a><a href="/pulseras#amazfit">Amazfit</a><a href="/pulseras#garmin">Garmin</a><a href="/pulseras#coros">Coros</a><a href="/pulseras#android">Android</a><a href="/pulseras#iphone">iPhone</a>
+    </nav>
+    <div class="acciones"><a class="boton" href="/ruta-carrera.gpx" download>GPX de la carrera</a><a class="boton claro" href="/pulseras">Guía completa</a></div>
+  </div>
+</main>
+<footer class="pie"><span>¿Quieres tus rutas aquí? <a href="/mis-rutas.html" id="nav-admin">Entra en «Mis rutas» con tu acceso</a></span></footer>
+<noscript><p class="vacio" style="padding:0 22px 30px">Esta página necesita JavaScript para listar las rutas.</p></noscript>
+<script src="/rutas.js"></script>
+</body>
+</html>

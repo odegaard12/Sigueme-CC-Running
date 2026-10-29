@@ -1,10 +1,11 @@
-// Portada: las rutas publicadas y las carreras. Los textos se pintan siempre con textContent.
+// Portada: la carrera primero (en directo, la próxima o la última) y debajo las carreras anteriores.
+// Los textos se pintan siempre con textContent.
 'use strict';
 const $ = id => document.getElementById(id);
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const fecha = iso => { const [a, m, d] = String(iso || '').split('-'); return a && m && d ? Number(d) + ' ' + MESES[Number(m) - 1] + ' ' + a : ''; };
-const tiempo = s => { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60); return h + 'h ' + String(m).padStart(2, '0') + 'm'; };
+const tiempo = s => { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h + 'h ' + String(m).padStart(2, '0') + 'm'; };
 const ns = 'http://www.w3.org/2000/svg';
 
 function traza(puntos) {
@@ -39,43 +40,48 @@ function fila(href, nombre, sub, puntos, c1, c2, i) {
 
 async function json(url) { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 
-(async () => {
-  const [rutas, carreras] = await Promise.all([json('/api/rutas-publicas'), json('/api/carreras')]);
-  const lista = $('rutas');
-  const hechas0 = (carreras && carreras.carreras) || [];
-  const clave = (n, d) => String(n || '').trim().toLowerCase() + '|' + Math.round(d || 0);
-  const archivadas = new Set(hechas0.map(c => clave(c.nombre, c.distancia_km)));
-  const rs = ((rutas && rutas.rutas) || []).filter(r => !archivadas.has(clave(r.nombre, r.distancia_km)));
-  rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [String(r.desnivel_m), 'D+'], i)));
-  $('sin-rutas').hidden = rs.length > 0;
-  if (rutas === null) {
-    $('sin-rutas').hidden = false;
-    $('sin-rutas').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
-  }
-  if (carreras) {
-    if (carreras.en_marcha) $('directo').hidden = false;
-    const p = carreras.proxima;
-    if (p) {
-      const a = $('proxima'); a.hidden = false;
-      a.textContent = 'Próxima carrera · ' + p.nombre;
-      const s = document.createElement('small'); s.textContent = [fecha(p.fecha), p.hora_salida, p.lugar, p.distancia_km ? km(p.distancia_km) + ' km' : ''].filter(Boolean).join(' · ');
-      a.append(s);
-    }
-    const hechas = carreras.carreras || [];
-    if (hechas.length) {
-      $('carreras-sec').hidden = false;
-      hechas.forEach((c, i) => {
-        const f = fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), c.traza,
-          [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i);
-        f.classList.add('carrera'); f.children[2].classList.add('km'); f.children[3].classList.add('t');   // en el móvil se queda el tiempo
-        $('carreras').append(f);
-      });
-    }
-  }
-})();
-
-// «Admin»: al dueño lo lleva al panel; al invitado, a su espacio de rutas
+// «Entrar»: al dueño lo lleva al panel; al invitado, a su espacio de rutas
 fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
   const a = document.getElementById('nav-admin');
   if (a && d && d.dueno) a.href = '/admin.html';
 }).catch(() => {});
+
+(async () => {
+  const datos = await json('/api/carreras');
+  const lista = ((datos && datos.carreras) || []).slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+  const pill = $('hero-pill'), titulo = $('hero-titulo'), linea = $('hero-linea'), boton = $('hero-boton');
+  let estado = '', nombre = 'Sígueme CC', partes = [], texto = '', href = '/', ultima = null;
+  if (datos && datos.en_marcha) {
+    const c = (await json('/carrera.json')) || {};
+    estado = 'En directo'; nombre = c.nombre || 'Carrera en directo';
+    partes = [c.lugar, c.distancia_km ? km(c.distancia_km) + ' km' : ''];
+    texto = 'Ver en directo ▶';
+    pill.classList.add('vivo');
+  } else if (datos && datos.proxima) {
+    const p = datos.proxima;
+    estado = 'Próxima carrera'; nombre = p.nombre || 'Próxima carrera';
+    partes = [fecha(p.fecha), p.hora_salida ? 'sale a las ' + p.hora_salida : '', p.lugar, p.distancia_km ? km(p.distancia_km) + ' km' : ''];
+    texto = 'Ver la carrera ▶';
+  } else if (lista.length) {
+    ultima = lista[0];
+    estado = 'Última carrera'; nombre = ultima.nombre || ultima.slug;
+    partes = [fecha(ultima.fecha), ultima.lugar, ultima.distancia_km ? km(ultima.distancia_km) + ' km' : '', tiempo(ultima.tiempo_s)];
+    texto = 'Ver el resultado ▶'; href = '/' + ultima.slug + '/';
+  } else {
+    partes = ['Todavía no hay carreras'];
+  }
+  pill.textContent = estado; pill.hidden = !estado;
+  titulo.textContent = nombre;
+  linea.textContent = partes.filter(Boolean).join(' · ');
+  if (texto) { boton.textContent = texto; boton.href = href; boton.hidden = false; }
+  const resto = lista.filter(c => c !== ultima);
+  if (resto.length) {
+    $('carreras-sec').hidden = false;
+    resto.forEach((c, i) => {
+      const f = fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), c.traza,
+        [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i);
+      f.classList.add('carrera'); f.children[2].classList.add('km'); f.children[3].classList.add('t');
+      $('carreras').append(f);
+    });
+  }
+})();

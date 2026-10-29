@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.39.0 · 2026-10-29
+**La carrera primero.** Sígueme CC es una web de seguimiento; las rutas y los GPX son un extra y ya no ocupan la portada.
+- **Portada (`/inicio`):** la carrera, con su estado («En directo», «Próxima carrera» o «Última carrera») y un botón grande («Ver en directo», «Ver la carrera» o «Ver el resultado»). Debajo, las carreras anteriores.
+- **Nueva página «Rutas y relojes» (`/rutas`):** las rutas publicadas, los botones de marca (Xiaomi, Huawei, Amazfit, Garmin, Coros, Android, iPhone), el GPX de la carrera y la guía completa.
+- **Menús más claros:** «Admin» sale del menú de las páginas públicas (queda como «Entrar», discreto, en el pie); el pie de la página en directo pasa de cuatro enlaces de rutas y relojes a uno, «Rutas y relojes».
+- Los botones de «Rutas y relojes» y de la guía de pulseras se ven ahora sobre fondo oscuro (antes eran negros sobre negro).
+- Pruebas actualizadas y nuevas para `/inicio` y `/rutas`.
+
 ## v1.38.1 · 2026-10-26
 - **Capturas del repo al día** (`docs/capturas/`): el panel nuevo con barra lateral y resumen, la página en directo con la tarjeta de ritmo, el anillo del corredor y el rastro de cometa, la portada y las pantallas de ruta, todas con la carrera de ejemplo. Sin cambios de código.
 

@@ -1681,6 +1681,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._pagina("inicio.html")
         if crudo == "/pulseras":
             return self._pagina("pulseras.html")
+        if crudo == "/rutas":
+            return self._pagina("rutas.html")
         if crudo == "/ruta-carrera.gpx":
             return self._gpx_publico(ROOT)
         m_ruta = re.fullmatch(r"/r/([0-9a-f]{12})", crudo)
@@ -1808,12 +1810,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
                 '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=2">'
                 '</head><body class="cartel"><div class="campo">'
-                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Admin</a></nav></header>'
+                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/inicio">Inicio</a><a href="/rutas">Rutas y relojes</a></nav></header>'
                 '<h1 class="gigante">Carreras</h1>'
                 f'<div class="bajo"><p>{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p></div></div>'
                 f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
                 f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
-                '<footer class="pie"><a href="/inicio">‹ Volver a las rutas</a></footer></body></html>').encode("utf-8")
+                '<footer class="pie"><a href="/inicio">‹ Volver al inicio</a></footer></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))
