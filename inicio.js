@@ -74,6 +74,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   titulo.textContent = nombre;
   linea.textContent = partes.filter(Boolean).join(' · ');
   if (texto) { boton.textContent = texto; boton.href = href; boton.hidden = false; }
+  if (lista.length) $('acc-carreras').textContent = lista.length + (lista.length === 1 ? ' carrera' : ' carreras') + ' con su recorrido, su tiempo y la repetición';
   const resto = lista.filter(c => c !== ultima);
   if (resto.length) {
     $('carreras-sec').hidden = false;

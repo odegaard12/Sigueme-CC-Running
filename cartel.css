@@ -135,3 +135,13 @@ h1.gigante { margin-left: var(--margen); margin-right: var(--margen); }
 h2.titulo { margin-left: var(--margen); margin-right: var(--margen); }
 .pul { max-width: none; margin: 0; padding-left: var(--margen); padding-right: var(--margen); }
 .campo .pill-hero, .campo .hero-linea, .campo .boton-hero { margin-left: var(--margen); margin-right: var(--margen); }
+
+/* portada: dos accesos claros debajo de la carrera (antes quedaba todo vacío con una sola carrera) */
+.accesos { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 22px var(--margen, 22px) 6px; }
+@media (min-width: 700px) { .accesos { grid-template-columns: 1fr 1fr; } }
+.acceso { display: block; position: relative; background: var(--oscuro); color: var(--papel); border-radius: 8px; padding: 18px 48px 18px 20px; text-decoration: none; transition: background 0.18s; }
+.acceso::after { content: "›"; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font: 400 2rem/1 var(--display); color: var(--campo); }
+.acceso b { display: block; font: 400 1.7rem/1.05 var(--display); text-transform: uppercase; }
+.acceso small { display: block; margin-top: 6px; color: var(--apagado); font-weight: 700; font-size: 0.95rem; }
+.acceso:hover, .acceso:focus-visible { background: #1d261f; }
+@media (prefers-reduced-motion: reduce) { .acceso { transition: none; } }

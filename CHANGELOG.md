@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.43.0 · 2026-10-30
+- **Pantallas anchas alineadas:** en la página en directo y en la del resultado, el mapa, los datos, la ficha y la barra de la repetición usan el mismo margen que la cabecera (antes: mapa y datos en un bloque centrado de 1280 px y la barra de lado a lado, que en un monitor grande no parecían alineados).
+- **«Mis rutas» alineada:** el logo, el título y el saludo van en la misma columna que las tarjetas.
+- **Portada sin huecos:** debajo de la carrera, dos accesos claros, «Todas las carreras» (con cuántas hay) y «Rutas y relojes»; antes, con una sola carrera, quedaba todo vacío. El pie se queda en «Entrar (dueño e invitados)».
+
 ## v1.42.0 · 2026-10-30
 - **Todo alineado:** un solo margen lateral en todas las páginas públicas (portada, rutas y relojes, carreras, guía de pulseras), el mismo que la página en directo: 16 px en el móvil y hasta 36 px en el ordenador. Antes se mezclaban 16, 18 y 22 px, y la guía de pulseras y «Llévala al reloj» iban en una columna centrada.
 

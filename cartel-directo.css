@@ -191,3 +191,12 @@ footer a { color: var(--papel); }
 .aviso-conexion:not(.visible) { opacity: 0; transform: translate(-50%, -14px); pointer-events: none; }
 .aviso-conexion.ok { background: var(--campo); color: var(--tinta); }
 @media (prefers-reduced-motion: reduce) { .metrica.cambia, .pill-estado.cambia { animation: none; } }
+
+/* todo con el margen de la cabecera, también en pantallas anchas (antes: mapa y datos en un bloque centrado de 1280 px
+   y la barra de la repetición de lado a lado, que en un monitor grande no parecían alineados) */
+.aviso-resultado { margin-left: clamp(16px, 3vw, 36px); margin-right: clamp(16px, 3vw, 36px); }
+@media (min-width: 1000px) {
+  body .panel-pc { max-width: none; margin-left: 0; margin-right: 0; padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
+  body .ficha { max-width: none; margin-left: clamp(16px, 3vw, 36px); margin-right: clamp(16px, 3vw, 36px); }
+  body .live-updated, body .map-hint, body .livetrack-embed { max-width: none; }
+}
