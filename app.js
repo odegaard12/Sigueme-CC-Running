@@ -1803,11 +1803,18 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
   if (!caja || !ok) return;
   let vista = false;
   try { vista = localStorage.getItem('sigueme.ayuda') === '1'; } catch (e) {}
-  if (vista) return;
-  caja.hidden = false;
+  if (!vista) caja.hidden = false;
   ok.addEventListener('click', () => {
     caja.hidden = true;
     try { localStorage.setItem('sigueme.ayuda', '1'); } catch (e) {}
+    const b = document.getElementById('ayuda-btn'); if (b) b.focus({ preventScroll: true });
+  });
+  // el botón «?» de la cabecera: vuelve a enseñar el aviso cuando se quiera
+  const btn = document.getElementById('ayuda-btn');
+  if (btn) btn.addEventListener('click', () => {
+    caja.hidden = false;
+    caja.scrollIntoView({ behavior: QUIETO ? 'auto' : 'smooth', block: 'nearest' });
+    ok.focus({ preventScroll: true });
   });
 })();
 

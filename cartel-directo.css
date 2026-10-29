@@ -70,6 +70,11 @@ body { background: var(--tinta); color: var(--papel); }
 .progreso i { background: var(--campo); }
 .chip { background: var(--panel); border: 0; border-radius: 4px; color: var(--muted); font-weight: 700; }
 .chip b { font: 400 1.15rem/1 var(--display); color: var(--papel); letter-spacing: 0; }
+/* botón «?» de la cabecera */
+.cd-cab .cd-marca { white-space: nowrap; }
+.cd-nav .ayuda-btn { background: var(--tinta); color: var(--campo); border: 0; border-radius: 4px; width: 44px; min-height: 44px; padding: 0; font: 400 1.4rem/1 var(--display, Anton, Impact, sans-serif); cursor: pointer; }
+.cd-nav .ayuda-btn:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+
 /* ayuda de primera vez */
 .ayuda-cd { background: var(--campo); color: var(--tinta); margin: 10px clamp(12px, 3vw, 36px) 0; padding: 12px 14px; border-radius: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .ayuda-cd[hidden] { display: none; }
@@ -160,7 +165,7 @@ footer a { color: var(--papel); }
 .cd-cab { padding-bottom: 18px; }
 
 /* el botón de la ficha del corredor dice «Mi ficha» también en el móvil (cabe a partir de 380 px) */
-@media (min-width: 380px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }
+@media (min-width: 460px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }
 
 /* cabecera compacta: la mitad de alta que antes; el mapa y las cifras, antes en pantalla */
 .cd-cab { padding-bottom: 12px; }
