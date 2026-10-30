@@ -1,104 +1,96 @@
-/* El panel de admin y «Mis rutas» con el diseño cartel de la portada: lima, negro y letra condensada. */
+/* Panel del dueño y «Mis rutas» con el MISMO sistema que la web pública (cartel.css) y la página de la carrera
+   (directo.css): 1 fondo, 2 superficies, 1 acento; esquinas de 8 px (botones y campos), 10 px (pestañas) y 14 px
+   (tarjetas); explicaciones en gris; botón principal lima y secundario con borde. Escrita de cero: sustituye a la
+   hoja anterior y a su capa de parches. Va DESPUÉS de los estilos propios de cada página, para unificarlos. */
 @font-face { font-family: "Anton"; src: url("/fonts/anton.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 :root {
-  --accent: #d9f24a; --accent-dark: #0c0f0e; --bg: #0c0f0e; --panel: #151b17; --panel-2: #0f1512;
-  --muted: #b5c06a; --border: rgba(244, 247, 230, 0.14); --campo: #d9f24a; --tinta: #0c0f0e; --papel: #f4f7e6;
+  --fondo: #0e1110; --sup: #161b18; --sup2: #1f2622; --linea: rgba(238, 241, 234, 0.1);
+  --texto: #eef1ea; --suave: #9aa596; --acento: #d9f24a; --tinta: #0e1110; --aviso: #ffd27a;
+  --r1: 8px; --r2: 14px; --m: clamp(16px, 3vw, 36px);
   --display: "Anton", Impact, "Arial Narrow", sans-serif;
+  /* los nombres que usan los estilos de cada página: todos al mismo sistema */
+  --accent: var(--acento); --accent-dark: var(--tinta); --bg: var(--fondo); --panel: var(--sup); --panel-2: var(--sup2);
+  --muted: var(--suave); --border: var(--linea); --campo: var(--acento); --papel: var(--texto); --text: var(--texto);
 }
-body { background: #0c0f0e; background-attachment: scroll; }
+body { background: var(--fondo); color: var(--texto); }
+button, input, select, textarea { font-family: inherit; }
+a { color: var(--acento); }
+:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+[hidden] { display: none !important; }
 
-/* la franja lima de arriba: nombre del sitio, enlaces y el título grande */
-.campo-cartel { background: var(--campo); color: var(--tinta); margin-bottom: 14px; }
-.barra-cartel { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 16px; font-weight: 800; max-width: 1240px; margin: 0 auto; }
-.barra-cartel a { color: inherit; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-.barra-cartel nav { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
-.barra-cartel nav a { text-decoration: underline; text-underline-offset: 4px; }
-.barra-cartel .marca-cartel { text-transform: uppercase; letter-spacing: 0.02em; }
-.campo-cartel .topbar { background: transparent; color: var(--tinta); border: 0; max-width: 1240px; margin: 0 auto; padding: 0 16px 12px;
-  display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
-.campo-cartel .topbar h1 { font: 400 clamp(1.9rem, 5vw, 2.6rem)/1 var(--display); text-transform: uppercase; letter-spacing: -0.005em; margin: 0; color: var(--tinta); }
+/* ---------- cabecera: como la de la web pública ---------- */
+.campo-cartel { background: var(--fondo); color: var(--texto); margin-bottom: 14px; border-bottom: 1px solid var(--linea); }
+.barra-cartel { display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: 1240px; margin: 0 auto; min-height: 56px; padding: 0 var(--m); }
+.barra-cartel a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; text-decoration: none; }
+.barra-cartel .marca-cartel { font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.barra-cartel nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 16px; }
+.barra-cartel nav a { color: var(--suave); font-weight: 700; font-size: 0.9rem; text-decoration: none; }
+.barra-cartel nav a:hover { color: var(--texto); }
+.campo-cartel .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 1240px; margin: 0 auto; padding: 6px var(--m) 14px;
+  background: none; border: 0; color: var(--texto); }
+.campo-cartel .topbar h1 { margin: 0; font: 400 clamp(1.9rem, 6vw, 2.8rem)/1.02 var(--display); text-transform: uppercase; color: var(--texto); }
 .campo-cartel .topbar h1 span { color: inherit; }
-.campo-cartel .pill-panel { background: var(--tinta); color: var(--accent); border-color: var(--tinta); font-weight: 700; }
-.campo-cartel .pill-panel.vivo { background: var(--tinta); color: var(--accent); }
+.sub-cab { color: var(--suave); font-weight: 500; }
+.pill-panel { border-radius: 999px; background: var(--sup2); color: var(--texto); border-color: var(--sup2); font-weight: 700; }
+.pill-panel.vivo { background: var(--acento); color: var(--tinta); border-color: var(--acento); }
 
-/* tarjetas, títulos y botones */
-.tarjeta { background: var(--panel); border-radius: 6px; }
-.tarjeta h2 { font: 400 1.65rem/1 var(--display); text-transform: uppercase; letter-spacing: 0; color: var(--papel); margin: 0 0 12px; }
-.save-btn { background: var(--accent) !important; color: var(--tinta) !important; font: 400 1.3rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; border-radius: 4px; padding: 16px; }
-.btn { border-radius: 4px; }
-.field input:focus, .field select:focus { outline: 2px solid var(--accent); }
-a { color: var(--accent); }
-
-/* las pestañas del panel */
-.pestanas { border-radius: 6px; background: rgba(21, 27, 23, 0.97); }
-.pestanas b { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; }
-.pestanas button[aria-selected="true"] { background: var(--accent); color: var(--tinta); }
-.pestanas button[aria-selected="true"] .n { background: var(--tinta); color: var(--accent); }
-.siguiente { background: #232c12; }
+/* ---------- tarjetas, títulos y explicaciones ---------- */
+.tarjeta, .siguiente, .inv-nuevo, .r-estado, .r-cifras div, .nuevo-aviso { border-radius: var(--r2); }
+.tarjeta { background: var(--sup); border: 0; }
+.tarjeta h2 { margin: 0 0 12px; font: 400 1.4rem/1 var(--display); text-transform: uppercase; color: var(--texto); }
+.howto, .sub, .estado-fila { color: var(--suave); }
+.siguiente, .inv-nuevo { background: #232c12; }
+.lista-prep li.ir { border-radius: 10px; }
 .lista-prep li.ir:hover, .lista-prep li.ir:focus-visible { background: #1d2412; }
-.inv-nuevo { background: #232c12; }
-@keyframes resalta { 0% { background: #3b4a14; } 100% { background: #151b17; } }
+@keyframes resalta { 0% { background: #3b4a14; } 100% { background: var(--sup); } }
 
-/* casillas y selectores con el lima de la marca (antes salían en el azul del sistema) */
-input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+/* ---------- botones: principal (lima) y secundario (borde lima) ---------- */
+.save-btn, .r-ir { border: 0; border-radius: var(--r1) !important; background: var(--acento) !important; color: var(--tinta) !important;
+  font: 400 1.15rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; padding: 14px 18px; min-height: 48px; cursor: pointer; }
+.btn { border-radius: var(--r1); background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); border: 0; font-weight: 800; min-height: 44px; }
+.btn.principal { background: var(--acento); color: var(--tinta); box-shadow: none; }
+.btn:hover, .save-btn:hover { filter: brightness(1.07); }
+.btn.peligro, .btn.stop-btn { color: #ff9a8a; box-shadow: inset 0 0 0 2px #ff9a8a; background: transparent; }
+.quitar-aviso { border-radius: var(--r1); }
 
-/* el botón de «elegir fichero» con el diseño de la web (antes, el gris del navegador) */
-input[type="file"]::file-selector-button { background: var(--accent); color: var(--tinta); border: 0; border-radius: 4px; padding: 8px 14px; margin-right: 12px; font: inherit; font-weight: 800; cursor: pointer; }
-input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }
+/* ---------- campos ---------- */
+.field input, .field select, .field textarea, .fila-avit input, .fila-aviso textarea, input[type="text"], input[type="number"], input[type="password"], select, textarea {
+  border-radius: var(--r1); background: var(--fondo); color: var(--texto); border: 1px solid #2a322d; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--acento); outline-offset: 0; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--acento); }
+input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px; border: 0; border-radius: var(--r1); background: var(--acento); color: var(--tinta); font: inherit; font-weight: 800; cursor: pointer; }
 
-/* botones de marca: llevan a la guía de cada reloj o móvil */
+/* ---------- pestañas del panel ---------- */
+.pestanas { border-radius: var(--r2); background: var(--sup); }
+.pestanas button { border-radius: 10px; }
+.pestanas b { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; }
+.pestanas button[aria-selected="true"] { background: var(--acento); color: var(--tinta); }
+.pestanas button[aria-selected="true"] .n { background: var(--tinta); color: var(--acento); }
+
+/* ---------- resumen de la carrera del panel ---------- */
+.resumen .r-estado { background: var(--sup); color: var(--texto); }
+.resumen .r-estado h2 { color: var(--texto); }
+.resumen .r-estado p { color: var(--suave); }
+.resumen .r-estado .pill-panel { background: var(--acento); color: var(--tinta); border-color: var(--acento); }
+.r-cifras div { background: var(--sup); }
+
+/* ---------- chips de marcas (como en la web pública) ---------- */
 .chips-marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
-.chips-marcas a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--campo); color: var(--tinta); font-weight: 800; text-decoration: none; transition: transform 0.15s; }
-.chips-marcas a:active { transform: scale(0.96); }
-.chips-marcas a:focus-visible { outline: 3px solid var(--papel, #f4f7e6); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .chips-marcas a { transition: none; } }
+.chips-marcas a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--sup2); color: var(--texto); font-weight: 700; font-size: 0.9rem; text-decoration: none; }
 
-/* guía de primera vez y botón de ayuda */
-.btn-guia { margin-left: auto; background: var(--tinta); color: var(--campo); border: 0; border-radius: 20px; padding: 8px 16px; font: inherit; font-weight: 800; min-height: 44px; cursor: pointer; }
-.btn-guia[hidden] { display: none; }
-.btn-guia:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
-#guia-foco { position: fixed; z-index: 60; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 10, 9, 0.78); outline: 3px solid var(--campo); pointer-events: none; transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s; }
-#guia-tarjeta { position: fixed; z-index: 61; left: 12px; right: 12px; bottom: 12px; background: var(--papel); color: var(--tinta); border-radius: 12px; padding: 18px 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+/* ---------- guía de primera vez y botón de ayuda ---------- */
+.btn-guia { margin-left: auto; min-height: 44px; padding: 8px 16px; border: 0; border-radius: var(--r1); background: var(--sup2); color: var(--acento); font: inherit; font-weight: 800; cursor: pointer; }
+#guia-foco { position: fixed; z-index: 60; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 10, 9, 0.78); outline: 3px solid var(--acento); pointer-events: none; transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s; }
+#guia-tarjeta { position: fixed; z-index: 61; left: 12px; right: 12px; bottom: 12px; padding: 18px 20px; border-radius: var(--r2); background: var(--sup); color: var(--texto);
+  box-shadow: 0 0 0 2px var(--acento), 0 18px 50px rgba(0, 0, 0, 0.6); }
 #guia-tarjeta.arriba { top: 12px; bottom: auto; }
-#guia-tarjeta[hidden], #guia-foco[hidden] { display: none; }
-.guia-paso { margin: 0 0 4px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #5a6320; }
-#guia-tarjeta h2 { font: 400 1.9rem/1.05 var(--display); text-transform: uppercase; margin: 0 0 8px; color: var(--tinta); }
-#guia-texto { margin: 0 0 14px; font-size: 1.02rem; line-height: 1.5; }
-.guia-botones { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.guia-botones button { font: inherit; font-weight: 800; border-radius: 8px; padding: 12px 18px; min-height: 44px; cursor: pointer; border: 2px solid var(--tinta); }
-.guia-sig { margin-left: auto; background: var(--tinta); color: var(--campo); }
-.guia-atras { background: transparent; color: var(--tinta); }
-.guia-saltar { background: transparent; color: #4a5217; border-color: transparent !important; text-decoration: underline; padding-left: 0 !important; }
-.guia-botones button:focus-visible { outline: 3px solid #5a6320; outline-offset: 2px; }
+#guia-tarjeta h2 { margin: 0 0 8px; font: 400 1.6rem/1.05 var(--display); text-transform: uppercase; color: var(--texto); }
+.guia-paso { margin: 0 0 4px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--acento); }
+#guia-texto { margin: 0 0 14px; font-size: 1rem; line-height: 1.5; }
+.guia-botones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.guia-botones button { min-height: 44px; padding: 12px 18px; border: 0; border-radius: var(--r1); font: inherit; font-weight: 800; cursor: pointer; }
+.guia-sig { margin-left: auto; background: var(--acento); color: var(--tinta); }
+.guia-atras { background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); }
+.guia-saltar { background: transparent; color: var(--suave); text-decoration: underline; padding-left: 0 !important; }
 @media (min-width: 760px) { #guia-tarjeta { left: auto; right: 24px; bottom: 24px; width: 440px; } #guia-tarjeta.arriba { top: 24px; bottom: auto; } }
 @media (prefers-reduced-motion: reduce) { #guia-foco { transition: none; } }
-
-/* ================= v1.46 · el mismo diseño oscuro que la web pública ================= */
-/* cabecera: oscura, con la misma barra (nombre a la izquierda, enlaces en gris a la derecha) */
-body .campo-cartel { background: #0e1110; color: var(--papel); border-bottom: 1px solid rgba(244, 247, 230, 0.1); }
-body .barra-cartel { padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
-body .barra-cartel .marca-cartel { color: var(--papel); }
-body .barra-cartel nav a { color: #9aa596; text-decoration: none; }
-body .barra-cartel nav a:hover { color: var(--papel); }
-body .campo-cartel .topbar { color: var(--papel); padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
-body .campo-cartel .topbar h1 { color: var(--papel); font-size: clamp(2.1rem, 5vw, 3rem); }
-body .sub-cab { color: #cfd6cc; font-weight: 500; }
-body .campo-cartel .pill-panel { background: #1d2420; color: var(--papel); border-color: #1d2420; }
-body .campo-cartel .pill-panel.vivo { background: var(--campo); color: var(--tinta); }
-body .btn-guia { background: #1d2420; color: var(--campo); }
-body .btn-guia:hover { background: #27302b; }
-body .campo-cartel :focus-visible { outline-color: var(--campo); }
-/* resumen de la carrera del panel: tarjeta oscura; el lima solo en la etiqueta y el botón */
-body .resumen .r-estado { background: #151a17; color: var(--papel); border-radius: 20px; }
-body .resumen .r-estado h2 { color: var(--papel); }
-body .resumen .r-estado p { color: #cfd6cc; }
-body .resumen .r-estado .pill-panel { background: var(--campo); color: var(--tinta); border-color: var(--campo); }
-body .resumen .r-ir { background: var(--campo); color: var(--tinta); border-radius: 12px; }
-/* chips de marcas iguales que en la web pública */
-body .chips-marcas a { background: #1d2420; color: var(--papel); }
-/* la guía de primera vez: tarjeta oscura con borde lima (antes, blanca) */
-body #guia-tarjeta { background: #151a17; color: var(--papel); box-shadow: 0 0 0 2px var(--campo), 0 18px 50px rgba(0, 0, 0, 0.6); }
-body #guia-tarjeta h2, body #guia-tarjeta h3, body #guia-tarjeta p { color: var(--papel); }
-body #guia-tarjeta .guia-paso, body #guia-tarjeta small { color: var(--campo); }
-body #guia-tarjeta button:not(.guia-sig), body #guia-tarjeta a { color: #cfd6cc; }
-body .guia-sig { background: var(--campo); color: var(--tinta); }

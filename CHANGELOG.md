@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.50.0 · 2026-10-30
+- **Panel y «Mis rutas» con la misma hoja limpia que el resto de la web** (`cartel-panel.css` escrita de cero): cabecera igual que la pública (enlaces en gris, sin subrayar), explicaciones en gris (antes en verde oliva), esquinas de 8/10/14 px, botón principal lima y secundario con borde lima, y lo peligroso (borrar, parar) en rojo.
+- **Capturas del repo al día** con todo el diseño nuevo: la página de la carrera (mapa limpio y datos de arriba abajo), la guía de relojes y el panel con «Perfil y avisos».
+
 ## v1.49.0 · 2026-10-30
 - **Páginas públicas con una sola hoja escrita de cero** (`cartel.css`), con el mismo sistema que la página de la carrera: portada, carreras, rutas, la página de cada ruta, la guía y la de la app. Medido: 3 radios de esquina, 2 estilos de botón y 2 familias de letra en todas.
 - **Guía de relojes rehecha:** qué hace la web con tu reloj (avisos, ruta, directo y resultado, y qué hace falta para cada cosa), una tabla por marca (avisos, ruta, mapa) y una ficha por marca con los modelos que sí y los que no, sacados de las webs de soporte de cada marca. Ahora también Polar, Suunto y Apple Watch. Donde depende del modelo pone «Algunos», no «Sí».
