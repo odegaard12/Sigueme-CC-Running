@@ -319,7 +319,7 @@ try:
     # el nombre del sitio sale del dominio
     r = urllib.request.urlopen(urllib.request.Request(U + '/inicio', headers={'Host': 'odegaard12.online'}))
     pg = r.read().decode('utf-8')
-    ok('<title>odegaard12</title>' in pg and 'id="hero-titulo">odegaard12<' in pg, 'la portada se titula con el dominio: «odegaard12»')
+    ok('<title>Sígueme CC · odegaard12</title>' in pg and 'class="marca" href="/inicio">odegaard12<' in pg, 'la portada lleva el dominio: «odegaard12»')
     r = urllib.request.urlopen(urllib.request.Request(U + '/rutas', headers={'Host': 'odegaard12.online'}))
     pg2 = r.read().decode('utf-8')
     ok('<title>Rutas y relojes · odegaard12</title>' in pg2, '  y /rutas, «Rutas y relojes · odegaard12»')

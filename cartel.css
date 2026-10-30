@@ -75,20 +75,38 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .chips-marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
 .chips-marcas a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--sup); color: var(--texto); font-weight: 700; font-size: 0.9rem; text-decoration: none; }
 .chips-marcas a:hover { background: var(--sup2); }
+.chips-marcas a[aria-current] { background: var(--acento); color: var(--tinta); }
 
-/* ---------- portada ---------- */
-.portada-grid { display: grid; gap: 8px; padding: 18px var(--m) 8px; }
-@media (min-width: 1000px) { .portada-grid { grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: start; } }
-.hero-tarj { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 22px 20px; border-radius: var(--r2);
-  background: var(--sup); box-shadow: inset 0 0 0 1px var(--linea); }
+/* ---------- portada: el nombre en grande, la carrera con sus cifras y su trazado, y los accesos ---------- */
+.cab-portada { padding: 22px var(--m) 0; }
+.titulo-sitio { margin: 0; font: 400 clamp(3.2rem, 11vw, 7.5rem)/0.9 var(--display); text-transform: uppercase; }
+.titulo-sitio span { color: var(--acento); }
+.lema { margin: 12px 0 0; max-width: 46ch; color: var(--suave); font-size: clamp(1rem, 1.6vw, 1.15rem); }
+.portada-grid { display: grid; gap: 8px; padding: 20px var(--m) 8px; }
+@media (min-width: 1000px) { .portada-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; } }
+.hero-tarj { display: grid; gap: 16px; padding: 22px 20px; border-radius: var(--r2); background: var(--sup); box-shadow: inset 0 0 0 1px var(--linea); }
+@media (min-width: 700px) { .hero-tarj { grid-template-columns: minmax(0, 1fr) minmax(160px, 34%); align-items: center; padding: 28px; } }
+.hero-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.hero-cifras { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 4px 0 10px; }
+.hero-cifras .cifra { text-align: left; min-width: 0; }
+.hero-cifras .cifra b { font-size: clamp(1.9rem, 4vw, 2.8rem); color: var(--acento); }
+.hero-traza { padding: 10px; border-radius: var(--r1); background: var(--sup2); color: var(--acento); }
+.hero-traza svg { display: block; width: 100%; height: auto; max-height: 220px; }
+.accesos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 1000px) { .accesos { grid-template-columns: minmax(0, 1fr); } }
+.acceso { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 14px 16px; border-radius: var(--r2); background: var(--sup);
+  text-decoration: none; transition: background 0.15s; }
+.acceso:hover { background: var(--sup2); }
+.acceso b { font: 400 clamp(1.05rem, 2vw, 1.5rem)/1 var(--display); text-transform: uppercase; }
+.acceso .n { font: 400 clamp(1.3rem, 3vw, 2rem)/1.1 var(--display); color: var(--acento); }
+.acceso small { color: var(--suave); font-size: 0.85rem; line-height: 1.3; }
+.portada main > section .sec-tit { margin-left: 0; margin-right: 0; }
 .pill-hero { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-hero.vivo { background: var(--acento); color: var(--tinta); }
 .pill-hero.vivo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.hero-titulo { font: 400 clamp(2rem, 7vw, 3.4rem)/1 var(--display); text-transform: uppercase; margin: 2px 0 0; overflow-wrap: anywhere; }
+.hero-titulo { font: 400 clamp(1.9rem, 5vw, 3.2rem)/1 var(--display); text-transform: uppercase; margin: 2px 0 0; overflow-wrap: anywhere; }
 .hero-linea { margin: 0 0 6px; color: var(--suave); }
 .hero-linea:empty { display: none; }
-.portada-lado .sec-tit { margin-left: 0; margin-right: 0; }
-@media (min-width: 1000px) { .portada-lado > section:first-child .sec-tit { margin-top: 0; } }
 .dos-tarj { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tarj { display: block; padding: 14px 16px; border-radius: var(--r2); background: var(--sup); text-decoration: none; }
 .tarj:hover { background: var(--sup2); }
@@ -125,16 +143,10 @@ details.como p { max-width: 64ch; }
 .uso b { display: block; font: 400 1.1rem/1.1 var(--display); text-transform: uppercase; margin-bottom: 4px; }
 .uso p { margin: 0; color: var(--suave); font-size: 0.92rem; }
 .uso .pide { display: block; margin-top: 8px; color: var(--texto); font-size: 0.85rem; font-weight: 700; }
-.tabla-relojes { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--sup); border-radius: var(--r2); overflow: hidden; font-size: 0.9rem; }
-.tabla-relojes th, .tabla-relojes td { padding: 10px 12px; text-align: left; border-top: 1px solid var(--linea); }
-.tabla-relojes thead th { border-top: 0; color: var(--suave); font-weight: 700; font-size: 0.8rem; }
-.tabla-relojes tbody th a { font-weight: 800; text-decoration: none; }
-.tabla-relojes tbody th a:hover { color: var(--acento); }
-.leyenda-tabla { margin: 8px 0 0; color: var(--suave); font-size: 0.85rem; }
 @media (max-width: 380px) {
-  .tabla-relojes, .tabla-modelos { font-size: 0.8rem; }
-  .tabla-relojes th, .tabla-relojes td, .tabla-modelos th, .tabla-modelos td { padding: 7px 4px; }
-  .tabla-relojes .si, .tabla-relojes .algunos, .tabla-relojes .no, .tabla-modelos .si, .tabla-modelos .algunos, .tabla-modelos .no, .tabla-modelos .duda { padding: 2px 5px; font-size: 0.68rem; }
+  .tabla-modelos { font-size: 0.8rem; }
+  .tabla-modelos th, .tabla-modelos td { padding: 7px 4px; }
+  .tabla-modelos .si, .tabla-modelos .algunos, .tabla-modelos .no, .tabla-modelos .duda { padding: 2px 5px; font-size: 0.68rem; }
 }
 .si, .algunos, .no, .duda { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: 800; font-size: 0.75rem; white-space: nowrap; }
 .si { background: var(--acento); color: var(--tinta); }
@@ -166,6 +178,18 @@ details.como p { max-width: 64ch; }
 .marca-tarj dd { margin: 4px 0 0; font-size: 0.92rem; color: #d6ddd2; }
 .marca-tarj dd b { color: var(--texto); }
 .marca-tarj a { color: var(--acento); }
+/* una marca a la vez, a todo el ancho: su resumen arriba, los modelos a la izquierda y los pasos a la derecha */
+#fichas-marca { grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
+#fichas-marca .marca-tarj:target { box-shadow: none; }
+#fichas-marca h3 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.resumen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin: 10px 0 0; color: var(--suave); font-size: 0.85rem; font-weight: 700; }
+.resumen span { margin-right: 10px; }
+@media (min-width: 860px) {
+  #fichas-marca .marca-tarj { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: 32px; align-items: start; padding: 22px 24px; }
+  #fichas-marca .marca-tarj > h3, #fichas-marca .marca-tarj > .modelos, #fichas-marca .marca-tarj > .resumen { grid-column: 1 / -1; }
+  #fichas-marca .marca-tarj > .tabla-modelos { grid-column: 1; grid-row: 4; }
+  #fichas-marca .marca-tarj > dl { grid-column: 2; grid-row: 4; padding-top: 8px; position: sticky; top: 16px; }
+}
 .pasos-guia { margin: 0; padding: 14px 16px 14px 34px; border-radius: var(--r2); background: var(--sup); }
 .pasos-guia li { margin: 6px 0; max-width: 70ch; }
 .nota { color: var(--suave); font-size: 0.85rem; max-width: 70ch; }

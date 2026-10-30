@@ -7,7 +7,7 @@
 <title>Relojes y pulseras · {{SITIO}}</title>
 <meta name="description" content="Qué hace Sígueme CC con tu reloj y qué modelos de cada marca admiten ruta y mapa, uno a uno: Xiaomi, Huawei, Amazfit, Garmin, Coros, Polar, Suunto y Apple Watch.">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=7">
+<link rel="stylesheet" href="/cartel.css?v=8">
 </head>
 <body class="cartel">
 <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
@@ -21,37 +21,13 @@
     <input id="busca-reloj" type="search" placeholder="Por ejemplo: GT 4, Forerunner 265, Band 9" autocomplete="off" spellcheck="false"></label>
   <div class="busca-resultado" id="busca-resultado" aria-live="polite" hidden></div>
 
-  <h2 class="titulo">Lo que hace la web con tu reloj</h2>
-  <div class="usos">
-    <div class="uso"><b>Avisos en la muñeca</b><p>La app Sígueme CC avisa de cada subida, avituallamiento y de lo que queda, aunque no haya cobertura; la app de tu reloj repite el aviso.</p><span class="pide">Hace falta: móvil Android y un reloj que muestre notificaciones (todos los de esta guía menos Apple Watch).</span></div>
-    <div class="uso"><b>La ruta en el reloj</b><p>Descargas el GPX de la carrera, con los avituallamientos y las subidas marcados, y lo pasas al reloj con su app. El reloj te guía por la línea de la ruta.</p><span class="pide">Hace falta: un modelo con «Ruta: Sí» en su tabla.</span></div>
-    <div class="uso"><b>El mapa en el reloj</b><p>Algunos relojes, además de la línea, enseñan el mapa debajo (calles y caminos), también sin cobertura.</p><span class="pide">Hace falta: un modelo con «Mapa: Sí» en su tabla.</span></div>
-    <div class="uso"><b>El directo y el resultado</b><p>El directo para quien te sigue lo da el móvil (app Sígueme CC en Android o Traccar Client en iPhone). Al terminar, subes el FIT o GPX del reloj y la web enseña tiempo, pasos y repetición.</p><span class="pide">Hace falta: un móvil con datos y el fichero de la actividad.</span></div>
-  </div>
-
-  <h2 class="titulo">Tu marca, de un vistazo</h2>
-  <table class="tabla-relojes">
-    <thead><tr><th scope="col">Marca</th><th scope="col">Avisos*</th><th scope="col">Ruta</th><th scope="col">Mapa</th></tr></thead>
-    <tbody>
-      <tr><th scope="row"><a href="#xiaomi">Xiaomi</a></th><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#huawei">Huawei</a></th><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#amazfit">Amazfit</a></th><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#garmin">Garmin</a></th><td><span class="si">Sí</span></td><td><span class="algunos">Casi todos</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#coros">Coros</a></th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#polar">Polar</a></th><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#suunto">Suunto</a></th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td><td><span class="algunos">Algunos</span></td></tr>
-      <tr><th scope="row"><a href="#apple">Apple Watch</a></th><td><span class="no">No</span></td><td><span class="algunos">Con app</span></td><td><span class="si">Sí</span></td></tr>
-    </tbody>
-  </table>
-  <p class="leyenda-tabla">* Con un móvil Android y la app Sígueme CC. «Algunos»: depende del modelo; en la tabla de cada marca están uno a uno.</p>
-
-  <h2 class="titulo">Modelo a modelo</h2>
+  <h2 class="titulo">Tu marca, modelo a modelo</h2>
   <nav class="chips-marcas" aria-label="Ir a la ficha de tu marca">
-    <a href="#xiaomi">Xiaomi</a><a href="#huawei">Huawei</a><a href="#amazfit">Amazfit</a><a href="#garmin">Garmin</a><a href="#coros">Coros</a><a href="#polar">Polar</a><a href="#suunto">Suunto</a><a href="#apple">Apple Watch</a><a href="#android">Tu móvil</a>
+    <a href="#xiaomi">Xiaomi</a><a href="#huawei">Huawei</a><a href="#amazfit">Amazfit</a><a href="#garmin">Garmin</a><a href="#coros">Coros</a><a href="#polar">Polar</a><a href="#suunto">Suunto</a><a href="#apple">Apple Watch</a>
   </nav>
-  <div class="marcas">
+  <div class="marcas" id="fichas-marca">
     <article class="marca-tarj" id="xiaomi">
-      <h3>Xiaomi</h3><p class="modelos">app Mi Fitness</p>
+      <h3>Xiaomi</h3><p class="modelos">app Mi Fitness</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="algunos">Algunos</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">Watch S5 (46 mm)</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch 5 (solo con Android)</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch S4</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Smart Band 8, 9 y 10</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Smart Band 9 Pro y 10 Pro</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr><tr><th scope="row">Redmi Watch 5</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Mi Fitness → Dispositivo → Notificaciones de apps: activa «Sígueme CC». Deja Mi Fitness sin ahorro de batería.</dd>
@@ -60,7 +36,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="huawei">
-      <h3>Huawei</h3><p class="modelos">app Huawei Health</p>
+      <h3>Huawei</h3><p class="modelos">app Huawei Health</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="algunos">Algunos</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">Watch GT 3, GT 3 Pro y GT 3 SE</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Watch GT Runner y GT Cyber</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Watch GT 4</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch GT Runner 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch GT 5 y GT 5 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch GT 6 y GT 6 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch GT 7 y GT 7 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch 4 y Watch 4 Pro</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr><tr><th scope="row">Watch 5, Watch 6 y Watch 6 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch Fit 2</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Watch Fit 3</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr><tr><th scope="row">Watch Fit 4 y Fit 4 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch Fit 5 y Fit 5 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Watch Ultimate y Ultimate 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Huawei Band (todas)</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Huawei Health → tu reloj → Notificaciones: activa «Sígueme CC». Deja Huawei Health sin ahorro de batería.</dd>
@@ -69,7 +45,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="amazfit">
-      <h3>Amazfit</h3><p class="modelos">app Zepp</p>
+      <h3>Amazfit</h3><p class="modelos">app Zepp</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="algunos">Algunos</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">T-Rex 3 y T-Rex 3 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">T-Rex Ultra</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">T-Rex 2</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Falcon</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Cheetah y Cheetah Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Balance y Balance 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Active 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">GTR 4 y GTS 4</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Active y Active Edge</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr><tr><th scope="row">Bip 5 y Bip 6</th><td><span class="duda">Sin confirmar</span></td><td><span class="duda">Sin confirmar</span></td></tr><tr><th scope="row">Amazfit Band</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Helio Strap (sin pantalla)</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Zepp → tu reloj → Notificaciones de apps: activa «Sígueme CC».</dd>
@@ -79,7 +55,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="garmin">
-      <h3>Garmin</h3><p class="modelos">Garmin Connect</p>
+      <h3>Garmin</h3><p class="modelos">Garmin Connect</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="algunos">Casi todos</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">fēnix 7 y fēnix 8</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">epix (Gen 2) y epix Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Enduro 3</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Forerunner 965 y 970</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Venu X1</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">tactix y MARQ</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Forerunner 165, 265 y 570</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Instinct 2 e Instinct 3</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">vívoactive 6 y Venu 4</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Forerunner 55</th><td><span class="duda">Sin confirmar</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">vívoactive 5</th><td><span class="duda">Sin confirmar</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">vívosmart (sin GPS)</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>Garmin Connect → Ajustes → Notificaciones → Notificaciones de apps: activa «Sígueme CC» (aparece tras pulsar «Probar aviso» una vez en la app).</dd>
@@ -89,7 +65,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="coros">
-      <h3>Coros</h3><p class="modelos">app COROS</p>
+      <h3>Coros</h3><p class="modelos">app COROS</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="si">Sí</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">PACE 4 y PACE Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">APEX 4</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">APEX 2 y APEX 2 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">VERTIX 2 y VERTIX 2S</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">NOMAD</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">PACE 2 y PACE 3</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">APEX y APEX Pro (1.ª generación)</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">VERTIX (1.ª generación)</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>App COROS → Perfil → tu reloj → Notificaciones: activa «Sígueme CC» (si no sale, en «Otras»).</dd>
@@ -98,7 +74,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="polar">
-      <h3>Polar</h3><p class="modelos">Polar Flow</p>
+      <h3>Polar</h3><p class="modelos">Polar Flow</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="algunos">Algunos</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">Grit X2 y Grit X2 Pro</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Vantage V3 y Vantage M3</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Grit X y Grit X Pro</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Vantage V y V2</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Pacer Pro</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Pacer</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">Ignite y Unite</th><td><span class="no">No</span></td><td><span class="no">No</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>En el reloj y en Polar Flow, activa las notificaciones del móvil.</dd>
@@ -107,7 +83,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="suunto">
-      <h3>Suunto</h3><p class="modelos">app Suunto</p>
+      <h3>Suunto</h3><p class="modelos">app Suunto</p><p class="resumen">Avisos <span class="si">Sí</span>Ruta <span class="si">Sí</span>Mapa <span class="algunos">Algunos</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">Race, Race S y Race 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Vertical y Vertical 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Run 2</th><td><span class="si">Sí</span></td><td><span class="si">Sí</span></td></tr><tr><th scope="row">Run</th><td><span class="si">Sí</span></td><td><span class="no">No</span></td></tr><tr><th scope="row">9 Peak Pro y 5 Peak</th><td><span class="si">Sí</span></td><td><span class="duda">Sin confirmar</span></td></tr></tbody></table>
       <dl>
         <dt><span class="si">Sí</span> Avisos</dt><dd>App Suunto → tu reloj → Notificaciones: activa «Sígueme CC».</dd>
@@ -116,7 +92,7 @@
       </dl>
     </article>
     <article class="marca-tarj" id="apple">
-      <h3>Apple Watch</h3><p class="modelos">solo funciona con iPhone</p>
+      <h3>Apple Watch</h3><p class="modelos">solo funciona con iPhone</p><p class="resumen">Avisos <span class="no">No</span>Ruta <span class="algunos">Con app</span>Mapa <span class="si">Sí</span></p>
       <table class="tabla-modelos"><thead><tr><th scope="col">Modelo</th><th scope="col">Ruta en el reloj</th><th scope="col">Mapa en el reloj</th></tr></thead><tbody><tr><th scope="row">Apple Watch (todos los recientes)</th><td><span class="algunos">Con app</span></td><td><span class="si">Sí</span></td></tr></tbody></table>
       <dl>
         <dt><span class="no">No</span> Avisos</dt><dd>Los avisos salen de la app Sígueme CC, que es para Android; para iPhone todavía no hay app.</dd>
@@ -126,6 +102,14 @@
     </article>
   </div>
   <p class="nota">«Sin confirmar»: la web de soporte de la marca no lo dice. Mira en la app de tu reloj si aparece «Importar ruta», «Rutas» o «Cursos»: si está, sirve.</p>
+
+  <h2 class="titulo">Lo que hace la web con tu reloj</h2>
+  <div class="usos">
+    <div class="uso"><b>Avisos en la muñeca</b><p>La app Sígueme CC avisa de cada subida, avituallamiento y de lo que queda, aunque no haya cobertura; la app de tu reloj repite el aviso.</p><span class="pide">Hace falta: móvil Android y un reloj que muestre notificaciones (todos los de esta guía menos Apple Watch).</span></div>
+    <div class="uso"><b>La ruta en el reloj</b><p>Descargas el GPX de la carrera, con los avituallamientos y las subidas marcados, y lo pasas al reloj con su app. El reloj te guía por la línea de la ruta.</p><span class="pide">Hace falta: un modelo con «Ruta: Sí» en su tabla.</span></div>
+    <div class="uso"><b>El mapa en el reloj</b><p>Algunos relojes, además de la línea, enseñan el mapa debajo (calles y caminos), también sin cobertura.</p><span class="pide">Hace falta: un modelo con «Mapa: Sí» en su tabla.</span></div>
+    <div class="uso"><b>El directo y el resultado</b><p>El directo para quien te sigue lo da el móvil (app Sígueme CC en Android o Traccar Client en iPhone). Al terminar, subes el FIT o GPX del reloj y la web enseña tiempo, pasos y repetición.</p><span class="pide">Hace falta: un móvil con datos y el fichero de la actividad.</span></div>
+  </div>
 
   <h2 class="titulo" id="movil">Tu móvil</h2>
   <div class="marcas">
@@ -157,6 +141,6 @@
   <div class="acciones"><a class="boton" href="/ruta-carrera.gpx" download>Descargar la ruta de la carrera (GPX)</a><a class="boton claro" href="/rutas">Ver las rutas</a></div>
 </main>
 <footer class="pie"><span>{{SITIO}}</span><small>Comprobado en las webs de soporte de cada marca en octubre de 2026 (Amazfit no publica una lista completa de modelos). Los menús cambian con las versiones de cada app.</small></footer>
-<script src="/relojes.js?v=1"></script>
+<script src="/relojes.js?v=2"></script>
 </body>
 </html>

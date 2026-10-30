@@ -4,6 +4,16 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.52.0 · 2026-10-30
+- **Portada nueva («cartel»)**: «Sígueme CC» en grande y la carrera con sus cifras (km, desnivel y tiempo) y su trazado.
+  - Al lado, Carreras, Rutas y Relojes, con lo que hay en cada una; debajo, más carreras y las últimas rutas.
+  - En el PC ya no queda media pantalla vacía.
+- **Relojes, una marca a la vez**: buscador, botones de marca y una sola ficha a todo el ancho.
+  - Los modelos a la izquierda y los pasos (avisos, pasar la ruta, resultado) a la derecha.
+  - El resumen de la marca, en su cabecera; fuera la tabla «de un vistazo», que repetía lo mismo.
+  - Lo general (qué hace la web, tu móvil, si no llegan los avisos) va después. Sin JavaScript se ven todas las fichas.
+- **Arreglo**: `/inicio.html`, `/pulseras.html` y `/ruta.html` enseñaban «{{SITIO}}» en vez del nombre; ahora llevan a su dirección buena.
+
 ## v1.51.1 · 2026-10-30
 - **La página de la carrera, revisada en todos sus estados** (antes de salir, en directo, sin cobertura y resultado):
   - «Meta» ya no sale dos veces en Avituallamientos cuando el último avituallamiento es la propia meta.

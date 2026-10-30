@@ -31,3 +31,27 @@
   };
   q.addEventListener('input', pinta);
 })();
+
+// Una marca a la vez: los botones de marca (y los resultados del buscador) enseñan solo esa ficha.
+// Sin JavaScript se ven todas, una debajo de otra.
+(function () {
+  const caja = document.getElementById('fichas-marca'), nav = document.querySelector('.chips-marcas');
+  if (!caja || !nav) return;
+  const fichas = [...caja.querySelectorAll('.marca-tarj')], botones = [...nav.querySelectorAll('a')];
+  const ver = id => {
+    if (!fichas.some(f => f.id === id)) return false;
+    fichas.forEach(f => { f.hidden = f.id !== id; });
+    botones.forEach(b => b.getAttribute('href') === '#' + id ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current'));
+    return true;
+  };
+  caja.classList.add('una-a-una');
+  if (ver(location.hash.slice(1))) nav.scrollIntoView({block: 'start'}); else ver(fichas[0].id);
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || !ver(a.hash.slice(1))) return;
+    e.preventDefault();
+    history.replaceState(null, '', a.hash);
+    if (!nav.contains(a)) nav.scrollIntoView({behavior: 'smooth', block: 'start'});
+  });
+  addEventListener('hashchange', () => { if (ver(location.hash.slice(1))) nav.scrollIntoView({block: 'start'}); });
+})();

@@ -5,41 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0e1110">
-<title>{{SITIO}}</title>
+<title>Sígueme CC · {{SITIO}}</title>
 <meta name="description" content="Sigue la carrera en directo: mapa, datos y llegada prevista.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="{{SITIO}}">
+<meta property="og:title" content="Sígueme CC · {{SITIO}}">
 <meta property="og:description" content="Sigue la carrera en directo.">
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=7">
+<link rel="stylesheet" href="/cartel.css?v=8">
 </head>
 <body class="cartel portada">
 <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html" id="nav-admin">Entrar</a></nav></header>
 <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio" aria-current="page">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
-<main class="portada-grid">
-  <section class="hero-tarj">
-    <span class="pill-hero" id="hero-pill" hidden></span>
-    <h1 class="hero-titulo" id="hero-titulo">{{SITIO}}</h1>
-    <p class="hero-linea" id="hero-linea"></p>
-    <a class="boton-hero" id="hero-boton" href="/" hidden></a>
-  </section>
-  <div class="portada-lado">
-    <section id="carreras-sec" hidden>
-      <h2 class="sec-tit">Carreras <a href="/carreras/">Ver todas ›</a></h2>
-      <div id="carreras"></div>
-    </section>
-    <section>
-      <h2 class="sec-tit">Rutas y relojes <a href="/rutas">Ver ›</a></h2>
-      <div class="dos-tarj">
-        <a class="tarj" href="/rutas"><b>Rutas</b><small>con su mapa y su GPX</small></a>
-        <a class="tarj" href="/pulseras"><b>Relojes</b><small>qué hace la web con el tuyo</small></a>
-      </div>
-    </section>
+<main>
+  <div class="cab-portada">
+    <h1 class="titulo-sitio">Sígueme <span>CC</span></h1>
+    <p class="lema">Carreras en directo, rutas con su GPX y qué hace cada reloj con ellas.</p>
   </div>
+  <div class="portada-grid">
+    <section class="hero-tarj">
+      <div class="hero-txt">
+        <span class="pill-hero" id="hero-pill" hidden></span>
+        <h2 class="hero-titulo" id="hero-titulo">Sígueme CC</h2>
+        <p class="hero-linea" id="hero-linea"></p>
+        <div class="hero-cifras" id="hero-cifras" hidden></div>
+        <a class="boton-hero" id="hero-boton" href="/" hidden></a>
+      </div>
+      <div class="hero-traza" id="hero-traza" hidden></div>
+    </section>
+    <div class="accesos">
+      <a class="acceso" href="/carreras/"><b>Carreras</b><span class="n" id="n-carreras"></span><small>resultados y repetición</small></a>
+      <a class="acceso" href="/rutas"><b>Rutas</b><span class="n" id="n-rutas"></span><small>con su mapa y su GPX</small></a>
+      <a class="acceso" href="/pulseras"><b>Relojes</b><span class="n">8 marcas</span><small>¿sirve el tuyo?</small></a>
+    </div>
+  </div>
+  <section id="carreras-sec" hidden>
+    <h2 class="sec-tit">Más carreras <a href="/carreras/">Ver todas ›</a></h2>
+    <div id="carreras"></div>
+  </section>
+  <section id="rutas-sec" hidden>
+    <h2 class="sec-tit">Últimas rutas <a href="/rutas">Ver todas ›</a></h2>
+    <div id="rutas"></div>
+  </section>
 </main>
 <noscript><p class="vacio" style="padding:0 22px 30px">Esta página necesita JavaScript para enseñar la carrera.</p></noscript>
-<script src="/inicio.js"></script>
+<script src="/inicio.js?v=2"></script>
 </body>
 </html>
