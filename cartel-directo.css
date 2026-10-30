@@ -276,3 +276,6 @@ body .lateral .metricas { padding-left: 0; padding-right: 0; }
   font-weight: 800; font-size: clamp(0.8rem, 3.4vw, 0.95rem); white-space: nowrap; text-decoration: none; }
 .cd-cab .pestanas-sitio a[aria-current="page"] { background: var(--campo); color: var(--tinta); }
 .cd-cab .pestanas-sitio a:focus-visible { outline: 3px solid var(--campo); outline-offset: 2px; }
+
+/* ---- v1.46.1: web instalada en el iPhone: nada debajo de la muesca ni de los bordes redondeados ---- */
+body .cd-cab { padding-top: max(4px, env(safe-area-inset-top)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }

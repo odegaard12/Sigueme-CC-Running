@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.46.1 · 2026-10-30
+- **Repaso en el teléfono que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
+- Capturas del repo al día.
+
 ## v1.46.0 · 2026-10-30
 - **«Mis rutas» y el panel con el mismo diseño que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
 - Capturas del repo al día.

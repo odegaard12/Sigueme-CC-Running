@@ -1806,9 +1806,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
         n = len(filas)
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#d9f24a">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=3">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=4">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
