@@ -48,6 +48,21 @@ def leer_gpx(raiz):
     return salida
 
 
+def quitar_saltos(pts, minimo=0.15):
+    """Fuera los saltos de GPS: un punto que se va lejos (> 150 m de los dos vecinos) y vuelve casi al mismo sitio.
+    En una ruta grabada, cada salto sumaba dos veces la distancia del salto y movía todos los km de detrás."""
+    if len(pts) < 3:
+        return pts
+    limpio = [pts[0]]
+    for i in range(1, len(pts) - 1):
+        a, b, c = km_entre(limpio[-1], pts[i]), km_entre(pts[i], pts[i + 1]), km_entre(limpio[-1], pts[i + 1])
+        if a > minimo and b > minimo and c < 0.3 * (a + b):
+            continue
+        limpio.append(pts[i])
+    limpio.append(pts[-1])
+    return limpio
+
+
 def desnivel(eles):
     """Subida y bajada con histéresis: solo cuentan los cambios > UMBRAL."""
     sube = baja = 0.0
@@ -75,7 +90,7 @@ def preparar(gpx, nombre='Ruta', distancia=None):
             raise ValueError(f'No es un GPX válido ({exc}).')
     else:
         raiz = ET.parse(gpx).getroot()
-    pts = leer_gpx(raiz)
+    pts = quitar_saltos(leer_gpx(raiz))
     if len(pts) < 2:
         raise ValueError('El GPX no tiene puntos de track ni de ruta.')
     cum = [0.0]

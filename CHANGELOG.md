@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.47.2 · 2026-10-30
+- **Rutas grabadas con saltos de GPS:** ya no inflan la distancia (un circuito de 20 km con 5 saltos medía 31 km y los avisos y los avituallamientos caían en el km equivocado). Se quitan los puntos que saltan lejos y vuelven.
+- **Prueba nueva de carga de rutas** (`pruebas/rutas_gpx.py`): track normal, ruta de Komoot (`<rtept>`), sin espacio de nombres, con BOM, con saltos, sin altura, distancia oficial y ficheros malos (no XML, sin puntos, menos de 100 m, ENTITY, UTF-16).
+- Capturas del repo con la campana de avisos.
+
 ## v1.47.1 · 2026-10-30
 - **Campana de avisos, tres fallos arreglados:** en el iPhone el permiso se pide en el mismo toque (Safari no deja pedirlo después de una espera y podía no salir nunca); la suscripción espera a que el service worker de los avisos esté activo (recién registrado, el navegador la rechazaba); y en pantallas de 320 px los botones de la cabecera ya no se salen.
 - Si la activación falla, el motivo queda en la consola del navegador.
