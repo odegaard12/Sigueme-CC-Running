@@ -279,3 +279,9 @@ body .lateral .metricas { padding-left: 0; padding-right: 0; }
 
 /* ---- v1.46.1: web instalada en el iPhone: nada debajo de la muesca ni de los bordes redondeados ---- */
 body .cd-cab { padding-top: max(4px, env(safe-area-inset-top)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+/* ---- v1.47: la campana de los avisos, como los demás botones de la cabecera ---- */
+.cd-nav .campana { background: var(--panel); color: var(--campo); border: 0; border-radius: 12px; width: 44px; min-height: 44px; padding: 0; display: inline-grid; place-items: center; cursor: pointer; }
+.cd-nav .campana[hidden] { display: none; }
+.cd-nav .campana.activo { background: var(--campo); color: var(--tinta); }
+.cd-nav .campana:focus-visible { outline: 3px solid var(--campo); outline-offset: 3px; }

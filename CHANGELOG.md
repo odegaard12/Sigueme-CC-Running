@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.47.0 · 2026-10-30
+- **Avisos en el móvil de quien sigue la carrera:** campana en la cabecera de la página de la carrera; avisa de la salida, de cada avituallamiento y de la llegada a meta aunque la web esté cerrada (Web Push). En Android, en el navegador; en el iPhone, con la web instalada (Compartir → «Añadir a pantalla de inicio», iOS 16.4 o más). Sin ráfagas: si se juntan varios, solo el último.
+- Solo envía la Pi con la IP flotante; el envío va con pywebpush en su propio entorno (~/sigueme-push) y el servidor sigue sin dependencias: sin ese entorno, la campana no sale. Suscripciones solo de servicios de avisos reales (Apple, Google, Mozilla, Microsoft), en un fichero oculto que no se sirve.
+- Service worker propio para los avisos, aparte del de «sin cobertura»: apagar ese modo ya no borra las suscripciones.
+
 ## v1.46.1 · 2026-10-30
 - **Repaso en el teléfono:** la barra del sistema (Android, Safari) sale oscura como la web, no lima; con la web instalada en el iPhone la cabecera del directo ya no queda debajo de la muesca; los chips de marcas de la portada del mismo tamaño que en las demás páginas.
 

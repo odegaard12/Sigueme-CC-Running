@@ -1369,7 +1369,7 @@ function gestionarSW() {
   if (CARRERA.modo_offline === true) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   } else {
-    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => { if (!r.scope.endsWith('/avisos/')) r.unregister(); })).catch(() => {});
     if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
   }
 }
@@ -1838,6 +1838,58 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
   let inicial = 'resumen';
   try { inicial = sessionStorage.getItem('sigueme.tab') || 'resumen'; } catch (e) {}
   poner(botones.some(b => b.dataset.tab === inicial) ? inicial : 'resumen', false);
+})();
+
+// ---------- avisos en el móvil (Web Push): salida, avituallamientos y meta, aunque la web esté cerrada ----------
+(function campanaAvisos() {
+  const btn = document.getElementById('campana'), caja = document.getElementById('campana-ayuda');
+  const txt = document.getElementById('campana-txt'), okb = document.getElementById('campana-ok');
+  if (!btn || !caja || ARCHIVADA) return;
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalada = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const puede = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const decir = t => { txt.textContent = t; caja.hidden = false; };
+  okb.addEventListener('click', () => { caja.hidden = true; btn.focus({ preventScroll: true }); });
+  const b64 = s => Uint8Array.from(atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const poner = si => {
+    btn.setAttribute('aria-pressed', si ? 'true' : 'false'); btn.classList.toggle('activo', si);
+    btn.title = si ? 'Avisos activados: toca para quitarlos' : 'Avisarme de la salida, los avituallamientos y la meta';
+  };
+  const post = (u, d) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+  let clave = null;
+  fetch('/api/push/clave').then(r => r.ok ? r.json() : null).then(async d => {
+    if (!d || !d.clave) return;                 // avisos sin montar en el servidor: sin campana
+    clave = d.clave; btn.hidden = false;
+    if (puede) {
+      try { const reg = await navigator.serviceWorker.getRegistration('/avisos/'); poner(!!(reg && await reg.pushManager.getSubscription())); } catch (e) {}
+    }
+  }).catch(() => {});
+  btn.addEventListener('click', async () => {
+    if (!puede) {
+      return decir(ios && !instalada
+        ? 'En el iPhone los avisos llegan con la web instalada: toca Compartir → «Añadir a pantalla de inicio», abre Sígueme CC desde el icono y toca otra vez la campana.'
+        : 'Este navegador no puede recibir avisos. Prueba con Chrome, Edge, Firefox o Safari al día.');
+    }
+    try {
+      const reg = await navigator.serviceWorker.register('/sw-avisos.js', { scope: '/avisos/' });
+      const actual = await reg.pushManager.getSubscription();
+      if (actual) {
+        await post('/api/push/baja', { endpoint: actual.endpoint }).catch(() => {});
+        await actual.unsubscribe(); poner(false);
+        return decir('Avisos quitados. Puedes volver a activarlos con la campana.');
+      }
+      if (await Notification.requestPermission() !== 'granted') {
+        return decir('Sin permiso no te podemos avisar. Actívalo en los ajustes del navegador (en el iPhone: Ajustes → Notificaciones → Sígueme CC) y vuelve a tocar la campana.');
+      }
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(clave) });
+      const r = await post('/api/push/alta', sub.toJSON());
+      if (!r.ok) { await sub.unsubscribe(); throw new Error('alta ' + r.status); }
+      poner(true);
+      decir('Listo: te avisaremos de la salida, de cada avituallamiento y de la llegada a meta, aunque tengas la web cerrada.');
+    } catch (e) {
+      decir('No se pudieron activar los avisos. Comprueba la conexión y vuelve a intentarlo.');
+    }
+  });
 })();
 
 pollLive();

@@ -1671,6 +1671,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/push/clave":
+            c = herramienta("avisos_web").clave_publica()
+            return self._send_json(200 if c else 404, {"clave": c} if c else {"error": "avisos apagados"})
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
         if crudo == "/rutas.html":
@@ -2474,6 +2477,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app(cuerpo.get("t"))
         self._send_json(200, respuesta)
 
+    def _push_post(self):
+        """Alta o baja de los avisos en el móvil (la suscripción Web Push del navegador)."""
+        if not soy_titular():          # la réplica desde la titular lo borraría
+            return self._send_json(503, {"error": "esta Pi no es la titular: reintenta"})
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= 4096:
+            return self._send_json(413, {"error": "petición demasiado grande"})
+        try:
+            sub = json.loads(self.rfile.read(largo))
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
+            return self._send_json(400, {"error": "invalid json"})
+        av = herramienta("avisos_web")
+        # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
+        with datos_lock:
+            if self.path == "/api/push/baja":
+                av.baja(ROOT, sub.get("endpoint") if isinstance(sub, dict) else None)
+                return self._send_json(200, {"ok": True})
+            si = av.alta(ROOT, sub)
+        return self._send_json(200 if si else 400, {"ok": si})
+
     def do_POST(self):
         # la Pi de respaldo no recibe datos de carrera: la réplica desde la titular los borraría a los 20 s y el
         # móvil creería que llegaron. Con 503 el móvil o Traccar los guardan y reintentan (la titular los coge).
@@ -2492,6 +2518,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
+        if self.path in ("/api/push/alta", "/api/push/baja"):
+            return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
         if self.path.startswith("/api/gpx") or self.path in ("/api/fit", "/api/avatar"):
@@ -2891,6 +2919,17 @@ if __name__ == "__main__":
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)
     threading.Thread(target=purga_invitados, daemon=True).start()
+
+    def avisos_loop():
+        # avisos en el móvil de quien sigue la carrera: salida, avituallamientos y meta (solo la Pi con la VIP)
+        while True:
+            try:
+                if tengo_la_vip():
+                    herramienta("avisos_web").revisar(ROOT, read_live(), leer_json("aid_stations.json") or [], carrera().get("nombre"))
+            except Exception as exc:
+                print(f"[avisos] {exc}", flush=True)
+            time.sleep(15)
+    threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
     # petición cada vez, así que un móvil con mala cobertura dejaba clavado al
     # resto. Con la web abierta en varios teléfonos pidiendo live.json cada
