@@ -1026,7 +1026,7 @@ btnRecenter.addEventListener('click', recenterOnRider);
 const btnVista = document.getElementById('btn-vista');
 let vista3d = true;
 function pintarBotonVista() {
-  btnVista.textContent = vista3d ? 'Vista 2D' : 'Vista 3D';
+  btnVista.textContent = vista3d ? 'Ver en 2D' : 'Ver en 3D';
   btnVista.setAttribute('aria-label', vista3d ? 'Ver el mapa en 2D' : 'Ver el mapa en 3D');
 }
 pintarBotonVista();
@@ -1063,7 +1063,42 @@ function previsiones(km, datoIso) {
   // nunca una hora ya pasada: sin cobertura cerca del final marcaba «Meta ~11:21» a las 11:30
   const hora = k => fmtTime(new Date(Math.max(ahoraServidor(), t + (k - km) / v * 3600000)).toISOString());
   const prox = aidStations.find(a => a.km > est + 0.1 && a.km < totalRouteKm - 0.2);
-  return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm) };
+  return { est, prox, horaProx: prox && hora(prox.km), horaMeta: hora(totalRouteKm), hora };
+}
+
+// ---------- avituallamientos: por cuáles ha pasado (y a qué hora) y a qué hora se le espera en los siguientes ----------
+function pintarListaAvit(data, km, haArrancado, enMeta) {
+  const ul = document.getElementById('lista-avit-cd');
+  if (!ul) return;
+  const salida = lastStartedAt ? new Date(lastStartedAt).getTime() / 1000 : NaN;
+  const kt = Array.isArray(data.km_t) ? data.km_t : [];
+  // hora a la que cruzó un km cualquiera: entre los dos km enteros que el servidor apunta
+  const tEn = k => {
+    const a = Math.floor(k), b = Math.ceil(k), ta = a === 0 ? salida : kt[a - 1], tb = kt[b - 1];
+    if (!Number.isFinite(tb)) return Number.isFinite(ta) && a === b ? ta : NaN;
+    return Number.isFinite(ta) && a !== b ? ta + (tb - ta) * (k - a) : tb;
+  };
+  const pr = haArrancado && !enMeta ? previsiones(km, data.data_at) : null;
+  const filas = aidStations.map((a, i) => ({ n: (i + 1) + ' · ' + a.name, km: a.km,
+    sub: 'km ' + num(a.km) + (a.principal ? ' · principal' : a.taller ? ' · asistencia mecánica' : '') }));
+  if (totalRouteKm) filas.push({ n: 'Meta', km: totalRouteKm, sub: 'km ' + num(totalRouteKm), meta: true });
+  ul.hidden = !filas.length;
+  ul.textContent = '';
+  filas.forEach(f => {
+    const li = document.createElement('li');
+    const izq = document.createElement('span'), sub = document.createElement('small');
+    izq.textContent = f.n; sub.textContent = f.sub; izq.append(document.createElement('br'), sub);
+    const der = document.createElement('span');
+    if (f.meta && enMeta && data.finished_at) {
+      der.textContent = 'Llegó ' + fmtTime(data.finished_at); der.className = 'hecho';
+    } else if (haArrancado && km != null && km >= f.km - 0.05) {
+      const t = tEn(f.km);
+      der.textContent = Number.isFinite(t) ? 'Pasó ' + fmtTime(new Date(t * 1000).toISOString()) : 'Pasó'; der.className = 'hecho';
+    } else if (pr) {
+      der.textContent = '~' + pr.hora(f.km);
+    }
+    li.append(izq, der); ul.append(li);
+  });
 }
 
 // ---------- tarjeta de ritmo: ritmo medio, llegada prevista y ritmo de cada km ----------
@@ -1573,6 +1608,7 @@ function pollLive() {
       }
 
       pintarRitmo(data, doneKm, haArrancado, enMeta);
+      pintarListaAvit(data, doneKm, haArrancado, enMeta);
       { const vacio = document.getElementById('ritmo-vacio'), cr = document.getElementById('ritmo'); if (vacio && cr) vacio.hidden = !cr.hidden; }
 
       // pie de estado: en meta, sin señal o la hora del último dato

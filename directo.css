@@ -1,0 +1,200 @@
+/* Página de la carrera (en directo y archivada). UNA sola hoja: sustituye a style.css + cartel-directo.css, que se
+   pisaban capa sobre capa. Un sistema: 1 fondo, 2 superficies, 1 acento; esquinas de 8/14 px (y píldora);
+   Anton solo en títulos y cifras; dos clases de botón. Primero el móvil; el ordenador al final. */
+@font-face { font-family: "Anton"; src: url("/fonts/anton.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+:root {
+  --fondo: #0e1110; --sup: #161b18; --sup2: #1f2622; --linea: rgba(238, 241, 234, 0.1);
+  --texto: #eef1ea; --suave: #9aa596; --acento: #d9f24a; --tinta: #0e1110; --aviso: #ffd27a; --peligro: #ff9a8a;
+  --r1: 8px; --r2: 14px; --m: clamp(16px, 3vw, 36px);
+  --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --display: "Anton", Impact, "Arial Narrow", sans-serif;
+  /* nombres que usa app.js al pintar */
+  --accent: var(--acento); --text: var(--texto); --muted: var(--suave); --panel: var(--sup); --panel-2: var(--sup2); --border: var(--linea);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 var(--cuerpo); }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+.d, h1, h2 { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; }
+
+/* ---------- cabecera: nombre e iconos, el menú de la web, la carrera y su estado ---------- */
+.cd-cab { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+.cd-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; padding: 0 var(--m); }
+.cd-marca { font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
+.cd-nav { display: flex; align-items: center; gap: 6px; }
+.cd-nav button { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--r1);
+  background: var(--sup); color: var(--acento); font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+.cd-nav .ayuda-btn { font: 400 1.25rem/1 var(--display); }
+.cd-nav .campana.activo { background: var(--acento); color: var(--tinta); }
+.cd-nav .compartir.hecho { background: var(--acento); color: var(--tinta); }
+.cd-nav .ver-ficha { width: auto; display: inline-flex; gap: 8px; padding: 0 10px 0 4px; font-size: 0.85rem; }
+.cd-nav .ver-ficha img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; display: block; }
+.cd-nav .ver-ficha span { display: none; }
+@media (min-width: 460px) { .cd-nav .ver-ficha span { display: inline; } }
+.pestanas-sitio { display: flex; gap: 4px; max-width: 560px; margin: 0 var(--m); padding: 4px; background: var(--sup); border-radius: var(--r2); }
+.pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 6px; border-radius: 10px;
+  color: var(--suave); font-weight: 700; font-size: clamp(0.8rem, 3.4vw, 0.92rem); white-space: nowrap; text-decoration: none; }
+.pestanas-sitio a[aria-current="page"] { background: var(--acento); color: var(--tinta); }
+.cd-titulo { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.02; margin: 18px var(--m) 8px; overflow-wrap: anywhere; }
+.cd-datos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 0 var(--m); color: var(--suave); font-size: 0.9rem; }
+.pill-estado { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2);
+  color: var(--texto); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill-estado.vivo { background: var(--acento); color: var(--tinta); }
+.pill-estado.vivo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: latido 1.6s ease-in-out infinite; }
+.pill-estado.previo { color: var(--aviso); }
+.pill-estado.sin { color: var(--peligro); }
+.cd-ruta { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.cd-ruta b { color: var(--texto); font-weight: 700; }
+.cd-ruta i { font-style: normal; }
+.live-updated { margin: 6px var(--m) 0; color: var(--suave); font-size: 0.8rem; }
+.live-updated:empty { display: none; }
+.live-updated.meta { color: var(--texto); }
+
+/* ---------- tarjetas que aparecen bajo la cabecera ---------- */
+.ficha, .aviso-resultado, .ayuda-cd { margin: 14px var(--m) 0; padding: 14px 16px; background: var(--sup); border-radius: var(--r2); }
+.ficha-cab { display: flex; align-items: center; gap: 12px; }
+.ficha-foto { width: 56px; height: 56px; border-radius: var(--r1); object-fit: cover; }
+.ficha-datos { flex: 1; min-width: 0; }
+.ficha h2 { font-size: 1.4rem; margin: 0; }
+.ficha-sub { margin: 2px 0 0; color: var(--suave); font-size: 0.9rem; }
+.ficha-dorsal { display: grid; place-items: center; padding: 6px 10px; border-radius: var(--r1); background: var(--acento); color: var(--tinta); }
+.ficha-dorsal span { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+.ficha-dorsal b { font: 400 1.6rem/1 var(--display); }
+.ficha-carrera, .ficha-specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin: 12px 0 0; }
+.ficha-carrera > div, .ficha-specs > div { background: var(--sup2); border-radius: var(--r1); padding: 8px 10px; }
+.ficha-carrera dt, .ficha-specs dt { color: var(--suave); font-size: 0.8rem; }
+.ficha-carrera dd, .ficha-specs dd { margin: 0; font-weight: 700; }
+.ficha-bici-bloque h3 { font: 400 1.15rem/1 var(--display); text-transform: uppercase; margin: 16px 0 0; }
+.aviso-resultado { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
+.aviso-titulo { grid-column: 1; margin: 0; font: 400 clamp(1.4rem, 5vw, 2rem)/1 var(--display); text-transform: uppercase; }
+.aviso-sub { grid-column: 1; margin: 0; color: var(--suave); font-size: 0.9rem; }
+.btn-repeticion { grid-column: 2; grid-row: 1 / span 2; }
+.ayuda-cd { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ayuda-cd p { flex: 1 1 240px; margin: 0; font-size: 0.95rem; }
+
+/* ---------- botones: principal (lima) y secundario (superficie) ---------- */
+.btn-repeticion, .ayuda-cd button, .btn-recargar { min-height: 44px; padding: 0 18px; border: 0; border-radius: var(--r1);
+  background: var(--acento); color: var(--tinta); font-weight: 800; cursor: pointer; }
+.btn-flotante { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--r1);
+  background: var(--sup); color: var(--acento); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.btn-flotante.activo { background: var(--acento); color: var(--tinta); }
+.btn-flotante:active, .btn-repeticion:active { transform: scale(0.97); }
+
+/* ---------- el mapa, limpio: nada encima salvo la ruta y sus marcas ---------- */
+.panel-pc { padding: 0 var(--m); }
+.map-wrap { position: relative; margin-top: 16px; border-radius: var(--r2); overflow: hidden; background: #131c18; }
+#map3d { width: 100%; height: 56svh; min-height: 300px; max-height: 620px; }
+.mapa-ctrl { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--suave); font-size: 0.8rem; }
+.leyenda i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.map-hint { margin: 8px 0 0; color: var(--suave); font-size: 0.8rem; }
+.map-hint:empty { display: none; }
+.maplibregl-map { font: inherit; }
+.cargando { position: absolute; inset: 0; z-index: 10; display: grid; place-content: center; justify-items: center; gap: 10px;
+  background: #131c18; color: var(--suave); font-size: 0.85rem; transition: opacity 0.4s; }
+.cargando.fuera { opacity: 0; pointer-events: none; }
+.rueda { width: 34px; height: 34px; border: 3px solid var(--linea); border-top-color: var(--acento); border-radius: 50%; animation: girar 0.9s linear infinite; }
+/* marcas del mapa (OJO: MapLibre mueve el marcador con transform en el elemento; el pulso va en el hijo) */
+.aid-pin { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); }
+.map3d-rider { filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6)); }
+.map3d-rider::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--acento); opacity: 0; pointer-events: none; animation: anillo 2.2s ease-out infinite; }
+.map3d-rider span { display: block; animation: pulso 1.6s ease-in-out infinite; }
+.map3d-rider img { display: block; width: var(--corredor, 34px); height: var(--corredor, 34px); border-radius: 50%; object-fit: cover;
+  border: 3px solid var(--acento); outline: 3px solid rgba(11, 18, 16, 0.9); }
+.map3d-fantasma { width: 30px; height: 30px; border-radius: 50%; border: 3px dashed #fff; background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.maplibregl-popup-content { background: var(--sup); color: var(--texto); border-radius: var(--r1); padding: 10px 14px; font: 0.85rem/1.35 var(--cuerpo); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45); }
+.maplibregl-popup-close-button { width: 32px; height: 32px; color: var(--suave); font-size: 20px; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--sup); }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--sup); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--sup); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--sup); }
+.globo { display: grid; gap: 2px; padding-right: 8px; }
+.globo b { font-weight: 700; }
+.globo-tipo, .globo-km { font-size: 0.8rem; color: var(--suave); }
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a { font: 0.75rem/1.3 var(--cuerpo); }
+
+/* ---------- los datos, de arriba abajo: Ahora · Perfil · Avituallamientos · Ritmo ---------- */
+.cd-sec { margin: 26px 0 10px; color: var(--suave); font-size: 1.15rem; line-height: 1; }
+.metricas { display: grid; gap: 8px; }
+.metricas-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.metrica { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--sup); border-radius: var(--r2); }
+.m-val { font: 400 2rem/1 var(--display); color: var(--texto); font-variant-numeric: tabular-nums; }
+.metrica[data-tile="dist"] .m-val { color: var(--acento); }
+.m-tag { color: var(--suave); font-size: 0.8rem; }
+.progreso { height: 6px; border-radius: 999px; background: var(--sup2); overflow: hidden; }
+.progreso i { display: block; height: 100%; width: 0; background: var(--acento); border-radius: 999px; transition: width 0.6s ease; }
+.metricas-sec { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--sup); color: var(--suave); font-size: 0.85rem; white-space: nowrap; }
+.chip b { color: var(--texto); font-weight: 700; }
+.chip-pulso b { color: #ff7a6b; }
+.nivel { position: relative; display: block; width: 46px; height: 4px; border-radius: 2px; opacity: 0.9;
+  background: linear-gradient(90deg, #4a92ae 0%, #3a6d82 26%, #4b5a52 48%, #4fb350 56%, #e0c341 70%, #e08a3a 84%, #e0473a 100%); }
+.nivel u { position: absolute; top: -4px; left: 50%; width: 3px; height: 12px; border-radius: 1px; background: var(--texto);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); transform: translateX(-50%); transition: left 0.4s ease-out; }
+.metricas.sin-datos .metricas-top, .metricas.sin-datos .metricas-sec { display: none; }
+.metricas.esqueleto .m-val, .metricas.esqueleto .chip b { color: transparent; border-radius: 6px; background: var(--sup2); animation: latido 1.2s ease-in-out infinite; }
+.estado-carrera { margin: 0; padding: 12px 14px; background: var(--sup); border-radius: var(--r2); font-weight: 600; font-size: 0.95rem; }
+.estado-carrera:empty { display: none; }
+.estado-carrera.previo { color: var(--aviso); }
+.perfil-hoja { position: relative; height: 112px; padding: 6px 4px 2px; background: var(--sup); border-radius: var(--r2); }
+.perfil-hoja canvas { display: block; width: 100%; height: 100%; }
+.lista-avit-cd, .pasos { list-style: none; margin: 0; padding: 4px 16px; background: var(--sup); border-radius: var(--r2); }
+.lista-avit-cd li, .pasos li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linea); }
+.lista-avit-cd li:first-child, .pasos li:first-child { border-top: 0; }
+.lista-avit-cd small, .pasos small { color: var(--suave); font-size: 0.8rem; }
+.lista-avit-cd .hecho { color: var(--acento); font-weight: 700; }
+.resultado h3 { display: none; }
+#resultado:not([hidden]) ~ .lista-avit-cd { display: none; }
+.ritmo { padding: 14px 16px; background: var(--sup); border-radius: var(--r2); }
+.ritmo-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ritmo-datos small { display: block; color: var(--suave); font-size: 0.8rem; }
+.ritmo-datos b { font: 400 1.6rem/1.1 var(--display); }
+.ritmo-nota, .ritmo-pie, .ritmo-vacio { margin: 8px 0 0; color: var(--suave); font-size: 0.85rem; }
+.ritmo-vacio { padding: 12px 14px; background: var(--sup); border-radius: var(--r2); margin: 0; }
+.ritmo-barras { display: flex; align-items: flex-end; gap: 4px; height: 96px; margin-top: 14px; }
+.ritmo-barras .col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+.ritmo-barras .col i { display: block; background: var(--acento); border-radius: 3px 3px 0 0; opacity: 0.55; transition: height 0.4s ease; }
+.ritmo-barras .col.ultimo i { opacity: 1; }
+.ritmo-barras .col em { font-style: normal; font-size: 0.72rem; line-height: 1; text-align: center; color: var(--suave); font-variant-numeric: tabular-nums; }
+.livetrack-embed { margin-top: 12px; }
+
+/* ---------- pie y avisos flotantes ---------- */
+footer { padding: 28px var(--m) calc(28px + env(safe-area-inset-bottom)); color: var(--suave); font-size: 0.8rem; text-align: center; }
+footer p { margin: 0 0 6px; }
+.aviso-conexion { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 1000; transform: translateX(-50%);
+  padding: 8px 14px; border-radius: 999px; background: var(--sup2); color: var(--texto); font-size: 0.85rem; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); transition: opacity 0.28s ease, transform 0.28s ease; }
+.aviso-conexion:not(.visible) { opacity: 0; transform: translate(-50%, -14px); pointer-events: none; }
+.aviso-conexion.ok { background: var(--acento); color: var(--tinta); }
+
+/* ---------- movimiento (se nota que está viva; nada si el sistema lo pide) ---------- */
+.metrica.cambia { animation: cambio 0.9s ease-out; }
+.pill-estado.cambia { animation: aparece 0.5s ease-out; }
+#btn-recenter.activo svg { animation: late 1.8s ease-in-out infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@keyframes latido { 50% { opacity: 0.35; } }
+@keyframes pulso { 50% { transform: scale(1.12); } }
+@keyframes anillo { 0% { transform: scale(0.8); opacity: 0.85; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes cambio { 0% { background: #2b3a1c; } 100% { background: var(--sup); } }
+@keyframes aparece { 0% { opacity: 0.35; transform: scale(0.92); } 100% { opacity: 1; transform: none; } }
+@keyframes late { 50% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+
+/* ---------- móviles muy estrechos (320 px): los cuatro botones de la cabecera caben ---------- */
+@media (max-width: 374px) {
+  .cd-barra { gap: 8px; }
+  .cd-nav { gap: 4px; }
+  .cd-nav button { width: 40px; height: 40px; }
+  .cd-marca { font-size: 0.78rem; }
+}
+
+/* ---------- ordenador: el mapa a la izquierda y los datos en su columna ---------- */
+@media (min-width: 900px) {
+  .panel-pc { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; margin-top: 16px; }
+  .map-wrap { margin-top: 0; }
+  #map3d { height: clamp(420px, calc(100dvh - 290px), 820px); max-height: none; }
+  .lateral { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-right: 4px; }
+  .lateral > .cd-sec:first-child { margin-top: 0; }
+}

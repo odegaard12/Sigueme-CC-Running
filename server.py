@@ -361,8 +361,40 @@ def generar_plan(antes=None, cada=None, forzar=False):
             mio = next((e for e in editados if cerca(a, e)), None)
             nuevos.append(dict(a, texto=mio["texto"], editado=True) if mio else a)
         plan["avisos"], plan["quitados"] = nuevos, quitados
+    mezclar_propios(plan, viejo.get("propios", []))
     escribir_json("avisos.json", plan)
     return plan
+
+
+def mezclar_propios(plan, propios):
+    """Los avisos puestos a mano en un km («CRUCE PELIGROSO»): van dentro del plan, en su sitio, y se guardan aparte
+    para que rehacer el plan no los borre. Ids seguidos de nuevo (la app y el panel los usan)."""
+    plan["propios"] = propios
+    avisos = [a for a in plan.get("avisos", []) if a.get("tipo") != "propio"]
+    avisos += [{"km": p["km"], "tipo": "propio", "texto": p["texto"], "valido_hasta": round(p["km"] + 0.3, 2), "prio": 0} for p in propios]
+    avisos.sort(key=lambda a: (a["km"], a.get("prio", 9)))
+    for n, a in enumerate(avisos):
+        a["id"] = n + 1
+    plan["avisos"] = avisos
+    return plan
+
+
+def limpiar_propios(lista):
+    """Avisos propios del panel: como mucho 50, km dentro de la ruta y texto de como mucho 120 letras."""
+    if not isinstance(lista, list) or len(lista) > 50:
+        return None, "como mucho 50 avisos propios"
+    total = float(carrera().get("distancia_km") or 2000)
+    limpio = []
+    for p in lista:
+        try:
+            km = float(str(p.get("km")).replace(",", "."))
+            texto = _texto(p.get("texto"), 120)
+        except (TypeError, ValueError, AttributeError):
+            km, texto = -1, ""
+        if not texto or not 0 <= km <= total:
+            return None, f"cada aviso propio necesita texto y un km entre 0 y {total:g}"
+        limpio.append({"km": round(km, 2), "texto": texto})
+    return sorted(limpio, key=lambda p: p["km"]), None
 
 
 def _texto(valor, largo):
@@ -2392,6 +2424,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         quitados = plan.get("quitados", [])
         nuevos = []
         for a in plan["avisos"]:
+            if a.get("tipo") == "propio":          # los propios llegan aparte, en «propios»
+                continue
             t = textos.get(a["id"], a["texto"])
             if not t:
                 quitados.append({"tipo": a["tipo"], "km": a["km"]})
@@ -2400,6 +2434,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             else:
                 nuevos.append(a)
         plan["avisos"], plan["quitados"] = nuevos, quitados
+        propios = plan.get("propios", [])
+        if "propios" in data:
+            propios, error = limpiar_propios(data.get("propios"))
+            if error:
+                self._send_json(400, {"error": error})
+                return
+        mezclar_propios(plan, propios)
         escribir_json("avisos.json", plan)
         self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
 

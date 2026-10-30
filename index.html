@@ -48,14 +48,13 @@
 <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
-<link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=16">
+<link rel="stylesheet" href="/directo.css?v=1">
 </head>
 <body>
 <header class="cd-cab">
   <div class="cd-barra">
     <a class="cd-marca" id="marca-sitio" href="/inicio">Sígueme CC</a>
-    <nav class="cd-nav">
+    <nav class="cd-nav" aria-label="Acciones">
       <button class="campana" id="campana" type="button" hidden aria-pressed="false" title="Avisarme de la salida, los avituallamientos y la meta" aria-label="Avisarme en el móvil">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
       </button>
@@ -63,8 +62,8 @@
       <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
       </button>
-      <button class="ver-ficha" id="ver-ficha" aria-expanded="false" aria-controls="ficha">
-        <img src="rider.png?v=5" alt="Avatar del corredor"><span id="ver-ficha-txt">Mi ficha</span>
+      <button class="ver-ficha" id="ver-ficha" type="button" aria-expanded="false" aria-controls="ficha">
+        <img src="rider.png?v=5" alt=""><span id="ver-ficha-txt">Mi ficha</span>
       </button>
     </nav>
   </div>
@@ -83,7 +82,7 @@
 
 <section class="ficha" id="ficha" hidden>
   <div class="ficha-cab">
-    <img class="ficha-foto" src="rider.png?v=5" alt="Avatar del corredor">
+    <img class="ficha-foto" src="rider.png?v=5" alt="Foto del corredor">
     <div class="ficha-datos">
       <h2 id="ficha-nombre">Corredor</h2>
       <p class="ficha-sub" id="ficha-sub"></p>
@@ -91,7 +90,6 @@
     <div class="ficha-dorsal" id="ficha-dorsal" hidden><span>dorsal</span><b id="ficha-dorsal-n"></b></div>
   </div>
   <dl class="ficha-carrera" id="ficha-carrera"></dl>
-
   <div class="ficha-bici-bloque" id="ficha-bici" hidden>
     <h3 id="ficha-bici-modelo"></h3>
     <dl class="ficha-specs" id="ficha-specs"></dl>
@@ -101,11 +99,11 @@
 <section class="aviso-resultado" id="aviso-resultado" hidden>
   <p class="aviso-titulo" id="aviso-titulo"></p>
   <p class="aviso-sub" id="aviso-sub"></p>
-  <button class="btn-repeticion" id="btn-repeticion" title="La carrera entera en 1 minuto" aria-label="Ver la carrera en 1 minuto"><span class="ico">▶</span><span class="txt"> Ver la carrera</span></button>
+  <button class="btn-repeticion" id="btn-repeticion" type="button" title="La carrera entera en 1 minuto" aria-label="Ver la carrera en 1 minuto"><span class="ico">▶</span><span class="txt"> Ver la carrera</span></button>
 </section>
 
 <aside class="ayuda-cd" id="ayuda-cd" hidden aria-label="Cómo leer esta página">
-  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Resumen</b>, <b>Ritmo</b> y <b>Avituallamientos</b> tienen los números; la <b>campana</b> te avisa en el móvil de la salida, los avituallamientos y la meta y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
+  <p><b>Primera vez por aquí:</b> la página se actualiza sola. Mueve el mapa con dos dedos; debajo tienes lo que lleva hecho, el perfil, los avituallamientos y el ritmo. <b>Seguir</b> lleva la cámara con el corredor y la <b>campana</b> te avisa en el móvil de la salida, los avituallamientos y la meta.</p>
   <button type="button" id="ayuda-cd-ok">Entendido</button>
 </aside>
 
@@ -115,82 +113,79 @@
 </aside>
 
 <div class="panel-pc">
-<section class="map-wrap">
-  <div id="map3d"></div>
-
-  <div class="mapa-botones">
-    <button class="btn-flotante" id="btn-recenter" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false"></button>
-    <button class="btn-flotante btn-vista" id="btn-vista" title="Cambiar entre 2D y 3D" aria-label="Ver el mapa en 2D">2D</button>
-  </div>
-
-  <div class="perfil-en-mapa">
-    <canvas id="elevation-chart" role="img" aria-label="Perfil de altimetría de la ruta"></canvas>
-  </div>
-
-  <div class="cargando" id="cargando">
-    <div class="rueda"></div>
-    <span>Cargando el mapa…</span>
-  </div>
-</section>
-
-<div class="lateral">
-<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Datos de la carrera">
-  <button type="button" role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
-  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
-  <button type="button" role="tab" data-tab="avit" aria-selected="false">Avituallamientos</button>
-</nav>
-<p class="map-hint" id="geo-hint"></p>
-
-<section class="metricas esqueleto">
-  <div class="metricas-top">
-    <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
-    <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
-    <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
-    <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo de carrera</span></div>
-  </div>
-  <div class="progreso" data-tile="dist" aria-hidden="true"><i id="progreso-barra"></i></div>
-  <div class="metricas-sec">
-    <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> <span id="m-speed-avg-txt">km/h media</span></span>
-    <span class="chip" data-tile="speed-total" hidden><b id="m-speed-total">—</b> km/h media total</span>
-    <span class="chip chip-nivel" data-tile="grad">pendiente <b id="m-grad">—</b>
-      <i class="nivel"><u id="nivel-marca"></u></i>
-    </span>
-    <span class="chip chip-pulso" data-tile="hr">pulso <b id="m-hr">—</b> ppm</span>
-    <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
-    <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
-  </div>
-  <div class="ritmo" id="ritmo" hidden>
-    <div class="ritmo-datos">
-      <div><small>Ritmo medio</small><b id="r-ritmo">—</b></div>
-      <div><small>Llegada prevista</small><b id="r-llegada">—</b></div>
+  <div class="columna-mapa">
+    <section class="map-wrap" aria-label="Mapa de la carrera">
+      <div id="map3d"></div>
+      <div class="cargando" id="cargando">
+        <div class="rueda"></div>
+        <span>Cargando el mapa…</span>
+      </div>
+    </section>
+    <div class="mapa-ctrl">
+      <button class="btn-flotante" id="btn-recenter" type="button" title="Seguir al corredor" aria-label="Seguir al corredor" aria-pressed="false"></button>
+      <button class="btn-flotante btn-vista" id="btn-vista" type="button" title="Cambiar entre 2D y 3D" aria-label="Ver el mapa en 2D">2D</button>
     </div>
-    <p class="ritmo-nota" id="r-nota"></p>
-    <div class="ritmo-barras" id="r-barras" role="img" aria-label="Ritmo de cada kilómetro" hidden></div>
-    <p class="ritmo-pie" id="r-pie" hidden>Ritmo de cada kilómetro: cuanto más alta la barra, más lento.</p>
+    <div class="leyenda">
+      <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
+      <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
+      <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
+      <span><i style="background:#f3f6f2"></i>salida y meta</span>
+    </div>
+    <p class="map-hint" id="geo-hint"></p>
   </div>
-  <p class="ritmo-vacio" id="ritmo-vacio" hidden>El ritmo y la llegada prevista salen en cuanto el corredor lleva un kilómetro.</p>
-  <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
-  <div class="resultado" id="resultado" hidden>
-    <h3>Paso por los avituallamientos</h3>
-    <ul class="pasos" id="pasos"></ul>
+
+  <div class="lateral">
+    <h2 class="cd-sec">Ahora</h2>
+    <section class="metricas esqueleto">
+      <div class="metricas-top">
+        <div class="metrica destacada" data-tile="dist"><span class="m-val" id="m-dist">—</span><span class="m-tag">km hechos</span></div>
+        <div class="metrica destacada" data-tile="time"><span class="m-val" id="m-time">—</span><span class="m-tag">tiempo de carrera</span></div>
+        <div class="metrica destacada" data-tile="speed"><span class="m-val" id="m-speed">—</span><span class="m-tag">km/h ahora</span></div>
+        <div class="metrica destacada" data-tile="left"><span class="m-val" id="m-left">—</span><span class="m-tag">km restan</span></div>
+      </div>
+      <div class="progreso" data-tile="dist" aria-hidden="true"><i id="progreso-barra"></i></div>
+      <div class="metricas-sec">
+        <span class="chip" data-tile="speed-avg"><b id="m-speed-avg">—</b> <span id="m-speed-avg-txt">km/h media</span></span>
+        <span class="chip" data-tile="speed-total" hidden><b id="m-speed-total">—</b> km/h media total</span>
+        <span class="chip chip-nivel" data-tile="grad">pendiente <b id="m-grad">—</b> <i class="nivel"><u id="nivel-marca"></u></i></span>
+        <span class="chip chip-pulso" data-tile="hr">pulso <b id="m-hr">—</b> ppm</span>
+        <span class="chip" data-tile="hr-avg">media <b id="m-hr-avg">—</b> ppm</span>
+        <span class="chip" data-tile="cad"><b id="m-cad-avg">—</b> rpm media</span>
+      </div>
+      <p class="estado-carrera" id="estado-carrera" aria-live="polite"></p>
+    </section>
+
+    <h2 class="cd-sec">Perfil</h2>
+    <div class="perfil-en-mapa perfil-hoja">
+      <canvas id="elevation-chart" role="img" aria-label="Perfil de altura de la ruta"></canvas>
+    </div>
+
+    <h2 class="cd-sec">Avituallamientos</h2>
+    <div class="resultado" id="resultado" hidden>
+      <h3>Paso por los avituallamientos</h3>
+      <ul class="pasos" id="pasos"></ul>
+    </div>
+    <ul class="lista-avit-cd" id="lista-avit-cd" aria-label="Avituallamientos: paso y hora prevista"></ul>
+
+    <h2 class="cd-sec">Ritmo</h2>
+    <div class="ritmo" id="ritmo" hidden>
+      <div class="ritmo-datos">
+        <div><small>Ritmo medio</small><b id="r-ritmo">—</b></div>
+        <div><small>Llegada prevista</small><b id="r-llegada">—</b></div>
+      </div>
+      <p class="ritmo-nota" id="r-nota"></p>
+      <div class="ritmo-barras" id="r-barras" role="img" aria-label="Ritmo de cada kilómetro" hidden></div>
+      <p class="ritmo-pie" id="r-pie" hidden>Ritmo de cada kilómetro: cuanto más alta la barra, más lento.</p>
+    </div>
+    <p class="ritmo-vacio" id="ritmo-vacio" hidden>El ritmo y la llegada prevista salen en cuanto el corredor lleva un kilómetro.</p>
   </div>
-  <p class="avit-vacio">El paso por cada avituallamiento sale aquí en cuanto el corredor lo cruza.</p>
-  <div class="leyenda">
-  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
-  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
-  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
 </div>
-</section>
-
-</div>
-</div>
-
 
 <footer>
   <p><span id="pie-carrera"></span></p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=97"></script>
+<script src="app.js?v=98"></script>
 </body>
 </html>

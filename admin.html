@@ -81,7 +81,18 @@
   .tarjeta .save-btn { margin-top: 4px; }
   .lista-avit, .lista-avisos { display: grid; gap: 6px; margin-top: 10px; }
   .fila-avit { display: grid; grid-template-columns: 1fr 76px auto 40px; gap: 6px; align-items: center; }
-  .fila-aviso { display: grid; grid-template-columns: 58px 1fr; gap: 6px; align-items: center; }
+  .fila-aviso { display: grid; grid-template-columns: 62px 1fr 44px; gap: 6px; align-items: center; }
+  .fila-aviso span { border-left: 4px solid var(--c, #9aa596); padding-left: 6px; text-align: left !important; font-weight: 800; }
+  .fila-aviso.quitado textarea { opacity: 0.35; text-decoration: line-through; }
+  .quitar-aviso { min-height: 44px; border: 0; border-radius: 10px; background: #1d2420; color: #ff9a8a; font-weight: 800; cursor: pointer; }
+  .quitar-aviso:focus-visible { outline: 3px solid var(--accent, #d9f24a); outline-offset: 2px; }
+  .perfil-avisos { width: 100%; height: auto; display: block; margin-top: 12px; }
+  .perfil-avisos[hidden], .ley-avisos[hidden], .nuevo-aviso[hidden] { display: none; }
+  .ley-avisos { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.78rem; margin: 6px 0 4px; color: var(--muted); }
+  .ley-avisos span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: -1px; }
+  .nuevo-aviso { display: grid; grid-template-columns: 96px 1fr auto; gap: 8px; align-items: end; margin-top: 12px; padding: 12px; border: 1px dashed rgba(217, 242, 74, 0.4); border-radius: 14px; }
+  .nuevo-aviso .field { margin: 0; }
+  @media (max-width: 520px) { .nuevo-aviso { grid-template-columns: 1fr; } }
   .fila-avit input, .fila-aviso textarea { width: 100%; min-width: 0; padding: 10px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--panel-2); color: var(--text); font-size: 0.88rem; }
   .fila-aviso textarea { font: inherit; font-size: 0.85rem; resize: vertical; }
@@ -467,20 +478,24 @@
   </div>
 
   <div class="tarjeta" id="sec-avisos" data-tab="preparar">
-    <h2>Avisos a la pulsera</h2>
+    <h2>Perfil y avisos</h2>
     <div class="howto"><b>Normalmente no hay que tocar nada:</b> los avisos se crean solos al subir la ruta. La app los lanza <b>sin cobertura</b> y Zepp o Mi Fitness los pasan a la pulsera.</div>
+    <svg id="perfil-avisos" class="perfil-avisos" viewBox="0 0 860 190" role="img" aria-label="Perfil de la ruta con los avisos" hidden></svg>
+    <div class="ley-avisos" id="ley-avisos" hidden><span style="--c:#ff9a5c">subida</span><span style="--c:#ffd27a">mitad</span><span style="--c:#5cc2e8">cima</span><span style="--c:#8fe06a">avituallamiento</span><span style="--c:#9aa596">resumen</span><span style="--c:#d9f24a">tu aviso</span></div>
     <div class="row2" style="margin-top:10px">
       <div class="field"><label for="av-antes">Avisar antes (m)</label><input type="number" min="50" max="2000" step="50" id="av-antes" placeholder="300"></div>
       <div class="field"><label for="av-cada">Resumen cada (km)</label><input type="number" min="1" max="100" id="av-cada" placeholder="según la distancia"></div>
     </div>
     <button class="btn" id="generar-avisos" type="button" style="width:100%">Rehacer el plan con estos ajustes</button>
     <p class="estado-fila" style="margin-top:10px"><span id="avisos-text">—</span></p>
-    <details id="det-avisos">
-      <summary>Ver y cambiar los textos</summary>
-      <div class="howto">Texto vacío = se quita ese aviso. «{dist}» = lo que falta al avituallamiento. «Rehacer el plan» vuelve a los textos automáticos.</div>
-      <div id="lista-avisos" class="lista-avisos"></div>
-      <button class="save-btn" id="guardar-avisos" type="button" style="margin-top:8px">Guardar textos</button>
-    </details>
+    <div id="lista-avisos" class="lista-avisos"></div>
+    <div class="nuevo-aviso" id="nuevo-aviso" hidden>
+      <div class="field"><label for="na-km">En el km</label><input type="text" id="na-km" inputmode="decimal" autocomplete="off" placeholder="16,5"></div>
+      <div class="field"><label for="na-texto">Tu aviso (máx. 120)</label><input type="text" maxlength="120" id="na-texto" placeholder="CRUCE PELIGROSO · ojo con los coches"></div>
+      <button class="btn" id="na-mas" type="button">+ Añadir</button>
+    </div>
+    <div class="howto">Cambia un texto o quítalo con ✕. «{dist}» = lo que falta al avituallamiento. «Rehacer el plan» vuelve a los textos automáticos; tus avisos propios se quedan.</div>
+    <button class="save-btn" id="guardar-avisos" type="button" style="margin-top:8px">Guardar avisos</button>
   </div>
 
   <div class="tarjeta primero" id="sec-app" data-tab="movil">
@@ -1060,21 +1075,74 @@ function pintarAvisos(plan) {
     Math.round((plan.antes_km || 0.3) * 1000) + ' m antes · resumen cada ' + plan.cada_km + ' km' : 'Falta la ruta: súbela en «Ruta (GPX)»';
   if (plan && !$('av-antes').value) $('av-antes').value = Math.round((plan.antes_km || 0.3) * 1000);
   if (plan && plan.cada_fijo && !$('av-cada').value) $('av-cada').value = plan.cada_fijo;
-  $('lista-avisos').replaceChildren(...avisos.map(a => {
-    const fila = document.createElement('div'); fila.className = 'fila-aviso';
-    fila.innerHTML = '<span></span><textarea rows="2" maxlength="120"></textarea>';
-    fila.querySelector('span').textContent = 'km ' + km(a.km.toFixed(1));
-    const inp = fila.querySelector('textarea');
-    inp.value = a.texto; inp.dataset.id = a.id; inp.setAttribute('aria-label', 'Aviso del km ' + a.km);
-    return fila;
-  }));
+  $('lista-avisos').replaceChildren(...avisos.map(filaAviso));
+  $('nuevo-aviso').hidden = !avisos.length;
+  dibujarPerfil(plan);
 }
+const COLOR_AVISO = { subida: '#ff9a5c', mitad: '#ffd27a', cima: '#5cc2e8', avituallamiento: '#8fe06a', resumen: '#9aa596', ultimo_km: '#f4f7e6', propio: '#d9f24a' };
+function filaAviso(a) {
+  const fila = document.createElement('div');
+  fila.className = 'fila-aviso' + (a.tipo === 'propio' ? ' propio' : '');
+  fila.style.setProperty('--c', COLOR_AVISO[a.tipo] || '#9aa596');
+  fila.innerHTML = '<span></span><textarea rows="2" maxlength="120"></textarea><button type="button" class="quitar-aviso">✕</button>';
+  fila.querySelector('span').textContent = 'km ' + km(Number(a.km).toFixed(1));
+  const inp = fila.querySelector('textarea');
+  inp.value = a.texto; inp.setAttribute('aria-label', 'Aviso del km ' + km(a.km));
+  if (a.tipo === 'propio') fila.dataset.km = a.km; else inp.dataset.id = a.id;
+  const x = fila.querySelector('.quitar-aviso');
+  x.setAttribute('aria-label', 'Quitar el aviso del km ' + km(a.km));
+  x.addEventListener('click', () => {
+    if (a.tipo === 'propio') { fila.remove(); return; }
+    inp.value = ''; fila.classList.add('quitado');          // vacío = se quita al guardar
+  });
+  return fila;
+}
+// el perfil con las subidas sombreadas y cada aviso en su km (lo que llegará a la pulsera)
+async function dibujarPerfil(plan) {
+  const svg = $('perfil-avisos'), ley = $('ley-avisos');
+  let P = [];
+  try { P = (((await (await fetch('/elevation.json?_=' + Date.now())).json()) || {}).profile || []).filter(p => Number.isFinite(p.d) && Number.isFinite(p.ele)); } catch (e) {}
+  if (P.length < 2 || !plan) { svg.hidden = ley.hidden = true; return; }
+  const W = 860, H = 190, total = P[P.length - 1].d || 1;
+  const eMin = Math.min(...P.map(p => p.ele)), rango = Math.max(Math.max(...P.map(p => p.ele)) - eMin, 20);
+  const X = d => (10 + d / total * (W - 20)).toFixed(1), Y = e => (H - 22 - (e - eMin) / rango * (H - 52)).toFixed(1);
+  const eleEn = d => { const i = P.findIndex(p => p.d >= d); return i === 0 ? P[0].ele : i < 0 ? P[P.length - 1].ele : P[i - 1].ele + (P[i].ele - P[i - 1].ele) * ((d - P[i - 1].d) / ((P[i].d - P[i - 1].d) || 1)); };
+  const linea = P.map(p => X(p.d) + ',' + Y(p.ele)).join(' ');
+  const zonas = (plan.subidas || []).map(s => {
+    const tramo = P.filter(p => p.d >= s.inicio && p.d <= s.fin);
+    return tramo.length ? '<path d="M' + X(s.inicio) + ',' + (H - 22) + ' ' + tramo.map(p => 'L' + X(p.d) + ',' + Y(p.ele)).join(' ') + ' L' + X(s.fin) + ',' + (H - 22) + ' Z" fill="#d9f24a" opacity=".2"/>' : '';
+  }).join('');
+  const marcas = (plan.avisos || []).map(a => {
+    const c = COLOR_AVISO[a.tipo] || '#9aa596', x = X(a.km), y = Y(eleEn(a.km));
+    return '<line x1="' + x + '" x2="' + x + '" y1="' + y + '" y2="' + (H - 22) + '" stroke="' + c + '" stroke-width="2" stroke-dasharray="3 3"/>' +
+      '<circle cx="' + x + '" cy="' + (y - 7) + '" r="' + (a.tipo === 'propio' ? 7 : 5) + '" fill="' + c + '" stroke="#0e1110" stroke-width="2"><title></title></circle>';
+  }).join('');
+  const paso = total > 60 ? 20 : total > 25 ? 10 : 5;
+  let ejes = '';
+  for (let k = 0; k <= total + 0.01; k += paso) ejes += '<text x="' + X(k) + '" y="' + (H - 5) + '" fill="#8f9a8b" font-size="12" text-anchor="middle">' + k + '</text>';
+  svg.innerHTML = '<polyline points="' + linea + '" fill="none" stroke="#f4f7e6" stroke-width="2.5" stroke-linejoin="round"/>' + zonas + marcas + ejes;
+  // el texto de cada aviso, con textContent (nunca HTML)
+  svg.querySelectorAll('title').forEach((t, i) => { const a = (plan.avisos || [])[i] || {}; t.textContent = 'km ' + km(a.km) + ' · ' + (a.texto || ''); });
+  svg.hidden = ley.hidden = false;
+}
+$('na-mas').addEventListener('click', () => {
+  const k = parseFloat(String($('na-km').value).replace(',', '.')), t = $('na-texto').value.trim();
+  if (!Number.isFinite(k) || k < 0 || !t) { $('msg').textContent = 'Pon el km y el texto de tu aviso'; $('msg').className = 'msg err'; return; }
+  const filas = [...$('lista-avisos').children];
+  const nueva = filaAviso({ km: k, tipo: 'propio', texto: t });
+  const despues = filas.find(f => parseFloat(f.querySelector('span').textContent.replace('km ', '').replace(',', '.')) > k);
+  $('lista-avisos').insertBefore(nueva, despues || null);
+  $('na-km').value = ''; $('na-texto').value = '';
+  $('msg').textContent = 'Aviso añadido: pulsa «Guardar avisos»'; $('msg').className = 'msg';
+});
 $('generar-avisos').addEventListener('click', () => {
-  if (!confirm('¿Rehacer el plan de avisos?\n\nLos textos cambiados a mano vuelven a los automáticos.')) return;
+  if (!confirm('¿Rehacer el plan de avisos?\n\nLos textos cambiados a mano vuelven a los automáticos (tus avisos propios se quedan).')) return;
   accion({ action: 'generar_avisos', antes_m: $('av-antes').value, cada_km: $('av-cada').value });
 });
 $('guardar-avisos').addEventListener('click', () => accion({ action: 'guardar_avisos',
-  avisos: [...document.querySelectorAll('.fila-aviso textarea')].map(i => ({ id: +i.dataset.id, texto: i.value.trim() })) }));
+  avisos: [...document.querySelectorAll('.fila-aviso:not(.propio) textarea')].map(i => ({ id: +i.dataset.id, texto: i.value.trim() })),
+  propios: [...document.querySelectorAll('.fila-aviso.propio')].map(f => ({ km: +f.dataset.km, texto: f.querySelector('textarea').value.trim() }))
+    .filter(p => p.texto) }));
 
 // código QR para la app: dirección del servidor + identificador
 function pintarQR(id) {

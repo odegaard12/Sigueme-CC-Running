@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.48.0 · 2026-10-30
+- **Página de la carrera rehecha:** una sola hoja de estilos (`directo.css`) en vez de dos que se pisaban capa sobre capa. El mapa, limpio: nada encima salvo la ruta y sus marcas; «Seguir» y «Ver en 2D/3D» debajo, con la leyenda (también salida y meta). Los datos de arriba abajo, sin hoja deslizable ni pestañas dentro de la página: **Ahora · Perfil · Avituallamientos · Ritmo**.
+- **Avituallamientos con hora:** por cuáles ha pasado y a qué hora, y a qué hora se le espera en los siguientes y en meta.
+- **Panel: «Perfil y avisos».** El perfil de la ruta con las subidas sombreadas y cada aviso marcado en su km; la lista de avisos siempre a la vista (cambiar el texto o quitarlo con ✕) y **avisos propios** en el km que quieras, que se conservan aunque se rehaga el plan.
+- Medido: 0 solapes sobre el mapa (antes 4), 7 radios de esquina distintos (antes 10), una sola familia de letra para los botones.
+
 ## v1.47.2 · 2026-10-30
 - **Rutas grabadas con saltos de GPS:** ya no inflan la distancia (un circuito de 20 km con 5 saltos medía 31 km y los avisos y los avituallamientos caían en el km equivocado). Se quitan los puntos que saltan lejos y vuelven.
 - **Prueba nueva de carga de rutas** (`pruebas/rutas_gpx.py`): track normal, ruta de Komoot (`<rtept>`), sin espacio de nombres, con BOM, con saltos, sin altura, distancia oficial y ficheros malos (no XML, sin puntos, menos de 100 m, ENTITY, UTF-16).
