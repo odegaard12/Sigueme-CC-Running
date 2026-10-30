@@ -120,7 +120,7 @@ details.como p { max-width: 64ch; }
 /* ---------- la guía de relojes ---------- */
 .pul { padding: 0 var(--m) 8px; }
 .pul h2.titulo { margin-left: 0; margin-right: 0; }
-.usos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.usos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 8px; }
 .uso { padding: 14px 16px; border-radius: var(--r2); background: var(--sup); }
 .uso b { display: block; font: 400 1.1rem/1.1 var(--display); text-transform: uppercase; margin-bottom: 4px; }
 .uso p { margin: 0; color: var(--suave); font-size: 0.92rem; }
@@ -131,11 +131,32 @@ details.como p { max-width: 64ch; }
 .tabla-relojes tbody th a { font-weight: 800; text-decoration: none; }
 .tabla-relojes tbody th a:hover { color: var(--acento); }
 .leyenda-tabla { margin: 8px 0 0; color: var(--suave); font-size: 0.85rem; }
-.si, .algunos, .no { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: 800; font-size: 0.75rem; white-space: nowrap; }
+@media (max-width: 380px) {
+  .tabla-relojes, .tabla-modelos { font-size: 0.8rem; }
+  .tabla-relojes th, .tabla-relojes td, .tabla-modelos th, .tabla-modelos td { padding: 7px 4px; }
+  .tabla-relojes .si, .tabla-relojes .algunos, .tabla-relojes .no, .tabla-modelos .si, .tabla-modelos .algunos, .tabla-modelos .no, .tabla-modelos .duda { padding: 2px 5px; font-size: 0.68rem; }
+}
+.si, .algunos, .no, .duda { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: 800; font-size: 0.75rem; white-space: nowrap; }
 .si { background: var(--acento); color: var(--tinta); }
 .algunos { box-shadow: inset 0 0 0 2px var(--aviso); color: var(--aviso); }
-.no { box-shadow: inset 0 0 0 2px var(--suave); color: var(--suave); }
-.marcas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px; }
+.no { box-shadow: inset 0 0 0 2px #ff9a8a; color: #ff9a8a; }
+.duda { box-shadow: inset 0 0 0 1px var(--suave); color: var(--suave); font-weight: 600; }
+/* modelos de cada marca, uno a uno */
+.tabla-modelos { width: 100%; margin: 12px 0 4px; border-collapse: collapse; font-size: 0.88rem; }
+.tabla-modelos th, .tabla-modelos td { padding: 8px 6px; text-align: left; border-top: 1px solid var(--linea); vertical-align: middle; }
+.tabla-modelos thead th { border-top: 0; color: var(--suave); font-weight: 700; font-size: 0.78rem; }
+.tabla-modelos td { width: 1%; white-space: nowrap; }
+.tabla-modelos tbody th { font-weight: 600; }
+/* «¿Sirve mi reloj?» */
+.busca { display: grid; gap: 6px; }
+.busca span { color: var(--suave); font-size: 0.85rem; font-weight: 700; }
+.busca input { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #2a322d; border-radius: var(--r1); background: var(--sup); color: var(--texto); font-size: 1rem; }
+.busca input:focus { outline: 2px solid var(--acento); outline-offset: 0; }
+.busca-resultado { display: grid; gap: 6px; margin-top: 8px; }
+.resultado-reloj { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; padding: 12px 14px; border-radius: var(--r2); background: var(--sup); text-decoration: none; }
+.resultado-reloj:hover { background: var(--sup2); }
+.resultado-reloj span { display: inline-flex; align-items: center; gap: 6px; color: var(--suave); font-size: 0.85rem; }
+.marcas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 8px; }
 .marca-tarj { padding: 16px; border-radius: var(--r2); background: var(--sup); scroll-margin-top: 16px; }
 .marca-tarj:target { box-shadow: inset 0 0 0 2px var(--acento); }
 .marca-tarj h3 { margin: 0; font: 400 1.4rem/1 var(--display); text-transform: uppercase; }

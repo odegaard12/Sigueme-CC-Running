@@ -9,7 +9,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 W = pathlib.Path('/tmp/banco')
 shutil.rmtree(W, ignore_errors=True)
 W.mkdir()
-for f in ('server.py', 'index.html', 'app.js', 'style.css', 'admin.html', 'robots.txt'):
+for f in ('server.py', 'index.html', 'app.js', 'directo.css', 'admin.html', 'robots.txt'):
     if (REPO / f).exists():
         shutil.copy(REPO / f, W / f)
 shutil.copytree(REPO / 'herramientas', W / 'herramientas')

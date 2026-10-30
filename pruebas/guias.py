@@ -20,6 +20,9 @@ ok(tabla and re.findall(r'href="#([a-z]+)"', tabla.group(0)) == MARCAS, 'la tabl
 for m in MARCAS:
     ficha = re.search(rf'<article class="marca-tarj" id="{m}">.*?</article>', guia, re.S)
     ok(ficha and all(x in ficha.group(0) for x in ('Avisos', 'Ruta en el reloj', 'Mapa en el reloj')), f'{m}: dice avisos, ruta y mapa')
+    filas = re.findall(r'<tr><th scope="row">[^<]+</th><td><span class="(si|no|duda|algunos)">', ficha.group(0)) if ficha else []
+    ok(len(filas) >= 1, f'{m}: tabla de modelos uno a uno ({len(filas)})')
+ok('<script src="/relojes.js' in guia and (RAIZ / 'relojes.js').exists() and 'id="busca-reloj"' in guia, 'buscador «¿Sirve mi reloj?»')
 botones = re.findall(r'<nav class="chips-marcas".*?</nav>', guia, re.S)
 ok(len(botones) == 1, 'la guía tiene su fila de botones de marca')
 enlaces = re.findall(r'href="#([a-z]+)"', botones[0]) if botones else []

@@ -12,8 +12,12 @@
   --accent: var(--acento); --accent-dark: var(--tinta); --bg: var(--fondo); --panel: var(--sup); --panel-2: var(--sup2);
   --muted: var(--suave); --border: var(--linea); --campo: var(--acento); --papel: var(--texto); --text: var(--texto);
 }
-body { background: var(--fondo); color: var(--texto); }
-button, input, select, textarea { font-family: inherit; }
+/* la base (antes venía de la hoja antigua de la página de la carrera, style.css, que el panel ya no carga) */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; color-scheme: dark; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; }
+img { max-width: 100%; }
 a { color: var(--acento); }
 :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
 [hidden] { display: none !important; }
@@ -47,10 +51,11 @@ a { color: var(--acento); }
 /* ---------- botones: principal (lima) y secundario (borde lima) ---------- */
 .save-btn, .r-ir { border: 0; border-radius: var(--r1) !important; background: var(--acento) !important; color: var(--tinta) !important;
   font: 400 1.15rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; padding: 14px 18px; min-height: 48px; cursor: pointer; }
-.btn { border-radius: var(--r1); background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); border: 0; font-weight: 800; min-height: 44px; }
-.btn.principal { background: var(--acento); color: var(--tinta); box-shadow: none; }
+.btn, button.btn { border-radius: var(--r1); background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); border: 0; min-height: 44px;
+  font: 400 1.05rem/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; }
+.btn.principal, button.btn.principal { background: var(--acento); color: var(--tinta); box-shadow: none; min-height: 48px; font-size: 1.15rem; }
 .btn:hover, .save-btn:hover { filter: brightness(1.07); }
-.btn.peligro, .btn.stop-btn { color: #ff9a8a; box-shadow: inset 0 0 0 2px #ff9a8a; background: transparent; }
+.btn.peligro, button.btn.peligro, .btn.stop-btn { color: #ff9a8a; box-shadow: inset 0 0 0 2px #ff9a8a; background: transparent; }
 .quitar-aviso { border-radius: var(--r1); }
 
 /* ---------- campos ---------- */

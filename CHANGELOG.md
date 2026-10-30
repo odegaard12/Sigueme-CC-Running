@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.51.0 · 2026-10-30
+- **Fuera la hoja antigua:** el panel deja de cargar `style.css` (la de la página de la carrera de antes) y se borran `style.css` y `cartel-directo.css`, que ya no usa ninguna página. Lo que el panel tomaba de ella (letra, `box-sizing`, márgenes) está en `cartel-panel.css`, con los controles del navegador en oscuro. Comparado pestaña a pestaña, en móvil y PC, antes y después.
+- **Botones iguales en toda la web:** también en «Mis rutas» y el panel (esquinas de 8 px, Anton, principal lima y secundario con borde).
+- **Guía de relojes, modelo a modelo:** en cada marca, una tabla con cada modelo y si lleva **ruta** y **mapa** (Sí · No · Sin confirmar), 66 modelos de 8 marcas sacados de las webs de soporte. Arriba, **«¿Sirve mi reloj?»**: escribes tu modelo y lo dice al momento (busca en esas mismas tablas; si no está, explica cómo comprobarlo en la app del reloj). Las tablas caben en un móvil de 320 px.
+
 ## v1.50.0 · 2026-10-30
 - **Panel y «Mis rutas» con la misma hoja limpia que el resto de la web** (`cartel-panel.css` escrita de cero): cabecera igual que la pública (enlaces en gris, sin subrayar), explicaciones en gris (antes en verde oliva), esquinas de 8/10/14 px, botón principal lima y secundario con borde lima, y lo peligroso (borrar, parar) en rojo.
 - **Capturas del repo al día** con todo el diseño nuevo: la página de la carrera (mapa limpio y datos de arriba abajo), la guía de relojes y el panel con «Perfil y avisos».

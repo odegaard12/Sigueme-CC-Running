@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.50.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.51.0-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -209,7 +209,7 @@ La dirección sale de `slug` en `carrera.json` o, si no hay, del año y el lugar
 | Fichero | Qué es |
 |---|---|
 | `server.py` | Servidor (biblioteca estándar; `curl_cffi` solo para iGPSPORT): web, `/api/gps`, `/api/plan`, panel, login, lector de iGPSPORT |
-| `index.html` · `app.js` · `style.css` | La web pública (MapLibre servido desde `lib/`) |
+| `index.html` · `app.js` · `directo.css` | La web pública (MapLibre servido desde `lib/`) |
 | `admin.html` | Panel de control |
 | `carrera.json` · `route.geojson` · `elevation.json` · `aid_stations.json` | Tu carrera (paso 2) |
 | `herramientas/` | `preparar_ruta.py` (GPX → ruta), `plan_avisos.py` (perfil → avisos; los dos los usa también el panel) y `generar_resultado.py` (FIT → resultado) |
