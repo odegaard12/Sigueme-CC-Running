@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.46.0 · 2026-10-30
+- **«Mis rutas» y el panel con el mismo diseño que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
+- Capturas del repo al día.
+
 ## v1.45.0 · 2026-10-30
 - **Un solo diseño en toda la web:** Carreras, Rutas y relojes, la guía de pulseras y la página de cada ruta dejan el bloque lima gigante y pasan al diseño oscuro de la portada y del directo (títulos, tarjetas, botones y chips iguales en todas).
 - **Un solo menú:** «Inicio · Carreras · Rutas y relojes» arriba en todas las páginas, también en la página de cada carrera (cuenta como «Carreras»). Fuera los menús repetidos: «Inicio» en la cabecera del directo, enlaces del pie, «‹ Volver al inicio» y «‹ INICIO».

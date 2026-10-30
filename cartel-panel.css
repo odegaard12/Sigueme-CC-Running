@@ -72,3 +72,33 @@ input[type="file"]::file-selector-button:hover { filter: brightness(0.92); }
 .guia-botones button:focus-visible { outline: 3px solid #5a6320; outline-offset: 2px; }
 @media (min-width: 760px) { #guia-tarjeta { left: auto; right: 24px; bottom: 24px; width: 440px; } #guia-tarjeta.arriba { top: 24px; bottom: auto; } }
 @media (prefers-reduced-motion: reduce) { #guia-foco { transition: none; } }
+
+/* ================= v1.46 · el mismo diseño oscuro que la web pública ================= */
+/* cabecera: oscura, con la misma barra (nombre a la izquierda, enlaces en gris a la derecha) */
+body .campo-cartel { background: #0e1110; color: var(--papel); border-bottom: 1px solid rgba(244, 247, 230, 0.1); }
+body .barra-cartel { padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
+body .barra-cartel .marca-cartel { color: var(--papel); }
+body .barra-cartel nav a { color: #9aa596; text-decoration: none; }
+body .barra-cartel nav a:hover { color: var(--papel); }
+body .campo-cartel .topbar { color: var(--papel); padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
+body .campo-cartel .topbar h1 { color: var(--papel); font-size: clamp(2.1rem, 5vw, 3rem); }
+body .sub-cab { color: #cfd6cc; font-weight: 500; }
+body .campo-cartel .pill-panel { background: #1d2420; color: var(--papel); border-color: #1d2420; }
+body .campo-cartel .pill-panel.vivo { background: var(--campo); color: var(--tinta); }
+body .btn-guia { background: #1d2420; color: var(--campo); }
+body .btn-guia:hover { background: #27302b; }
+body .campo-cartel :focus-visible { outline-color: var(--campo); }
+/* resumen de la carrera del panel: tarjeta oscura; el lima solo en la etiqueta y el botón */
+body .resumen .r-estado { background: #151a17; color: var(--papel); border-radius: 20px; }
+body .resumen .r-estado h2 { color: var(--papel); }
+body .resumen .r-estado p { color: #cfd6cc; }
+body .resumen .r-estado .pill-panel { background: var(--campo); color: var(--tinta); border-color: var(--campo); }
+body .resumen .r-ir { background: var(--campo); color: var(--tinta); border-radius: 12px; }
+/* chips de marcas iguales que en la web pública */
+body .chips-marcas a { background: #1d2420; color: var(--papel); }
+/* la guía de primera vez: tarjeta oscura con borde lima (antes, blanca) */
+body #guia-tarjeta { background: #151a17; color: var(--papel); box-shadow: 0 0 0 2px var(--campo), 0 18px 50px rgba(0, 0, 0, 0.6); }
+body #guia-tarjeta h2, body #guia-tarjeta h3, body #guia-tarjeta p { color: var(--papel); }
+body #guia-tarjeta .guia-paso, body #guia-tarjeta small { color: var(--campo); }
+body #guia-tarjeta button:not(.guia-sig), body #guia-tarjeta a { color: #cfd6cc; }
+body .guia-sig { background: var(--campo); color: var(--tinta); }
