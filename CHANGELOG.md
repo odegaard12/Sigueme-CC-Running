@@ -4,6 +4,13 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.51.1 · 2026-10-30
+- **La página de la carrera, revisada en todos sus estados** (antes de salir, en directo, sin cobertura y resultado):
+  - «Meta» ya no sale dos veces en Avituallamientos cuando el último avituallamiento es la propia meta.
+  - Una sección sin nada que enseñar se esconde con su título (antes, en el resultado quedaba «Ritmo» solo).
+  - Con la carrera terminada, el primer bloque se llama «Resultado», no «Ahora».
+  - Los pasos del resultado con la misma forma que la lista en directo: nombre, debajo km y tiempo, y la hora a la derecha.
+
 ## v1.51.0 · 2026-10-30
 - **Fuera la hoja antigua:** el panel deja de cargar `style.css` (la de la página de la carrera de antes) y se borran `style.css` y `cartel-directo.css`, que ya no usa ninguna página. Lo que el panel tomaba de ella (letra, `box-sizing`, márgenes) está en `cartel-panel.css`, con los controles del navegador en oscuro. Comparado pestaña a pestaña, en móvil y PC, antes y después.
 - **Botones iguales en toda la web:** también en «Mis rutas» y el panel (esquinas de 8 px, Anton, principal lima y secundario con borde).

@@ -1079,9 +1079,10 @@ function pintarListaAvit(data, km, haArrancado, enMeta) {
     return Number.isFinite(ta) && a !== b ? ta + (tb - ta) * (k - a) : tb;
   };
   const pr = haArrancado && !enMeta ? previsiones(km, data.data_at) : null;
-  const filas = aidStations.map((a, i) => ({ n: (i + 1) + ' · ' + a.name, km: a.km,
+  const metaEsAvit = !!totalRouteKm && aidStations.length > 0 && aidStations[aidStations.length - 1].km >= totalRouteKm - 0.2;
+  const filas = aidStations.map((a, i) => ({ n: (i + 1) + ' · ' + a.name, km: a.km, meta: metaEsAvit && i === aidStations.length - 1,
     sub: 'km ' + num(a.km) + (a.principal ? ' · principal' : a.taller ? ' · asistencia mecánica' : '') }));
-  if (totalRouteKm) filas.push({ n: 'Meta', km: totalRouteKm, sub: 'km ' + num(totalRouteKm), meta: true });
+  if (totalRouteKm && !metaEsAvit) filas.push({ n: 'Meta', km: totalRouteKm, sub: 'km ' + num(totalRouteKm), meta: true });
   ul.hidden = !filas.length;
   ul.textContent = '';
   filas.forEach(f => {
@@ -1482,6 +1483,7 @@ function pollLive() {
       ponerTexto('m-speed-avg-txt', 'km/h media');
       document.getElementById('resultado').hidden = true;
       document.getElementById('aviso-resultado').hidden = true;
+      ponerTexto('sec-ahora', 'Ahora');
 
       let doneKm = data.dist_km;
       // ⚠️ Al abrir la web a mitad de carrera, la distancia del ciclocomputador sirve
@@ -1748,6 +1750,7 @@ function pintarResultado() {
   // ya sale en la cabecera)
   ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));
   document.getElementById('aviso-resultado').hidden = false;
+  ponerTexto('sec-ahora', 'Resultado');
   ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
   const etiqueta = document.querySelector('#stat-limite + i');
   if (etiqueta) etiqueta.textContent = 'de ' + CARRERA.limite_h + ' h';
