@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.44.1 · 2026-10-30
+- **Repaso del diseño nuevo:** el estado (sin cobertura, antes de salir, resultado) alineado con el título; el botón de la repetición visible (salía oscuro sobre oscuro); el aviso «antes de salir» sin bloque lima; el perfil de altitud ya no queda tapado por la hoja de datos; las cifras en la misma línea que las pestañas.
+- **Capturas del repo al día** (`docs/capturas/`) con el diseño nuevo.
+
 ## v1.44.0 · 2026-10-30
 - **Página en directo nueva («C»):** el mapa manda, a lo alto en el móvil y a la izquierda en el ordenador; los datos van en una hoja oscura con tres pestañas, **Resumen · Ritmo · Avituallamientos**, y el mapa se ve siempre (antes, la pestaña de datos lo tapaba). Cabecera oscura y compacta en vez de la franja lima.
 - **Pestañas fijas en las páginas públicas:** Carrera · Carreras · Rutas y relojes, en la portada, en el índice de carreras y en Rutas y relojes.

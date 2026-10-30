@@ -256,3 +256,16 @@ body[data-tab="avit"] #resultado:not([hidden]) { display: block; }
   body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 150px), 900px); }
   body .panel-pc .lateral { grid-row: 1; background: #121614; border-radius: 16px; padding: 14px 20px 18px; align-content: start; }
 }
+
+/* ---- v1.44.1: repaso del diseño C ---- */
+/* el estado (sin cobertura, antes de salir, resultado) alineado con el título; solo «en directo» lleva fondo */
+body .cd-datos .pill-estado:not(.vivo) { background: none; padding-left: 0; padding-right: 0; }
+/* el botón de la repetición, en lima (salía oscuro sobre oscuro) */
+body .aviso-resultado .btn-repeticion { background: var(--campo); color: var(--tinta); }
+/* los avisos de la hoja, sin bloques lima */
+body .lateral .estado-carrera { background: var(--panel) !important; color: var(--papel) !important; border: 0 !important; }
+/* las cifras en la misma línea que las pestañas */
+body .lateral .metricas { padding-left: 0; padding-right: 0; }
+/* el perfil de altitud por encima del borde de la hoja */
+@media (max-width: 899px) { body .perfil-en-mapa { bottom: 24px; } }
+@media (min-width: 900px) { body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 200px), 900px); } }
