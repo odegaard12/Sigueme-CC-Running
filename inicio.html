@@ -15,25 +15,31 @@
 <link rel="icon" href="/favicon.png?v=4">
 <link rel="stylesheet" href="/cartel.css">
 </head>
-<body class="cartel">
-<div class="campo campo-hero">
-  <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav></header>
-  <span class="pill-hero" id="hero-pill" hidden></span>
-  <h1 class="gigante" id="hero-titulo">{{SITIO}}</h1>
-  <p class="hero-linea" id="hero-linea"></p>
-  <a class="boton-hero" id="hero-boton" href="/" hidden></a>
-</div>
-<main>
-  <nav class="accesos" aria-label="Más">
-    <a class="acceso" href="/carreras/"><b>Todas las carreras</b><small id="acc-carreras">Con su recorrido, su tiempo y la repetición</small></a>
-    <a class="acceso" href="/rutas"><b>Rutas y relojes</b><small>El GPX para tu reloj y la guía de cada marca</small></a>
-  </nav>
-  <section id="carreras-sec" hidden>
-    <h2 class="titulo">Carreras anteriores</h2>
-    <div class="oscuro" id="carreras"></div>
+<body class="cartel portada">
+<header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html" id="nav-admin">Entrar</a></nav></header>
+<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio" aria-current="page">Carrera</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
+<main class="portada-grid">
+  <section class="hero-tarj">
+    <span class="pill-hero" id="hero-pill" hidden></span>
+    <h1 class="hero-titulo" id="hero-titulo">{{SITIO}}</h1>
+    <p class="hero-linea" id="hero-linea"></p>
+    <a class="boton-hero" id="hero-boton" href="/" hidden></a>
   </section>
+  <div class="portada-lado">
+    <section id="carreras-sec" hidden>
+      <h2 class="sec-tit">Carreras <a href="/carreras/">Ver todas ›</a></h2>
+      <div id="carreras"></div>
+    </section>
+    <section>
+      <h2 class="sec-tit">Rutas y relojes <a href="/rutas">Ver ›</a></h2>
+      <p class="chips-relojes"><a href="/pulseras">Xiaomi</a><a href="/pulseras">Huawei</a><a href="/pulseras">Amazfit</a><a href="/pulseras">Garmin</a><a href="/pulseras">Coros</a><a href="/pulseras">Android</a><a href="/pulseras">iPhone</a></p>
+      <div class="dos-tarj">
+        <a class="tarj" href="/rutas"><b>Rutas</b><small>con su mapa y su GPX</small></a>
+        <a class="tarj" href="/pulseras"><b>Guía</b><small>la ruta en tu reloj, paso a paso</small></a>
+      </div>
+    </section>
+  </div>
 </main>
-<footer class="pie"><span><a href="/mis-rutas.html" id="nav-admin">Entrar</a> <small>(dueño e invitados)</small></span></footer>
 <noscript><p class="vacio" style="padding:0 22px 30px">Esta página necesita JavaScript para enseñar la carrera.</p></noscript>
 <script src="/inicio.js"></script>
 </body>

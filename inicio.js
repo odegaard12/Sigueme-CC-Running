@@ -1,4 +1,4 @@
-// Portada: la carrera primero (en directo, la próxima o la última) y debajo las carreras anteriores.
+// Portada: la carrera primero (en directo, la próxima o la última) y debajo las últimas tres carreras.
 // Los textos se pintan siempre con textContent.
 'use strict';
 const $ = id => document.getElementById(id);
@@ -74,11 +74,10 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   titulo.textContent = nombre;
   linea.textContent = partes.filter(Boolean).join(' · ');
   if (texto) { boton.textContent = texto; boton.href = href; boton.hidden = false; }
-  if (lista.length) $('acc-carreras').textContent = lista.length + (lista.length === 1 ? ' carrera' : ' carreras') + ' con su recorrido, su tiempo y la repetición';
   const resto = lista.filter(c => c !== ultima);
   if (resto.length) {
     $('carreras-sec').hidden = false;
-    resto.forEach((c, i) => {
+    resto.slice(0, 3).forEach((c, i) => {
       const f = fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), c.traza,
         [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i);
       f.classList.add('carrera'); f.children[2].classList.add('km'); f.children[3].classList.add('t');

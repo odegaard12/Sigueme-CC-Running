@@ -49,7 +49,7 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=10">
+<link rel="stylesheet" href="/cartel-directo.css?v=11">
 </head>
 <body>
 <header class="cd-cab">
@@ -102,15 +102,9 @@
 </section>
 
 <aside class="ayuda-cd" id="ayuda-cd" hidden aria-label="Cómo leer esta página">
-  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Datos</b> y <b>Ritmo</b> tienen los números y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
+  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Resumen</b>, <b>Ritmo</b> y <b>Avituallamientos</b> tienen los números y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
   <button type="button" id="ayuda-cd-ok">Entendido</button>
 </aside>
-
-<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Secciones de la carrera">
-  <button type="button" role="tab" data-tab="mapa" aria-selected="true">Mapa</button>
-  <button type="button" role="tab" data-tab="datos" aria-selected="false">Datos</button>
-  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
-</nav>
 
 <div class="panel-pc">
 <section class="map-wrap">
@@ -131,13 +125,12 @@
   </div>
 </section>
 
-<div class="leyenda">
-  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
-  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
-  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
-</div>
-
 <div class="lateral">
+<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Datos de la carrera">
+  <button type="button" role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
+  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
+  <button type="button" role="tab" data-tab="avit" aria-selected="false">Avituallamientos</button>
+</nav>
 <p class="map-hint" id="geo-hint"></p>
 
 <section class="metricas esqueleto">
@@ -173,6 +166,12 @@
     <h3>Paso por los avituallamientos</h3>
     <ul class="pasos" id="pasos"></ul>
   </div>
+  <p class="avit-vacio">El paso por cada avituallamiento sale aquí en cuanto el corredor lo cruza.</p>
+  <div class="leyenda">
+  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
+  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
+  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
+</div>
 </section>
 
 </div>
@@ -184,6 +183,6 @@
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=93"></script>
+<script src="app.js?v=94"></script>
 </body>
 </html>

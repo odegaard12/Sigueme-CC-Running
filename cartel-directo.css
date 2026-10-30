@@ -101,10 +101,6 @@ body { background: var(--tinta); color: var(--papel); }
   body .cd-cab .live-updated { margin-top: 10px; }
   body .cd-cab { padding-bottom: 14px; }
   .pestanas-cd button:focus-visible { outline: 3px solid var(--papel); outline-offset: 2px; }
-  body[data-tab="mapa"] .lateral { display: none; }
-  body[data-tab="datos"] .map-wrap, body[data-tab="datos"] .leyenda, body[data-tab="datos"] #ritmo, body[data-tab="datos"] #ritmo-vacio { display: none; }
-  body[data-tab="ritmo"] .map-wrap, body[data-tab="ritmo"] .leyenda, body[data-tab="ritmo"] .metricas-top, body[data-tab="ritmo"] .progreso,
-  body[data-tab="ritmo"] .metricas-sec, body[data-tab="ritmo"] .estado-carrera { display: none; }
 }
 .ritmo-vacio { color: var(--muted, #b5c06a); margin: 10px 0; }
 .ritmo-vacio[hidden] { display: none; }
@@ -199,4 +195,64 @@ footer a { color: var(--papel); }
   body .panel-pc { max-width: none; margin-left: 0; margin-right: 0; padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
   body .ficha { max-width: none; margin-left: clamp(16px, 3vw, 36px); margin-right: clamp(16px, 3vw, 36px); }
   body .live-updated, body .map-hint, body .livetrack-embed { max-width: none; }
+}
+
+/* ================= v1.44 · diseño C: el mapa manda y los datos van en una hoja oscura con pestañas ================= */
+/* cabecera oscura y compacta (antes, una franja lima enorme) */
+body .cd-cab { background: var(--tinta); color: var(--papel); padding: 4px 0 12px; border-bottom: 1px solid var(--border); }
+body .cd-titulo { color: var(--papel); font-size: clamp(1.7rem, 4.2vw, 2.8rem); line-height: 1.02; margin-top: 0; }
+body .cd-datos { padding-top: 8px; gap: 6px 18px; }
+body .cd-ruta span, body .cd-ruta b { color: var(--papel); }
+body .cd-ruta span { color: var(--muted); font-size: 0.78rem; }
+body .cd-ruta b { font-size: 1.35rem; }
+body .cd-datos .pill-estado { background: var(--panel); color: var(--papel); border-radius: 20px; font-size: 0.72rem; padding: 5px 11px; }
+body .cd-datos .pill-estado.vivo { background: var(--campo); color: var(--tinta); }
+body .cd-datos .pill-estado.vivo::before { background: var(--tinta); }
+body .cd-datos .pill-estado.previo { color: #ffe08a; } body .cd-datos .pill-estado.sin { color: #ff9a8a; }
+body .cd-cab .live-updated { color: var(--muted); font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+.cd-nav > a { color: var(--papel); }
+.cd-nav .compartir, .cd-nav .ver-ficha, .cd-nav .ayuda-btn { background: var(--panel); color: var(--campo); border-radius: 12px; }
+.cd-nav .ayuda-btn:focus-visible { outline-color: var(--campo); }
+/* avisos sin bloques lima: fondo de panel, el lima solo en el botón */
+.aviso-resultado, .ayuda-cd { background: var(--panel); color: var(--papel); border-radius: 16px; }
+.aviso-titulo, .aviso-sub { color: var(--papel); }
+.btn-repeticion, .ayuda-cd button { background: var(--campo); color: var(--tinta); border-radius: 10px; }
+.ayuda-cd button:focus-visible { outline-color: var(--campo); }
+.btn-flotante { background: rgba(12, 15, 14, 0.88); border: 0; border-radius: 14px; }
+.mapa-botones .btn-flotante { border-radius: 14px; }
+
+/* la hoja de datos y sus pestañas (en todas las anchuras) */
+.lateral .pestanas-cd { display: flex; gap: 20px; position: static; padding: 0; margin: 0 0 14px; background: none; border-bottom: 1px solid var(--border); }
+.lateral .pestanas-cd button { flex: 0 0 auto; min-height: 44px; padding: 0 0 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none;
+  color: var(--muted); font: 800 0.95rem/1 system-ui, sans-serif; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+.lateral .pestanas-cd button:first-child, .lateral .pestanas-cd button:last-child { border-radius: 0; }
+.lateral .pestanas-cd button[aria-selected="true"] { color: var(--papel); background: none; border-bottom-color: var(--campo); }
+.lateral .pestanas-cd button:focus-visible { outline: 3px solid var(--campo); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .lateral .pestanas-cd button { transition: none; } }
+.avit-vacio { color: var(--muted); margin: 6px 0 12px; }
+.lateral .leyenda { padding: 4px 0 0; justify-content: flex-start; }
+/* qué enseña cada pestaña */
+body[data-tab="resumen"] #ritmo, body[data-tab="resumen"] #ritmo-vacio, body[data-tab="resumen"] #resultado, body[data-tab="resumen"] .avit-vacio, body[data-tab="resumen"] .lateral .leyenda,
+body[data-tab="ritmo"] .metricas-top, body[data-tab="ritmo"] .progreso, body[data-tab="ritmo"] .metricas-sec, body[data-tab="ritmo"] .estado-carrera,
+body[data-tab="ritmo"] #resultado, body[data-tab="ritmo"] .avit-vacio, body[data-tab="ritmo"] .lateral .leyenda,
+body[data-tab="avit"] .metricas-top, body[data-tab="avit"] .progreso, body[data-tab="avit"] .metricas-sec, body[data-tab="avit"] .estado-carrera,
+body[data-tab="avit"] #ritmo, body[data-tab="avit"] #ritmo-vacio, body[data-tab="avit"] .map-hint { display: none; }
+body[data-tab="ritmo"] #ritmo-vacio:not([hidden]) { display: block; }
+body[data-tab="avit"] #resultado:not([hidden]) ~ .avit-vacio { display: none; }
+/* en «Avituallamientos» el paso por cada uno se ve aunque la carrera siga */
+body[data-tab="avit"] #resultado:not([hidden]) { display: block; }
+
+/* móvil: el mapa a lo alto y la hoja encima de su borde */
+@media (max-width: 899px) {
+  body .panel-pc { padding: 0; }
+  body .map-wrap { margin: 0; border-radius: 0; }
+  body #map3d { height: 64svh; min-height: 300px; }
+  .lateral { position: relative; z-index: 3; margin-top: -22px; background: #121614; border-radius: 22px 22px 0 0; padding: 12px clamp(16px, 3vw, 36px) 18px; box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.5); }
+  .lateral::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: #3a433d; margin: 0 auto 8px; }
+}
+/* PC: el mapa a la izquierda a toda la altura y la hoja fija a la derecha */
+@media (min-width: 900px) {
+  body .panel-pc { grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; }
+  body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 150px), 900px); }
+  body .panel-pc .lateral { grid-row: 1; background: #121614; border-radius: 16px; padding: 14px 20px 18px; align-content: start; }
 }

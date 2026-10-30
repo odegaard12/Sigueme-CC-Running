@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.44.0 · 2026-10-30
+- **Página en directo nueva («C»):** el mapa manda, a lo alto en el móvil y a la izquierda en el ordenador; los datos van en una hoja oscura con tres pestañas, **Resumen · Ritmo · Avituallamientos**, y el mapa se ve siempre (antes, la pestaña de datos lo tapaba). Cabecera oscura y compacta en vez de la franja lima.
+- **Pestañas fijas en las páginas públicas:** Carrera · Carreras · Rutas y relojes, en la portada, en el índice de carreras y en Rutas y relojes.
+- **Portada nueva:** la carrera (en directo, próxima o última) en una tarjeta grande con su botón; al lado en el ordenador, o debajo en el móvil, las últimas tres carreras y el acceso a Rutas y relojes con las marcas.
+- Avisos (resultado y ayuda) sin bloques lima: fondo oscuro y el lima solo en el botón.
+
 ## v1.43.0 · 2026-10-30
 - **Pantallas anchas alineadas:** en la página en directo y en la del resultado, el mapa, los datos, la ficha y la barra de la repetición usan el mismo margen que la cabecera (antes: mapa y datos en un bloque centrado de 1280 px y la barra de lado a lado, que en un monitor grande no parecían alineados).
 - **«Mis rutas» alineada:** el logo, el título y el saludo van en la misma columna que las tarjetas.
