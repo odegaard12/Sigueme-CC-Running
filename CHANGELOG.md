@@ -5,8 +5,7 @@ arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
 ## v1.46.1 · 2026-10-30
-- **Repaso en el teléfono que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
-- Capturas del repo al día.
+- **Repaso en el teléfono:** la barra del sistema (Android, Safari) sale oscura como la web, no lima; con la web instalada en el iPhone la cabecera del directo ya no queda debajo de la muesca; los chips de marcas de la portada del mismo tamaño que en las demás páginas.
 
 ## v1.46.0 · 2026-10-30
 - **«Mis rutas» y el panel con el mismo diseño que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
