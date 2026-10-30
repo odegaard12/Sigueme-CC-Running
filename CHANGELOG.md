@@ -4,6 +4,58 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.46.1 · 2026-10-30
+- **Repaso en el teléfono:** la barra del sistema (Android, Safari) sale oscura como la web, no lima; con la web instalada en el iPhone la cabecera del directo ya no queda debajo de la muesca; los chips de marcas de la portada del mismo tamaño que en las demás páginas.
+
+## v1.46.0 · 2026-10-30
+- **«Mis rutas» y el panel con el mismo diseño que la web:** cabecera oscura con la misma barra (adiós a la franja lima), enlaces en gris sin subrayar, el resumen de la carrera del panel en tarjeta oscura con el lima solo en la etiqueta y el botón, chips de marcas iguales y la guía de primera vez en tarjeta oscura con borde lima (antes, blanca).
+- Capturas del repo al día.
+
+## v1.45.0 · 2026-10-30
+- **Un solo diseño en toda la web:** Carreras, Rutas y relojes, la guía de pulseras y la página de cada ruta dejan el bloque lima gigante y pasan al diseño oscuro de la portada y del directo (títulos, tarjetas, botones y chips iguales en todas).
+- **Un solo menú:** «Inicio · Carreras · Rutas y relojes» arriba en todas las páginas, también en la página de cada carrera (cuenta como «Carreras»). Fuera los menús repetidos: «Inicio» en la cabecera del directo, enlaces del pie, «‹ Volver al inicio» y «‹ INICIO».
+- Pie de la carrera sin el «·» colgando; hojas de estilo con versión nueva para que nadie vea la vieja de la caché.
+- Capturas del repo al día.
+
+## v1.44.2 · 2026-10-30
+- **Guía de pulseras con las pestañas fijas** (Carrera · Carreras · Rutas y relojes), como el resto de páginas públicas. Auditoría en producción: sin enlaces rotos, todas las páginas y recursos en 200 y sin errores en el registro.
+
+## v1.44.1 · 2026-10-30
+- **Repaso del diseño nuevo:** el estado (sin cobertura, antes de salir, resultado) alineado con el título; el botón de la repetición visible (salía oscuro sobre oscuro); el aviso «antes de salir» sin bloque lima; el perfil de altitud ya no queda tapado por la hoja de datos; las cifras en la misma línea que las pestañas.
+- **Capturas del repo al día** (`docs/capturas/`) con el diseño nuevo.
+
+## v1.44.0 · 2026-10-30
+- **Página en directo nueva («C»):** el mapa manda, a lo alto en el móvil y a la izquierda en el ordenador; los datos van en una hoja oscura con tres pestañas, **Resumen · Ritmo · Avituallamientos**, y el mapa se ve siempre (antes, la pestaña de datos lo tapaba). Cabecera oscura y compacta en vez de la franja lima.
+- **Pestañas fijas en las páginas públicas:** Carrera · Carreras · Rutas y relojes, en la portada, en el índice de carreras y en Rutas y relojes.
+- **Portada nueva:** la carrera (en directo, próxima o última) en una tarjeta grande con su botón; al lado en el ordenador, o debajo en el móvil, las últimas tres carreras y el acceso a Rutas y relojes con las marcas.
+- Avisos (resultado y ayuda) sin bloques lima: fondo oscuro y el lima solo en el botón.
+
+## v1.43.0 · 2026-10-30
+- **Pantallas anchas alineadas:** en la página en directo y en la del resultado, el mapa, los datos, la ficha y la barra de la repetición usan el mismo margen que la cabecera (antes: mapa y datos en un bloque centrado de 1280 px y la barra de lado a lado, que en un monitor grande no parecían alineados).
+- **«Mis rutas» alineada:** el logo, el título y el saludo van en la misma columna que las tarjetas.
+- **Portada sin huecos:** debajo de la carrera, dos accesos claros, «Todas las carreras» (con cuántas hay) y «Rutas y relojes»; antes, con una sola carrera, quedaba todo vacío. El pie se queda en «Entrar (dueño e invitados)».
+
+## v1.42.0 · 2026-10-30
+- **Todo alineado:** un solo margen lateral en todas las páginas públicas (portada, rutas y relojes, carreras, guía de pulseras), el mismo que la página en directo: 16 px en el móvil y hasta 36 px en el ordenador. Antes se mezclaban 16, 18 y 22 px, y la guía de pulseras y «Llévala al reloj» iban en una columna centrada.
+
+## v1.41.0 · 2026-10-29
+- **Botón «?» de ayuda en la página en directo:** en la cabecera, junto a «Compartir». Vuelve a enseñar el aviso de «cómo leer esta página» cuando se quiera (antes salía una sola vez y no había forma de repetirlo).
+- **Cabecera del móvil con sitio para todo:** el nombre «SÍGUEME CC» ya no se parte en dos líneas; «Mi ficha» enseña su texto solo desde 460 px de ancho (antes 380), y en pantallas estrechas queda solo la foto.
+
+## v1.40.0 · 2026-10-29
+- **Guía de primera vez y botón «? Ayuda» en «Mis rutas»** (el espacio de los invitados), como la del panel: la primera vez que entran se abre sola una visita de 5 pasos (bienvenida, subir el GPX, avituallamientos, llevársela al reloj y **su fecha de caducidad**, con lo que pasa al caducar), señalando cada cosa en pantalla. Se puede saltar o cerrar con Esc, no vuelve a salir sola y se repite con el botón «? Ayuda» de la cabecera.
+
+## v1.39.1 · 2026-10-29
+- **Capturas del repo con la portada nueva** (`docs/capturas/`): la portada con la carrera primero (ordenador y móvil), la página «Rutas y relojes» y el resto al día, con la carrera de ejemplo. Sin cambios de código.
+
+## v1.39.0 · 2026-10-29
+**La carrera primero.** Sígueme CC es una web de seguimiento; las rutas y los GPX son un extra y ya no ocupan la portada.
+- **Portada (`/inicio`):** la carrera, con su estado («En directo», «Próxima carrera» o «Última carrera») y un botón grande («Ver en directo», «Ver la carrera» o «Ver el resultado»). Debajo, las carreras anteriores.
+- **Nueva página «Rutas y relojes» (`/rutas`):** las rutas publicadas, los botones de marca (Xiaomi, Huawei, Amazfit, Garmin, Coros, Android, iPhone), el GPX de la carrera y la guía completa.
+- **Menús más claros:** «Admin» sale del menú de las páginas públicas (queda como «Entrar», discreto, en el pie); el pie de la página en directo pasa de cuatro enlaces de rutas y relojes a uno, «Rutas y relojes».
+- Los botones de «Rutas y relojes» y de la guía de pulseras se ven ahora sobre fondo oscuro (antes eran negros sobre negro).
+- Pruebas actualizadas y nuevas para `/inicio` y `/rutas`.
+
 ## v1.38.1 · 2026-10-26
 - **Capturas del repo al día** (`docs/capturas/`): el panel nuevo con barra lateral y resumen, la página en directo con la tarjeta de ritmo, el anillo del corredor y el rastro de cometa, la portada y las pantallas de ruta, todas con la carrera de ejemplo. Sin cambios de código.
 

@@ -87,7 +87,7 @@ function pintarCarrera() {
     bici.hidden = false;
   }
   const pie = document.getElementById('pie-carrera');
-  if (pie) pie.textContent = [c.nombre, c.lugar].filter(Boolean).map(t => t + ' · ').join('');
+  if (pie) pie.textContent = [c.nombre, c.lugar].filter(Boolean).join(' · ');
 }
 
 function precargado(nombre, respaldo) {
@@ -1803,15 +1803,22 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
   if (!caja || !ok) return;
   let vista = false;
   try { vista = localStorage.getItem('sigueme.ayuda') === '1'; } catch (e) {}
-  if (vista) return;
-  caja.hidden = false;
+  if (!vista) caja.hidden = false;
   ok.addEventListener('click', () => {
     caja.hidden = true;
     try { localStorage.setItem('sigueme.ayuda', '1'); } catch (e) {}
+    const b = document.getElementById('ayuda-btn'); if (b) b.focus({ preventScroll: true });
+  });
+  // el botón «?» de la cabecera: vuelve a enseñar el aviso cuando se quiera
+  const btn = document.getElementById('ayuda-btn');
+  if (btn) btn.addEventListener('click', () => {
+    caja.hidden = false;
+    caja.scrollIntoView({ behavior: QUIETO ? 'auto' : 'smooth', block: 'nearest' });
+    ok.focus({ preventScroll: true });
   });
 })();
 
-// ---------- pestañas del móvil: Mapa · Datos · Ritmo (en el PC no existen: todo a la vez) ----------
+// ---------- pestañas de la hoja de datos: Resumen · Ritmo · Avituallamientos (el mapa se ve siempre) ----------
 (function pestanasMovil() {
   const nav = document.getElementById('pestanas-cd');
   if (!nav) return;
@@ -1820,8 +1827,6 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
     document.body.dataset.tab = t;
     botones.forEach(b => { const si = b.dataset.tab === t; b.setAttribute('aria-selected', si ? 'true' : 'false'); b.tabIndex = si ? 0 : -1; if (si && foco) b.focus(); });
     try { sessionStorage.setItem('sigueme.tab', t); } catch (e) {}
-    // el mapa estaba oculto: al volver hay que decirle su tamaño
-    if (t === 'mapa' && typeof map3d !== 'undefined' && map3d) requestAnimationFrame(() => { try { map3d.resize(); } catch (e) {} });
   };
   botones.forEach((b, i) => {
     b.addEventListener('click', () => poner(b.dataset.tab, false));
@@ -1830,9 +1835,9 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
       if (d) { e.preventDefault(); poner(botones[(i + d + botones.length) % botones.length].dataset.tab, true); }
     });
   });
-  let inicial = 'mapa';
-  try { inicial = sessionStorage.getItem('sigueme.tab') || 'mapa'; } catch (e) {}
-  poner(botones.some(b => b.dataset.tab === inicial) ? inicial : 'mapa', false);
+  let inicial = 'resumen';
+  try { inicial = sessionStorage.getItem('sigueme.tab') || 'resumen'; } catch (e) {}
+  poner(botones.some(b => b.dataset.tab === inicial) ? inicial : 'resumen', false);
 })();
 
 pollLive();

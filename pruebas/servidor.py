@@ -289,6 +289,11 @@ try:
     # la guía de pulseras y relojes
     r = urllib.request.urlopen(U + '/pulseras'); html = r.read()
     ok(r.status == 200 and b'Xiaomi' in html and b'Huawei' in html and b'Amazfit' in html, '/pulseras: la guía de pulseras y relojes')
+    r = urllib.request.urlopen(U + '/rutas'); html = r.read()
+    ok(r.status == 200 and b'rutas.js' in html and b'Rutas y relojes' in html, '/rutas: la página de rutas y relojes')
+    r = urllib.request.urlopen(U + '/inicio'); html = r.read()
+    ok(r.status == 200 and b'hero-boton' in html and b'inicio.js' in html, '/inicio: la portada es la carrera')
+    ok(b'>Admin<' not in html, '/inicio: sin «Admin» en el menú público')
     # el service worker se sirve como JavaScript y no es una puerta a nada más
     r = urllib.request.urlopen(U + '/sw.js')
     ok(r.status == 200 and 'javascript' in r.headers.get('Content-Type', '') and b'sigueme-v' in r.read(), 'sw.js: se sirve como JavaScript')

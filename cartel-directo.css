@@ -70,6 +70,11 @@ body { background: var(--tinta); color: var(--papel); }
 .progreso i { background: var(--campo); }
 .chip { background: var(--panel); border: 0; border-radius: 4px; color: var(--muted); font-weight: 700; }
 .chip b { font: 400 1.15rem/1 var(--display); color: var(--papel); letter-spacing: 0; }
+/* botón «?» de la cabecera */
+.cd-cab .cd-marca { white-space: nowrap; }
+.cd-nav .ayuda-btn { background: var(--tinta); color: var(--campo); border: 0; border-radius: 4px; width: 44px; min-height: 44px; padding: 0; font: 400 1.4rem/1 var(--display, Anton, Impact, sans-serif); cursor: pointer; }
+.cd-nav .ayuda-btn:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+
 /* ayuda de primera vez */
 .ayuda-cd { background: var(--campo); color: var(--tinta); margin: 10px clamp(12px, 3vw, 36px) 0; padding: 12px 14px; border-radius: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .ayuda-cd[hidden] { display: none; }
@@ -96,10 +101,6 @@ body { background: var(--tinta); color: var(--papel); }
   body .cd-cab .live-updated { margin-top: 10px; }
   body .cd-cab { padding-bottom: 14px; }
   .pestanas-cd button:focus-visible { outline: 3px solid var(--papel); outline-offset: 2px; }
-  body[data-tab="mapa"] .lateral { display: none; }
-  body[data-tab="datos"] .map-wrap, body[data-tab="datos"] .leyenda, body[data-tab="datos"] #ritmo, body[data-tab="datos"] #ritmo-vacio { display: none; }
-  body[data-tab="ritmo"] .map-wrap, body[data-tab="ritmo"] .leyenda, body[data-tab="ritmo"] .metricas-top, body[data-tab="ritmo"] .progreso,
-  body[data-tab="ritmo"] .metricas-sec, body[data-tab="ritmo"] .estado-carrera { display: none; }
 }
 .ritmo-vacio { color: var(--muted, #b5c06a); margin: 10px 0; }
 .ritmo-vacio[hidden] { display: none; }
@@ -160,7 +161,7 @@ footer a { color: var(--papel); }
 .cd-cab { padding-bottom: 18px; }
 
 /* el botón de la ficha del corredor dice «Mi ficha» también en el móvil (cabe a partir de 380 px) */
-@media (min-width: 380px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }
+@media (min-width: 460px) { .cd-nav .ver-ficha span { display: inline; } .cd-nav .ver-ficha { padding: 4px 12px 4px 4px; } }
 
 /* cabecera compacta: la mitad de alta que antes; el mapa y las cifras, antes en pantalla */
 .cd-cab { padding-bottom: 12px; }
@@ -186,3 +187,95 @@ footer a { color: var(--papel); }
 .aviso-conexion:not(.visible) { opacity: 0; transform: translate(-50%, -14px); pointer-events: none; }
 .aviso-conexion.ok { background: var(--campo); color: var(--tinta); }
 @media (prefers-reduced-motion: reduce) { .metrica.cambia, .pill-estado.cambia { animation: none; } }
+
+/* todo con el margen de la cabecera, también en pantallas anchas (antes: mapa y datos en un bloque centrado de 1280 px
+   y la barra de la repetición de lado a lado, que en un monitor grande no parecían alineados) */
+.aviso-resultado { margin-left: clamp(16px, 3vw, 36px); margin-right: clamp(16px, 3vw, 36px); }
+@media (min-width: 1000px) {
+  body .panel-pc { max-width: none; margin-left: 0; margin-right: 0; padding-left: clamp(16px, 3vw, 36px); padding-right: clamp(16px, 3vw, 36px); }
+  body .ficha { max-width: none; margin-left: clamp(16px, 3vw, 36px); margin-right: clamp(16px, 3vw, 36px); }
+  body .live-updated, body .map-hint, body .livetrack-embed { max-width: none; }
+}
+
+/* ================= v1.44 · diseño C: el mapa manda y los datos van en una hoja oscura con pestañas ================= */
+/* cabecera oscura y compacta (antes, una franja lima enorme) */
+body .cd-cab { background: var(--tinta); color: var(--papel); padding: 4px 0 12px; border-bottom: 1px solid var(--border); }
+body .cd-titulo { color: var(--papel); font-size: clamp(1.7rem, 4.2vw, 2.8rem); line-height: 1.02; margin-top: 0; }
+body .cd-datos { padding-top: 8px; gap: 6px 18px; }
+body .cd-ruta span, body .cd-ruta b { color: var(--papel); }
+body .cd-ruta span { color: var(--muted); font-size: 0.78rem; }
+body .cd-ruta b { font-size: 1.35rem; }
+body .cd-datos .pill-estado { background: var(--panel); color: var(--papel); border-radius: 20px; font-size: 0.72rem; padding: 5px 11px; }
+body .cd-datos .pill-estado.vivo { background: var(--campo); color: var(--tinta); }
+body .cd-datos .pill-estado.vivo::before { background: var(--tinta); }
+body .cd-datos .pill-estado.previo { color: #ffe08a; } body .cd-datos .pill-estado.sin { color: #ff9a8a; }
+body .cd-cab .live-updated { color: var(--muted); font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+.cd-nav > a { color: var(--papel); }
+.cd-nav .compartir, .cd-nav .ver-ficha, .cd-nav .ayuda-btn { background: var(--panel); color: var(--campo); border-radius: 12px; }
+.cd-nav .ayuda-btn:focus-visible { outline-color: var(--campo); }
+/* avisos sin bloques lima: fondo de panel, el lima solo en el botón */
+.aviso-resultado, .ayuda-cd { background: var(--panel); color: var(--papel); border-radius: 16px; }
+.aviso-titulo, .aviso-sub { color: var(--papel); }
+.btn-repeticion, .ayuda-cd button { background: var(--campo); color: var(--tinta); border-radius: 10px; }
+.ayuda-cd button:focus-visible { outline-color: var(--campo); }
+.btn-flotante { background: rgba(12, 15, 14, 0.88); border: 0; border-radius: 14px; }
+.mapa-botones .btn-flotante { border-radius: 14px; }
+
+/* la hoja de datos y sus pestañas (en todas las anchuras) */
+.lateral .pestanas-cd { display: flex; gap: 20px; position: static; padding: 0; margin: 0 0 14px; background: none; border-bottom: 1px solid var(--border); }
+.lateral .pestanas-cd button { flex: 0 0 auto; min-height: 44px; padding: 0 0 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none;
+  color: var(--muted); font: 800 0.95rem/1 system-ui, sans-serif; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+.lateral .pestanas-cd button:first-child, .lateral .pestanas-cd button:last-child { border-radius: 0; }
+.lateral .pestanas-cd button[aria-selected="true"] { color: var(--papel); background: none; border-bottom-color: var(--campo); }
+.lateral .pestanas-cd button:focus-visible { outline: 3px solid var(--campo); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .lateral .pestanas-cd button { transition: none; } }
+.avit-vacio { color: var(--muted); margin: 6px 0 12px; }
+.lateral .leyenda { padding: 4px 0 0; justify-content: flex-start; }
+/* qué enseña cada pestaña */
+body[data-tab="resumen"] #ritmo, body[data-tab="resumen"] #ritmo-vacio, body[data-tab="resumen"] #resultado, body[data-tab="resumen"] .avit-vacio, body[data-tab="resumen"] .lateral .leyenda,
+body[data-tab="ritmo"] .metricas-top, body[data-tab="ritmo"] .progreso, body[data-tab="ritmo"] .metricas-sec, body[data-tab="ritmo"] .estado-carrera,
+body[data-tab="ritmo"] #resultado, body[data-tab="ritmo"] .avit-vacio, body[data-tab="ritmo"] .lateral .leyenda,
+body[data-tab="avit"] .metricas-top, body[data-tab="avit"] .progreso, body[data-tab="avit"] .metricas-sec, body[data-tab="avit"] .estado-carrera,
+body[data-tab="avit"] #ritmo, body[data-tab="avit"] #ritmo-vacio, body[data-tab="avit"] .map-hint { display: none; }
+body[data-tab="ritmo"] #ritmo-vacio:not([hidden]) { display: block; }
+body[data-tab="avit"] #resultado:not([hidden]) ~ .avit-vacio { display: none; }
+/* en «Avituallamientos» el paso por cada uno se ve aunque la carrera siga */
+body[data-tab="avit"] #resultado:not([hidden]) { display: block; }
+
+/* móvil: el mapa a lo alto y la hoja encima de su borde */
+@media (max-width: 899px) {
+  body .panel-pc { padding: 0; }
+  body .map-wrap { margin: 0; border-radius: 0; }
+  body #map3d { height: 64svh; min-height: 300px; }
+  .lateral { position: relative; z-index: 3; margin-top: -22px; background: #121614; border-radius: 22px 22px 0 0; padding: 12px clamp(16px, 3vw, 36px) 18px; box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.5); }
+  .lateral::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: #3a433d; margin: 0 auto 8px; }
+}
+/* PC: el mapa a la izquierda a toda la altura y la hoja fija a la derecha */
+@media (min-width: 900px) {
+  body .panel-pc { grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; }
+  body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 150px), 900px); }
+  body .panel-pc .lateral { grid-row: 1; background: #121614; border-radius: 16px; padding: 14px 20px 18px; align-content: start; }
+}
+
+/* ---- v1.44.1: repaso del diseño C ---- */
+/* el estado (sin cobertura, antes de salir, resultado) alineado con el título; solo «en directo» lleva fondo */
+body .cd-datos .pill-estado:not(.vivo) { background: none; padding-left: 0; padding-right: 0; }
+/* el botón de la repetición, en lima (salía oscuro sobre oscuro) */
+body .aviso-resultado .btn-repeticion { background: var(--campo); color: var(--tinta); }
+/* los avisos de la hoja, sin bloques lima */
+body .lateral .estado-carrera { background: var(--panel) !important; color: var(--papel) !important; border: 0 !important; }
+/* las cifras en la misma línea que las pestañas */
+body .lateral .metricas { padding-left: 0; padding-right: 0; }
+/* el perfil de altitud por encima del borde de la hoja */
+@media (max-width: 899px) { body .perfil-en-mapa { bottom: 24px; } }
+@media (min-width: 900px) { body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 200px), 900px); } }
+
+/* ---- v1.45: el mismo menú que el resto de la web (Inicio · Carreras · Rutas y relojes) ---- */
+.cd-cab .pestanas-sitio { display: flex; gap: 4px; background: #161b18; border-radius: 14px; padding: 4px; margin: 4px clamp(16px, 3vw, 36px) 12px; max-width: 560px; }
+.cd-cab .pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 6px; border-radius: 10px; color: #9aa596;
+  font-weight: 800; font-size: clamp(0.8rem, 3.4vw, 0.95rem); white-space: nowrap; text-decoration: none; }
+.cd-cab .pestanas-sitio a[aria-current="page"] { background: var(--campo); color: var(--tinta); }
+.cd-cab .pestanas-sitio a:focus-visible { outline: 3px solid var(--campo); outline-offset: 2px; }
+
+/* ---- v1.46.1: web instalada en el iPhone: nada debajo de la muesca ni de los bordes redondeados ---- */
+body .cd-cab { padding-top: max(4px, env(safe-area-inset-top)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }

@@ -38,7 +38,7 @@
   });
 </script>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#d9f24a">
+<meta name="theme-color" content="#0e1110">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,14 +49,14 @@
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin>
 <link rel="stylesheet" href="lib/maplibre-gl-4.7.1.css">
 <link rel="stylesheet" href="style.css?v=69">
-<link rel="stylesheet" href="/cartel-directo.css?v=8">
+<link rel="stylesheet" href="/cartel-directo.css?v=14">
 </head>
 <body>
 <header class="cd-cab">
   <div class="cd-barra">
     <a class="cd-marca" id="marca-sitio" href="/inicio">Sígueme CC</a>
     <nav class="cd-nav">
-      <a href="/inicio">Inicio</a>
+      <button class="ayuda-btn" id="ayuda-btn" type="button" title="Cómo leer esta página" aria-label="Ayuda: cómo leer esta página">?</button>
       <button class="compartir" id="compartir" type="button" title="Compartir el enlace" aria-label="Compartir el enlace">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
       </button>
@@ -65,6 +65,7 @@
       </button>
     </nav>
   </div>
+  <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
   <h1 class="cd-titulo" id="titulo-cd">En directo</h1>
   <div class="cd-datos">
     <span class="pill-estado" id="pill-estado" hidden></span>
@@ -101,15 +102,9 @@
 </section>
 
 <aside class="ayuda-cd" id="ayuda-cd" hidden aria-label="Cómo leer esta página">
-  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Datos</b> y <b>Ritmo</b> tienen los números y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
+  <p><b>Primera vez por aquí:</b> esta página se actualiza sola. Mueve el mapa con dos dedos; <b>Resumen</b>, <b>Ritmo</b> y <b>Avituallamientos</b> tienen los números y la llegada prevista. El botón <b>Seguir</b> lleva la cámara con el corredor.</p>
   <button type="button" id="ayuda-cd-ok">Entendido</button>
 </aside>
-
-<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Secciones de la carrera">
-  <button type="button" role="tab" data-tab="mapa" aria-selected="true">Mapa</button>
-  <button type="button" role="tab" data-tab="datos" aria-selected="false">Datos</button>
-  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
-</nav>
 
 <div class="panel-pc">
 <section class="map-wrap">
@@ -130,13 +125,12 @@
   </div>
 </section>
 
-<div class="leyenda">
-  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
-  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
-  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
-</div>
-
 <div class="lateral">
+<nav class="pestanas-cd" id="pestanas-cd" role="tablist" aria-label="Datos de la carrera">
+  <button type="button" role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
+  <button type="button" role="tab" data-tab="ritmo" aria-selected="false">Ritmo</button>
+  <button type="button" role="tab" data-tab="avit" aria-selected="false">Avituallamientos</button>
+</nav>
 <p class="map-hint" id="geo-hint"></p>
 
 <section class="metricas esqueleto">
@@ -172,6 +166,12 @@
     <h3>Paso por los avituallamientos</h3>
     <ul class="pasos" id="pasos"></ul>
   </div>
+  <p class="avit-vacio">El paso por cada avituallamiento sale aquí en cuanto el corredor lo cruza.</p>
+  <div class="leyenda">
+  <span data-tipo="normal"><i style="background:#8fe06a"></i>avituallamiento</span>
+  <span data-tipo="principal" hidden><i style="background:#e08a3a"></i>avituallamiento principal</span>
+  <span data-tipo="taller" hidden><i style="background:#5cc2e8"></i>asistencia mecánica</span>
+</div>
 </section>
 
 </div>
@@ -179,10 +179,10 @@
 
 
 <footer>
-  <p><span id="pie-carrera"></span><a href="/carreras/">Todas las carreras</a> · <a href="/inicio">Rutas</a> · <a href="ruta-carrera.gpx" download>Ruta para el reloj (GPX)</a> · <a href="/pulseras">Pulseras y relojes</a></p>
+  <p><span id="pie-carrera"></span></p>
   <p class="creditos">Imágenes de satélite © Esri, Maxar, Earthstar Geographics y la comunidad de usuarios GIS · Relieve © Mapzen/AWS (Terrain Tiles) · Mapa con MapLibre</p>
 </footer>
 
-<script src="app.js?v=92"></script>
+<script src="app.js?v=95"></script>
 </body>
 </html>
