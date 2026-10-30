@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.49.0 · 2026-10-30
+- **Páginas públicas con una sola hoja escrita de cero** (`cartel.css`), con el mismo sistema que la página de la carrera: portada, carreras, rutas, la página de cada ruta, la guía y la de la app. Medido: 3 radios de esquina, 2 estilos de botón y 2 familias de letra en todas.
+- **Guía de relojes rehecha:** qué hace la web con tu reloj (avisos, ruta, directo y resultado, y qué hace falta para cada cosa), una tabla por marca (avisos, ruta, mapa) y una ficha por marca con los modelos que sí y los que no, sacados de las webs de soporte de cada marca. Ahora también Polar, Suunto y Apple Watch. Donde depende del modelo pone «Algunos», no «Sí».
+- «Cómo meter la ruta en el reloj» ya no se repite (y se contradice) en tres sitios: la página de la ruta y «Mis rutas» remiten a la ficha de cada marca. La portada deja la lista de marcas.
+- Carreras sin «0 carreras con su recorrido…». Prueba de la guía al día (`pruebas/guias.py`).
+
 ## v1.48.0 · 2026-10-30
 - **Página de la carrera rehecha:** una sola hoja de estilos (`directo.css`) en vez de dos que se pisaban capa sobre capa. El mapa, limpio: nada encima salvo la ruta y sus marcas; «Seguir» y «Ver en 2D/3D» debajo, con la leyenda (también salida y meta). Los datos de arriba abajo, sin hoja deslizable ni pestañas dentro de la página: **Ahora · Perfil · Avituallamientos · Ritmo**.
 - **Avituallamientos con hora:** por cuáles ha pasado y a qué hora, y a qué hora se le espera en los siguientes y en meta.
