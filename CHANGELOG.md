@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.47.1 · 2026-10-30
+- **Campana de avisos, tres fallos arreglados:** en el iPhone el permiso se pide en el mismo toque (Safari no deja pedirlo después de una espera y podía no salir nunca); la suscripción espera a que el service worker de los avisos esté activo (recién registrado, el navegador la rechazaba); y en pantallas de 320 px los botones de la cabecera ya no se salen.
+- Si la activación falla, el motivo queda en la consola del navegador.
+
 ## v1.47.0 · 2026-10-30
 - **Avisos en el móvil de quien sigue la carrera:** campana en la cabecera de la página de la carrera; avisa de la salida, de cada avituallamiento y de la llegada a meta aunque la web esté cerrada (Web Push). En Android, en el navegador; en el iPhone, con la web instalada (Compartir → «Añadir a pantalla de inicio», iOS 16.4 o más). Sin ráfagas: si se juntan varios, solo el último.
 - Solo envía la Pi con la IP flotante; el envío va con pywebpush en su propio entorno (~/sigueme-push) y el servidor sigue sin dependencias: sin ese entorno, la campana no sale. Suscripciones solo de servicios de avisos reales (Apple, Google, Mozilla, Microsoft), en un fichero oculto que no se sirve.

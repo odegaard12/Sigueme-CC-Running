@@ -1870,15 +1870,22 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
         ? 'En el iPhone los avisos llegan con la web instalada: toca Compartir → «Añadir a pantalla de inicio», abre Sígueme CC desde el icono y toca otra vez la campana.'
         : 'Este navegador no puede recibir avisos. Prueba con Chrome, Edge, Firefox o Safari al día.');
     }
+    // Safari (iPhone) solo deja pedir permiso en el mismo toque: se pide ANTES de cualquier espera
+    const activando = btn.getAttribute('aria-pressed') !== 'true';
+    const permiso = activando && Notification.permission === 'default' ? Notification.requestPermission() : null;
     try {
       const reg = await navigator.serviceWorker.register('/sw-avisos.js', { scope: '/avisos/' });
+      if (!reg.active) {
+        const w = reg.installing || reg.waiting;
+        if (w) await new Promise(ok => { const mira = () => { if (w.state === 'activated' || w.state === 'redundant') ok(); }; w.addEventListener('statechange', mira); mira(); });
+      }
       const actual = await reg.pushManager.getSubscription();
       if (actual) {
         await post('/api/push/baja', { endpoint: actual.endpoint }).catch(() => {});
         await actual.unsubscribe(); poner(false);
         return decir('Avisos quitados. Puedes volver a activarlos con la campana.');
       }
-      if (await Notification.requestPermission() !== 'granted') {
+      if ((permiso ? await permiso : Notification.permission) !== 'granted') {
         return decir('Sin permiso no te podemos avisar. Actívalo en los ajustes del navegador (en el iPhone: Ajustes → Notificaciones → Sígueme CC) y vuelve a tocar la campana.');
       }
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(clave) });
@@ -1887,6 +1894,7 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
       poner(true);
       decir('Listo: te avisaremos de la salida, de cada avituallamiento y de la llegada a meta, aunque tengas la web cerrada.');
     } catch (e) {
+      console.warn('[avisos]', e && e.name, e && e.message);
       decir('No se pudieron activar los avisos. Comprueba la conexión y vuelve a intentarlo.');
     }
   });

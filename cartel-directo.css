@@ -285,3 +285,13 @@ body .cd-cab { padding-top: max(4px, env(safe-area-inset-top)); padding-left: en
 .cd-nav .campana[hidden] { display: none; }
 .cd-nav .campana.activo { background: var(--campo); color: var(--tinta); }
 .cd-nav .campana:focus-visible { outline: 3px solid var(--campo); outline-offset: 3px; }
+
+/* ---- v1.47.1: con la campana, en 320 px los botones de la cabecera se salían: más juntos y un poco más pequeños ---- */
+@media (max-width: 374px) {
+  .cd-barra { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .cd-nav { gap: 6px; }
+  .cd-nav .campana, .cd-nav .ayuda-btn, .cd-nav .compartir { width: 40px; min-height: 40px; }
+  .cd-nav .ver-ficha { min-height: 40px; padding: 3px; }
+  .cd-nav .ver-ficha img { width: 32px; height: 32px; }
+  .cd-cab .cd-marca { font-size: 0.85rem; }
+}
