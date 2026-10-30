@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.44.2 · 2026-10-30
+- **Guía de pulseras con las pestañas fijas** (Carrera · Carreras · Rutas y relojes), como el resto de páginas públicas. Auditoría en producción: sin enlaces rotos, todas las páginas y recursos en 200 y sin errores en el registro.
+
 ## v1.44.1 · 2026-10-30
 - **Repaso del diseño nuevo:** el estado (sin cobertura, antes de salir, resultado) alineado con el título; el botón de la repetición visible (salía oscuro sobre oscuro); el aviso «antes de salir» sin bloque lima; el perfil de altitud ya no queda tapado por la hoja de datos; las cifras en la misma línea que las pestañas.
 - **Capturas del repo al día** (`docs/capturas/`) con el diseño nuevo.
