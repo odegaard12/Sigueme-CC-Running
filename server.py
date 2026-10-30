@@ -1808,14 +1808,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#d9f24a">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=2">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=3">'
                 '</head><body class="cartel"><div class="campo">'
-                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Carrera</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
+                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
                 f'<div class="bajo"><p>{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p></div></div>'
                 f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
                 f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
-                '<footer class="pie"><a href="/inicio">‹ Volver al inicio</a></footer></body></html>').encode("utf-8")
+                f'<footer class="pie"><span>{sitio}</span></footer></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))

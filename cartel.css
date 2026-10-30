@@ -195,3 +195,38 @@ body.portada { background: #0e1110; color: var(--papel); }
 .tarj:hover, .tarj:focus-visible { background: #1b221e; }
 .tarj b { display: block; font: 400 1.3rem/1.05 var(--display); text-transform: uppercase; }
 .tarj small { color: #8f9a8b; }
+
+/* ================= v1.45 · un solo diseño en toda la web: el oscuro de la portada y del directo ================= */
+body.cartel { background: #0e1110; color: var(--papel); }
+.campo { background: transparent; color: var(--papel); }
+.campo :focus-visible { outline-color: var(--campo); }
+.barra a { color: var(--papel); }
+.barra nav a { color: #9aa596; }
+h1.gigante { font: 400 clamp(2.3rem, 6vw, 3.6rem)/1.05 var(--display); margin-top: 22px; color: var(--papel); }
+.bajo { padding-top: 8px; padding-bottom: 8px; }
+.bajo p { color: #cfd6cc; font-weight: 500; font-size: 1rem; max-width: 60ch; }
+h2.titulo, .pul h2.titulo { font: 400 1.6rem/1 var(--display); margin-top: 28px; margin-bottom: 12px; }
+/* filas = tarjetas, como las carreras de la portada */
+.oscuro { padding-top: 8px; padding-bottom: 8px; }
+.fila { margin: 0 0 10px; padding: 14px 16px; background: #151a17; border: 0; border-radius: 16px; color: var(--papel); }
+.fila:hover, .fila:focus-visible { background: #1b221e; color: var(--papel); }
+.fila:hover .nombre small, .fila:focus-visible .nombre small, .fila:hover .cifra span, .fila:focus-visible .cifra span { color: #8f9a8b; }
+.fila .traza, .fila:hover .traza, .fila:focus-visible .traza { background: #1d2420; color: var(--campo); border-radius: 10px; }
+.fila .cifra.km b { color: var(--campo); }
+/* botones: lima el principal, borde lima el secundario */
+.boton, .pul .acciones .boton { background: var(--campo); color: #0e1110; border-radius: 12px; box-shadow: none; }
+.boton:hover, .pul .acciones .boton:hover { background: #e6f77a; }
+.boton.claro, .pul .acciones .boton.claro { background: transparent; color: var(--campo); box-shadow: inset 0 0 0 2px var(--campo); }
+.boton.claro:hover { background: rgba(217, 242, 74, 0.1); }
+/* chips de marcas iguales en todas las páginas */
+.chips-marcas a { background: #1d2420; color: var(--papel); }
+.chips-marcas a:hover { background: #27302b; }
+/* aviso «en directo ahora» del índice de carreras */
+.aviso { background: #151a17; color: var(--papel); border-radius: 16px; margin-left: var(--margen); margin-right: var(--margen); }
+.pie { color: #8f9a8b; font-weight: 600; }
+.pie span { color: var(--papel); }
+/* página de una ruta: el bloque de datos en tarjeta oscura */
+.ruta .campo.cab { background: #151a17; border-radius: 20px; margin: 16px var(--margen) 0; padding-top: 18px; padding-bottom: 18px; }
+.ruta .campo.cab .boton { background: var(--campo); color: #0e1110; }
+.ruta .campo.cab .boton.claro { background: transparent; color: var(--campo); box-shadow: inset 0 0 0 2px var(--campo); }
+.ruta .nombre-ruta, .ruta .cifras b, .ruta .autor { color: var(--papel); }

@@ -269,3 +269,10 @@ body .lateral .metricas { padding-left: 0; padding-right: 0; }
 /* el perfil de altitud por encima del borde de la hoja */
 @media (max-width: 899px) { body .perfil-en-mapa { bottom: 24px; } }
 @media (min-width: 900px) { body .panel-pc #map3d { height: clamp(420px, calc(100dvh - 200px), 900px); } }
+
+/* ---- v1.45: el mismo menú que el resto de la web (Inicio · Carreras · Rutas y relojes) ---- */
+.cd-cab .pestanas-sitio { display: flex; gap: 4px; background: #161b18; border-radius: 14px; padding: 4px; margin: 4px clamp(16px, 3vw, 36px) 12px; max-width: 560px; }
+.cd-cab .pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 6px; border-radius: 10px; color: #9aa596;
+  font-weight: 800; font-size: clamp(0.8rem, 3.4vw, 0.95rem); white-space: nowrap; text-decoration: none; }
+.cd-cab .pestanas-sitio a[aria-current="page"] { background: var(--campo); color: var(--tinta); }
+.cd-cab .pestanas-sitio a:focus-visible { outline: 3px solid var(--campo); outline-offset: 2px; }

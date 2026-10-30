@@ -13,12 +13,13 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css">
+<link rel="stylesheet" href="/cartel.css?v=3">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
+<header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas" aria-current="page">Rutas y relojes</a></nav>
 <div class="campo cab">
-  <header class="barra"><a href="/inicio">‹ INICIO</a><nav><a href="/rutas">Rutas y relojes</a></nav></header>
   <h1 class="nombre-ruta" id="titulo">&nbsp;</h1>
   <p class="autor" id="autor" hidden></p>
   <div class="cifras" id="cifras" hidden></div>
@@ -43,7 +44,7 @@
     <p class="chips-marcas" aria-label="Guía de tu marca"><a href="/pulseras#xiaomi">Xiaomi</a><a href="/pulseras#huawei">Huawei</a><a href="/pulseras#amazfit">Amazfit</a><a href="/pulseras#garmin">Garmin</a><a href="/pulseras#coros">Coros</a><a href="/pulseras#android">Android</a><a href="/pulseras#iphone">iPhone</a></p>
     <p>Los menús cambian según el modelo. Si tu reloj no enseña los puntos de control, la ruta se sigue igual. <a href="/pulseras">Guía de pulseras y relojes</a></p>
   </details>
-  <section class="oscuro" id="error" hidden><p class="vacio">Esta ruta ya no está disponible: puede que su dueño la haya quitado.</p><a class="boton" href="/inicio">Ver las rutas</a></section>
+  <section class="oscuro" id="error" hidden><p class="vacio">Esta ruta ya no está disponible: puede que su dueño la haya quitado.</p><a class="boton" href="/rutas">Ver las rutas</a></section>
 </main>
 <footer class="pie"><span>{{SITIO}}</span><small>Mapa: imágenes de Esri. Los primeros y últimos metros de cada ruta no se muestran.</small></footer>
 <script src="/ruta.js"></script>

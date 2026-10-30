@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.45.0 · 2026-10-30
+- **Un solo diseño en toda la web:** Carreras, Rutas y relojes, la guía de pulseras y la página de cada ruta dejan el bloque lima gigante y pasan al diseño oscuro de la portada y del directo (títulos, tarjetas, botones y chips iguales en todas).
+- **Un solo menú:** «Inicio · Carreras · Rutas y relojes» arriba en todas las páginas, también en la página de cada carrera (cuenta como «Carreras»). Fuera los menús repetidos: «Inicio» en la cabecera del directo, enlaces del pie, «‹ Volver al inicio» y «‹ INICIO».
+- Pie de la carrera sin el «·» colgando; hojas de estilo con versión nueva para que nadie vea la vieja de la caché.
+- Capturas del repo al día.
+
 ## v1.44.2 · 2026-10-30
 - **Guía de pulseras con las pestañas fijas** (Carrera · Carreras · Rutas y relojes), como el resto de páginas públicas. Auditoría en producción: sin enlaces rotos, todas las páginas y recursos en 200 y sin errores en el registro.
 
