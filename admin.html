@@ -379,11 +379,18 @@
   <div class="tarjeta" data-tab="movil">
     <h2>Sin la app: iPhone, Traccar o reloj</h2>
     <div class="howto">Para iPhone (Traccar Client) o el reloj Amazfit. Con la app Android no hace falta nada de esto.</div>
-    <details>
+    <details open>
     <summary>Ver la configuración</summary>
     <div class="howto">
-      Instala <b>Traccar Client</b> (gratis, Android e iPhone) y pon:
+      <b>iPhone:</b> instala <b>Traccar Client</b> (gratis, App Store), abre sus ajustes, toca el icono del QR y escanea este código:
+      deja puesto todo (dirección, identificador y ajustes).
     </div>
+    <div id="qr-traccar" class="qr" aria-label="Código QR de configuración de Traccar Client"></div>
+    <div class="howto">
+      En el iPhone: Ajustes → Privacidad → Localización → Traccar Client → «Siempre» y «Ubicación exacta».
+      Para probar, enciende el seguimiento al aire libre: abajo, en «Carrera», «GPS del móvil» deja de decir «sin datos».
+    </div>
+    <div class="howto" style="margin-top:8px">O a mano:</div>
     <div class="field" style="margin-top:10px">
       <label>Dirección del servidor</label>
       <input type="text" id="gps-url" readonly onclick="this.select()">
@@ -394,7 +401,7 @@
       <button class="btn" id="rotar-gps" type="button" style="margin-top:8px">Generar identificador nuevo</button>
     </div>
     <div class="howto" style="margin-top:8px">
-      Frecuencia 10 s · Precisión alta · Distancia 0 · activa el servicio. En Android, quítale el ahorro de batería.
+      Precisión <b>máxima</b> (en iPhone, con «alta» no manda nada) · intervalo 10 s · distancia 0 · detección de paradas apagada · almacenamiento sin conexión activado. En Android, quítale el ahorro de batería.
     </div>
     <div class="howto" style="margin-top:8px">
       <b>Reloj Amazfit:</b> en Zepp → Sígueme CC → Ajustes, la misma dirección y el mismo identificador. Con Traccar y reloj a la vez, la posición la da uno solo.
@@ -1146,13 +1153,19 @@ $('guardar-avisos').addEventListener('click', () => accion({ action: 'guardar_av
 // código QR para la app: dirección del servidor + identificador
 function pintarQR(id) {
   window.__gpsId = id;
-  if (!id || typeof qrcode !== 'function') { $('qr').textContent = ''; return; }
+  if (!id || typeof qrcode !== 'function') { $('qr').textContent = ''; $('qr-traccar').textContent = ''; return; }
   const q = qrcode(0, 'M');
   // a una página de esta web (la cámara del móvil abre https; siguemecc:// no siempre):
   // el identificador va tras «#», que no llega al servidor
   q.addData(location.origin + '/app.html#id=' + encodeURIComponent(id));
   q.make();
   $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  // el de Traccar Client (iPhone): la dirección del servidor con los ajustes detrás, como los lee la app
+  const t = qrcode(0, 'M');
+  t.addData(location.origin + '/api/gps?id=' + encodeURIComponent(id) +
+    '&accuracy=highest&interval=10&distance=0&angle=0&heartbeat=0&buffer=true&stop_detection=false');
+  t.make();
+  $('qr-traccar').innerHTML = t.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
 }
 
 $('copiar-enlace').onclick = async () => {

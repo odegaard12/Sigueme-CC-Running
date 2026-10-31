@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.3 · 2026-10-31
+- **Traccar en iPhone, de un escaneo**: la pestaña Móvil del panel trae un QR para Traccar Client (se escanea desde sus ajustes) con la dirección, el identificador y los ajustes buenos.
+  - Arreglo: en iPhone, Traccar solo manda cada X segundos con la precisión «máxima»; con «alta» y la distancia en 0 descartaba cada posición («Location filtered»). El panel y la guía decían «precisión alta».
+
 ## v1.53.2 · 2026-10-31
 - **La próxima carrera, en la portada, con el dibujo de su recorrido** (antes solo lo tenían las carreras archivadas).
 
