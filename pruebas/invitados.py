@@ -246,6 +246,7 @@ try:
     ok(r.status == 200 and r.url.endswith('/mis-rutas.html'), 'el nombre viejo /rutas.html redirige a /mis-rutas.html')
     st, d, _ = http('GET', '/api/carreras')
     ok(st == 200 and isinstance(d['carreras'], list) and 'proxima' in d, '/api/carreras (público) para la portada')
+    ok(d['proxima'] is None or isinstance(d['proxima'].get('traza'), list), '  la próxima carrera, con su recorrido para el dibujo')
 
     # ---- límites: 5 rutas por invitado; GPX demasiado grande
     for i in range(4):

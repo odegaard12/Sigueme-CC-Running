@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.2 · 2026-10-31
+- **La próxima carrera, en la portada, con el dibujo de su recorrido** (antes solo lo tenían las carreras archivadas).
+
 ## v1.53.1 · 2026-10-31
 - **Segunda pasada de diseño en iPhone y PC**:
   - El resultado: con la carrera terminada ya no sale «Primera vez por aquí» (hablaba del directo y empujaba el mapa fuera de la pantalla); sigue a mano con el botón «?».

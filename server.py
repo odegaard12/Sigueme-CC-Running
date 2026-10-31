@@ -268,10 +268,10 @@ def traza_svg(slug):
     return '<span class="indice-traza" aria-hidden="true"></span>'      # el hueco, para que la fila no se descoloque
 
 
-def traza_puntos(slug, n=80):
-    """El recorrido archivado, ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
+def traza_puntos(slug, n=80, fichero=None):
+    """El recorrido archivado (o el de `fichero`), ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
     try:
-        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+        with open(fichero or os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
             pts = json.load(f)["features"][0]["geometry"]["coordinates"]
         return [[round(float(p[0]), 4), round(float(p[1]), 4)] for p in pts[::max(1, len(pts) // n)]]
     except (OSError, ValueError, KeyError, IndexError, TypeError):
@@ -2161,6 +2161,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if c.get("nombre") and (c.get("fecha") or "") >= hoy and not live.get("finished_at") \
                     and slug_de(c) not in {x["slug"] for x in lista}:
                 proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
+                proxima["traza"] = traza_puntos(None, fichero=os.path.join(ROOT, "route.geojson"))
             self._send_json(200, {"carreras": lista, "proxima": proxima,
                                   "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
             return
