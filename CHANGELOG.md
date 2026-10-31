@@ -4,6 +4,14 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.52.1 · 2026-10-31
+- **Repaso de diseño en iPhone y PC**:
+  - La página de una ruta: avituallamientos y subidas en una lista compacta (en el PC, una al lado de la otra) y alineadas con el mapa (tenían doble margen).
+  - El perfil ya no amontona los kilómetros de los avituallamientos y, en el mapa, los que están muy juntos no se tapan: salen al acercar.
+  - El desnivel, igual en todas partes («2.629 D+»); en Carreras, el de la ruta, como en la portada.
+  - La página de la app, con el nombre del sitio y el menú como las demás, el texto de los relojes al día (enlaza a la guía) y la dirección sin partirse.
+  - El resultado en el móvil: «Terminada en 11h 43m» en una línea y el botón debajo.
+
 ## v1.52.0 · 2026-10-30
 - **Portada nueva («cartel»)**: «Sígueme CC» en grande y la carrera con sus cifras (km, desnivel y tiempo) y su trazado.
   - Al lado, Carreras, Rutas y Relojes, con lo que hay en cada una; debajo, más carreras y las últimas rutas.

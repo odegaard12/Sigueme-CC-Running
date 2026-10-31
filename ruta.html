@@ -13,7 +13,7 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=8">
+<link rel="stylesheet" href="/cartel.css?v=9">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
@@ -33,8 +33,10 @@
     <div class="mapa" id="mapa" role="img" aria-label="Mapa de la ruta"></div>
     <svg class="perfil" id="perfil" viewBox="0 0 1000 240" role="img" aria-label="Perfil de altura de la ruta"></svg>
   </section>
-  <section id="sec-avit" hidden><h2 class="titulo">Avituallamientos</h2><div class="oscuro" id="avits"></div></section>
-  <section id="sec-subidas" hidden><h2 class="titulo">Subidas</h2><div class="oscuro" id="subidas"></div></section>
+  <div class="dos-listas">
+    <section id="sec-avit" hidden><h2 class="titulo">Avituallamientos</h2><div class="lista-filas" id="avits"></div></section>
+    <section id="sec-subidas" hidden><h2 class="titulo">Subidas</h2><div class="lista-filas" id="subidas"></div></section>
+  </div>
   <details class="como" id="como" hidden>
     <summary>Cómo meterla en mi reloj</summary>
     <p>Abre el GPX con la app de tu reloj y envíalo al reloj. No todos los modelos admiten rutas: en la guía está cada marca, con los modelos que sí y el menú exacto. En iPhone, el fichero se guarda en la app Archivos.</p>
@@ -43,6 +45,6 @@
   <section class="oscuro" id="error" hidden><p class="vacio">Esta ruta ya no está disponible: puede que su dueño la haya quitado.</p><a class="boton" href="/rutas">Ver las rutas</a></section>
 </main>
 <footer class="pie"><span>{{SITIO}}</span><small>Mapa: imágenes de Esri. Los primeros y últimos metros de cada ruta no se muestran.</small></footer>
-<script src="/ruta.js"></script>
+<script src="/ruta.js?v=2"></script>
 </body>
 </html>

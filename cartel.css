@@ -129,6 +129,15 @@ h1.nombre-ruta.largo { font-size: clamp(1.6rem, 5vw, 2.2rem); }
 .marca-avit { min-width: 28px; height: 28px; padding: 0 6px; border: 3px solid var(--tinta); border-radius: 999px; background: var(--acento); color: var(--tinta);
   font: 800 11px/22px var(--cuerpo); text-align: center; cursor: pointer; }
 .marca-avit::after { content: ""; position: absolute; inset: -8px; }
+/* avituallamientos y subidas de una ruta: una lista compacta, como en la carrera; en el PC, una al lado de la otra */
+.dos-listas { padding: 0 var(--m); }
+.dos-listas h2.titulo { margin-left: 0; margin-right: 0; }
+@media (min-width: 1000px) { .dos-listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; align-items: start; } }
+.lista-filas { border-radius: var(--r2); background: var(--sup); overflow: hidden; }
+.lista-filas .fila { margin: 0; padding: 10px 16px; border-radius: 0; background: none; }
+.lista-filas .fila + .fila { border-top: 1px solid var(--linea); }
+.lista-filas .nombre { font-size: 1.05rem; }
+.lista-filas .cifra b { font-size: 1.1rem; }
 details.como { margin: 24px var(--m) 0; padding: 4px 16px 14px; border-radius: var(--r2); background: var(--sup); }
 details.como summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; font: 400 1.15rem/1 var(--display); text-transform: uppercase; }
 details.como summary::after { content: "+"; margin-left: auto; font: 400 1.5rem/1 var(--display); color: var(--acento); }
@@ -196,7 +205,10 @@ details.como p { max-width: 64ch; }
 
 /* ---------- la página de la app ---------- */
 .app { max-width: 640px; padding: 8px var(--m) 32px; }
-.app code { word-break: break-all; background: var(--sup); padding: 2px 6px; border-radius: 6px; }
+.app code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; background: var(--sup); padding: 2px 6px; border-radius: 6px; }
+.app h2.titulo { margin-left: 0; margin-right: 0; }
+.app ol { padding-left: 22px; }
+.app a:not(.boton) { color: var(--acento); }
 .app .boton { width: 100%; margin: 12px 0; }
 
 /* ---------- pie ---------- */

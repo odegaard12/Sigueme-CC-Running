@@ -1710,6 +1710,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._gpx_reloj()
         if crudo == "/rutas.html":
             return self._redirigir("/mis-rutas.html", 301)       # el espacio del invitado se llama /mis-rutas.html
+        if crudo == "/app.html":
+            return self._pagina("app.html")
         if crudo in ("/inicio.html", "/pulseras.html", "/ruta.html"):   # plantillas: tal cual, saldría {{SITIO}}
             return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
@@ -1831,7 +1833,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             datos = " · ".join(str(x) for x in (
                 fecha, c.get("lugar", ""),
                 "",
-                f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
+                f"{int(c.get('desnivel_m') or r.get('desnivel_m')):,} m D+".replace(",", ".")      # el de la ruta, como en la portada
+                if (c.get("desnivel_m") or r.get("desnivel_m")) else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
             dist = c.get("distancia_km") or r.get("distancia_km")      # la oficial, como en la portada
             km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else "–"
@@ -1847,7 +1850,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=8">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=9">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'

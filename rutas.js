@@ -2,6 +2,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
+const miles = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const fecha = iso => { const [a, m, d] = String(iso || '').split('-'); return a && m && d ? Number(d) + ' ' + MESES[Number(m) - 1] + ' ' + a : ''; };
 const tiempo = s => { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h + 'h ' + String(m).padStart(2, '0') + 'm'; };
@@ -49,7 +50,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   const rutas = await json('/api/rutas-publicas');
   const rs = (rutas && rutas.rutas) || [];
   const lista = $('rutas');
-  rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [String(r.desnivel_m), 'D+'], i)));
+  rs.forEach((r, i) => lista.append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza, [km(r.distancia_km), 'KM'], [miles(r.desnivel_m || 0), 'D+'], i)));
   $('sin-rutas').hidden = rs.length > 0;
   if (rutas === null) {
     $('sin-rutas').hidden = false;

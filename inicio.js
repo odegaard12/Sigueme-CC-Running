@@ -66,14 +66,14 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
     const p = datos.proxima;
     estado = 'Próxima carrera'; nombre = p.nombre || 'Próxima carrera';
     partes = [fecha(p.fecha), p.lugar];
-    cifras = [[p.distancia_km ? km(p.distancia_km) : '', 'KM'], [p.desnivel_m ? miles(p.desnivel_m) : '', 'M D+'], [p.hora_salida || '', 'SALIDA']];
+    cifras = [[p.distancia_km ? km(p.distancia_km) : '', 'KM'], [p.desnivel_m ? miles(p.desnivel_m) : '', 'D+'], [p.hora_salida || '', 'SALIDA']];
     puntos = p.traza;
     texto = 'Ver la carrera ▶';
   } else if (lista.length) {
     ultima = lista[0];
     estado = 'Última carrera'; nombre = ultima.nombre || ultima.slug;
     partes = [fecha(ultima.fecha), ultima.lugar];
-    cifras = [[ultima.distancia_km ? km(ultima.distancia_km) : '', 'KM'], [ultima.desnivel_m ? miles(ultima.desnivel_m) : '', 'M D+'], [tiempo(ultima.tiempo_s), 'TIEMPO']];
+    cifras = [[ultima.distancia_km ? km(ultima.distancia_km) : '', 'KM'], [ultima.desnivel_m ? miles(ultima.desnivel_m) : '', 'D+'], [tiempo(ultima.tiempo_s), 'TIEMPO']];
     puntos = ultima.traza;
     texto = 'Ver el resultado ▶'; href = '/' + ultima.slug + '/';
   } else {
