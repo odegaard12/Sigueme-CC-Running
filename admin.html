@@ -723,7 +723,9 @@ function pintarResumen() {
   const ir = $('r-ir');
   const destino = heroEstado === 'fin' ? 'mas' : 'hoy';
   ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : 'Ir a empezar ▶';
-  ir.onclick = () => { verPestana(destino); window.scrollTo({ top: 0 }); };
+  // en la pestaña Carrera, baja hasta el botón de empezar (o al estado, ya en marcha)
+  ir.onclick = () => { verPestana(destino); const t = destino === 'hoy' ? $(heroEstado === 'vivo' ? 't-estado' : 't-empezar') : null;
+    if (t) t.scrollIntoView({ block: 'start' }); else window.scrollTo({ top: 0 }); };
   if (!heroPrep) return;
   $('r-listo').textContent = heroPrep.listos + ' / ' + heroPrep.total;
   const m = $('r-movil'); m.textContent = p.app_at ? 'Conectado' : 'Sin app'; m.classList.toggle('falta', !p.app_at);
@@ -757,9 +759,12 @@ function refreshStatus(live) {
   } else {
     $('dato-text').textContent = '—';
   }
-  if (live.gps_at) {
-    const m = Math.round((Date.now() - new Date(live.gps_at)) / 60000);
-    $('gps-text').textContent = (m < 1 ? 'ahora mismo' : 'hace ' + m + ' min') +
+  // antes de la salida el servidor solo guarda gps_t (segundos), no gps_at: también vale para saber que llega
+  const gpsAt = live.gps_at || (live.gps_t ? new Date(live.gps_t * 1000).toISOString() : null);
+  if (gpsAt) {
+    const m = Math.round((Date.now() - new Date(gpsAt)) / 60000);
+    $('gps-text').textContent = (m < 1 ? 'llega, ahora mismo' : 'último punto hace ' + m + ' min') +
+      (!live.started_at ? ' (la web no lo enseña hasta la salida)' : '') +
       (live.bateria_movil != null ? ' · batería ' + live.bateria_movil + ' %' : '') +
       (live.fuente_posicion ? ' · la web usa: ' + (live.fuente_posicion === 'movil'
         ? (live.gps_origen === 'amazfit' ? 'GPS del reloj' : 'GPS del móvil') : 'iGPSPORT') : '');
@@ -771,7 +776,7 @@ function refreshStatus(live) {
   }
   // llegan datos con otro identificador: Traccar o el reloj mal configurados
   const idMal = live.gps_rechazado_at && Date.now() - new Date(live.gps_rechazado_at) < 600000 &&
-      (!live.gps_at || new Date(live.gps_rechazado_at) > new Date(live.gps_at));
+      (!gpsAt || new Date(live.gps_rechazado_at) > new Date(gpsAt));
   if (idMal) {
     $('gps-text').textContent += ' · ojo: llegan datos con un identificador que no es el de abajo: revísalo en Traccar o en el reloj';
   }
