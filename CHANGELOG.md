@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.0 · 2026-10-31
+- **Carreras y Rutas con ficha grande**, como la tarjeta de la portada: fecha y lugar (o autor), el nombre grande, las cifras (km, desnivel, tiempo o avituallamientos), los botones y el trazado; las rutas, además, con su perfil. En el PC ya no quedan vacías.
+- **El mapa 3D de la carrera salía en negro en Safari (iPhone)**: se dibujaba mientras estaba fuera de la pantalla y, al bajar hasta él, Safari no lo enseñaba hasta que algo lo repintaba (solo se veían los marcadores). Ahora se repinta al entrar en pantalla y al volver a la pestaña.
+
 ## v1.52.2 · 2026-10-31
 - **Lo que quedó del repaso de diseño**:
   - El resultado: el desnivel como en el resto de la web («2.394 m D+ de 2.629»).

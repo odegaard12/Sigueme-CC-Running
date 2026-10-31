@@ -101,6 +101,14 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .acceso .n { font: 400 clamp(1.3rem, 3vw, 2rem)/1.1 var(--display); color: var(--acento); }
 .acceso small { color: var(--suave); font-size: 0.85rem; line-height: 1.3; }
 .portada main > section .sec-tit { margin-left: 0; margin-right: 0; }
+/* Carreras y Rutas: una ficha grande por carrera o ruta, como la tarjeta de la portada */
+.ficha-grande { margin: 0 0 12px; }
+.ficha-grande .hero-titulo { font-size: clamp(1.7rem, 4vw, 2.6rem); }
+.ficha-grande .hero-titulo a { color: inherit; text-decoration: none; }
+.ficha-grande .hero-titulo a:hover { color: var(--acento); }
+.ficha-grande .acciones { margin-top: 4px; }
+.ficha-grande .hero-traza { display: block; }
+.mini-perfil { display: block; width: 100%; max-width: 420px; height: 34px; margin: 0 0 6px; color: var(--acento); opacity: 0.85; }
 .pill-hero { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-hero.vivo { background: var(--acento); color: var(--tinta); }
 .pill-hero.vivo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }

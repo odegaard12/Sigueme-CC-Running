@@ -397,6 +397,13 @@ function buildMap3D() {
 
   map3d.on('error', e => console.error('map3d error:', e && e.error));
 
+  // ⚠️ Safari (WebKit): si el mapa termina de pintarse fuera de la pantalla, al bajar hasta él sale en negro
+  // (solo los marcadores) hasta que algo lo repinta. Se repinta al entrar en pantalla y al volver a la pestaña.
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) map3d.triggerRepaint(); }).observe(map3d.getContainer());
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) map3d.triggerRepaint(); });
+
   // el relieve entra cuando el mapa plano ya está pintado
   map3d.once('idle', () => {
     if (!map3d.getTerrain()) relieveVivo();

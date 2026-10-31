@@ -1830,17 +1830,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             f = str(c.get("fecha") or "")
             fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
                      if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
-            datos = " · ".join(str(x) for x in (
-                fecha, c.get("lugar", ""),
-                "",
-                f"{int(c.get('desnivel_m') or r.get('desnivel_m')):,} m D+".replace(",", ".")      # el de la ruta, como en la portada
-                if (c.get("desnivel_m") or r.get("desnivel_m")) else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
             dist = c.get("distancia_km") or r.get("distancia_km")      # la oficial, como en la portada
-            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else "–"
-            filas.append(f'<a class="fila carrera" href="/{esc(slug)}/"><div class="nombre">{esc(c.get("nombre") or slug)}<small>{esc(datos)}</small></div>'
-                         f'<div class="traza">{traza_svg(slug)}</div><div class="cifra km"><b>{esc(km)}</b><span>KM</span></div>'
-                         f'<div class="cifra t"><b>{esc(tiempo or "–")}</b><span>{"TIEMPO" if tiempo else ""}</span></div></a>')
+            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else ""
+            des = c.get("desnivel_m") or r.get("desnivel_m")           # el de la ruta, como en la portada
+            des = f"{int(des):,}".replace(",", ".") if des else ""
+            # una ficha grande por carrera, como la tarjeta de la portada
+            cifras = "".join(f'<div class="cifra"><b>{esc(v)}</b><span>{u}</span></div>' for v, u in ((km, "KM"), (des, "D+"), (tiempo, "TIEMPO")) if v)
+            enlace = f"/{esc(slug)}/"
+            filas.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
+                         f'<span class="pill-hero">{esc(" · ".join(x for x in (fecha, c.get("lugar", "")) if x))}</span>'
+                         f'<h2 class="hero-titulo"><a href="{enlace}">{esc(c.get("nombre") or slug)}</a></h2>'
+                         f'<div class="hero-cifras">{cifras}</div><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a></div>'
+                         f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg(slug)}</a></article>')
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
         en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
@@ -1850,7 +1852,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=9">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=10">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
