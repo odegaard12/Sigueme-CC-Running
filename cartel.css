@@ -160,6 +160,7 @@ details.como p { max-width: 64ch; }
 .uso b { display: block; font: 400 1.1rem/1.1 var(--display); text-transform: uppercase; margin-bottom: 4px; }
 .uso p { margin: 0; color: var(--suave); font-size: 0.92rem; }
 .uso .pide { display: block; margin-top: 8px; color: var(--texto); font-size: 0.85rem; font-weight: 700; }
+@media (max-width: 480px) { .tabla-modelos .largo { display: none; } }
 @media (max-width: 380px) {
   .tabla-modelos { font-size: 0.8rem; }
   .tabla-modelos th, .tabla-modelos td { padding: 7px 4px; }

@@ -1758,6 +1758,8 @@ function pintarResultado() {
   ponerTexto('aviso-sub', num(r.distancia_km) + ' km · llegada a las ' + horaCarrera(r.llegada));
   document.getElementById('aviso-resultado').hidden = false;
   ponerTexto('sec-ahora', 'Resultado');
+  // terminada, el aviso de primera vez (habla del directo) sobra y empuja el mapa fuera de la pantalla
+  const ayuda = document.getElementById('ayuda-cd'); if (ayuda && !ayuda.dataset.pedida) ayuda.hidden = true;
   ponerTexto('stat-limite', fmtHM(r.tiempo_oficial_s));
   const etiqueta = document.querySelector('#stat-limite + i');
   if (etiqueta) etiqueta.textContent = 'de ' + CARRERA.limite_h + ' h';
@@ -1858,7 +1860,7 @@ precargado('resultado.json', () => fetchConTiempo('resultado.json?_=' + Date.now
   // el botón «?» de la cabecera: vuelve a enseñar el aviso cuando se quiera
   const btn = document.getElementById('ayuda-btn');
   if (btn) btn.addEventListener('click', () => {
-    caja.hidden = false;
+    caja.hidden = false; caja.dataset.pedida = '1';
     caja.scrollIntoView({ behavior: QUIETO ? 'auto' : 'smooth', block: 'nearest' });
     ok.focus({ preventScroll: true });
   });

@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.1 · 2026-10-31
+- **Segunda pasada de diseño en iPhone y PC**:
+  - El resultado: con la carrera terminada ya no sale «Primera vez por aquí» (hablaba del directo y empujaba el mapa fuera de la pantalla); sigue a mano con el botón «?».
+  - Relojes en el móvil: las tablas de modelos dicen «Ruta» y «Mapa», y el nombre del modelo cabe en una línea.
+
 ## v1.53.0 · 2026-10-31
 - **Carreras y Rutas con ficha grande**, como la tarjeta de la portada: fecha y lugar (o autor), el nombre grande, las cifras (km, desnivel, tiempo o avituallamientos), los botones y el trazado; las rutas, además, con su perfil. En el PC ya no quedan vacías.
 - **El mapa 3D de la carrera salía en negro en Safari (iPhone)**: se dibujaba mientras estaba fuera de la pantalla y, al bajar hasta él, Safari no lo enseñaba hasta que algo lo repintaba (solo se veían los marcadores). Ahora se repinta al entrar en pantalla y al volver a la pestaña.

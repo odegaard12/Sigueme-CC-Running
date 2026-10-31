@@ -17,7 +17,7 @@ ids = set(re.findall(r'<article class="marca-tarj" id="([a-z]+)"', guia))
 ok(set(MARCAS + ['android', 'iphone']) <= ids, f'la guía tiene una ficha por marca y móvil ({sorted(ids)})')
 for m in MARCAS:
     ficha = re.search(rf'<article class="marca-tarj" id="{m}">.*?</article>', guia, re.S)
-    ok(ficha and all(x in ficha.group(0) for x in ('Avisos', 'Ruta en el reloj', 'Mapa en el reloj')), f'{m}: dice avisos, ruta y mapa')
+    ok(ficha and all(x in ficha.group(0) for x in ('Avisos', 'Ruta<span class="largo"> en el reloj', 'Mapa<span class="largo"> en el reloj')), f'{m}: dice avisos, ruta y mapa')
     res = re.search(r'<p class="resumen">(.*?)</p>', ficha.group(0)) if ficha else None
     ok(res and re.fullmatch(r'Avisos <span class="\w+">[^<]+</span>Ruta <span class="\w+">[^<]+</span>Mapa <span class="\w+">[^<]+</span>', res.group(1)), f'{m}: su resumen arriba (avisos, ruta y mapa)')
     filas = re.findall(r'<tr><th scope="row">[^<]+</th><td><span class="(si|no|duda|algunos)">', ficha.group(0)) if ficha else []
