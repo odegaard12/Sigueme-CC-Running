@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.5 · 2026-10-31
+- **«Ver la carrera ▶» de la próxima carrera no abría nada**: llevaba a la portada, que hasta el día de la carrera es la misma página. Ahora abre la página de la carrera (mapa, perfil y salida) antes de su día.
+
 ## v1.53.4 · 2026-10-31
 - **El panel decía «GPS del móvil: sin datos» aunque Traccar mandaba cada 10 s**: antes de la salida solo miraba un dato que se rellena con la carrera en marcha. Ahora dice que llega y que la web no lo enseña hasta la salida.
 - «Ir a empezar ▶» baja hasta el botón «Empezar a seguir».

@@ -1740,7 +1740,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
         if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() and not directo_ahora() \
-                and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+                and not os.path.exists(os.path.join(ROOT, "resultado.json")) and "?previa" not in self.path:
             # sin carrera en marcha: la portada lleva al último resultado (302,
             # no 301: cuando empiece la siguiente carrera, la portada será ella)
             archivadas = carreras_archivadas()

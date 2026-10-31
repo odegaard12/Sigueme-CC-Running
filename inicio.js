@@ -68,7 +68,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
     partes = [fecha(p.fecha), p.lugar];
     cifras = [[p.distancia_km ? km(p.distancia_km) : '', 'KM'], [p.desnivel_m ? miles(p.desnivel_m) : '', 'D+'], [p.hora_salida || '', 'SALIDA']];
     puntos = p.traza;
-    texto = 'Ver la carrera ▶';
+    texto = 'Ver la carrera ▶'; href = '/index.html?previa';      // «/» es esta portada hasta el día de la carrera
   } else if (lista.length) {
     ultima = lista[0];
     estado = 'Última carrera'; nombre = ultima.nombre || ultima.slug;
