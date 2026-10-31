@@ -1718,8 +1718,8 @@ function cabeceraReal(r) {
     b.parentElement.lastChild.textContent = ' ' + unidad + (previsto ? ' de ' + previsto : '');   // como «2h 00m de 5 h»
   };
   pon('stat-dist', num(r.distancia_km), 'km', CARRERA.distancia_km ? numKm(CARRERA.distancia_km) : '');
-  pon('stat-gain', r.desnivel_m != null ? Number(r.desnivel_m).toLocaleString('es-ES') : null, 'm+',
-      CARRERA.desnivel_m ? Number(CARRERA.desnivel_m).toLocaleString('es-ES') : '');
+  const miles = v => String(Math.round(Number(v))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  pon('stat-gain', r.desnivel_m != null ? miles(r.desnivel_m) : null, 'm D+', CARRERA.desnivel_m ? miles(CARRERA.desnivel_m) : '');
 }
 
 function pintarResultado() {

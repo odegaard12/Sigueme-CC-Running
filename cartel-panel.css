@@ -30,6 +30,11 @@ a { color: var(--acento); }
 .barra-cartel nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 16px; }
 .barra-cartel nav a { color: var(--suave); font-weight: 700; font-size: 0.9rem; text-decoration: none; }
 .barra-cartel nav a:hover { color: var(--texto); }
+/* el menú de la web (como en cartel.css), en Mis rutas */
+.pestanas-sitio { display: flex; gap: 4px; width: calc(100% - 2 * var(--m)); max-width: calc(680px - 2 * var(--m)); margin: 0 auto 8px; padding: 4px; background: var(--sup); border-radius: 14px; }
+.pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 6px; border-radius: 10px;
+  color: var(--suave); font-weight: 700; font-size: clamp(0.8rem, 3.4vw, 0.92rem); white-space: nowrap; text-decoration: none; }
+.pestanas-sitio a:hover { color: var(--texto); }
 .campo-cartel .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 1240px; margin: 0 auto; padding: 6px var(--m) 14px;
   background: none; border: 0; color: var(--texto); }
 .campo-cartel .topbar h1 { margin: 0; font: 400 clamp(1.9rem, 6vw, 2.8rem)/1.02 var(--display); text-transform: uppercase; color: var(--texto); }

@@ -209,5 +209,7 @@ footer p { margin: 0 0 6px; }
   .map-wrap { margin-top: 0; }
   #map3d { height: clamp(420px, calc(100dvh - 290px), 820px); max-height: none; }
   .lateral { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; padding-right: 4px; }
+  /* sigue más abajo: el degradado se queda pegado al borde mientras quede lista, y al final cae debajo de todo */
+  .lateral::after { content: ""; position: sticky; bottom: 0; display: block; height: 40px; background: linear-gradient(transparent, var(--fondo)); pointer-events: none; }
   .lateral > .bloque-cd:first-child .cd-sec { margin-top: 0; }
 }

@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.52.2 · 2026-10-31
+- **Lo que quedó del repaso de diseño**:
+  - El resultado: el desnivel como en el resto de la web («2.394 m D+ de 2.629»).
+  - En el PC, la columna de datos de la carrera avisa con un degradado de que sigue más abajo.
+  - Mis rutas, con el mismo menú de pestañas que las demás páginas y todo alineado con sus tarjetas.
+
 ## v1.52.1 · 2026-10-31
 - **Repaso de diseño en iPhone y PC**:
   - La página de una ruta: avituallamientos y subidas en una lista compacta (en el PC, una al lado de la otra) y alineadas con el mapa (tenían doble margen).
