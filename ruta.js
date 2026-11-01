@@ -2,6 +2,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
+const miles = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const ns = 'http://www.w3.org/2000/svg';
 const id = location.pathname.split('/').filter(Boolean).pop();
 const rad = x => x * Math.PI / 180;
@@ -46,9 +47,13 @@ function dibujarPerfil(r) {
   for (const s of r.subidas) svg.append(svgEl('rect', { x: X(s.inicio), y: T, width: Math.max(2, X(s.fin) - X(s.inicio)), height: H - B - T, fill: 'rgba(217,242,74,.14)' }));
   const pts = r.perfil.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1));
   svg.append(svgEl('polygon', { points: X(0) + ',' + (H - B) + ' ' + pts.join(' ') + ' ' + X(total) + ',' + (H - B), fill: '#d9f24a' }));
+  // las etiquetas que se pisarían no se ponen (en el mapa y en la lista están todas)
+  let ultimo = -Infinity;
   for (const a of r.avituallamientos) {
-    svg.append(svgEl('line', { x1: X(a.km), x2: X(a.km), y1: T, y2: H - B, stroke: '#0c0f0e', 'stroke-width': 3 }));
-    const t = svgEl('text', { x: X(a.km), y: H - 10, 'text-anchor': 'middle' }); t.textContent = km(a.km); svg.append(t);
+    const x = X(a.km);
+    svg.append(svgEl('line', { x1: x, x2: x, y1: T, y2: H - B, stroke: '#0c0f0e', 'stroke-width': 1.5, opacity: 0.8 }));
+    if (x - ultimo < 34 || x > W - R - 48) continue;
+    const t = svgEl('text', { x, y: H - 10, 'text-anchor': 'middle' }); t.textContent = km(a.km); svg.append(t); ultimo = x;
   }
   for (const [e, y] of [[e1, T + 8], [e0, H - B - 2]]) { const t = svgEl('text', { x: 4, y }); t.textContent = e + ' m'; svg.append(t); }
   const t = svgEl('text', { x: W - R, y: H - 10, 'text-anchor': 'end' }); t.textContent = km(total) + ' km'; svg.append(t);
@@ -71,11 +76,21 @@ function dibujarMapa(r) {
       map.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: r.coords } } });
       map.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
       map.addLayer({ id: 'linea', type: 'line', source: 'ruta', paint: { 'line-color': '#d9f24a', 'line-width': 4 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+      const marcas = [];
       for (const a of r.avituallamientos) {
         const el = document.createElement('button'); el.type = 'button'; el.className = 'marca-avit'; el.textContent = km(a.km); el.setAttribute('aria-label', a.name + ', km ' + km(a.km));
         const pop = new maplibregl.Popup({ offset: 18, closeButton: false }).setText(a.name + ' · km ' + km(a.km));
-        new maplibregl.Marker({ element: el }).setLngLat(puntoEn(r.coords, acum, a.km)).setPopup(pop).addTo(map);
+        marcas.push(new maplibregl.Marker({ element: el }).setLngLat(puntoEn(r.coords, acum, a.km)).setPopup(pop).addTo(map));
       }
+      // con poco zoom, los avituallamientos muy juntos se pisan: sale el primero y los demás al acercar
+      const despejar = () => {
+        const vistos = [];
+        for (const m of marcas) {
+          const p = map.project(m.getLngLat()), tapa = vistos.some(q => Math.abs(q.x - p.x) < 46 && Math.abs(q.y - p.y) < 30);
+          m.getElement().style.visibility = tapa ? 'hidden' : ''; if (!tapa) vistos.push(p);
+        }
+      };
+      despejar(); map.on('zoomend', despejar);
     });
   };
   const arrancar = () => { try { arrancarMapa(); } catch (e) { cont.hidden = true; } };
@@ -89,7 +104,7 @@ function pintar(r) {
   const t = $('titulo'); t.textContent = r.nombre; if (r.nombre.length > 26) t.classList.add('largo');
   if (r.autor) { const a = $('autor'); a.textContent = 'Ruta de ' + r.autor; a.hidden = false; }
   const c = $('cifras'); c.textContent = '';
-  c.append(cifra(km(r.distancia_km), 'KM'), cifra(String(r.desnivel_m), 'D+'));
+  c.append(cifra(km(r.distancia_km), 'KM'), cifra(miles(r.desnivel_m), 'D+'));
   if (r.avituallamientos.length) c.append(cifra(String(r.avituallamientos.length), r.avituallamientos.length === 1 ? 'AVITUALLAMIENTO' : 'AVITUALLAMIENTOS'));
   if (r.subidas.length) c.append(cifra(String(r.subidas.length), r.subidas.length === 1 ? 'SUBIDA' : 'SUBIDAS'));
   c.hidden = false;

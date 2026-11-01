@@ -3,8 +3,8 @@ inventado (nunca una ruta real: el repo es público)."""
 import math, pathlib, shutil, socket, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
-WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'style.css', 'robots.txt', 'rider.png',
-       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'rutas.html', 'rutas.js', 'mis-rutas.js', 'inicio.html', 'pulseras.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css')
+WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'robots.txt', 'rider.png',
+       'favicon.png', 'app.html', 'app-enlace.js', 'og.jpg', 'manifest.webmanifest', 'icon-192.png', 'mis-rutas.html', 'rutas.html', 'rutas.js', 'mis-rutas.js', 'inicio.html', 'pulseras.html', 'inicio.js', 'ruta.html', 'ruta.js', 'cartel.css', 'directo.css', 'cartel-panel.css', 'relojes.js')
 
 
 def carpeta(prefijo, datos=('carrera.json',)):

@@ -236,11 +236,9 @@ function guiaCerrar() {
   window.scrollTo({ top: 0 });
   guiaId('btn-guia').focus({ preventScroll: true });
 }
-function guiaPrimeraVez() {
-  let vista = false;
-  try { vista = localStorage.getItem('guia_mis_rutas') === '1'; } catch (e) {}
-  if (!vista && guiaPaso < 0) setTimeout(() => { if (guiaPaso < 0) guiaMostrar(0); }, 900);
-}
+// ⚠️ 1/11/2026: abierta sola al entrar, la guía tapaba justo la lista de rutas y el invitado no veía la suya.
+// Ahora solo se abre con «? Ayuda».
+function guiaPrimeraVez() {}
 guiaId('btn-guia').addEventListener('click', () => { if (guiaPaso < 0) guiaMostrar(0); });
 guiaId('guia-saltar').addEventListener('click', guiaCerrar);
 guiaId('guia-atras').addEventListener('click', () => guiaMostrar(Math.max(0, guiaPaso - 1)));

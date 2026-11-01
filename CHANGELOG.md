@@ -4,6 +4,105 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.7 · 2026-11-01
+- **Lo que falló el 1/11 al usarlo de verdad**:
+  - Mis rutas (invitados): la guía «Paso 1 de 5» se abría sola al entrar y tapaba justo la lista de rutas; el invitado no veía la suya ni cómo editarla. Ya no se abre sola: está en «? Ayuda».
+  - Panel: el día de la carrera, el botón de arriba dice «Empezar a seguir ▶» y arranca de verdad (con confirmación); antes decía «Ir a empezar ▶» y solo cambiaba de pestaña.
+  - La confirmación de empezar ya no habla de iGPSPORT: dice que la web seguirá el GPS del móvil (Traccar o la app).
+
+## v1.53.6 · 2026-11-01
+- **Con Traccar (iPhone) la carrera se pone en marcha sola**: el 1/11 llegaron 1.529 puntos del iPhone y la web siguió «Sin iniciar» toda la carrera (con Traccar no hay botón EMPEZAR en el móvil y nadie pulsó «Empezar a seguir» en el panel). Ahora, el día de la carrera, el primer punto desde 1 h antes de la salida la pone en marcha, con el crono desde la hora oficial.
+- Una carrera que ya tiene resultado no sale como «próxima» en la portada.
+
+## v1.53.5 · 2026-10-31
+- **«Ver la carrera ▶» de la próxima carrera no abría nada**: llevaba a la portada, que hasta el día de la carrera es la misma página. Ahora abre la página de la carrera (mapa, perfil y salida) antes de su día.
+
+## v1.53.4 · 2026-10-31
+- **El panel decía «GPS del móvil: sin datos» aunque Traccar mandaba cada 10 s**: antes de la salida solo miraba un dato que se rellena con la carrera en marcha. Ahora dice que llega y que la web no lo enseña hasta la salida.
+- «Ir a empezar ▶» baja hasta el botón «Empezar a seguir».
+
+## v1.53.3 · 2026-10-31
+- **Traccar en iPhone, de un escaneo**: la pestaña Móvil del panel trae un QR para Traccar Client (se escanea desde sus ajustes) con la dirección, el identificador y los ajustes buenos.
+  - Arreglo: en iPhone, Traccar solo manda cada X segundos con la precisión «máxima»; con «alta» y la distancia en 0 descartaba cada posición («Location filtered»). El panel y la guía decían «precisión alta».
+
+## v1.53.2 · 2026-10-31
+- **La próxima carrera, en la portada, con el dibujo de su recorrido** (antes solo lo tenían las carreras archivadas).
+
+## v1.53.1 · 2026-10-31
+- **Segunda pasada de diseño en iPhone y PC**:
+  - El resultado: con la carrera terminada ya no sale «Primera vez por aquí» (hablaba del directo y empujaba el mapa fuera de la pantalla); sigue a mano con el botón «?».
+  - Relojes en el móvil: las tablas de modelos dicen «Ruta» y «Mapa», y el nombre del modelo cabe en una línea.
+
+## v1.53.0 · 2026-10-31
+- **Carreras y Rutas con ficha grande**, como la tarjeta de la portada: fecha y lugar (o autor), el nombre grande, las cifras (km, desnivel, tiempo o avituallamientos), los botones y el trazado; las rutas, además, con su perfil. En el PC ya no quedan vacías.
+- **El mapa 3D de la carrera salía en negro en Safari (iPhone)**: se dibujaba mientras estaba fuera de la pantalla y, al bajar hasta él, Safari no lo enseñaba hasta que algo lo repintaba (solo se veían los marcadores). Ahora se repinta al entrar en pantalla y al volver a la pestaña.
+
+## v1.52.2 · 2026-10-31
+- **Lo que quedó del repaso de diseño**:
+  - El resultado: el desnivel como en el resto de la web («2.394 m D+ de 2.629»).
+  - En el PC, la columna de datos de la carrera avisa con un degradado de que sigue más abajo.
+  - Mis rutas, con el mismo menú de pestañas que las demás páginas y todo alineado con sus tarjetas.
+
+## v1.52.1 · 2026-10-31
+- **Repaso de diseño en iPhone y PC**:
+  - La página de una ruta: avituallamientos y subidas en una lista compacta (en el PC, una al lado de la otra) y alineadas con el mapa (tenían doble margen).
+  - El perfil ya no amontona los kilómetros de los avituallamientos y, en el mapa, los que están muy juntos no se tapan: salen al acercar.
+  - El desnivel, igual en todas partes («2.629 D+»); en Carreras, el de la ruta, como en la portada.
+  - La página de la app, con el nombre del sitio y el menú como las demás, el texto de los relojes al día (enlaza a la guía) y la dirección sin partirse.
+  - El resultado en el móvil: «Terminada en 11h 43m» en una línea y el botón debajo.
+
+## v1.52.0 · 2026-10-30
+- **Portada nueva («cartel»)**: «Sígueme CC» en grande y la carrera con sus cifras (km, desnivel y tiempo) y su trazado.
+  - Al lado, Carreras, Rutas y Relojes, con lo que hay en cada una; debajo, más carreras y las últimas rutas.
+  - En el PC ya no queda media pantalla vacía.
+- **Relojes, una marca a la vez**: buscador, botones de marca y una sola ficha a todo el ancho.
+  - Los modelos a la izquierda y los pasos (avisos, pasar la ruta, resultado) a la derecha.
+  - El resumen de la marca, en su cabecera; fuera la tabla «de un vistazo», que repetía lo mismo.
+  - Lo general (qué hace la web, tu móvil, si no llegan los avisos) va después. Sin JavaScript se ven todas las fichas.
+- **Arreglo**: `/inicio.html`, `/pulseras.html` y `/ruta.html` enseñaban «{{SITIO}}» en vez del nombre; ahora llevan a su dirección buena.
+
+## v1.51.1 · 2026-10-30
+- **La página de la carrera, revisada en todos sus estados** (antes de salir, en directo, sin cobertura y resultado):
+  - «Meta» ya no sale dos veces en Avituallamientos cuando el último avituallamiento es la propia meta.
+  - Una sección sin nada que enseñar se esconde con su título (antes, en el resultado quedaba «Ritmo» solo).
+  - Con la carrera terminada, el primer bloque se llama «Resultado», no «Ahora».
+  - Los pasos del resultado con la misma forma que la lista en directo: nombre, debajo km y tiempo, y la hora a la derecha.
+
+## v1.51.0 · 2026-10-30
+- **Fuera la hoja antigua:** el panel deja de cargar `style.css` (la de la página de la carrera de antes) y se borran `style.css` y `cartel-directo.css`, que ya no usa ninguna página. Lo que el panel tomaba de ella (letra, `box-sizing`, márgenes) está en `cartel-panel.css`, con los controles del navegador en oscuro. Comparado pestaña a pestaña, en móvil y PC, antes y después.
+- **Botones iguales en toda la web:** también en «Mis rutas» y el panel (esquinas de 8 px, Anton, principal lima y secundario con borde).
+- **Guía de relojes, modelo a modelo:** en cada marca, una tabla con cada modelo y si lleva **ruta** y **mapa** (Sí · No · Sin confirmar), 66 modelos de 8 marcas sacados de las webs de soporte. Arriba, **«¿Sirve mi reloj?»**: escribes tu modelo y lo dice al momento (busca en esas mismas tablas; si no está, explica cómo comprobarlo en la app del reloj). Las tablas caben en un móvil de 320 px.
+
+## v1.50.0 · 2026-10-30
+- **Panel y «Mis rutas» con la misma hoja limpia que el resto de la web** (`cartel-panel.css` escrita de cero): cabecera igual que la pública (enlaces en gris, sin subrayar), explicaciones en gris (antes en verde oliva), esquinas de 8/10/14 px, botón principal lima y secundario con borde lima, y lo peligroso (borrar, parar) en rojo.
+- **Capturas del repo al día** con todo el diseño nuevo: la página de la carrera (mapa limpio y datos de arriba abajo), la guía de relojes y el panel con «Perfil y avisos».
+
+## v1.49.0 · 2026-10-30
+- **Páginas públicas con una sola hoja escrita de cero** (`cartel.css`), con el mismo sistema que la página de la carrera: portada, carreras, rutas, la página de cada ruta, la guía y la de la app. Medido: 3 radios de esquina, 2 estilos de botón y 2 familias de letra en todas.
+- **Guía de relojes rehecha:** qué hace la web con tu reloj (avisos, ruta, directo y resultado, y qué hace falta para cada cosa), una tabla por marca (avisos, ruta, mapa) y una ficha por marca con los modelos que sí y los que no, sacados de las webs de soporte de cada marca. Ahora también Polar, Suunto y Apple Watch. Donde depende del modelo pone «Algunos», no «Sí».
+- «Cómo meter la ruta en el reloj» ya no se repite (y se contradice) en tres sitios: la página de la ruta y «Mis rutas» remiten a la ficha de cada marca. La portada deja la lista de marcas.
+- Carreras sin «0 carreras con su recorrido…». Prueba de la guía al día (`pruebas/guias.py`).
+
+## v1.48.0 · 2026-10-30
+- **Página de la carrera rehecha:** una sola hoja de estilos (`directo.css`) en vez de dos que se pisaban capa sobre capa. El mapa, limpio: nada encima salvo la ruta y sus marcas; «Seguir» y «Ver en 2D/3D» debajo, con la leyenda (también salida y meta). Los datos de arriba abajo, sin hoja deslizable ni pestañas dentro de la página: **Ahora · Perfil · Avituallamientos · Ritmo**.
+- **Avituallamientos con hora:** por cuáles ha pasado y a qué hora, y a qué hora se le espera en los siguientes y en meta.
+- **Panel: «Perfil y avisos».** El perfil de la ruta con las subidas sombreadas y cada aviso marcado en su km; la lista de avisos siempre a la vista (cambiar el texto o quitarlo con ✕) y **avisos propios** en el km que quieras, que se conservan aunque se rehaga el plan.
+- Medido: 0 solapes sobre el mapa (antes 4), 7 radios de esquina distintos (antes 10), una sola familia de letra para los botones.
+
+## v1.47.2 · 2026-10-30
+- **Rutas grabadas con saltos de GPS:** ya no inflan la distancia (un circuito de 20 km con 5 saltos medía 31 km y los avisos y los avituallamientos caían en el km equivocado). Se quitan los puntos que saltan lejos y vuelven.
+- **Prueba nueva de carga de rutas** (`pruebas/rutas_gpx.py`): track normal, ruta de Komoot (`<rtept>`), sin espacio de nombres, con BOM, con saltos, sin altura, distancia oficial y ficheros malos (no XML, sin puntos, menos de 100 m, ENTITY, UTF-16).
+- Capturas del repo con la campana de avisos.
+
+## v1.47.1 · 2026-10-30
+- **Campana de avisos, tres fallos arreglados:** en el iPhone el permiso se pide en el mismo toque (Safari no deja pedirlo después de una espera y podía no salir nunca); la suscripción espera a que el service worker de los avisos esté activo (recién registrado, el navegador la rechazaba); y en pantallas de 320 px los botones de la cabecera ya no se salen.
+- Si la activación falla, el motivo queda en la consola del navegador.
+
+## v1.47.0 · 2026-10-30
+- **Avisos en el móvil de quien sigue la carrera:** campana en la cabecera de la página de la carrera; avisa de la salida, de cada avituallamiento y de la llegada a meta aunque la web esté cerrada (Web Push). En Android, en el navegador; en el iPhone, con la web instalada (Compartir → «Añadir a pantalla de inicio», iOS 16.4 o más). Sin ráfagas: si se juntan varios, solo el último.
+- Solo envía la Pi con la IP flotante; el envío va con pywebpush en su propio entorno (~/sigueme-push) y el servidor sigue sin dependencias: sin ese entorno, la campana no sale. Suscripciones solo de servicios de avisos reales (Apple, Google, Mozilla, Microsoft), en un fichero oculto que no se sirve.
+- Service worker propio para los avisos, aparte del de «sin cobertura»: apagar ese modo ya no borra las suscripciones.
+
 ## v1.46.1 · 2026-10-30
 - **Repaso en el teléfono:** la barra del sistema (Android, Safari) sale oscura como la web, no lima; con la web instalada en el iPhone la cabecera del directo ya no queda debajo de la muesca; los chips de marcas de la portada del mismo tamaño que en las demás páginas.
 

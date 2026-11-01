@@ -246,6 +246,7 @@ try:
     ok(r.status == 200 and r.url.endswith('/mis-rutas.html'), 'el nombre viejo /rutas.html redirige a /mis-rutas.html')
     st, d, _ = http('GET', '/api/carreras')
     ok(st == 200 and isinstance(d['carreras'], list) and 'proxima' in d, '/api/carreras (público) para la portada')
+    ok(d['proxima'] is None or isinstance(d['proxima'].get('traza'), list), '  la próxima carrera, con su recorrido para el dibujo')
 
     # ---- límites: 5 rutas por invitado; GPX demasiado grande
     for i in range(4):
@@ -319,7 +320,7 @@ try:
     # el nombre del sitio sale del dominio
     r = urllib.request.urlopen(urllib.request.Request(U + '/inicio', headers={'Host': 'odegaard12.online'}))
     pg = r.read().decode('utf-8')
-    ok('<title>odegaard12</title>' in pg and 'id="hero-titulo">odegaard12<' in pg, 'la portada se titula con el dominio: «odegaard12»')
+    ok('<title>Sígueme CC · odegaard12</title>' in pg and 'class="marca" href="/inicio">odegaard12<' in pg, 'la portada lleva el dominio: «odegaard12»')
     r = urllib.request.urlopen(urllib.request.Request(U + '/rutas', headers={'Host': 'odegaard12.online'}))
     pg2 = r.read().decode('utf-8')
     ok('<title>Rutas y relojes · odegaard12</title>' in pg2, '  y /rutas, «Rutas y relojes · odegaard12»')

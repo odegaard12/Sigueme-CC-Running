@@ -268,10 +268,10 @@ def traza_svg(slug):
     return '<span class="indice-traza" aria-hidden="true"></span>'      # el hueco, para que la fila no se descoloque
 
 
-def traza_puntos(slug, n=80):
-    """El recorrido archivado, ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
+def traza_puntos(slug, n=80, fichero=None):
+    """El recorrido archivado (o el de `fichero`), ~n puntos [lon, lat], para el dibujo de la portada. Vacío si no hay ruta."""
     try:
-        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+        with open(fichero or os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
             pts = json.load(f)["features"][0]["geometry"]["coordinates"]
         return [[round(float(p[0]), 4), round(float(p[1]), 4)] for p in pts[::max(1, len(pts) // n)]]
     except (OSError, ValueError, KeyError, IndexError, TypeError):
@@ -361,8 +361,40 @@ def generar_plan(antes=None, cada=None, forzar=False):
             mio = next((e for e in editados if cerca(a, e)), None)
             nuevos.append(dict(a, texto=mio["texto"], editado=True) if mio else a)
         plan["avisos"], plan["quitados"] = nuevos, quitados
+    mezclar_propios(plan, viejo.get("propios", []))
     escribir_json("avisos.json", plan)
     return plan
+
+
+def mezclar_propios(plan, propios):
+    """Los avisos puestos a mano en un km («CRUCE PELIGROSO»): van dentro del plan, en su sitio, y se guardan aparte
+    para que rehacer el plan no los borre. Ids seguidos de nuevo (la app y el panel los usan)."""
+    plan["propios"] = propios
+    avisos = [a for a in plan.get("avisos", []) if a.get("tipo") != "propio"]
+    avisos += [{"km": p["km"], "tipo": "propio", "texto": p["texto"], "valido_hasta": round(p["km"] + 0.3, 2), "prio": 0} for p in propios]
+    avisos.sort(key=lambda a: (a["km"], a.get("prio", 9)))
+    for n, a in enumerate(avisos):
+        a["id"] = n + 1
+    plan["avisos"] = avisos
+    return plan
+
+
+def limpiar_propios(lista):
+    """Avisos propios del panel: como mucho 50, km dentro de la ruta y texto de como mucho 120 letras."""
+    if not isinstance(lista, list) or len(lista) > 50:
+        return None, "como mucho 50 avisos propios"
+    total = float(carrera().get("distancia_km") or 2000)
+    limpio = []
+    for p in lista:
+        try:
+            km = float(str(p.get("km")).replace(",", "."))
+            texto = _texto(p.get("texto"), 120)
+        except (TypeError, ValueError, AttributeError):
+            km, texto = -1, ""
+        if not texto or not 0 <= km <= total:
+            return None, f"cada aviso propio necesita texto y un km entre 0 y {total:g}"
+        limpio.append({"km": round(km, 2), "texto": texto})
+    return sorted(limpio, key=lambda p: p["km"]), None
 
 
 def _texto(valor, largo):
@@ -1209,6 +1241,28 @@ def _repetido(p):
     return False
 
 
+def arranque_por_gps(live, puntos):
+    """⚠️ 1/11/2026: con Traccar (iPhone) no hay EMPEZAR en el móvil y la web siguió «Sin iniciar» toda la carrera
+    con 1.529 puntos llegando. El día de la carrera, el primer punto con posición desde 1 h antes de la salida (y
+    hasta el límite) la pone en marcha, como EMPEZAR en la app Android: crono desde la hora oficial. Una vez."""
+    if live.get("started_at") or os.path.exists(os.path.join(ROOT, "resultado.json")):
+        return live
+    # la app Android tiene su EMPEZAR (y manda puntos de prueba antes): esto es para Traccar y el reloj
+    if not any(p["lat"] is not None and p.get("origen") != "app" for p in puntos):
+        return live
+    c = carrera()
+    try:
+        zona = zona_carrera()
+        salida = datetime.fromisoformat(f"{c['fecha']}T{c['hora_salida']}").replace(tzinfo=zona)
+        limite = timedelta(hours=float(c.get("limite_h") or 12))
+    except (KeyError, ValueError, TypeError):
+        return live
+    if not salida - timedelta(hours=1) <= datetime.now(zona) <= salida + limite:
+        return live
+    print(f"[gps] llega el GPS el día de la carrera: en marcha (salida a las {c['hora_salida']})", flush=True)
+    return Handler._empezar(Handler, c["hora_salida"], origen="gps")
+
+
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
     puntos[:] = [p for p in puntos if not _repetido(p)]
@@ -1218,7 +1272,7 @@ def recibir_gps(puntos):
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
                           kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"], hr=p["hr"])
-    live = read_live()
+    live = arranque_por_gps(read_live(), puntos)
     extra = {}
     # pulso del reloj: el más reciente, y la media de todo lo recibido
     nuevos_hr = [p for p in puntos if p["hr"] is not None and p["t"] > (live.get("hr_t") or 0)]
@@ -1671,10 +1725,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/push/clave":
+            c = herramienta("avisos_web").clave_publica()
+            return self._send_json(200 if c else 404, {"clave": c} if c else {"error": "avisos apagados"})
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
         if crudo == "/rutas.html":
             return self._redirigir("/mis-rutas.html", 301)       # el espacio del invitado se llama /mis-rutas.html
+        if crudo == "/app.html":
+            return self._pagina("app.html")
+        if crudo in ("/inicio.html", "/pulseras.html", "/ruta.html"):   # plantillas: tal cual, saldría {{SITIO}}
+            return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
             return self._publico_get(crudo)
         if crudo == "/inicio":
@@ -1701,7 +1762,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
         if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() and not directo_ahora() \
-                and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+                and not os.path.exists(os.path.join(ROOT, "resultado.json")) and "?previa" not in self.path:
             # sin carrera en marcha: la portada lleva al último resultado (302,
             # no 301: cuando empiece la siguiente carrera, la portada será ella)
             archivadas = carreras_archivadas()
@@ -1791,28 +1852,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             f = str(c.get("fecha") or "")
             fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
                      if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
-            datos = " · ".join(str(x) for x in (
-                fecha, c.get("lugar", ""),
-                "",
-                f"{r['desnivel_m']} m+" if r.get("desnivel_m") else "") if x)
             tiempo = f"{h}h {m:02d}m" if r.get("tiempo_oficial_s") else ""
             dist = c.get("distancia_km") or r.get("distancia_km")      # la oficial, como en la portada
-            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else "–"
-            filas.append(f'<a class="fila carrera" href="/{esc(slug)}/"><div class="nombre">{esc(c.get("nombre") or slug)}<small>{esc(datos)}</small></div>'
-                         f'<div class="traza">{traza_svg(slug)}</div><div class="cifra km"><b>{esc(km)}</b><span>KM</span></div>'
-                         f'<div class="cifra t"><b>{esc(tiempo or "–")}</b><span>{"TIEMPO" if tiempo else ""}</span></div></a>')
+            km = f"{round(float(dist), 1):g}".replace(".", ",") if dist else ""
+            des = c.get("desnivel_m") or r.get("desnivel_m")           # el de la ruta, como en la portada
+            des = f"{int(des):,}".replace(",", ".") if des else ""
+            # una ficha grande por carrera, como la tarjeta de la portada
+            cifras = "".join(f'<div class="cifra"><b>{esc(v)}</b><span>{u}</span></div>' for v, u in ((km, "KM"), (des, "D+"), (tiempo, "TIEMPO")) if v)
+            enlace = f"/{esc(slug)}/"
+            filas.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
+                         f'<span class="pill-hero">{esc(" · ".join(x for x in (fecha, c.get("lugar", "")) if x))}</span>'
+                         f'<h2 class="hero-titulo"><a href="{enlace}">{esc(c.get("nombre") or slug)}</a></h2>'
+                         f'<div class="hero-cifras">{cifras}</div><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a></div>'
+                         f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg(slug)}</a></article>')
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
         en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
         n = len(filas)
+        bajo = (f'{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.' if n
+                else 'Aquí quedan las carreras terminadas, con su recorrido, su tiempo y la repetición.')
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=4">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=11">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
-                f'<div class="bajo"><p>{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.</p></div></div>'
+                f'<div class="bajo"><p>{bajo}</p></div></div>'
                 f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
                 f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
                 f'<footer class="pie"><span>{sitio}</span></footer></body></html>').encode("utf-8")
@@ -2115,8 +2181,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             hoy = datetime.now(zona_carrera()).date().isoformat()
             proxima = None
             if c.get("nombre") and (c.get("fecha") or "") >= hoy and not live.get("finished_at") \
-                    and slug_de(c) not in {x["slug"] for x in lista}:
+                    and slug_de(c) not in {x["slug"] for x in lista} and not os.path.exists(os.path.join(ROOT, "resultado.json")):
                 proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
+                proxima["traza"] = traza_puntos(None, fichero=os.path.join(ROOT, "route.geojson"))
             self._send_json(200, {"carreras": lista, "proxima": proxima,
                                   "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
             return
@@ -2389,6 +2456,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         quitados = plan.get("quitados", [])
         nuevos = []
         for a in plan["avisos"]:
+            if a.get("tipo") == "propio":          # los propios llegan aparte, en «propios»
+                continue
             t = textos.get(a["id"], a["texto"])
             if not t:
                 quitados.append({"tipo": a["tipo"], "km": a["km"]})
@@ -2397,6 +2466,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             else:
                 nuevos.append(a)
         plan["avisos"], plan["quitados"] = nuevos, quitados
+        propios = plan.get("propios", [])
+        if "propios" in data:
+            propios, error = limpiar_propios(data.get("propios"))
+            if error:
+                self._send_json(400, {"error": error})
+                return
+        mezclar_propios(plan, propios)
         escribir_json("avisos.json", plan)
         self._send_json(200, {"ok": True, "plan": plan, "preparacion": preparacion()})
 
@@ -2474,6 +2550,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             respuesta["estado"], respuesta["mensaje"] = self._empezar_desde_app(cuerpo.get("t"))
         self._send_json(200, respuesta)
 
+    def _push_post(self):
+        """Alta o baja de los avisos en el móvil (la suscripción Web Push del navegador)."""
+        if not soy_titular():          # la réplica desde la titular lo borraría
+            return self._send_json(503, {"error": "esta Pi no es la titular: reintenta"})
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            largo = -1
+        if not 0 < largo <= 4096:
+            return self._send_json(413, {"error": "petición demasiado grande"})
+        try:
+            sub = json.loads(self.rfile.read(largo))
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
+            return self._send_json(400, {"error": "invalid json"})
+        av = herramienta("avisos_web")
+        # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
+        with datos_lock:
+            if self.path == "/api/push/baja":
+                av.baja(ROOT, sub.get("endpoint") if isinstance(sub, dict) else None)
+                return self._send_json(200, {"ok": True})
+            si = av.alta(ROOT, sub)
+        return self._send_json(200 if si else 400, {"ok": si})
+
     def do_POST(self):
         # la Pi de respaldo no recibe datos de carrera: la réplica desde la titular los borraría a los 20 s y el
         # móvil creería que llegaron. Con 503 el móvil o Traccar los guardan y reintentan (la titular los coge).
@@ -2492,6 +2591,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
+        if self.path in ("/api/push/alta", "/api/push/baja"):
+            return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
         if self.path.startswith("/api/gpx") or self.path in ("/api/fit", "/api/avatar"):
@@ -2891,6 +2992,17 @@ if __name__ == "__main__":
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)
     threading.Thread(target=purga_invitados, daemon=True).start()
+
+    def avisos_loop():
+        # avisos en el móvil de quien sigue la carrera: salida, avituallamientos y meta (solo la Pi con la VIP)
+        while True:
+            try:
+                if tengo_la_vip():
+                    herramienta("avisos_web").revisar(ROOT, read_live(), leer_json("aid_stations.json") or [], carrera().get("nombre"))
+            except Exception as exc:
+                print(f"[avisos] {exc}", flush=True)
+            time.sleep(15)
+    threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
     # petición cada vez, así que un móvil con mala cobertura dejaba clavado al
     # resto. Con la web abierta en varios teléfonos pidiendo live.json cada

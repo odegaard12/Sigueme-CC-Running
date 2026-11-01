@@ -293,6 +293,13 @@ try:
     ok(r.status == 200 and b'rutas.js' in html and b'Rutas y relojes' in html, '/rutas: la página de rutas y relojes')
     r = urllib.request.urlopen(U + '/inicio'); html = r.read()
     ok(r.status == 200 and b'hero-boton' in html and b'inicio.js' in html, '/inicio: la portada es la carrera')
+    class _Quieto(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k): return None
+    for crudo_, va in (('/inicio.html', '/inicio'), ('/pulseras.html', '/pulseras'), ('/ruta.html', '/rutas')):
+        try:
+            urllib.request.build_opener(_Quieto).open(U + crudo_); ok(False, f'{crudo_}: sin redirigir')
+        except urllib.error.HTTPError as e:
+            ok(e.code == 301 and e.headers.get('Location') == va, f'{crudo_} lleva a {va}')
     ok(b'>Admin<' not in html, '/inicio: sin «Admin» en el menú público')
     # el service worker se sirve como JavaScript y no es una puerta a nada más
     r = urllib.request.urlopen(U + '/sw.js')
