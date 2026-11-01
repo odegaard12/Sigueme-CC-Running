@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.54.1 · 2026-11-02
+- **Mis rutas, ordenado para el directo**: la cabecera y los pasos 5 (publicar la ruta) y 6 (correrla en directo) dicen claro qué es cada cosa; el directo sale solo en la portada, sin publicar nada. La guía «? Ayuda» tiene un paso para el directo.
+
 ## v1.54.0 · 2026-11-02
 - **Carreras en directo de varios corredores**: cualquiera con acceso (el dueño o un invitado) crea la carrera desde una de sus rutas (día y hora) en «Mis rutas» → «Correrla en directo»; los demás se apuntan con el enlace de invitación, sin cuenta.
   - Cada corredor tiene su identificador: «Configurar mi móvil» abre la app Sígueme CC (Android) o Traccar (iPhone) ya configurados, de un toque y sin QR.

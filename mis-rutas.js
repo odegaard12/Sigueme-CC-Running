@@ -244,15 +244,16 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
 // ---------- guía de primera vez y botón «? Ayuda» ----------
 let acceso = { caduca: '', dueno: false };
 function textoAcceso() {
-  if (acceso.dueno) return 'Eres el dueño: tus rutas no caducan. Si publicas una, sale en «Rutas y relojes» para que cualquiera la vea.';
-  if (acceso.caduca === '2099-12-31') return 'Tu acceso no caduca. Si publicas una ruta, sale en «Rutas y relojes» para que cualquiera la vea.';
-  return 'Tu acceso vale hasta el ' + fecha(acceso.caduca) + '; después se borra todo lo tuyo. Si necesitas más tiempo, pídele al dueño «+30 días». Si publicas una ruta, sale en «Rutas y relojes».';
+  if (acceso.dueno) return 'Eres el dueño: tus rutas no caducan. Si publicas una, sale en «Rutas y relojes»; tus carreras en directo salen en la portada.';
+  if (acceso.caduca === '2099-12-31') return 'Tu acceso no caduca. Si publicas una ruta, sale en «Rutas y relojes»; tus carreras en directo, en la portada.';
+  return 'Tu acceso vale hasta el ' + fecha(acceso.caduca) + '; después se borra todo lo tuyo. Si necesitas más tiempo, pídele al dueño «+30 días». Si publicas una ruta, sale en «Rutas y relojes»; tus carreras en directo, en la portada.';
 }
 const GUIA = [
-  { t: 'Bienvenido a Mis rutas', x: 'Aquí subes tu ruta, le pones los avituallamientos y te la llevas al reloj. Son 4 pasos y te los enseño en un minuto. Siempre podrás volver a verlo con el botón «? Ayuda».' },
+  { t: 'Bienvenido a Mis rutas', x: 'Aquí subes tu ruta, te la llevas al reloj y, si quieres, la corres en directo para que te sigan. Te lo enseño en un minuto. Siempre podrás volver a verlo con el botón «? Ayuda».' },
   { t: 'Sube tu GPX', sel: () => $('gpx').closest('.tarjeta'), x: 'El fichero sale de Strava, Komoot, Wikiloc o de la web de la carrera. Ponle un nombre y pulsa «Subir ruta».' },
   { t: 'Ponle avituallamientos', x: 'Al abrir una ruta puedes añadir cada avituallamiento con su nombre y su kilómetro. Se llevan al reloj como puntos de control.' },
   { t: 'Llévatela al reloj', x: 'Descarga el GPX con el botón «Descargar GPX para el reloj» y súbelo con la app de tu reloj. Debajo tienes un botón por marca (Xiaomi, Huawei, Amazfit, Garmin, Coros…) que te explica cómo.' },
+  { t: 'Córrela en directo', x: 'Al abrir una ruta, el paso 6: pon el día y la hora y pulsa «Crear la carrera en directo». Luego «Configurar mi móvil» deja la app Sígueme CC (Android) o Traccar (iPhone) listos de un toque, e «Invitar» manda el enlace a quien corra contigo. Sale sola en la portada; el día de la carrera solo hay que tener el móvil encendido.' },
   { t: 'Tu acceso', sel: null, x: null },
 ];
 let guiaPaso = -1;
