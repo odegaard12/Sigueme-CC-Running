@@ -23,7 +23,7 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6  # v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6
         with: { gradle-version: 'current' }
       - name: Firma
         env: { FIRMA_P12: '${{ secrets.FIRMA_P12 }}' }
@@ -65,7 +65,7 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6  # v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6
         with: { gradle-version: 'current' }
       - run: gradle -p android --no-daemon assembleDebug
       - name: KVM
