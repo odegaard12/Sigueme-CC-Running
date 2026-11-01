@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.6 · 2026-11-01
+- **Con Traccar (iPhone) la carrera se pone en marcha sola**: el 1/11 llegaron 1.529 puntos del iPhone y la web siguió «Sin iniciar» toda la carrera (con Traccar no hay botón EMPEZAR en el móvil y nadie pulsó «Empezar a seguir» en el panel). Ahora, el día de la carrera, el primer punto desde 1 h antes de la salida la pone en marcha, con el crono desde la hora oficial.
+- Una carrera que ya tiene resultado no sale como «próxima» en la portada.
+
 ## v1.53.5 · 2026-10-31
 - **«Ver la carrera ▶» de la próxima carrera no abría nada**: llevaba a la portada, que hasta el día de la carrera es la misma página. Ahora abre la página de la carrera (mapa, perfil y salida) antes de su día.
 

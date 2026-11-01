@@ -1241,6 +1241,28 @@ def _repetido(p):
     return False
 
 
+def arranque_por_gps(live, puntos):
+    """⚠️ 1/11/2026: con Traccar (iPhone) no hay EMPEZAR en el móvil y la web siguió «Sin iniciar» toda la carrera
+    con 1.529 puntos llegando. El día de la carrera, el primer punto con posición desde 1 h antes de la salida (y
+    hasta el límite) la pone en marcha, como EMPEZAR en la app Android: crono desde la hora oficial. Una vez."""
+    if live.get("started_at") or os.path.exists(os.path.join(ROOT, "resultado.json")):
+        return live
+    # la app Android tiene su EMPEZAR (y manda puntos de prueba antes): esto es para Traccar y el reloj
+    if not any(p["lat"] is not None and p.get("origen") != "app" for p in puntos):
+        return live
+    c = carrera()
+    try:
+        zona = zona_carrera()
+        salida = datetime.fromisoformat(f"{c['fecha']}T{c['hora_salida']}").replace(tzinfo=zona)
+        limite = timedelta(hours=float(c.get("limite_h") or 12))
+    except (KeyError, ValueError, TypeError):
+        return live
+    if not salida - timedelta(hours=1) <= datetime.now(zona) <= salida + limite:
+        return live
+    print(f"[gps] llega el GPS el día de la carrera: en marcha (salida a las {c['hora_salida']})", flush=True)
+    return Handler._empezar(Handler, c["hora_salida"], origen="gps")
+
+
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
     puntos[:] = [p for p in puntos if not _repetido(p)]
@@ -1250,7 +1272,7 @@ def recibir_gps(puntos):
         apuntar_historial("gps", lat=p["lat"], lon=p["lon"],
                           hora=datetime.fromtimestamp(p["t"], timezone.utc).isoformat(),
                           kmh=p["kmh"], precision=p["precision"], bateria=p["bateria"], hr=p["hr"])
-    live = read_live()
+    live = arranque_por_gps(read_live(), puntos)
     extra = {}
     # pulso del reloj: el más reciente, y la media de todo lo recibido
     nuevos_hr = [p for p in puntos if p["hr"] is not None and p["t"] > (live.get("hr_t") or 0)]
@@ -2159,7 +2181,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             hoy = datetime.now(zona_carrera()).date().isoformat()
             proxima = None
             if c.get("nombre") and (c.get("fecha") or "") >= hoy and not live.get("finished_at") \
-                    and slug_de(c) not in {x["slug"] for x in lista}:
+                    and slug_de(c) not in {x["slug"] for x in lista} and not os.path.exists(os.path.join(ROOT, "resultado.json")):
                 proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
                 proxima["traza"] = traza_puntos(None, fichero=os.path.join(ROOT, "route.geojson"))
             self._send_json(200, {"carreras": lista, "proxima": proxima,
