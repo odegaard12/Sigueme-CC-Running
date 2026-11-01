@@ -722,9 +722,14 @@ function pintarResumen() {
   $('r-linea').textContent = [dia, p.hora_salida ? 'sale a las ' + p.hora_salida : '', p.ruta_km ? km(p.ruta_km) + ' km' : ''].filter(Boolean).join(' · ');
   const ir = $('r-ir');
   const destino = heroEstado === 'fin' ? 'mas' : 'hoy';
-  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : 'Ir a empezar ▶';
+  // ⚠️ 1/11/2026: el día de la carrera este botón decía «Ir a empezar» y solo cambiaba de pestaña: se pulsó creyendo
+  // que empezaba. Ese día empieza de verdad (con la misma confirmación que «Empezar a seguir»).
+  const hoyEs = new Date().toLocaleDateString('sv') === p.fecha;
+  const empiezaYa = heroEstado !== 'fin' && heroEstado !== 'vivo' && hoyEs;
+  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : empiezaYa ? 'Empezar a seguir ▶' : 'Ir a empezar ▶';
   // en la pestaña Carrera, baja hasta el botón de empezar (o al estado, ya en marcha)
-  ir.onclick = () => { verPestana(destino); const t = destino === 'hoy' ? $(heroEstado === 'vivo' ? 't-estado' : 't-empezar') : null;
+  ir.onclick = () => { verPestana(destino); if (empiezaYa) { $('save').click(); return; }
+    const t = destino === 'hoy' ? $(heroEstado === 'vivo' ? 't-estado' : 't-empezar') : null;
     if (t) t.scrollIntoView({ block: 'start' }); else window.scrollTo({ top: 0 }); };
   if (!heroPrep) return;
   $('r-listo').textContent = heroPrep.listos + ' / ' + heroPrep.total;
@@ -1386,8 +1391,8 @@ $('save').addEventListener('click', () => {
   const url = $('livetrack').value.trim();
   if (!url) {
     // sin enlace de iGPSPORT: carrera solo con el GPS del móvil (Traccar)
-    confirmar('¿Empezar SIN enlace de iGPSPORT?\n\nLa posición saldrá solo del GPS del móvil (Traccar). ' +
-      'No habrá pulso ni cadencia. Borra los datos de la carrera anterior.',
+    confirmar('¿Empezar la carrera ahora?\n\nLa web seguirá el GPS de tu móvil (Traccar o la app) y el crono contará desde la hora de salida. ' +
+      'Borra los datos de la carrera anterior.',
       { action: 'empezar', hora_salida: $('hora-salida').value });
     return;
   }

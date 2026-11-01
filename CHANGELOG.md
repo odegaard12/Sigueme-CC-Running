@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.53.7 · 2026-11-01
+- **Lo que falló el 1/11 al usarlo de verdad**:
+  - Mis rutas (invitados): la guía «Paso 1 de 5» se abría sola al entrar y tapaba justo la lista de rutas; el invitado no veía la suya ni cómo editarla. Ya no se abre sola: está en «? Ayuda».
+  - Panel: el día de la carrera, el botón de arriba dice «Empezar a seguir ▶» y arranca de verdad (con confirmación); antes decía «Ir a empezar ▶» y solo cambiaba de pestaña.
+  - La confirmación de empezar ya no habla de iGPSPORT: dice que la web seguirá el GPS del móvil (Traccar o la app).
+
 ## v1.53.6 · 2026-11-01
 - **Con Traccar (iPhone) la carrera se pone en marcha sola**: el 1/11 llegaron 1.529 puntos del iPhone y la web siguió «Sin iniciar» toda la carrera (con Traccar no hay botón EMPEZAR en el móvil y nadie pulsó «Empezar a seguir» en el panel). Ahora, el día de la carrera, el primer punto desde 1 h antes de la salida la pone en marcha, con el crono desde la hora oficial.
 - Una carrera que ya tiene resultado no sale como «próxima» en la portada.
