@@ -108,6 +108,18 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .ficha-grande .hero-titulo a:hover { color: var(--acento); }
 .ficha-grande .acciones { margin-top: 4px; }
 .ficha-grande .hero-traza { display: block; }
+/* carreras en directo de varios corredores (/d/<id>) */
+.tarjeta-dir { margin: 16px 0 0; padding: 18px 20px; border-radius: var(--r2); background: var(--sup); }
+.tarjeta-dir .titulo { margin: 0 0 8px; }
+.campo-dir { display: block; margin: 12px 0 4px; color: var(--suave); font-size: 0.9rem; font-weight: 700; }
+.entrada-dir { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #2a322d; border-radius: var(--r1); background: var(--fondo); color: var(--texto); font-size: 1rem; }
+.msg-dir { min-height: 1.3em; margin: 8px 0 0; color: var(--aviso); }
+.nota-dir { margin: 8px 0 0; color: var(--suave); font-size: 0.9rem; }
+.listo-dir { margin: 12px 0 0; font-weight: 700; }
+.corredor-dir { min-width: 34px; height: 34px; padding: 0 6px; border: 3px solid var(--tinta); border-radius: 999px; background: var(--acento); color: var(--tinta);
+  font: 800 13px/28px var(--cuerpo); text-align: center; cursor: pointer; }
+.corredor-dir.meta { background: var(--texto); }
+.fila.vivo-dir { box-shadow: inset 4px 0 0 var(--acento); }
 .mini-perfil { display: block; width: 100%; max-width: 420px; height: 34px; margin: 0 0 6px; color: var(--acento); opacity: 0.85; }
 .pill-hero { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-hero.vivo { background: var(--acento); color: var(--tinta); }

@@ -45,7 +45,7 @@ async function lista() {
   const d = await api('/rutas');
   $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '; después se borra todo lo tuyo.');
   $('salir').hidden = !!d.dueno;
-  acceso = { caduca: d.caduca, dueno: !!d.dueno };
+  acceso = { caduca: d.caduca, dueno: !!d.dueno, nombre: d.dueno ? '' : d.nombre };
   $('btn-guia').hidden = false;
   guiaPrimeraVez();
   const cont = $('lista'); cont.textContent = '';
@@ -62,7 +62,61 @@ async function lista() {
     fila.append(dato, abrir); cont.append(fila);
   }
   ver('lista');
+  cargarDirectos().catch(() => {});
 }
+
+// ---- carreras en directo (v1.54): las tuyas y en las que corres; «Tu móvil» se configura de un toque
+async function cargarDirectos(abierta) {
+  const d = await api('/directos');
+  const cont = $('directos'); cont.textContent = '';
+  $('card-directos').hidden = !d.directos.length;
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
+  for (const c of d.directos) {
+    if (c.ident) { try { localStorage.setItem('directo.' + c.id, c.ident); } catch (e) { /* da igual */ } }
+    const item = el('div', 'dir-item');
+    if (c.id === abierta) item.append(el('p', 'listo-cab', '✓ Tu carrera está lista'));
+    item.append(el('b', '', c.nombre), el('span', 'sub', fecha(c.fecha) + ' · salida ' + c.hora_salida + ' · ' + c.corredores.join(', ')));
+    const ver = el('a', 'btn principal', 'Ver el directo'); ver.href = '/d/' + c.id; item.append(ver);
+    const movil = el('div');
+    if (c.ident) {
+      const conf = el('button', 'btn', 'Configurar mi móvil'); conf.type = 'button';
+      conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) window.pintarMovil(movil, c.ident); });
+      movil.hidden = c.id !== abierta; if (!movil.hidden) window.pintarMovil(movil, c.ident);
+      item.append(conf, movil);
+    }
+    if (c.invitacion) {
+      const inv = el('button', 'btn', 'Invitar a quien corra contigo'); inv.type = 'button';
+      const msg = el('div', 'msg');
+      inv.addEventListener('click', async () => {
+        const url = location.origin + '/d/' + c.id + '#unirse=' + c.invitacion;
+        try { if (navigator.share) await navigator.share({ title: c.nombre + ' · apúntate', url }); else { await navigator.clipboard.writeText(url); msg.textContent = 'Invitación copiada: mándala por WhatsApp.'; msg.className = 'msg ok'; } }
+        catch (e) { msg.textContent = url; }
+      });
+      const borrar = el('button', 'btn peligro', 'Borrar esta carrera'); borrar.type = 'button';
+      borrar.addEventListener('click', async () => {
+        if (!confirm('¿Borrar «' + c.nombre + '» del ' + fecha(c.fecha) + '? Se borra para todos los apuntados.')) return;
+        try { await post('/directo', { accion: 'borrar', id: c.id }); await cargarDirectos(); } catch (err) { msg.textContent = err.message; msg.className = 'msg err'; }
+      });
+      item.append(inv, msg, borrar);
+    }
+    cont.append(item);
+  }
+  if (abierta) $('card-directos').scrollIntoView({ block: 'start' });
+}
+
+$('d-crear').addEventListener('click', async () => {
+  const fechaD = $('d-fecha').value, hora = $('d-hora').value, nombre = $('d-nombre').value.trim();
+  if (!fechaD) { aviso('msg-directo', 'Pon el día de la carrera.', 'err'); return; }
+  if (!hora) { aviso('msg-directo', 'Pon la hora de salida.', 'err'); return; }
+  if (!nombre) { aviso('msg-directo', 'Pon tu nombre: es el que verán en el mapa.', 'err'); $('d-nombre').focus(); return; }
+  const b = $('d-crear'); b.disabled = true; aviso('msg-directo', 'Creando la carrera…');
+  try {
+    const d = await post('/directo', { ruta: actual.id, fecha: fechaD, hora, nombre });
+    await lista();
+    await cargarDirectos(d.id);
+  } catch (err) { if (err.message !== 'sesion') aviso('msg-directo', err.message, 'err'); }
+  finally { b.disabled = false; }
+});
 
 $('subir').addEventListener('click', async () => {
   const f = $('gpx').files[0];
@@ -129,6 +183,8 @@ function pintarRuta(r) {
     s.append(li);
   }
   $('bajar').href = base + '/reloj.gpx?id=' + r.id;
+  if (!$('d-nombre').value) $('d-nombre').value = acceso.nombre || '';
+  aviso('msg-directo', '');
   aviso('msg-ruta', '');
   pintarPublicacion(r);
   ver('ruta');

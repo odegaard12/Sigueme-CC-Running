@@ -1694,6 +1694,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             print(f"[gps] petición ilegible: {exc!r}", flush=True)
             self._send_json(400, {"error": "petición no válida"})
             return
+        if str(ident or "").startswith("dir-"):        # un corredor de una carrera en directo (v1.54): su carrera
+            try:
+                with gps_lock:
+                    hecho = herramienta("directos").recibir(ROOT, ident, puntos)
+            except Exception as exc:
+                print(f"[directo] error con {len(puntos)} puntos: {exc!r}", flush=True)
+                hecho = True                 # 200 igual: si no, el móvil reintenta ese lote para siempre
+            if not hecho:
+                with gps_fallos_lock:
+                    gps_fallos[ip] = (n + 1, t0)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            self._send_json(200, {"ok": True, "puntos": len(puntos)})
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
             with gps_fallos_lock:
@@ -1738,6 +1752,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
             return self._publico_get(crudo)
+        if crudo == "/api/directo":
+            p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
+            return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
+        m_dir = re.fullmatch(r"/d/([0-9a-f]{10})", crudo)
+        if m_dir:
+            c = herramienta("directos").carrera(ROOT, m_dir.group(1))
+            return self._pagina("directo.html", {"TITULO": c["nombre"] if c else "Carrera no disponible"}, 200 if c else 404)
         if crudo == "/inicio":
             return self._pagina("inicio.html")
         if crudo == "/pulseras":
@@ -1874,7 +1895,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=11">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=12">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
@@ -2050,6 +2071,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(200, {"usuario": usuario, "nombre": reg["nombre"], "caduca": reg["caduca"],
                                       "dueno": usuario == inv.DUENO, "rutas": inv.rutas(ROOT, usuario)})
                 return
+            if ruta == "/api/invitado/directos":
+                self._send_json(200, {"directos": herramienta("directos").mias(ROOT, usuario)})
+                return
             if ruta == "/api/invitado/ruta":
                 r = inv.ruta(ROOT, usuario, id_)
                 self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
@@ -2112,6 +2136,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.mismo_origen() is not True:
             self._send_json(403, {"error": "origen no permitido"})
             return
+        if ruta == "/api/invitado/unirse":           # apuntarse con la invitación: sin cuenta (con sesión, sale en «Mis rutas»)
+            ip = "dir:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            try:
+                yo = herramienta("directos").unirse(ROOT, str(d.get("id") or ""), d.get("token"), d.get("nombre"),
+                                                    invitado_de(self.headers.get("Cookie")))
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not yo:
+                fallo_de(ip)
+                self._send_json(403, {"error": "esa invitación no vale (pídele el enlace otra vez a quien la creó)"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True, "ident": yo["ident"], "nombre": yo["nombre"]})
+            return
         usuario = invitado_de(self.headers.get("Cookie"))
         if not usuario:
             self._send_json(403, {"error": "sesión caducada: entra otra vez"})
@@ -2135,6 +2181,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if ruta == "/api/invitado/borrar":
                 hecho = inv.borrar_ruta(ROOT, usuario, d.get("id"))
                 self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/directo":
+                dm = herramienta("directos")
+                if d.get("accion") == "borrar":
+                    hecho = dm.borrar(ROOT, str(d.get("id") or ""), usuario)
+                    self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa carrera no existe"})
+                    return
+                r = inv._leer_ruta(ROOT, usuario, str(d.get("ruta") or ""))
+                c, yo = dm.crear(ROOT, usuario, d.get("nombre"), r, d.get("fecha"), d.get("hora"), herramienta("plan_avisos").calcular)
+                self._send_json(200, {"ok": True, "id": c["id"], "invitacion": c["invitacion"], "ident": yo["ident"]})
                 return
         except ValueError as e:
             self._send_json(400, {"error": str(e)})
@@ -2184,7 +2240,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     and slug_de(c) not in {x["slug"] for x in lista} and not os.path.exists(os.path.join(ROOT, "resultado.json")):
                 proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
                 proxima["traza"] = traza_puntos(None, fichero=os.path.join(ROOT, "route.geojson"))
-            self._send_json(200, {"carreras": lista, "proxima": proxima,
+            self._send_json(200, {"carreras": lista, "proxima": proxima, "directos": herramienta("directos").lista(ROOT),
                                   "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
             return
         id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
@@ -2538,6 +2594,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             ident = str(cuerpo.get("device_id") or "")
         except (ValueError, AttributeError, RecursionError):
             cuerpo, ident = {}, ""
+        if ident.startswith("dir-"):                  # un corredor de una carrera en directo: su plan (la app no cambia)
+            dm = herramienta("directos")
+            c, _ = dm.buscar(ROOT, ident)
+            if not c:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            respuesta = dm.plan_app(c)
+            if cuerpo.get("accion") == "empezar":
+                respuesta["estado"], respuesta["mensaje"] = dm.empezar_desde_app(ROOT, ident)
+            self._send_json(200, respuesta)
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
             fallo_de(ip)
@@ -2692,7 +2761,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         accion = data.get("action")
 
         if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar",
-                      "rutas_todas", "ruta_moderar"):
+                      "rutas_todas", "ruta_moderar", "directo_borrar"):
             # los amigos que pueden preparar sus rutas para el reloj (el código solo se ve al crearlo)
             inv = invitados_mod()
             usuario = str(data.get("usuario") or "").strip().lower()
@@ -2708,11 +2777,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     inv.borrar(ROOT, usuario)
                 elif accion == "ruta_moderar":
                     inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
+                elif accion == "directo_borrar":
+                    herramienta("directos").borrar(ROOT, str(data.get("id") or ""))
                 inv.purgar(ROOT)
             except ValueError as e:
                 self._send_json(400, {"error": str(e)})
                 return
-            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT)))
+            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT), directos=herramienta("directos").todas(ROOT)))
             return
 
         if accion == "rotar_gps":

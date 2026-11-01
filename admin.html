@@ -569,6 +569,12 @@
     <div id="pub-lista"></div>
   </div>
 
+  <div class="tarjeta" id="sec-directos" data-tab="rutas">
+    <h2>Carreras en directo</h2>
+    <div class="howto">Las crean tus invitados (o tú) desde Mis rutas y salen en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita la que no deba estar: se borra para todos sus corredores.</div>
+    <div id="dir-lista"></div>
+  </div>
+
   <div class="tarjeta" id="sec-invitados" data-tab="rutas">
     <h2>Invitados</h2>
     <div class="howto">Para que un amigo prepare <b>sus</b> rutas sin ver tu carrera ni tu panel. Le das un usuario y un código que caduca; entra en <b id="inv-url"></b>.</div>
@@ -1038,6 +1044,27 @@ function enseñarCodigo(usuario, codigo, caduca) {
     try { await navigator.clipboard.writeText(texto); invAviso('Copiado. Pégalo en un mensaje.'); } catch (e) { invAviso(texto); }
   };
 }
+function pintarDirectos(lista) {
+  const c = $('dir-lista'); c.textContent = '';
+  if (!lista.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'No hay ninguna.'; c.append(p); return; }
+  for (const x of lista) {
+    const f = document.createElement('div'); f.className = 'inv-fila';
+    const t = document.createElement('div'); t.className = 'inv-dato';
+    const n = document.createElement('b'); n.textContent = x.nombre;
+    const s = document.createElement('span'); s.textContent = x.fecha + ' · ' + x.hora_salida + ' · creada por ' + x.creador + ' · ' + x.corredores.join(', ');
+    t.append(n, s);
+    const bs = document.createElement('div'); bs.className = 'inv-botones';
+    const ver = document.createElement('a'); ver.className = 'btn'; ver.textContent = 'Ver'; ver.href = '/d/' + x.id; ver.target = '_blank'; ver.rel = 'noopener';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'Quitar';
+    b.addEventListener('click', async () => {
+      if (!confirm('¿Quitar «' + x.nombre + '» de ' + x.creador + '? Se borra para todos sus corredores.')) return;
+      const d = await invPost({ action: 'directo_borrar', id: x.id });
+      if (d) { pintarDirectos(d.directos || []); invAviso('Carrera quitada.'); }
+    });
+    bs.append(ver, b); f.append(t, bs); c.append(f);
+  }
+}
+
 function pintarPublicadas(rutas) {
   const c = $('pub-lista'); c.textContent = '';
   const pub = rutas.filter(r => r.publica);
@@ -1066,7 +1093,7 @@ function pintarPublicadas(rutas) {
 async function cargarInvitados() {
   $('inv-url').textContent = location.origin + '/mis-rutas.html';
   const d = await invPost({ action: 'rutas_todas' });
-  if (d) { pintarInvitados(d.invitados); pintarPublicadas(d.rutas); }
+  if (d) { pintarInvitados(d.invitados); pintarPublicadas(d.rutas); pintarDirectos(d.directos || []); }
 }
 $('inv-crear').addEventListener('click', async () => {
   const usuario = $('inv-usuario').value.trim().toLowerCase();

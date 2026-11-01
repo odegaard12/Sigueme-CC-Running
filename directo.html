@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0e1110">
+<title>{{TITULO}} · {{SITIO}}</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{TITULO}} · en directo">
+<meta property="og:description" content="Síguela en directo: el mapa con cada corredor y su tiempo.">
+<meta property="og:url" content="">
+<meta property="og:image" content="/og.jpg">
+<link rel="icon" href="/favicon.png?v=4">
+<link rel="stylesheet" href="/cartel.css?v=12">
+<link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
+</head>
+<body class="cartel ruta">
+<header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
+<div class="campo cab">
+  <span class="pill-hero" id="estado" hidden></span>
+  <h1 class="nombre-ruta" id="titulo">{{TITULO}}</h1>
+  <p class="autor" id="linea"></p>
+  <div class="acciones"><button class="boton claro" id="compartir" type="button">Compartir el directo</button></div>
+</div>
+<main>
+  <section class="oscuro" id="sec-unirse" hidden>
+    <div class="tarjeta-dir">
+      <h2 class="titulo">¿Corres tú también?</h2>
+      <p>Apúntate y tu móvil saldrá en el mapa con los demás. No hace falta cuenta.</p>
+      <label class="campo-dir" for="u-nombre">Tu nombre en el directo</label>
+      <input class="entrada-dir" id="u-nombre" type="text" maxlength="30" autocomplete="nickname" placeholder="Tu nombre o apodo">
+      <button class="boton" id="u-boton" type="button">Apuntarme</button>
+      <p class="msg-dir" id="u-msg" role="status"></p>
+    </div>
+  </section>
+  <section class="oscuro" id="sec-movil" hidden>
+    <div class="tarjeta-dir">
+      <h2 class="titulo">Tu móvil</h2>
+      <div id="movil"></div>
+    </div>
+  </section>
+  <section class="oscuro">
+    <div class="mapa" id="mapa" role="img" aria-label="Mapa de la carrera con cada corredor"></div>
+  </section>
+  <section class="oscuro">
+    <h2 class="titulo">Corredores</h2>
+    <div class="lista-filas" id="gente"></div>
+    <p class="vacio" id="aviso-posicion">Cada corredor sale en el mapa en cuanto está en marcha: desde 1 h antes de la salida, con su móvil encendido.</p>
+  </section>
+</main>
+<footer class="pie"><span>{{SITIO}}</span><small>Mapa: imágenes de Esri. La posición de cada corredor solo se ve durante la carrera.</small></footer>
+<script src="/directo-movil.js?v=1"></script>
+<script src="/directo.js?v=1"></script>
+</body>
+</html>

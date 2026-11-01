@@ -99,6 +99,19 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
       $('carreras').append(f);
     });
   }
+  // carreras en directo de varios corredores (v1.54): en directo, próximas y terminadas
+  const ESTADO = { en_directo: 'En directo', proxima: 'Próxima', terminada: 'Terminada' };
+  const dirs = (datos && datos.directos) || [];
+  if (dirs.length) {
+    $('directos-sec').hidden = false;
+    dirs.slice(0, 6).forEach((c, i) => {
+      const mejor = c.corredores.filter(x => x.tiempo_s).sort((a, b) => a.tiempo_s - b.tiempo_s)[0];
+      const f = fila('/d/' + c.id, c.nombre, [ESTADO[c.estado], fecha(c.fecha) + ' · ' + c.hora_salida, c.corredores.map(x => x.nombre).join(', ')].join(' · '),
+        c.traza, [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], mejor ? [tiempo(mejor.tiempo_s), 'MEJOR'] : [String(c.corredores.length), c.corredores.length === 1 ? 'CORREDOR' : 'CORREDORES'], i);
+      if (c.estado === 'en_directo') f.classList.add('vivo-dir');
+      $('directos').append(f);
+    });
+  }
   if (rutas.length) {
     $('rutas-sec').hidden = false;
     rutas.slice(0, 3).forEach((r, i) => $('rutas').append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza,

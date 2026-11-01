@@ -4,6 +4,13 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.54.0 · 2026-11-02
+- **Carreras en directo de varios corredores**: cualquiera con acceso (el dueño o un invitado) crea la carrera desde una de sus rutas (día y hora) en «Mis rutas» → «Correrla en directo»; los demás se apuntan con el enlace de invitación, sin cuenta.
+  - Cada corredor tiene su identificador: «Configurar mi móvil» abre la app Sígueme CC (Android) o Traccar (iPhone) ya configurados, de un toque y sin QR.
+  - Todo solo para cada uno: en marcha con su primer punto desde 1 h antes, el tiempo cuenta desde que empieza a correr (más rápido que 12 min/km) y la meta se da sola.
+  - /d/<id>: el mapa con todos, sus km y sus tiempos, cada 10 s. Sale en la portada («Carreras en directo»); el dueño puede quitarla desde el panel (Rutas).
+  - La app Android no cambia: baja el plan y manda la posición con su identificador de corredor.
+
 ## v1.53.7 · 2026-11-01
 - **Lo que falló el 1/11 al usarlo de verdad**:
   - Mis rutas (invitados): la guía «Paso 1 de 5» se abría sola al entrar y tapaba justo la lista de rutas; el invitado no veía la suya ni cómo editarla. Ya no se abre sola: está en «? Ayuda».
