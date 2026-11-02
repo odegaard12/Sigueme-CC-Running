@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.58.2 · 2026-11-02
+- **Mis carreras**: «Tus carreras en directo» sale siempre; si aún no hay ninguna, dice dónde se configura el móvil (paso 6 de una ruta) y que una carrera pasada no se repite.
+- **Página de una ruta**: atajos arriba para saltar a «llevarla al reloj», «publicarla» y «correrla en directo».
+
 ## v1.58.1 · 2026-11-02
 - **Panel**: la última pestaña se llama «Invitados» (antes «Rutas», que se confundía con la sección Rutas de la web) y el texto de Archivar dice «Carreras», como la página.
 - **Mis carreras**: «Subir una ruta» sube justo debajo de «Tus rutas».

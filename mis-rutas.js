@@ -69,7 +69,12 @@ async function lista() {
 async function cargarDirectos(abierta) {
   const d = await api('/directos');
   const cont = $('directos'); cont.textContent = '';
-  $('card-directos').hidden = !d.directos.length;
+  $('card-directos').hidden = false;
+  if (!d.directos.length) {
+    const p = document.createElement('p'); p.className = 'sub';
+    p.textContent = 'Aún no tienes ninguna carrera en directo. Abre una ruta y, en el paso 6, pon el día y la hora: ahí es donde se configura tu móvil (app o Traccar) y se invita a quien corra contigo. Una carrera que ya pasó no se repite: crea otra con la fecha nueva.';
+    cont.append(p);
+  }
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
   for (const c of d.directos) {
     if (c.ident) { try { localStorage.setItem('directo.' + c.id, c.ident); } catch (e) { /* da igual */ } }
