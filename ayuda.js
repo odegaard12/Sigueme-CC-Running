@@ -18,13 +18,13 @@
     'Que los avisos lleguen': 'La app de tu reloj (Mi Fitness, Zepp, Huawei Health) tiene que dejar pasar las notificaciones de «Sígueme CC». Pulsa «Probar aviso» una vez para que aparezca en su lista.',
     'Resultado de la carrera': 'Sube el fichero de tu reloj (FIT o GPX): da tu tiempo real desde que empiezas a correr, la distancia medida y el pulso. Con Strava: la actividad → ⋯ → Exportar GPX (en la web de Strava). Mejor el del reloj que el del móvil: guarda un punto por segundo.',
     'Archivar': 'Cuando el resultado esté bien, pasa la carrera a «Carreras» y deja la portada libre para la siguiente. Antes pon la dirección de archivo («año-nombre») en Datos.',
-    'Mis carreras': 'Tus rutas y tus carreras, igual que las de un invitado.',
+    'Mis carreras': 'Tus carreras y tus carreras en directo, igual que las de un invitado.',
     'Rutas publicadas': 'Lo que han publicado tus invitados. Puedes quitarlo de la web o borrarlo.',
     'Carreras en directo': 'Carreras con varios corredores, creadas por tus invitados o por ti. Quita las que no deban estar.',
     'Invitados': 'Un usuario y un código que caduca, para que un amigo prepare sus rutas y carreras sin ver tu panel. «Sin caducidad» es para tu propia cuenta.',
     'Avanzado': 'Ajustes poco habituales. Si no sabes qué es, no lo toques.',
     // Mis carreras
-    'Tus rutas': 'Las rutas que has subido. «Abrir» para editarla, llevártela al reloj, publicarla o correrla en directo.',
+    'Tus carreras': 'Las carreras (rutas) que has subido. «Abrir» para editarla, llevártela al reloj, publicarla o correrla en directo.',
     'Subir una ruta': 'Sube el GPX de una ruta. Se prepara sola: perfil, subidas y avisos.',
     'Carreras en las que te puedes apuntar': 'Carreras en directo de otros que aún no han acabado. «Apuntarme» te mete con tu nombre; luego configura tu móvil y saldrás en el mapa. Si no corres al final, «Retirarme» en tu carrera te quita del mapa.',
     'Tus carreras en directo': 'Las carreras que has creado o en las que corres. «Configurar mi móvil» deja la app o Traccar listos; «Invitar» manda el enlace a quien corra contigo.',
@@ -48,7 +48,7 @@
   document.querySelectorAll('h2').forEach(h => {
     if (h.id === 'guia-titulo' || h.id === 'r-nombre' || h.id === 'r-titulo') return;
     const nombre = h.textContent.trim();
-    const k = Object.keys(TITULOS).find(x => nombre.startsWith(x));
+    const k = Object.keys(TITULOS).find(x => nombre === x) || Object.keys(TITULOS).find(x => nombre.startsWith(x));
     if (k) poner(h, TITULOS[k]);
   });
   document.querySelectorAll('.paso').forEach(p => {

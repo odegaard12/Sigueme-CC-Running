@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.59.1 · 2026-11-02
+- **Mis carreras**: la lista de tus rutas se llama «Tus carreras» (antes «Tus rutas»), como la página; su ayuda «?» y el texto de arriba también.
+
 ## v1.59.0 · 2026-11-02
 - **Menú de saltos en cada ruta** (Mis carreras): en el móvil, una barra fija arriba con Datos · Avituallamientos · Subidas · Reloj · Publicar · Correr en directo; en el PC, una columna a la izquierda. Marca el paso que estás viendo y salta al pulsar, así «Correr en directo» ya no queda escondido al final.
 
