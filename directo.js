@@ -130,8 +130,8 @@ $('compartir').addEventListener('click', async () => {
 
 if (guardado()) {
   // apuntado con cuenta: los ajustes solo salen con la sesión iniciada; apuntado con el enlace (sin cuenta): salen siempre en su móvil
-  let cuenta = false; try { cuenta = !!localStorage.getItem(clave + '.cuenta'); } catch (e) { /* da igual */ }
-  if (!cuenta) enseñarMovil(guardado());
+  let anonimo = false; try { anonimo = !!localStorage.getItem(clave + '.anonimo'); } catch (e) { /* da igual */ }
+  if (anonimo) enseñarMovil(guardado());
   else fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(y => {
     if (y && y.sesion) enseñarMovil(guardado());
     else { try { localStorage.removeItem(clave); localStorage.removeItem(clave + '.cuenta'); } catch (e) { /* da igual */ } }
@@ -149,6 +149,7 @@ else if (token) {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se pudo apuntar. Prueba otra vez.');
       try { localStorage.setItem(clave, d.ident); } catch (e) { /* sin almacenamiento: se enseña igual */ }
+      fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.json()).then(y => { if (!y.sesion) { try { localStorage.setItem(clave + '.anonimo', '1'); } catch (e) { /* da igual */ } } }).catch(() => {});
       history.replaceState(null, '', location.pathname);
       $('sec-unirse').hidden = true; enseñarMovil(d.ident);
     } catch (err) { $('u-msg').textContent = err.message; b.disabled = false; }
