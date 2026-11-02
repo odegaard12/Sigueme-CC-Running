@@ -38,6 +38,27 @@ def baja(root, av, ident, endpoint):
         av._escribir(root, SUBS, d)
 
 
+_ULT_PRUEBA = {}
+
+
+def prueba(root, av, ident, ahora=None):
+    """Un aviso de prueba al móvil de ese corredor (para que la app de la pulsera lo apunte en su lista).
+    Devuelve 'ok', 'sin_avisos' (no los tiene activados) o 'espera' (uno hace menos de 15 s)."""
+    ahora = ahora or time.time()
+    subs = av._leer(root, SUBS, {}).get(ident) or []
+    if not subs:
+        return "sin_avisos"
+    if ahora - _ULT_PRUEBA.get(ident, 0) < 15:
+        return "espera"
+    _ULT_PRUEBA[ident] = ahora
+    caducadas = av.enviar(subs, {"title": "Sígueme CC", "body": "Aviso de prueba: así te llegarán las subidas. ¿Lo ves en el reloj?", "tag": "prueba", "url": "/"})
+    if caducadas:
+        d = av._leer(root, SUBS, {})
+        d[ident] = [s for s in d.get(ident, []) if s.get("endpoint") not in caducadas]
+        av._escribir(root, SUBS, d)
+    return "ok"
+
+
 def _km(a, b):
     p1, p2 = math.radians(a[0]), math.radians(b[0])
     dp, dl = p2 - p1, math.radians(b[1] - a[1])
@@ -125,7 +146,7 @@ def revisar(root, av, live, plan, ruta, clave_dueno, dm, ahora=None):
                 continue
             st = dm.estado(root, id_, co["cid"])
             u = st.get("ult") or []
-            if st.get("salida_real") and not st.get("llegada") and len(u) == 3 and ahora - u[2] < FRESCO_S:
+            if st.get("salida_real") and not st.get("llegada") and not st.get("retirado") and len(u) == 3 and ahora - u[2] < FRESCO_S:
                 enviados += _enviar_si_toca(root, av, estado, co["ident"], "dir:" + id_, (c.get("plan") or {}).get("avisos", []), st.get("km", 0.0), subs[co["ident"]])
     if json.dumps(estado, sort_keys=True) != antes:
         av._escribir(root, ESTADO, estado)

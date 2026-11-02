@@ -14,8 +14,9 @@ window.avisosMovil = function (cont, ident) {
   let activo = false; try { activo = localStorage.getItem(clave) === '1'; } catch (e) { /* da igual */ }
   cont.textContent = '';
   const btn = el('button', 'boton', ''); btn.type = 'button';
+  const pb = el('button', 'boton claro', 'Enviar un aviso de prueba'); pb.type = 'button';
   const msg = el('p', 'nota-dir', '');
-  const pintar = () => { btn.textContent = activo ? 'Avisos activados · desactivar' : 'Activar los avisos de subidas'; btn.classList.toggle('claro', activo); };
+  const pintar = () => { btn.textContent = activo ? 'Avisos activados · desactivar' : 'Activar los avisos de subidas'; btn.classList.toggle('claro', activo); pb.hidden = !activo; };
   const dec = t => { msg.textContent = t; };
   pintar();
   if (!puede) {
@@ -59,5 +60,15 @@ window.avisosMovil = function (cont, ident) {
       dec('No se pudieron activar los avisos. Comprueba la conexión y vuelve a intentarlo.');
     } finally { btn.disabled = false; }
   });
-  cont.append(btn, msg);
+  pb.addEventListener('click', async () => {
+    pb.disabled = true;
+    try {
+      const r = await post('/api/push/mio/prueba', { ident });
+      const d = await r.json().catch(() => ({}));
+      dec(r.ok ? 'Enviado: debe llegarte ahora al iPhone. Mira si también suena en la pulsera; si no, en la app de la pulsera (Mi Fitness, Zepp, Huawei Health…) deja pasar las notificaciones de «Sígueme CC» y vuelve a probar.'
+        : (d.error ? 'No se pudo: ' + d.error + '.' : 'No se pudo enviar el aviso de prueba.'));
+    } catch (e) { dec('No se pudo enviar el aviso de prueba. Comprueba la conexión.'); }
+    finally { setTimeout(() => { pb.disabled = false; }, 8000); }
+  });
+  cont.append(btn, pb, msg);
 };

@@ -59,5 +59,17 @@ raiz3 = tempfile.mkdtemp(prefix='avruta3-'); ar.alta(raiz3, aw, 'dir-uno', SUB)
 n = len(enviados)
 ok(ar.revisar(raiz3, aw, {}, {}, {}, CLAVE, Dm(), T0) == 1 and enviados[-1][1] == 'SUBIDA 1' and len(enviados) == n + 1, 'directo de varios: el corredor «uno» recibe su aviso (el «dos» no tiene móvil apuntado)')
 
+# aviso de prueba: solo con avisos activados y no más de uno cada 15 s
+raiz4 = tempfile.mkdtemp(prefix='avruta4-'); n = len(enviados)
+ok(ar.prueba(raiz4, aw, CLAVE, T0) == 'sin_avisos' and len(enviados) == n, 'prueba sin móvil apuntado: lo dice y no manda nada')
+ar.alta(raiz4, aw, CLAVE, SUB)
+ok(ar.prueba(raiz4, aw, CLAVE, T0) == 'ok' and enviados[-1][1].startswith('Aviso de prueba'), 'prueba con móvil apuntado: manda el aviso')
+ok(ar.prueba(raiz4, aw, CLAVE, T0 + 5) == 'espera' and len(enviados) == n + 1, 'otra a los 5 s: espera')
+ok(ar.prueba(raiz4, aw, CLAVE, T0 + 20) == 'ok', 'a los 20 s: otra vez')
+class DmRet(Dm):
+    def estado(s, r, i, cid): return dict(Dm.estado(s, r, i, cid), retirado=T0)
+raiz5 = tempfile.mkdtemp(prefix='avruta5-'); ar.alta(raiz5, aw, 'dir-uno', SUB); n = len(enviados)
+ok(ar.revisar(raiz5, aw, {}, {}, {}, CLAVE, DmRet(), T0) == 0 and len(enviados) == n, 'un corredor retirado no recibe avisos de subidas')
+
 print('\nTODO BIEN' if not malos else f'\nFALLOS: {len(malos)}')
 sys.exit(1 if malos else 0)

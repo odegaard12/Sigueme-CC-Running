@@ -124,12 +124,15 @@ def crear(raiz, usuario, nombre_corredor, ruta, fecha, hora, calcular, limite_h=
     return c, yo
 
 
-def unirse(raiz, id_, token, nombre, usuario=None, ahora=None):
+def unirse(raiz, id_, token, nombre, usuario=None, ahora=None, abierto=False):
     """Apuntarse con el enlace de invitación. Devuelve el corredor nuevo (con su identificador) o None."""
     with _lock:
         c = carrera(raiz, id_)
-        if not c or not token or not compare_digest(str(token).encode(), c["invitacion"].encode()):
+        if not c:
             return None
+        if not (abierto and usuario):                 # con cuenta se puede entrar a una carrera abierta sin el enlace
+            if not token or not compare_digest(str(token).encode(), c["invitacion"].encode()):
+                return None
         if len(c["corredores"]) >= MAX_CORREDORES:
             raise ValueError("esta carrera ya está llena")
         if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
@@ -199,6 +202,8 @@ def recibir(raiz, ident, puntos, ahora=None):
     con_pos = sorted((p for p in puntos if p.get("lat") is not None), key=lambda p: p["t"])
     with _lock:
         st = estado(raiz, c["id"], co["cid"])
+        if st.get("retirado"):
+            return True                                   # retirado: se ignoran sus puntos
         bat = [p["bateria"] for p in puntos if p.get("bateria") is not None]
         if bat:
             st["bateria"] = round(bat[-1])
@@ -276,7 +281,39 @@ def plan_app(c):
             "generado": c.get("creada")}
 
 
+def retirar(raiz, ident):
+    """El corredor se retira: deja de salir en el mapa y sus puntos ya no cuentan. False si el identificador no vale."""
+    c, co = buscar(raiz, ident)
+    if not c:
+        return False
+    with _lock:
+        st = estado(raiz, c["id"], co["cid"])
+        if not st.get("retirado"):
+            st["retirado"] = time.time()
+            _escribir(_f(raiz, c["id"], co["cid"]), st)
+    return True
+
+
+def abiertas(raiz, usuario, ahora=None):
+    """Las carreras de otros a las que un usuario con cuenta puede apuntarse sin enlace (no terminadas ni llenas)."""
+    ahora = ahora or time.time()
+    out = []
+    for id_ in _ids(raiz):
+        c = carrera(raiz, id_)
+        if not c or c.get("creador") == usuario or any(x.get("usuario") == usuario for x in c["corredores"]):
+            continue
+        if len(c["corredores"]) >= MAX_CORREDORES or ahora > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
+            continue
+        out.append({"id": id_, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"],
+                    "distancia_km": c.get("distancia_km"), "salida_ts": salida(c).timestamp(),
+                    "corredores": [x["nombre"] for x in c["corredores"] if not estado(raiz, id_, x["cid"]).get("retirado")]})
+    out.sort(key=lambda x: x["salida_ts"])
+    return out
+
+
 def _situacion(st):
+    if st.get("retirado"):
+        return "retirado"
     if st.get("llegada"):
         return "en_meta"
     if st.get("salida_real"):
@@ -297,7 +334,7 @@ def publico(raiz, id_, ahora=None):
         st = estado(raiz, id_, co["cid"])
         sit = _situacion(st)
         x = {"cid": co["cid"], "nombre": co["nombre"], "situacion": sit, "km": round(st.get("km", 0), 2)}
-        if sit != "sin_empezar" and st.get("ult"):
+        if sit not in ("sin_empezar", "retirado") and st.get("ult"):
             x["lat"], x["lon"], x["visto"] = st["ult"][0], st["ult"][1], st["ult"][2]
             x["bateria"] = st.get("bateria")
         if st.get("salida_real"):
@@ -306,7 +343,7 @@ def publico(raiz, id_, ahora=None):
         if sit == "en_meta":
             x["lat"], x["lon"] = c["coords"][-1][1], c["coords"][-1][0]
         gente.append(x)
-    gente.sort(key=lambda g: (g["situacion"] != "en_meta", g.get("tiempo_s") if g["situacion"] == "en_meta" else -g["km"]))
+    gente.sort(key=lambda g: (g["situacion"] == "retirado", g["situacion"] != "en_meta", g.get("tiempo_s") if g["situacion"] == "en_meta" else -g["km"]))
     sal = salida(c)
     return {"id": id_, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"],
             "distancia_km": c.get("distancia_km"), "desnivel_m": c.get("desnivel_m"),
@@ -318,11 +355,11 @@ def publico(raiz, id_, ahora=None):
 
 def _estado_carrera(c, gente, ahora):
     sal = salida(c).timestamp()
-    if gente and all(g["situacion"] == "en_meta" for g in gente):
+    if gente and all(g["situacion"] in ("en_meta", "retirado") for g in gente):
         return "terminada"
     if ahora > sal + (c.get("limite_h") or 6) * 3600:
         return "terminada"
-    if any(g["situacion"] != "sin_empezar" for g in gente):     # alguien ya salió (o llegó): en directo hasta que lleguen todos
+    if any(g["situacion"] not in ("sin_empezar", "retirado") for g in gente):     # alguien ya salió (o llegó): en directo hasta que lleguen todos
         return "en_directo"
     return "proxima"
 
@@ -338,7 +375,7 @@ def lista(raiz, ahora=None):
         out.append({"id": id_, "nombre": p["nombre"], "fecha": p["fecha"], "hora_salida": p["hora_salida"],
                     "distancia_km": p["distancia_km"], "desnivel_m": p["desnivel_m"], "estado": p["estado"],
                     "corredores": [{"nombre": g["nombre"], "tiempo_s": g.get("tiempo_s") if g["situacion"] == "en_meta" else None}
-                                   for g in p["corredores"]],
+                                   for g in p["corredores"] if g["situacion"] != "retirado"],
                     "traza": p["ruta"][::max(1, len(p["ruta"]) // 80)], "salida_ts": p["salida_ts"]})
     orden = {"en_directo": 0, "proxima": 1, "terminada": 2}
     out.sort(key=lambda x: (orden[x["estado"]], x["salida_ts"] if x["estado"] == "proxima" else -x["salida_ts"]))

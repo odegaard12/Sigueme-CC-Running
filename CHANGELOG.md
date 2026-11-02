@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.57.0 · 2026-11-02
+- **Aviso de prueba en el iPhone**: botón «Enviar un aviso de prueba» junto a los avisos de subidas. Sirve para que «Sígueme CC» aparezca en la app de la pulsera y dejarlo pasar.
+- **«Retirarme»** de una carrera en directo (en Mis carreras y en la página del directo): dejas de salir en el mapa, tus puntos ya no cuentan y no recibes avisos; los demás siguen.
+- **Carreras en las que te puedes apuntar**: en Mis carreras salen las carreras en directo de otros que aún no han acabado, con un botón «Apuntarme» (sin pedir el enlace).
+
 ## v1.56.0 · 2026-11-02
 - **Avisos de subidas en el iPhone**: con la web instalada en la pantalla de inicio, el servidor ve en qué km vas (Traccar) y manda subida, cima y último km como notificación solo a tu móvil; la pulsera la repite. Solo con cobertura.
 - **«¿Qué móvil llevas?»** al principio de la pestaña Móvil del panel: iPhone o Android y solo ves lo que te toca; se acuerda tu elección.

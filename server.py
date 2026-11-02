@@ -2074,6 +2074,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if ruta == "/api/invitado/directos":
                 self._send_json(200, {"directos": herramienta("directos").mias(ROOT, usuario)})
                 return
+            if ruta == "/api/invitado/abiertas":
+                self._send_json(200, {"abiertas": herramienta("directos").abiertas(ROOT, usuario)})
+                return
             if ruta == "/api/invitado/ruta":
                 r = inv.ruta(ROOT, usuario, id_)
                 self._send_json(200 if r else 404, {"ok": True, "ruta": r} if r else {"error": "esa ruta no existe"})
@@ -2158,6 +2161,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
             self._send_json(200, {"ok": True, "ident": yo["ident"], "nombre": yo["nombre"]})
             return
+        if ruta == "/api/invitado/retirarme":        # retirarse: basta el identificador del móvil (es secreto)
+            ip = "ret:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
+            if not ident.startswith("dir-") or not herramienta("directos").retirar(ROOT, ident):
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True})
+            return
         usuario = invitado_de(self.headers.get("Cookie"))
         if not usuario:
             self._send_json(403, {"error": "sesión caducada: entra otra vez"})
@@ -2181,6 +2198,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if ruta == "/api/invitado/borrar":
                 hecho = inv.borrar_ruta(ROOT, usuario, d.get("id"))
                 self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/apuntarme":
+                yo = herramienta("directos").unirse(ROOT, str(d.get("id") or ""), None, d.get("nombre"), usuario, abierto=True)
+                self._send_json(200 if yo else 404, {"ok": True, "ident": yo["ident"]} if yo else {"error": "esa carrera no existe"})
                 return
             if ruta == "/api/invitado/directo":
                 dm = herramienta("directos")
@@ -2633,7 +2654,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             sub = json.loads(self.rfile.read(largo))
         except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             return self._send_json(400, {"error": "invalid json"})
-        if self.path in ("/api/push/mio", "/api/push/mio/baja"):
+        if self.path in ("/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_mio(sub)
         av = herramienta("avisos_web")
         # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
@@ -2658,6 +2679,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._send_json(403, {"error": "identificador incorrecto"})
         acierto_de(ip)
         av, ar = herramienta("avisos_web"), herramienta("avisos_ruta")
+        if self.path.endswith("/prueba"):
+            r = ar.prueba(ROOT, av, ident)
+            msgs = {"sin_avisos": "este móvil no tiene los avisos activados", "espera": "espera unos segundos antes de otra prueba"}
+            return self._send_json(200 if r == "ok" else (429 if r == "espera" else 400), {"ok": r == "ok", "error": msgs.get(r)})
         with datos_lock:
             if self.path.endswith("/baja"):
                 ar.baja(ROOT, av, ident, d.get("endpoint"))
@@ -2683,7 +2708,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja"):
+        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()

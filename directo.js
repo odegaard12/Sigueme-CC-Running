@@ -9,7 +9,7 @@ const miles = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const fecha = iso => { const [a, m, d] = String(iso || '').split('-'); return a && m && d ? Number(d) + ' ' + MESES[Number(m) - 1] + ' ' + a : ''; };
 const tiempo = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.floor(s % 60); return h + 'h ' + String(m).padStart(2, '0') + 'm ' + String(x).padStart(2, '0') + 's'; };
-const SITUACION = { sin_empezar: 'Aún sin salir', en_la_salida: 'En la salida', corriendo: 'Corriendo', en_meta: 'En meta' };
+const SITUACION = { sin_empezar: 'Aún sin salir', en_la_salida: 'En la salida', corriendo: 'Corriendo', en_meta: 'En meta', retirado: 'Retirado' };
 const ESTADO = { proxima: 'Próxima', en_directo: 'En directo', terminada: 'Terminada' };
 const clave = 'directo.' + ID;
 const token = new URLSearchParams(location.hash.slice(1)).get('unirse');
@@ -78,7 +78,18 @@ async function cargar() {
   } catch (e) { setTimeout(cargar, 20000); }
 }
 
-function enseñarMovil(ident) { $('sec-movil').hidden = false; window.pintarMovil($('movil'), ident); }
+function enseñarMovil(ident) {
+  $('sec-movil').hidden = false; window.pintarMovil($('movil'), ident);
+  $('retirarme').onclick = async () => {
+    if (!confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
+    $('retirarme').disabled = true;
+    try {
+      const r = await fetch('/api/invitado/retirarme', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ident }) });
+      if (!r.ok) throw new Error('No se pudo retirar. Prueba otra vez.');
+      $('r-msg').textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; cargar();
+    } catch (e) { $('r-msg').textContent = e.message; $('retirarme').disabled = false; }
+  };
+}
 
 $('compartir').addEventListener('click', async () => {
   const url = location.origin + '/d/' + ID;

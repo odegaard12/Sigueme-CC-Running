@@ -26,6 +26,7 @@
     // Mis carreras
     'Tus rutas': 'Las rutas que has subido. «Abrir» para editarla, llevártela al reloj, publicarla o correrla en directo.',
     'Subir una ruta': 'Sube el GPX de una ruta. Se prepara sola: perfil, subidas y avisos.',
+    'Carreras en las que te puedes apuntar': 'Carreras en directo de otros que aún no han acabado. «Apuntarme» te mete con tu nombre; luego configura tu móvil y saldrás en el mapa. Si no corres al final, «Retirarme» en tu carrera te quita del mapa.',
     'Tus carreras en directo': 'Las carreras que has creado o en las que corres. «Configurar mi móvil» deja la app o Traccar listos; «Invitar» manda el enlace a quien corra contigo.',
   };
   const PASOS = {

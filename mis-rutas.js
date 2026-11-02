@@ -82,7 +82,14 @@ async function cargarDirectos(abierta) {
       const conf = el('button', 'btn', 'Configurar mi móvil'); conf.type = 'button';
       conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) window.pintarMovil(movil, c.ident); });
       movil.hidden = c.id !== abierta; if (!movil.hidden) window.pintarMovil(movil, c.ident);
-      item.append(conf, movil);
+      const ret = el('button', 'btn', 'Retirarme de esta carrera'); ret.type = 'button';
+      const rmsg = el('div', 'msg');
+      ret.addEventListener('click', async () => {
+        if (!confirm('¿Retirarte de «' + c.nombre + '»? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
+        try { await post('/retirarme', { ident: c.ident }); rmsg.textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; rmsg.className = 'msg ok'; ret.hidden = true; }
+        catch (err) { rmsg.textContent = err.message; rmsg.className = 'msg err'; }
+      });
+      item.append(conf, movil, ret, rmsg);
     }
     if (c.invitacion) {
       const inv = el('button', 'btn', 'Invitar a quien corra contigo'); inv.type = 'button';
@@ -102,6 +109,32 @@ async function cargarDirectos(abierta) {
     cont.append(item);
   }
   if (abierta) $('card-directos').scrollIntoView({ block: 'start' });
+  cargarAbiertas().catch(() => {});
+}
+
+// carreras de otros a las que apuntarse sin enlace (v1.57)
+async function cargarAbiertas() {
+  const d = await api('/abiertas');
+  const cont = $('abiertas'); cont.textContent = '';
+  $('card-abiertas').hidden = !d.abiertas.length;
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
+  let nombreGuardado = ''; try { nombreGuardado = localStorage.getItem('nombre_carrera') || ''; } catch (e) { /* da igual */ }
+  for (const c of d.abiertas) {
+    const item = el('div', 'dir-item');
+    item.append(el('b', '', c.nombre), el('span', 'sub', fecha(c.fecha) + ' · salida ' + c.hora_salida + (c.corredores.length ? ' · ' + c.corredores.join(', ') : '')));
+    const nom = el('input'); nom.type = 'text'; nom.maxLength = 30; nom.placeholder = 'Tu nombre en el mapa'; nom.value = nombreGuardado; nom.setAttribute('aria-label', 'Tu nombre en el mapa');
+    const ap = el('button', 'btn principal', 'Apuntarme'); ap.type = 'button';
+    const msg = el('div', 'msg');
+    ap.addEventListener('click', async () => {
+      const nombre = nom.value.trim();
+      if (!nombre) { msg.textContent = 'Pon tu nombre: es el que verán en el mapa.'; msg.className = 'msg err'; nom.focus(); return; }
+      ap.disabled = true;
+      try { try { localStorage.setItem('nombre_carrera', nombre); } catch (e) { /* da igual */ } await post('/apuntarme', { id: c.id, nombre }); await cargarDirectos(c.id); }
+      catch (err) { msg.textContent = err.message; msg.className = 'msg err'; ap.disabled = false; }
+    });
+    const ver = el('a', 'btn', 'Ver el directo'); ver.href = '/d/' + c.id;
+    item.append(nom, ap, ver, msg); cont.append(item);
+  }
 }
 
 $('d-crear').addEventListener('click', async () => {

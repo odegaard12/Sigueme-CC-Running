@@ -523,7 +523,7 @@
     <ol class="guia">
       <li><span><b>Instala la web:</b> en Safari toca Compartir → «Añadir a pantalla de inicio» y ábrela desde su icono.</span></li>
       <li><span><b>Desde ese icono</b>, entra en el panel, vuelve a esta pantalla y pulsa el botón de abajo; acepta las notificaciones.</span></li>
-      <li><span>En la app de tu pulsera (Mi Fitness, Zepp, Huawei Health…) deja pasar las notificaciones de «Sígueme CC».</span></li>
+      <li><span>Pulsa «Enviar un aviso de prueba» (abajo): así «Sígueme CC» aparece en la app de tu pulsera (Mi Fitness, Zepp, Huawei Health…). Allí déjalo pasar en sus notificaciones y vuelve a probar hasta verlo en la pulsera.</span></li>
     </ol>
     <div id="avisos-iphone-cont"></div>
     <div class="howto" style="margin-top:8px">Cuando corras, Traccar manda tu posición y la web te avisa de cada subida, cima y del último km; la pulsera los repite. Solo llegan <b>con cobertura</b>; sin ella hace falta la app de Android.</div>
@@ -1490,7 +1490,7 @@ $('save-manual').addEventListener('click', () => {
     });
 }
 </script>
-<script src="/avisos-movil.js?v=1"></script>
+<script src="/avisos-movil.js?v=2"></script>
 <script>
 // «¿Qué móvil llevas?»: se acuerda de la elección; en un móvil, se adelanta sola
 (function () {
@@ -1505,6 +1505,6 @@ $('save-manual').addEventListener('click', () => {
   let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
 })();
 </script>
-<script src="/ayuda.js?v=2"></script>
+<script src="/ayuda.js?v=3"></script>
 </body>
 </html>
