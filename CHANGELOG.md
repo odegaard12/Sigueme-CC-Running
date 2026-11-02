@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.62.2 · 2026-11-02
+- **Tu usuario es tu perfil**: con la sesión iniciada, «Entrar» pasa a ser tu usuario y al pulsarlo vas a Mis carreras (igual en Inicio, Carreras, Rutas y Pulseras).
+- **Panel y Mis carreras** con la misma cabecera: sin el nombre del sitio y, en el ordenador, el menú a la izquierda.
+- **Pie de página**: fuera el nombre del sitio. El pie de la página de la carrera ya no repite el lugar cuando ya va en el nombre.
+
 ## v1.62.1 · 2026-11-02
 - **Cabecera**: la página de la carrera ya no pone el nombre del sitio arriba. En el ordenador, el menú (Inicio, Carreras, Rutas y relojes) va a la izquierda de la barra de arriba y a la derecha quedan el perfil, compartir y la ayuda; en el móvil, igual que antes.
 

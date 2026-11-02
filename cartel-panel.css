@@ -119,3 +119,10 @@ input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px
 .guia-saltar { background: transparent; color: var(--suave); text-decoration: underline; padding-left: 0 !important; }
 @media (min-width: 760px) { #guia-tarjeta { left: auto; right: 24px; bottom: 24px; width: 440px; } #guia-tarjeta.arriba { top: 24px; bottom: auto; } }
 @media (prefers-reduced-motion: reduce) { #guia-foco { transition: none; } }
+
+/* ordenador: Mis carreras lleva el menú de la web a la izquierda de la barra de arriba; a la derecha, el usuario */
+@media (min-width: 900px) {
+  body.mis .campo-cartel { position: relative; }
+  body.mis .pestanas-sitio { position: absolute; top: 4px; left: calc(50% - 340px); width: 440px; max-width: none; margin: 0 16px; }
+  body.mis .barra-cartel { justify-content: flex-end; }
+}

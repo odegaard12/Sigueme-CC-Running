@@ -1919,7 +1919,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 f'<div class="bajo"><p>{bajo}</p></div></div>'
                 f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
                 f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
-                f'<footer class="pie"><span>{sitio}</span></footer><script src="/marca-usuario.js?v=1" defer></script></body></html>').encode("utf-8")
+                f'<footer class="pie"></footer><script src="/marca-usuario.js?v=2" defer></script></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))

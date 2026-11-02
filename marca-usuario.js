@@ -3,8 +3,10 @@
 'use strict';
 window.marcaUsuario = function () {
   fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(d => {
-    const m = document.querySelector('.marca, .marca-cartel');
-    if (m && d && d.usuario) m.textContent = d.usuario;
+    if (!d || !d.usuario) return;
+    const entrar = document.querySelector('.barra nav a[href="/mis-rutas.html"]');
+    const donde = entrar || document.querySelector('.marca, .marca-cartel');
+    if (donde) { donde.textContent = d.usuario; donde.href = '/mis-rutas.html'; donde.title = 'Tu perfil: Mis carreras'; }
   }).catch(() => {});
 };
 window.marcaUsuario();
