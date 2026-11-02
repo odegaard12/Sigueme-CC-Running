@@ -21,7 +21,7 @@ a { color: inherit; }
 
 /* ---------- cabecera: nombre e iconos, el menú de la web, la carrera y su estado ---------- */
 .cd-cab { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
-.cd-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; padding: 0 var(--m); }
+.cd-barra { display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 56px; padding: 0 var(--m); }
 .cd-marca { font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
 .cd-nav { display: flex; align-items: center; gap: 6px; }
 .cd-nav button { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--r1);
@@ -205,6 +205,9 @@ footer p { margin: 0 0 6px; }
 
 /* ---------- ordenador: el mapa a la izquierda y los datos en su columna ---------- */
 @media (min-width: 900px) {
+  /* la barra de arriba: el menú de la web a la izquierda; a la derecha, la campana, la ayuda, compartir y el perfil */
+  .cd-cab { position: relative; }
+  .cd-cab > .pestanas-sitio { position: absolute; top: 4px; left: 0; width: 460px; max-width: none; margin: 0 var(--m); }
   .panel-pc { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; margin-top: 16px; }
   .map-wrap { margin-top: 0; }
   #map3d { height: clamp(420px, calc(100dvh - 290px), 820px); max-height: none; }

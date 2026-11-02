@@ -261,3 +261,10 @@ details.como p { max-width: 64ch; }
 .entra { opacity: 0; transform: translateY(12px); animation: entra 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i, 0) * 50ms); }
 @keyframes entra { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .entra { animation: none; opacity: 1; transform: none; } * { transition: none !important; } html { scroll-behavior: auto; } }
+
+/* ordenador: el menú de la web va a la izquierda de la barra de arriba y a la derecha queda el perfil (Entrar o el usuario) */
+@media (min-width: 900px) {
+  body.cartel { position: relative; }
+  body.cartel .pestanas-sitio { position: absolute; top: 4px; left: 0; width: 460px; max-width: none; margin: 0 var(--m); }
+  .barra { justify-content: flex-end; }
+}
