@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.61.1 · 2026-11-02
+- **Cabecera**: fuera el nombre del sitio de arriba a la izquierda (sobraba). Con un invitado dentro sigue saliendo su usuario.
+
 ## v1.61.0 · 2026-11-02
 - **Directo con varios corredores**: tocas a un corredor de la lista y el mapa va a él (marcador resaltado y su nombre); vuelves a tocarlo y se quita. La lista dice qué hace cada uno (km y tiempo) y, al llegar, se ordena por tiempo.
 - **Inicio**: en una carrera terminada, cada corredor sale con su tiempo (antes solo el mejor).

@@ -2,8 +2,6 @@
 // se pintan SIEMPRE con textContent (nunca innerHTML).
 'use strict';
 const $ = id => document.getElementById(id);
-// el nombre del sitio, del dominio (odegaard12.online → odegaard12)
-(() => { const h = location.hostname.replace(/^www\./, '').split('.')[0]; if (h && !/^[\d.]+$/.test(location.hostname) && location.hostname !== 'localhost') $('marca').textContent = h; })();
 const km = v => String(Math.round(v * 10) / 10).replace('.', ',');
 const base = '/api/invitado';
 let actual = null;          // la ruta abierta
