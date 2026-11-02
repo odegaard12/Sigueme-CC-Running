@@ -125,16 +125,33 @@ Sin panel, las mismas herramientas desde la consola:
 ### Invitados: las rutas de un amigo, en su reloj
 
 Para que un amigo prepare **sus** rutas y se las lleve al reloj sin ver nada de tu
-carrera: en el panel, pestaña **Resultado** → **Invitados**, creas un usuario con
+carrera: en el panel, pestaña **Invitados**, creas un usuario con
 un código que caduca (30 días por defecto; puedes renovarlo o quitarlo). Él entra
 en `https://tu-dominio/mis-rutas.html` desde cualquier móvil (iPhone incluido), sube
 un GPX, pone sus avituallamientos y descarga el GPX para el reloj. No hay
 seguimiento ni se guarda su GPX original (solo la ruta simplificada y su perfil);
 al día siguiente de caducar se borra todo lo suyo (usuario y rutas). Máximo 20 invitados y 5 rutas
 cada uno. Cada ruta es **privada hasta que su dueño la publica**: lo público se ve
-recortado (por defecto sin los primeros y últimos 300 m, donde suele estar su casa) y
-deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Rutas** del panel,
+recortado (al publicar puede ocultar los primeros y últimos metros, donde suele estar su casa; por defecto no se recorta nada) y
+deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Invitados** del panel,
 ves todo lo publicado y puedes quitarlo.
+
+### Carreras en directo con varios corredores
+
+Desde **Mis carreras** (el panel o el acceso de un invitado) se crea una **carrera en directo** a partir de
+una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con el mapa y cada corredor
+(posición, km y tiempo, cada 10 s). Cada uno corre con **su** identificador, en su móvil:
+**Android** con la app Sígueme CC y **iPhone** con Traccar Client («Configurar mi móvil» lo deja listo de un toque).
+
+- **Apuntarse**: con el enlace de invitación («Invitar») o, con cuenta, desde «Carreras en las que te puedes apuntar».
+  Una carrera terminada (todos llegaron o se retiraron) ya no admite a nadie.
+- **Retirarme**: quita al corredor del mapa y deja de contar sus puntos; los demás siguen.
+- **Salida real**: el tiempo cuenta desde que el corredor se mueve a más de 5 km/h tres puntos seguidos; la llegada, en el
+  punto más cercano a meta.
+- **Avisos de subidas en iPhone**: con la web instalada en la pantalla de inicio, el servidor ve en qué km va el corredor y le
+  manda por notificación cada subida, cima y el último km (la pulsera los repite). Solo con cobertura; en Android los lanza
+  la app sin cobertura. El botón «Enviar un aviso de prueba» sirve para que la app de la pulsera deje pasarlos.
+- **GPX**: cada carrera terminada tiene su botón «Bajar el GPX» en Inicio y en Carreras.
 
 La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
 las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada
