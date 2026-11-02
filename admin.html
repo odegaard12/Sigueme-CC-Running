@@ -277,7 +277,7 @@
   .inv-nuevo .btn { margin-top: 8px; }
   .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #d9f24a; user-select: all; margin: 8px 0; }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css?v=10">
+<link rel="stylesheet" href="/cartel-panel.css?v=11">
 </head>
 <body>
 <div class="campo-cartel">
@@ -377,7 +377,20 @@
     <button class="btn stop-btn" id="stop">Finalizar seguimiento</button>
   </div>
 
-  <div class="tarjeta" data-tab="movil">
+  <div class="tarjeta primero movil-tipo" id="sec-movil-tipo" data-tab="movil">
+    <h2>¿Qué móvil llevas?</h2>
+    <div class="howto">Elige el tuyo y te enseño solo lo que necesitas. Cada uno se configura distinto.</div>
+    <div class="movil-botones">
+      <button class="btn" id="m-iphone" type="button" aria-pressed="false">iPhone</button>
+      <button class="btn" id="m-android" type="button" aria-pressed="false">Android</button>
+      <button class="btn" id="m-todo" type="button" aria-pressed="false">Ver todo</button>
+    </div>
+    <div class="howto" style="margin-top:10px">
+      <b>iPhone:</b> sigue tu posición con <b>Traccar</b> y los avisos de subidas llegan como notificación (con la web instalada). <b>Android:</b> lo hace todo la <b>app Sígueme CC</b>, también sin cobertura.
+    </div>
+  </div>
+
+  <div class="tarjeta" id="sec-traccar" data-tab="movil">
     <h2>Sin la app: iPhone, Traccar o reloj</h2>
     <div class="howto">Para iPhone (Traccar Client) o el reloj Amazfit. Con la app Android no hace falta nada de esto.</div>
     <details open>
@@ -503,6 +516,17 @@
     </div>
     <div class="howto">Cambia un texto o quítalo con ✕. «{dist}» = lo que falta al avituallamiento. «Rehacer el plan» vuelve a los textos automáticos; tus avisos propios se quedan.</div>
     <button class="save-btn" id="guardar-avisos" type="button" style="margin-top:8px">Guardar avisos</button>
+  </div>
+
+  <div class="tarjeta" id="sec-avisos-iphone" data-tab="movil">
+    <h2>Avisos de subidas en tu iPhone</h2>
+    <ol class="guia">
+      <li><span><b>Instala la web:</b> en Safari toca Compartir → «Añadir a pantalla de inicio» y ábrela desde su icono.</span></li>
+      <li><span><b>Desde ese icono</b>, entra en el panel, vuelve a esta pantalla y pulsa el botón de abajo; acepta las notificaciones.</span></li>
+      <li><span>En la app de tu pulsera (Mi Fitness, Zepp, Huawei Health…) deja pasar las notificaciones de «Sígueme CC».</span></li>
+    </ol>
+    <div id="avisos-iphone-cont"></div>
+    <div class="howto" style="margin-top:8px">Cuando corras, Traccar manda tu posición y la web te avisa de cada subida, cima y del último km; la pulsera los repite. Solo llegan <b>con cobertura</b>; sin ella hace falta la app de Android.</div>
   </div>
 
   <div class="tarjeta primero" id="sec-app" data-tab="movil">
@@ -1466,6 +1490,21 @@ $('save-manual').addEventListener('click', () => {
     });
 }
 </script>
-<script src="/ayuda.js?v=1"></script>
+<script src="/avisos-movil.js?v=1"></script>
+<script>
+// «¿Qué móvil llevas?»: se acuerda de la elección; en un móvil, se adelanta sola
+(function () {
+  const ua = navigator.userAgent, sola = /Android/i.test(ua) ? 'android' : /iP(hone|ad|od)/.test(ua) ? 'iphone' : 'todo';
+  let tipo = sola; try { tipo = localStorage.getItem('movil_tipo') || sola; } catch (e) { /* da igual */ }
+  const botones = [['m-iphone', 'iphone'], ['m-android', 'android'], ['m-todo', 'todo']];
+  const poner = t => { document.body.dataset.movil = t; try { localStorage.setItem('movil_tipo', t); } catch (e) { /* da igual */ }
+    for (const [id, v] of botones) document.getElementById(id).setAttribute('aria-pressed', String(v === t)); };
+  for (const [id, v] of botones) document.getElementById(id).addEventListener('click', () => poner(v));
+  poner(tipo);
+  // los avisos de subidas de ESTE móvil, con el identificador de Traccar (el del panel)
+  let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
+})();
+</script>
+<script src="/ayuda.js?v=2"></script>
 </body>
 </html>

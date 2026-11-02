@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.56.0 · 2026-11-02
+- **Avisos de subidas en el iPhone**: con la web instalada en la pantalla de inicio, el servidor ve en qué km vas (Traccar) y manda subida, cima y último km como notificación solo a tu móvil; la pulsera la repite. Solo con cobertura.
+- **«¿Qué móvil llevas?»** al principio de la pestaña Móvil del panel: iPhone o Android y solo ves lo que te toca; se acuerda tu elección.
+- Textos de ayuda, guías de pulsera y de la app explican qué hace cada móvil.
+
 ## v1.55.1 · 2026-11-02
 - **Un «?» en cada apartado** del panel y de Mis carreras: dos líneas de qué hace y qué poner (de dónde sacar el GPX, qué es el directo, cómo subir el resultado del reloj o de Strava, qué avisos van solo con Android…).
 

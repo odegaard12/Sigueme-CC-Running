@@ -117,6 +117,17 @@ ok(http('GET', f'/directos/{ID}.dat')[0] == 404, 'los datos de la carrera no se 
 st, m, _ = http('GET', '/api/invitado/directos', cookie=galleta)
 ok(st == 200 and m['directos'][0]['invitacion'] == TOKEN and m['directos'][0]['ident'] == ID_ANA, 'en Mis rutas: su carrera, su invitación y su móvil')
 
+# ---- avisos de subidas en el iPhone: solo con un identificador de verdad
+sub = {'endpoint': 'https://web.push.apple.com/abc', 'keys': {'p256dh': 'x', 'auth': 'y'}}
+st, _, _ = http('POST', '/api/push/mio', {'ident': ID_ANA, 'sub': sub})
+ok(st == 200, 'con su identificador, el móvil se apunta a los avisos de subidas')
+st, _, _ = http('POST', '/api/push/mio', {'ident': 'dir-inventado-123456789012', 'sub': sub})
+ok(st == 403, 'con un identificador inventado, no')
+st, _, _ = http('POST', '/api/push/mio', {'ident': ID_ANA, 'sub': {'endpoint': 'https://evil.example/x', 'keys': {'p256dh': 'x', 'auth': 'y'}}})
+ok(st == 400, 'una suscripción que no es de un servicio de avisos, no')
+st, _, _ = http('POST', '/api/push/mio/baja', {'ident': ID_ANA, 'endpoint': sub['endpoint']})
+ok(st == 200, 'y se da de baja')
+
 # ---- el dueño la quita desde el panel
 st, _, h = http('POST', '/api/login', {'usuario': 'prueba', 'password': 'clave'})
 adm = h['Set-Cookie'].split(';')[0]

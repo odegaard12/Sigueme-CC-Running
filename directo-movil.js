@@ -23,4 +23,9 @@ window.pintarMovil = function (cont, ident) {
   else if (android) { acc.append(andr); cont.append(acc, notaA); }
   else { acc.append(andr, iph); cont.append(el('p', 'nota-dir', 'Abre esta página en el móvil con el que vas a correr y pulsa su botón.'), acc, notaA, notaI); }
   cont.append(listo);
+  // iPhone: no hay app, así que los avisos de subidas llegan como notificación de la web instalada (v1.56)
+  if (ios && window.avisosMovil) {
+    const av = el('div'); av.append(el('p', 'listo-dir', 'Avisos de subidas en tu iPhone'));
+    const caja = el('div'); av.append(caja); cont.append(av); window.avisosMovil(caja, ident);
+  }
 };

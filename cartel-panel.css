@@ -35,6 +35,15 @@ a { color: var(--acento); }
 .pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 6px; border-radius: 10px;
   color: var(--suave); font-weight: 700; font-size: clamp(0.8rem, 3.4vw, 0.92rem); white-space: nowrap; text-decoration: none; }
 .pestanas-sitio a:hover { color: var(--texto); }
+/* ¿Qué móvil llevas?: solo lo del tuyo */
+.movil-botones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.movil-botones .btn[aria-pressed="true"] { background: #d9f24a; color: #0e1110; }
+[data-movil="iphone"] #sec-app, [data-movil="iphone"] #sec-pulsera { display: none; }
+[data-movil="android"] #sec-traccar, [data-movil="android"] #sec-avisos-iphone { display: none; }
+.boton { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; margin-top: 12px; border: 0; border-radius: 4px; background: #d9f24a; color: #0e1110;
+  font: 400 1.35rem/1 var(--display, Impact, sans-serif); text-transform: uppercase; text-decoration: none; text-align: center; padding: 0 12px; cursor: pointer; }
+.boton.claro { background: transparent; color: #d9f24a; box-shadow: inset 0 0 0 2px #d9f24a; }
+.nota-dir { margin: 8px 0 0; color: #9aa596; font-size: 0.9rem; }
 /* «?» de cada apartado: dos líneas de ayuda que se abren y se cierran */
 .ayuda-q { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-left: 10px; padding: 0; border: 0; border-radius: 50%; background: #232b26;
   color: #d9f24a; font: 800 16px/1 system-ui, sans-serif; vertical-align: middle; cursor: pointer; flex: none; }

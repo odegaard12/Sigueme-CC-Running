@@ -2633,6 +2633,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             sub = json.loads(self.rfile.read(largo))
         except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             return self._send_json(400, {"error": "invalid json"})
+        if self.path in ("/api/push/mio", "/api/push/mio/baja"):
+            return self._push_mio(sub)
         av = herramienta("avisos_web")
         # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
         with datos_lock:
@@ -2640,6 +2642,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 av.baja(ROOT, sub.get("endpoint") if isinstance(sub, dict) else None)
                 return self._send_json(200, {"ok": True})
             si = av.alta(ROOT, sub)
+        return self._send_json(200 if si else 400, {"ok": si})
+
+    def _push_mio(self, d):
+        """Alta o baja de los avisos de subidas de UN corredor (su identificador de GPS) en ESTE móvil (v1.56)."""
+        ip = "pushmio:" + self.ip_cliente()
+        if segundos_de_castigo(ip) > 5:
+            return self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+        d = d if isinstance(d, dict) else {}
+        ident = str(d.get("ident") or "")
+        clave = clave_gps()
+        es_dueno = bool(clave) and compare_digest(ident.encode(), clave.encode())
+        if not (es_dueno or (ident.startswith("dir-") and herramienta("directos").buscar(ROOT, ident)[0])):
+            fallo_de(ip)
+            return self._send_json(403, {"error": "identificador incorrecto"})
+        acierto_de(ip)
+        av, ar = herramienta("avisos_web"), herramienta("avisos_ruta")
+        with datos_lock:
+            if self.path.endswith("/baja"):
+                ar.baja(ROOT, av, ident, d.get("endpoint"))
+                return self._send_json(200, {"ok": True})
+            si = ar.alta(ROOT, av, ident, d.get("sub"))
         return self._send_json(200 if si else 400, {"ok": si})
 
     def do_POST(self):
@@ -2660,7 +2683,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path in ("/api/push/alta", "/api/push/baja"):
+        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja"):
             return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
@@ -3072,6 +3095,12 @@ if __name__ == "__main__":
                     herramienta("avisos_web").revisar(ROOT, read_live(), leer_json("aid_stations.json") or [], carrera().get("nombre"))
             except Exception as exc:
                 print(f"[avisos] {exc}", flush=True)
+            try:        # subidas, cimas y último km en el iPhone del corredor (v1.56)
+                if tengo_la_vip():
+                    herramienta("avisos_ruta").revisar(ROOT, herramienta("avisos_web"), read_live(), leer_json("avisos.json") or {},
+                                                       leer_json("route.geojson") or {}, clave_gps(), herramienta("directos"))
+            except Exception as exc:
+                print(f"[avisos-ruta] {exc}", flush=True)
             time.sleep(15)
     threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
