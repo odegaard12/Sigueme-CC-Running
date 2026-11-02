@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.64.0 · 2026-11-02
+- **Ficha de corredor** arriba de la página del directo: con un solo corredor, su foto (o inicial), su nombre, su estado, sus km y su tiempo; con 2 o más, la **ficha de corredores** con todas las caras (toca una para verla en el mapa).
+
 ## v1.63.3 · 2026-11-02
 - **Tira de caras** del directo: solo sale con 2 o más corredores (o si alguien tiene foto); con uno solo y sin foto la lista ya lo dice. Las iniciales, con letra más suave.
 

@@ -40,7 +40,9 @@ function pintar(d) {
   });
   // la tira de caras de arriba: la foto de cada uno (o su inicial), su nombre y su tiempo; al tocar, el mapa va a él
   const tira = $('tira'); tira.textContent = '';
-  tira.hidden = !(d.corredores.length > 1 || d.corredores.some(g => g.foto));       // uno solo y sin foto: la lista de abajo ya lo dice
+  $('tarjeta-corr').hidden = !d.corredores.length;
+  $('tira-tit').textContent = d.corredores.length > 1 ? 'Corredores' : 'Corredor';       // ficha de corredor (uno) o de corredores (varios)
+  tira.classList.toggle('solo', d.corredores.length === 1);
   d.corredores.forEach(g => {
     const b = document.createElement('button'); b.type = 'button';
     b.className = 'cara' + (elegido === g.cid ? ' sel' : '') + (g.situacion === 'retirado' ? ' retirado' : '');
@@ -48,7 +50,9 @@ function pintar(d) {
     const av = document.createElement('span'); av.className = 'av';
     if (g.foto) { const im = document.createElement('img'); im.alt = ''; im.src = '/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto; av.append(im); } else av.textContent = iniciales(g.nombre);
     const n = document.createElement('b'); n.textContent = g.nombre;
-    const s = document.createElement('small'); s.textContent = g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
+    const s = document.createElement('small');
+    s.textContent = d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : ''].filter(Boolean).join(' · ')
+      : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
     b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
