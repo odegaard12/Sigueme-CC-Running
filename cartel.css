@@ -125,6 +125,17 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
   font: 800 13px/28px var(--cuerpo); text-align: center; cursor: pointer; }
 .fila.simple[role="button"] { cursor: pointer; }
 .fila.simple.sel { box-shadow: inset 4px 0 0 var(--acento); }
+.tira { display: flex; gap: 14px; overflow-x: auto; max-width: 760px; margin: 0 auto; padding: 14px var(--m) 6px; scrollbar-width: none; }
+.tira::-webkit-scrollbar { display: none; }
+.tira .cara { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 78px; padding: 4px; background: none; border: 0; color: var(--texto); cursor: pointer; }
+.tira .av { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--acento); color: var(--tinta);
+  font: 400 1.3rem/1 var(--display); border: 3px solid var(--fondo); }
+.tira .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tira .cara.sel .av { box-shadow: 0 0 0 3px var(--acento); }
+.tira .cara b { max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
+.tira .cara small { color: var(--suave); font-size: .78rem; }
+.tira .cara.retirado { opacity: .5; }
+.corredor-dir.con-foto { background-size: cover; background-position: center; color: transparent; }
 .corredor-dir.elegido { transform: scale(1.25); box-shadow: 0 0 0 3px var(--texto); z-index: 5; }
 .maplibregl-popup-content { color: var(--tinta); font: 700 .95rem system-ui, sans-serif; padding: 8px 12px; }
 .corredor-dir.meta { background: var(--texto); }

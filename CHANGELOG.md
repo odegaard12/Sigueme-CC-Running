@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.62.0 · 2026-11-02
+- **Fotos de los corredores en el directo**: cada uno puede subir su foto (opcional) desde «Tu móvil» en su carrera o desde Mis carreras. Se recorta cuadrada y se reduce a 256 px en su móvil, solo sale en esa carrera y la puede quitar cuando quiera.
+- **Tira de caras arriba de la página del directo**: la foto de cada corredor (o su inicial), su nombre y su tiempo; vale para 2, 3 o más. Al tocar uno, el mapa va a él. En el mapa, su marcador lleva su foto.
+
 ## v1.61.1 · 2026-11-02
 - **Cabecera**: fuera el nombre del sitio de arriba a la izquierda (sobraba). Con un invitado dentro sigue saliendo su usuario.
 

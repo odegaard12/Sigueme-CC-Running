@@ -176,6 +176,33 @@ ok(st == 400, 'aviso de prueba sin avisos activados: avisa')
 st, _, _ = http('POST', '/api/push/mio/prueba', {'ident': 'dir-inventado-123456789012'})
 ok(st == 403, 'aviso de prueba con identificador inventado, no')
 
+# ---- v1.62: foto de cada corredor
+import struct, zlib
+def png_de(w, h):
+    crudo = b''.join(b'\x00' + b'\x80\x80\x80' * w for _ in range(h))
+    trozo = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    return b'\x89PNG\r\n\x1a\n' + trozo(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + trozo(b'IDAT', zlib.compress(crudo)) + trozo(b'IEND', b'')
+def foto_post(ident, cuerpo, quitar=False):
+    cab = {'Origin': U, 'X-Ident': ident, 'Content-Type': 'image/png'}
+    if quitar: cab['X-Quitar'] = '1'
+    try:
+        return urllib.request.urlopen(urllib.request.Request(U + '/api/invitado/foto', cuerpo, cab, method='POST'), timeout=30).status
+    except urllib.error.HTTPError as e:
+        return e.code
+ok(foto_post('dir-inventado-123456789012', png_de(16, 16)) == 403, 'una foto con un identificador inventado, no')
+ok(foto_post(ID_BERTO, b'esto no es una foto') == 400, 'lo que no es un PNG, no')
+ok(foto_post(ID_BERTO, png_de(2000, 2000)) == 400, 'un PNG que declara medidas enormes, no')
+ok(foto_post(ID_BERTO, png_de(256, 256)) == 200, 'el corredor sube su foto')
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+berto = next(g for g in p['corredores'] if g['nombre'] == 'Berto')
+ok(berto.get('foto') and 'dir-' not in json.dumps(p), 'sale en lo público (sin identificadores)')
+r = urllib.request.urlopen(U + f"/d/{ID}/foto/{berto['cid']}.png")
+ok(r.status == 200 and r.headers['Content-Type'] == 'image/png' and r.read()[:8] == b'\x89PNG\r\n\x1a\n', 'y la foto se sirve como PNG')
+ok(foto_post(ID_BERTO, b'', quitar=True) == 200, 'el corredor quita su foto')
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+ok(not next(g for g in p['corredores'] if g['nombre'] == 'Berto').get('foto') and http('GET', f"/d/{ID}/foto/{berto['cid']}.png")[0] == 404, 'ya no sale en lo público ni se sirve')
+ok(foto_post(ID_BERTO, png_de(256, 256)) == 200, 'puede subir otra')
+
 # ---- v1.58: una carrera terminada (todos llegaron o se retiraron) no admite a nadie, aunque falten horas del límite
 st, d, _ = http('POST', '/api/invitado/gpx?nombre=Corta', gpx_inventado(km=10), galleta_luis, 'application/gpx+xml')
 st, d, _ = http('POST', '/api/invitado/directo', {'ruta': d['ruta']['id'], 'fecha': salida.strftime('%Y-%m-%d'), 'hora': salida.strftime('%H:%M'), 'nombre': 'Luis'}, galleta_luis)

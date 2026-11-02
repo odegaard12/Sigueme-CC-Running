@@ -34,18 +34,33 @@ function pintar(d) {
     f.append(n, c1, c2); lista.append(f);
     f.tabIndex = 0; f.setAttribute('role', 'button'); f.setAttribute('aria-pressed', String(elegido === g.cid));
     f.classList.toggle('sel', elegido === g.cid);
-    const elige = () => { elegido = elegido === g.cid ? null : g.cid; pintar(datos); if (elegido) verEnMapa(g.cid); };
+    const elige = () => elegir(g.cid);
     f.addEventListener('click', elige);
     f.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elige(); } });
+  });
+  // la tira de caras de arriba: la foto de cada uno (o su inicial), su nombre y su tiempo; al tocar, el mapa va a él
+  const tira = $('tira'); tira.textContent = '';
+  d.corredores.forEach(g => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = 'cara' + (elegido === g.cid ? ' sel' : '') + (g.situacion === 'retirado' ? ' retirado' : '');
+    b.setAttribute('aria-pressed', String(elegido === g.cid)); b.setAttribute('aria-label', g.nombre);
+    const av = document.createElement('span'); av.className = 'av';
+    if (g.foto) { const im = document.createElement('img'); im.alt = ''; im.src = '/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto; av.append(im); } else av.textContent = iniciales(g.nombre);
+    const n = document.createElement('b'); n.textContent = g.nombre;
+    const s = document.createElement('small'); s.textContent = g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
+    b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
   if (mapa && mapa.loaded()) pintarMarcas();
 }
 
+function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); }
+
 function verEnMapa(cid) {
   const m = marcas[cid];
   if (!mapa || !m) { $('aviso-posicion').hidden = false; return; }       // aún sin posición: no hay dónde ir
   mapa.flyTo({ center: m.getLngLat(), zoom: Math.max(mapa.getZoom(), 14.5) });
+  Object.keys(marcas).forEach(k => { if (k !== cid && marcas[k].getPopup().isOpen()) marcas[k].togglePopup(); });   // solo el del elegido
   const p = m.getPopup(); if (p && !p.isOpen()) m.togglePopup();
   document.getElementById('mapa').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
@@ -58,6 +73,7 @@ function pintarMarcas() {
       marcas[g.cid] = new maplibregl.Marker({ element: el }).setLngLat([g.lon, g.lat]).setPopup(new maplibregl.Popup({ offset: 16, closeButton: false }).setText(g.nombre)).addTo(mapa);
     } else marcas[g.cid].setLngLat([g.lon, g.lat]);
     marcas[g.cid].getElement().classList.toggle('elegido', elegido === g.cid);
+    if (g.foto) { const e2 = marcas[g.cid].getElement(); e2.classList.add('con-foto'); e2.style.backgroundImage = 'url(/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto + ')'; e2.textContent = ''; }
   }
 }
 
@@ -95,6 +111,7 @@ async function cargar() {
 
 function enseñarMovil(ident) {
   $('sec-movil').hidden = false; window.pintarMovil($('movil'), ident);
+  if (window.fotoCorredor) window.fotoCorredor($('foto-mia'), ident, () => cargar());
   $('retirarme').onclick = async () => {
     if (!confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
     $('retirarme').disabled = true;

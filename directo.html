@@ -12,7 +12,7 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=14">
+<link rel="stylesheet" href="/cartel.css?v=15">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
@@ -25,6 +25,7 @@
   <div class="acciones"><button class="boton claro" id="compartir" type="button">Compartir el directo</button></div>
 </div>
 <main>
+  <div class="tira" id="tira" role="group" aria-label="Corredores: toca uno para verlo en el mapa"></div>
   <section class="oscuro" id="sec-unirse" hidden>
     <div class="tarjeta-dir">
       <h2 class="titulo">¿Corres tú también?</h2>
@@ -39,6 +40,7 @@
     <div class="tarjeta-dir">
       <h2 class="titulo">Tu móvil</h2>
       <div id="movil"></div>
+      <div id="foto-mia"></div>
       <button class="boton claro" id="retirarme" type="button">Retirarme de la carrera</button>
       <p class="msg-dir" id="r-msg" role="status"></p>
     </div>
@@ -56,7 +58,8 @@
 <footer class="pie"><span>{{SITIO}}</span><small>Mapa: imágenes de Esri. La posición de cada corredor solo se ve durante la carrera.</small></footer>
 <script src="/avisos-movil.js?v=2"></script>
 <script src="/directo-movil.js?v=2"></script>
-<script src="/directo.js?v=4"></script>
+<script src="/foto-corredor.js?v=1"></script>
+<script src="/directo.js?v=5"></script>
 <script src="/marca-usuario.js?v=1" defer></script>
 </body>
 </html>

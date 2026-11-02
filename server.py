@@ -1755,6 +1755,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if crudo == "/api/directo":
             p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
             return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
+        m_foto = re.fullmatch(r"/d/([0-9a-f]{10})/foto/([0-9a-f]{8})\.png", crudo)
+        if m_foto:
+            ruta_f = herramienta("directos").ruta_foto(ROOT, m_foto.group(1), m_foto.group(2))
+            if not ruta_f:
+                return self._send_json(404, {"error": "sin foto"})
+            with open(ruta_f, "rb") as f:
+                cuerpo = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(cuerpo)
+            return
         m_dir = re.fullmatch(r"/d/([0-9a-f]{10})", crudo)
         if m_dir:
             c = herramienta("directos").carrera(ROOT, m_dir.group(1))
@@ -1896,7 +1912,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=14">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=15">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
@@ -2162,6 +2178,39 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             acierto_de(ip)
             self._send_json(200, {"ok": True, "ident": yo["ident"], "nombre": yo["nombre"]})
+            return
+        if ruta == "/api/invitado/foto":             # foto del corredor: PNG pequeño; lo identifica su identificador (cabecera X-Ident)
+            ip = "foto:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            ident = str(self.headers.get("X-Ident") or "")
+            dm = herramienta("directos")
+            if not ident.startswith("dir-") or not dm.buscar(ROOT, ident)[0]:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            try:
+                largo = int(self.headers.get("Content-Length", 0))
+            except ValueError:
+                largo = -1
+            if self.headers.get("X-Quitar") == "1":
+                if 0 < largo <= 1_000_000:
+                    self.rfile.read(largo)
+                dm.quitar_foto(ROOT, ident)
+                self._send_json(200, {"ok": True})
+                return
+            if not 0 < largo <= 300_000:
+                self._send_json(413, {"error": "la foto tiene que pesar menos de 300 KB"})
+                return
+            cuerpo = self.rfile.read(largo)
+            ancho, alto = int.from_bytes(cuerpo[16:20], "big"), int.from_bytes(cuerpo[20:24], "big")
+            if not (cuerpo.startswith(b"\x89PNG\r\n\x1a\n") and cuerpo[12:16] == b"IHDR" and 0 < ancho <= 512 and 0 < alto <= 512):
+                self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
+                return
+            dm.guardar_foto(ROOT, ident, cuerpo)
+            self._send_json(200, {"ok": True})
             return
         if ruta == "/api/invitado/retirarme":        # retirarse: basta el identificador del móvil (es secreto)
             ip = "ret:" + self.ip_cliente()

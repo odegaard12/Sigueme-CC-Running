@@ -282,6 +282,45 @@ def plan_app(c):
             "generado": c.get("creada")}
 
 
+def guardar_foto(raiz, ident, png):
+    """Foto del corredor (PNG pequeño, ya validado). False si el identificador no vale."""
+    c, co = buscar(raiz, ident)
+    if not c:
+        return False
+    with _lock:
+        ruta = _f(raiz, c["id"], co["cid"], "png")
+        with open(ruta + ".tmp", "wb") as f:
+            f.write(png)
+        os.replace(ruta + ".tmp", ruta)
+        st = estado(raiz, c["id"], co["cid"])
+        st["foto"] = int(time.time())
+        _escribir(_f(raiz, c["id"], co["cid"]), st)
+    return True
+
+
+def quitar_foto(raiz, ident):
+    c, co = buscar(raiz, ident)
+    if not c:
+        return False
+    with _lock:
+        try:
+            os.remove(_f(raiz, c["id"], co["cid"], "png"))
+        except OSError:
+            pass
+        st = estado(raiz, c["id"], co["cid"])
+        if st.pop("foto", None) is not None:
+            _escribir(_f(raiz, c["id"], co["cid"]), st)
+    return True
+
+
+def ruta_foto(raiz, id_, cid):
+    try:
+        ruta = _f(raiz, id_, cid, "png")
+    except ValueError:
+        return None
+    return ruta if os.path.isfile(ruta) else None
+
+
 def retirar(raiz, ident):
     """El corredor se retira: deja de salir en el mapa y sus puntos ya no cuentan. False si el identificador no vale."""
     c, co = buscar(raiz, ident)
@@ -335,6 +374,8 @@ def publico(raiz, id_, ahora=None):
         st = estado(raiz, id_, co["cid"])
         sit = _situacion(st)
         x = {"cid": co["cid"], "nombre": co["nombre"], "situacion": sit, "km": round(st.get("km", 0), 2)}
+        if st.get("foto"):
+            x["foto"] = st["foto"]
         if sit not in ("sin_empezar", "retirado") and st.get("ult"):
             x["lat"], x["lon"], x["visto"] = st["ult"][0], st["ult"][1], st["ult"][2]
             x["bateria"] = st.get("bateria")
@@ -408,7 +449,7 @@ def borrar(raiz, id_, usuario=None):
             return False
         for co in c["corredores"]:
             _indice.pop(co["ident"], None)
-            for ext in ("dat", "pts"):
+            for ext in ("dat", "pts", "png"):
                 try:
                     os.remove(_f(raiz, id_, co["cid"], ext))
                 except OSError:

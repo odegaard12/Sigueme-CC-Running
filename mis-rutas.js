@@ -110,7 +110,8 @@ async function cargarDirectos(abierta) {
         try { await post('/retirarme', { ident: c.ident }); rmsg.textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; rmsg.className = 'msg ok'; ret.hidden = true; }
         catch (err) { rmsg.textContent = err.message; rmsg.className = 'msg err'; }
       });
-      item.append(conf, movil, ret, rmsg);
+      const fo = el('div'); if (window.fotoCorredor) window.fotoCorredor(fo, c.ident, null);
+      item.append(conf, movil, fo, ret, rmsg);
     }
     if (c.invitacion) {
       const inv = el('button', 'btn', 'Invitar a quien corra contigo'); inv.type = 'button';
