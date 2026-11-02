@@ -39,6 +39,13 @@ function fila(href, nombre, sub, puntos, c1, c2, i) {
   return a;
 }
 
+// la fila entera es un enlace: el GPX va debajo, en su propia línea
+function conGpx(f, href) {
+  const d = document.createElement('div'); d.className = 'item-gpx';
+  const a = document.createElement('a'); a.className = 'mini-gpx'; a.href = href; a.textContent = 'Bajar el GPX'; a.setAttribute('download', '');
+  d.append(f, a); return d;
+}
+
 const cuenta = (n, uno, varios) => n + ' ' + (n === 1 ? uno : varios);
 
 async function json(url) { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch (e) { return null; } }
@@ -54,7 +61,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   const lista = ((datos && datos.carreras) || []).slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
   const rutas = (pub && pub.rutas) || [];
   const pill = $('hero-pill'), titulo = $('hero-titulo'), linea = $('hero-linea'), boton = $('hero-boton');
-  let estado = '', nombre = 'Sígueme CC', partes = [], cifras = [], puntos = null, texto = '', href = '/', ultima = null;
+  let estado = '', nombre = 'Sígueme CC', partes = [], cifras = [], puntos = null, texto = '', href = '/', ultima = null, gpx = '';
   if (datos && datos.en_marcha) {
     const c = (await json('/carrera.json')) || {};
     estado = 'En directo'; nombre = c.nombre || 'Carrera en directo';
@@ -68,14 +75,14 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
     partes = [fecha(p.fecha), p.lugar];
     cifras = [[p.distancia_km ? km(p.distancia_km) : '', 'KM'], [p.desnivel_m ? miles(p.desnivel_m) : '', 'D+'], [p.hora_salida || '', 'SALIDA']];
     puntos = p.traza;
-    texto = 'Ver la carrera ▶'; href = '/index.html?previa';      // «/» es esta portada hasta el día de la carrera
+    texto = 'Ver la carrera ▶'; href = '/index.html?previa'; gpx = '/ruta-carrera.gpx';      // «/» es esta portada hasta el día de la carrera
   } else if (lista.length) {
     ultima = lista[0];
     estado = 'Última carrera'; nombre = ultima.nombre || ultima.slug;
     partes = [fecha(ultima.fecha), ultima.lugar];
     cifras = [[ultima.distancia_km ? km(ultima.distancia_km) : '', 'KM'], [ultima.desnivel_m ? miles(ultima.desnivel_m) : '', 'D+'], [tiempo(ultima.tiempo_s), 'TIEMPO']];
     puntos = ultima.traza;
-    texto = 'Ver el resultado ▶'; href = '/' + ultima.slug + '/';
+    texto = 'Ver el resultado ▶'; href = '/' + ultima.slug + '/'; gpx = '/' + ultima.slug + '/ruta-carrera.gpx';
   } else {
     partes = ['Todavía no hay carreras'];
   }
@@ -86,6 +93,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   if (cifras.length) { $('hero-cifras').append(...cifras.map(c => cifra(...c))); $('hero-cifras').hidden = false; }
   if (puntos && puntos.length > 1) { $('hero-traza').append(traza(puntos)); $('hero-traza').hidden = false; }
   if (texto) { boton.textContent = texto; boton.href = href; boton.hidden = false; }
+  if (gpx) { $('hero-gpx').href = gpx; $('hero-gpx').hidden = false; }
   $('n-carreras').textContent = cuenta(lista.length, 'carrera', 'carreras');
   $('n-rutas').textContent = cuenta(rutas.length, 'ruta', 'rutas');
 
@@ -96,7 +104,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
       const f = fila('/' + c.slug + '/', c.nombre || c.slug, [fecha(c.fecha), c.lugar].filter(Boolean).join(' · '), c.traza,
         [c.distancia_km ? km(c.distancia_km) : '–', 'KM'], [tiempo(c.tiempo_s) || '–', tiempo(c.tiempo_s) ? 'TIEMPO' : ''], i);
       f.classList.add('carrera'); f.children[2].classList.add('km'); f.children[3].classList.add('t');
-      $('carreras').append(f);
+      $('carreras').append(conGpx(f, '/' + c.slug + '/ruta-carrera.gpx'));
     });
   }
   // carreras en directo de varios corredores (v1.54): en directo, próximas y terminadas
@@ -114,7 +122,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   }
   if (rutas.length) {
     $('rutas-sec').hidden = false;
-    rutas.slice(0, 3).forEach((r, i) => $('rutas').append(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza,
-      [km(r.distancia_km), 'KM'], [miles(r.desnivel_m || 0), 'D+'], i)));
+    rutas.slice(0, 3).forEach((r, i) => $('rutas').append(conGpx(fila('/r/' + r.id, r.nombre, r.autor ? 'de ' + r.autor : '', r.traza,
+      [km(r.distancia_km), 'KM'], [miles(r.desnivel_m || 0), 'D+'], i), '/api/ruta-publica/reloj.gpx?id=' + encodeURIComponent(r.id))));
   }
 })();

@@ -1884,7 +1884,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             filas.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
                          f'<span class="pill-hero">{esc(" · ".join(x for x in (fecha, c.get("lugar", "")) if x))}</span>'
                          f'<h2 class="hero-titulo"><a href="{enlace}">{esc(c.get("nombre") or slug)}</a></h2>'
-                         f'<div class="hero-cifras">{cifras}</div><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a></div>'
+                         f'<div class="hero-cifras">{cifras}</div><div class="hero-botones"><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a>'
+                         f'<a class="boton-hero claro" href="{enlace}ruta-carrera.gpx" download>Bajar el GPX</a></div></div>'
                          f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg(slug)}</a></article>')
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
@@ -1895,7 +1896,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=12">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=13">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'

@@ -135,7 +135,8 @@ def unirse(raiz, id_, token, nombre, usuario=None, ahora=None, abierto=False):
                 return None
         if len(c["corredores"]) >= MAX_CORREDORES:
             raise ValueError("esta carrera ya está llena")
-        if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
+        if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp() \
+                or publico(raiz, id_, ahora)["estado"] == "terminada":
             raise ValueError("esta carrera ya terminó")
         if usuario:                                   # con cuenta: apuntarse dos veces no duplica, devuelve el que ya tiene
             ya = next((x for x in c["corredores"] if x.get("usuario") == usuario), None)
@@ -302,7 +303,7 @@ def abiertas(raiz, usuario, ahora=None):
         c = carrera(raiz, id_)
         if not c or c.get("creador") == usuario or any(x.get("usuario") == usuario for x in c["corredores"]):
             continue
-        if len(c["corredores"]) >= MAX_CORREDORES or ahora > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
+        if len(c["corredores"]) >= MAX_CORREDORES or publico(raiz, id_, ahora)["estado"] == "terminada":
             continue
         out.append({"id": id_, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"],
                     "distancia_km": c.get("distancia_km"), "salida_ts": salida(c).timestamp(),

@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.58.0 · 2026-11-02
+- **Bajar el GPX desde Inicio y Carreras**: cada carrera terminada tiene su botón «Bajar el GPX» (tarjeta grande de Inicio, filas de «Más carreras» y de «Rutas para tu reloj», y página Carreras).
+- **Las carreras terminadas no admiten a nadie**: si todos llegaron o se retiraron, ya no sale en «Carreras en las que te puedes apuntar», ni se puede entrar con el enlace.
+- **Menos líos**: «Últimas rutas» pasa a «Rutas para tu reloj»; quitado el botón «GPX de la carrera», que no decía de cuál era.
+
 ## v1.57.0 · 2026-11-02
 - **Aviso de prueba en el iPhone**: botón «Enviar un aviso de prueba» junto a los avisos de subidas. Sirve para que «Sígueme CC» aparezca en la app de la pulsera y dejarlo pasar.
 - **«Retirarme»** de una carrera en directo (en Mis carreras y en la página del directo): dejas de salir en el mapa, tus puntos ya no cuentan y no recibes avisos; los demás siguen.

@@ -172,6 +172,21 @@ ok(st == 400, 'aviso de prueba sin avisos activados: avisa')
 st, _, _ = http('POST', '/api/push/mio/prueba', {'ident': 'dir-inventado-123456789012'})
 ok(st == 403, 'aviso de prueba con identificador inventado, no')
 
+# ---- v1.58: una carrera terminada (todos llegaron o se retiraron) no admite a nadie, aunque falten horas del límite
+st, d, _ = http('POST', '/api/invitado/gpx?nombre=Corta', gpx_inventado(km=10), galleta_luis, 'application/gpx+xml')
+st, d, _ = http('POST', '/api/invitado/directo', {'ruta': d['ruta']['id'], 'fecha': salida.strftime('%Y-%m-%d'), 'hora': salida.strftime('%H:%M'), 'nombre': 'Luis'}, galleta_luis)
+ID2, TOKEN2, IDENT2 = d['id'], d['invitacion'], d['ident']
+st, ab, _ = http('GET', '/api/invitado/abiertas', cookie=galleta)
+ok(any(x['id'] == ID2 for x in ab['abiertas']), 'una carrera sin empezar sí sale como abierta')
+http('POST', '/api/invitado/retirarme', {'ident': IDENT2})
+st, ab, _ = http('GET', '/api/invitado/abiertas', cookie=galleta)
+ok(not any(x['id'] == ID2 for x in ab['abiertas']), 'terminada (su único corredor se retiró): ya no sale como abierta')
+st, _, _ = http('POST', '/api/invitado/apuntarme', {'id': ID2, 'nombre': 'Ana'}, galleta)
+ok(st == 400, 'y no se puede apuntar')
+st, _, _ = http('POST', '/api/invitado/unirse', {'id': ID2, 'token': TOKEN2, 'nombre': 'Tarde'})
+ok(st == 400, 'ni con el enlace de invitación')
+http('POST', '/api/invitado/directo', {'accion': 'borrar', 'id': ID2}, galleta_luis)
+
 # ---- el dueño la quita desde el panel
 st, _, h = http('POST', '/api/login', {'usuario': 'prueba', 'password': 'clave'})
 adm = h['Set-Cookie'].split(';')[0]

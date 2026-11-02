@@ -68,6 +68,11 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
   background: var(--acento); color: var(--tinta); font: 400 1.15rem/1 var(--display); text-transform: uppercase; text-decoration: none; cursor: pointer; transition: transform 0.1s, filter 0.15s; }
 .boton:hover, .boton-hero:hover { filter: brightness(1.07); }
 .boton:active, .boton-hero:active { transform: scale(0.98); }
+.hero-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+.boton-hero.claro { background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); }
+.item-gpx { margin: 0 0 8px; }
+.item-gpx .fila { margin-bottom: 2px; }
+.mini-gpx { display: block; text-align: right; padding: 8px 6px 10px; font: 700 0.9rem var(--cuerpo); color: var(--acento); text-decoration: none; }
 .boton.claro, .boton.sec { background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); }
 .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; }
 

@@ -20,6 +20,7 @@ function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x 
 
 function pintar(d) {
   datos = d;
+  if (d.estado === 'terminada') $('sec-unirse').hidden = true;      // una carrera terminada ya no admite a nadie
   const e = $('estado'); e.textContent = ESTADO[d.estado] || ''; e.hidden = false; e.classList.toggle('vivo', d.estado === 'en_directo');
   $('linea').textContent = [fecha(d.fecha) + ' · salida ' + d.hora_salida, d.distancia_km ? km(d.distancia_km) + ' km' : '',
     d.desnivel_m ? '+' + miles(d.desnivel_m) + ' m' : ''].filter(Boolean).join(' · ');
