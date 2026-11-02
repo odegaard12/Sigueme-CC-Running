@@ -16,6 +16,8 @@ const token = new URLSearchParams(location.hash.slice(1)).get('unirse');
 let mapa = null, marcas = {}, datos = null, elegido = null;
 
 function guardado() { try { return localStorage.getItem(clave); } catch (e) { return null; } }
+// ritmo medio desde la salida real, en min/km (hace falta 300 m para que valga algo)
+function ritmo(g) { if (!(g.tiempo_s > 0 && g.km >= 0.3)) return ''; const sp = Math.round(g.tiempo_s / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
 function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || '·'; }
 
 function pintar(d) {
@@ -28,7 +30,7 @@ function pintar(d) {
   d.corredores.forEach((g, i) => {
     const f = document.createElement('div'); f.className = 'fila simple';
     const n = document.createElement('div'); n.className = 'nombre'; n.textContent = (g.situacion === 'en_meta' ? (i + 1) + ' · ' : '') + g.nombre;
-    const s = document.createElement('small'); s.textContent = SITUACION[g.situacion] || ''; n.append(s);
+    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g)].filter(Boolean).join(' · '); n.append(s);
     const c1 = document.createElement('div'); c1.className = 'cifra'; const b1 = document.createElement('b'); b1.textContent = km(g.km); const u1 = document.createElement('span'); u1.textContent = 'KM'; c1.append(b1, u1);
     const c2 = document.createElement('div'); c2.className = 'cifra'; const b2 = document.createElement('b'); b2.textContent = g.tiempo_s != null ? tiempo(g.tiempo_s) : '–'; const u2 = document.createElement('span'); u2.textContent = g.situacion === 'en_meta' ? 'TIEMPO' : 'EN CARRERA'; c2.append(b2, u2);
     f.append(n, c1, c2); lista.append(f);
@@ -51,7 +53,7 @@ function pintar(d) {
     if (g.foto) { const im = document.createElement('img'); im.alt = ''; im.src = '/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto; av.append(im); } else av.textContent = iniciales(g.nombre);
     const n = document.createElement('b'); n.textContent = g.nombre;
     const s = document.createElement('small');
-    s.textContent = d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : ''].filter(Boolean).join(' · ')
+    s.textContent = d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g)].filter(Boolean).join(' · ')
       : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
     b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
