@@ -53,6 +53,20 @@
   .dir-item { padding: 14px 0; border-top: 1px solid var(--border); } .dir-item:first-of-type { border-top: 0; }
   .dir-item b { display: block; font: 400 1.5rem/1.05 var(--display); text-transform: uppercase; overflow-wrap: anywhere; }
   .dir-item .listo-cab { color: var(--accent); font: 400 1.2rem/1 var(--display); text-transform: uppercase; margin: 0 0 6px; }
+  /* menú de saltos de una ruta: chips fijos arriba en el móvil, columna a la izquierda en pantallas anchas */
+  html { scroll-behavior: smooth; }
+  #vista-ruta .tarjeta { scroll-margin-top: 76px; }
+  .menu-ruta { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; margin: 10px -16px 0; padding: 10px 16px; overflow-x: auto; background: var(--tinta);
+    border-bottom: 1px solid var(--border); scrollbar-width: none; }
+  .menu-ruta::-webkit-scrollbar { display: none; }
+  .menu-ruta a { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 20px; background: #232b26; color: var(--papel);
+    font: 700 .95rem/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-decoration: none; white-space: nowrap; }
+  .menu-ruta a.directo { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+  .menu-ruta a.activo { background: var(--accent); color: var(--tinta); box-shadow: none; }
+  @media (min-width: 1100px) {
+    .menu-ruta { position: fixed; top: 150px; left: calc(50% - 340px - 224px); width: 200px; margin: 0; padding: 0; flex-direction: column; overflow: visible; background: none; border: 0; }
+    .menu-ruta a { border-radius: 10px; min-height: 44px; }
+  }
   .entra { animation: entra .28s ease-out both; }
   @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .entra { animation: none; } .btn { transition: none; } }
@@ -111,22 +125,24 @@
 
   <section id="vista-ruta" hidden>
     <button class="btn" type="button" id="volver">‹ Mis carreras</button>
-    <div class="tarjeta entra">
+    <nav class="menu-ruta" id="r-menu" aria-label="Pasos de esta ruta">
+      <a href="#card-datos">Datos</a><a href="#card-avit">Avituallamientos</a><a href="#card-subidas">Subidas</a><a href="#card-reloj">Reloj</a><a href="#card-publicar">Publicar</a><a href="#card-directo" class="directo">Correr en directo</a>
+    </nav>
+    <div class="tarjeta entra" id="card-datos">
       <h2 id="r-titulo">Ruta</h2>
       <p class="sub" id="r-datos"></p>
-      <p class="sub" id="r-atajos">Ir a: <a href="#card-reloj">llevarla al reloj</a> · <a href="#card-publicar">publicarla</a> · <a href="#card-directo">correrla en directo</a></p>
       <svg id="r-perfil" viewBox="0 0 320 110" role="img" aria-label="Perfil de la ruta"></svg>
       <label for="r-nombre">Nombre</label>
       <input type="text" id="r-nombre" maxlength="60">
     </div>
-    <div class="tarjeta entra">
+    <div class="tarjeta entra" id="card-avit">
       <div class="paso"><span class="n">2</span><span><b>Avituallamientos</b> (opcional). Aparecerán en el reloj como puntos de control.</span></div>
       <div id="avits"></div>
       <button class="btn" type="button" id="mas-avit">+ Añadir avituallamiento</button>
       <button class="btn principal" type="button" id="guardar">Guardar</button>
       <div class="msg" id="msg-ruta" role="status"></div>
     </div>
-    <div class="tarjeta entra">
+    <div class="tarjeta entra" id="card-subidas">
       <div class="paso"><span class="n">3</span><span><b>Subidas</b> detectadas en tu ruta. Se llevan al reloj como puntos de control.</span></div>
       <ul class="subidas" id="subidas"></ul>
     </div>
@@ -189,7 +205,7 @@
 </div>
 <script src="/avisos-movil.js?v=2"></script>
 <script src="/directo-movil.js?v=2"></script>
-<script src="/mis-rutas.js?v=8"></script>
+<script src="/mis-rutas.js?v=9"></script>
 <script src="/ayuda.js?v=3"></script>
 </body>
 </html>

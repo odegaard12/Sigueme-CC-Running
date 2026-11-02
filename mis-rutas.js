@@ -65,6 +65,21 @@ async function lista() {
   cargarDirectos().catch(() => {});
 }
 
+// ---- menú de saltos de una ruta (v1.59): marca el paso que se está viendo
+(function () {
+  const menu = document.getElementById('r-menu'); if (!menu || !('IntersectionObserver' in window)) return;
+  const enlaces = [...menu.querySelectorAll('a')];
+  const io = new IntersectionObserver(es => {
+    for (const e of es) if (e.isIntersecting) {
+      enlaces.forEach(a => a.classList.toggle('activo', a.getAttribute('href') === '#' + e.target.id));
+      const a = menu.querySelector('a.activo'); if (a && menu.scrollWidth > menu.clientWidth) menu.scrollTo({ left: a.offsetLeft - (menu.clientWidth - a.offsetWidth) / 2 });
+    }
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  enlaces.forEach(a => { const t = document.querySelector(a.getAttribute('href')); if (t) io.observe(t); });
+  // al llegar al final de la página, la última tarjeta es la activa aunque no cruce la franja
+  addEventListener('scroll', () => { if (innerHeight + scrollY >= document.documentElement.scrollHeight - 6 && document.getElementById('vista-ruta') && !document.getElementById('vista-ruta').hidden) enlaces.forEach((a, i) => a.classList.toggle('activo', i === enlaces.length - 1)); }, { passive: true });
+})();
+
 // ---- carreras en directo (v1.54): las tuyas y en las que corres; «Tu móvil» se configura de un toque
 async function cargarDirectos(abierta) {
   const d = await api('/directos');
