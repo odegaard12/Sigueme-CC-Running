@@ -277,12 +277,12 @@
   .inv-nuevo .btn { margin-top: 8px; }
   .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #d9f24a; user-select: all; margin: 8px 0; }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css?v=8">
+<link rel="stylesheet" href="/cartel-panel.css?v=9">
 </head>
 <body>
 <div class="campo-cartel">
   <header class="barra-cartel"><a class="marca-cartel" id="marca-sitio" href="/inicio">Sígueme CC</a>
-    <nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Mis rutas</a><a href="/index.html">La carrera</a></nav></header>
+    <nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Mis carreras</a><a href="/index.html">La carrera</a></nav></header>
   <div class="topbar">
     <h1>Admin</h1>
     <div class="cabecera-datos"><span class="pill-panel" id="pill-panel"></span>
@@ -342,14 +342,15 @@
     <input type="hidden" id="hora-salida">
     <p class="estado-fila" style="margin:10px 0 4px"><span>Salida oficial: <b id="hora-txt">—</b>
       · el crono cuenta desde ahí (cambiar: Preparar → Datos)</span></p>
+    <button class="save-btn" id="save" type="button">Empezar a seguir ahora</button>
+    <p class="howto" style="margin:6px 0 10px">Con la app o con Traccar no hace falta: la carrera se pone en marcha sola con el primer punto, desde 1 h antes de la salida. Úsalo si quieres empezar a mano.</p>
     <details class="sin-app">
-      <summary>No uso la app (iGPSPORT)</summary>
-      <div class="howto">En iGPSPORT, comparte el seguimiento en vivo y pega el enlace.</div>
+      <summary>Tengo un enlace de iGPSPORT (LiveTrack)</summary>
+      <div class="howto">En iGPSPORT, comparte el seguimiento en vivo y pega el enlace aquí; luego pulsa «Empezar a seguir ahora».</div>
       <div class="field link-field" style="margin-top:12px">
         <label for="livetrack">Enlace LiveTrack</label>
         <input type="url" id="livetrack" placeholder="https://...">
       </div>
-      <button class="save-btn" id="save">Empezar a seguir</button>
     </details>
   </div>
 
@@ -558,9 +559,9 @@
   </div>
 
     <div class="tarjeta primero" id="sec-mis" data-tab="rutas">
-    <h2>Mis rutas</h2>
-    <div class="howto">Tus propias rutas: sube un GPX, ponle avituallamientos, llévatelo al reloj o publícalo en la portada.</div>
-    <a class="save-btn" href="/mis-rutas.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Abrir Mis rutas</a>
+    <h2>Mis carreras</h2>
+    <div class="howto">Tus propias rutas y carreras: sube un GPX, ponle avituallamientos, llévatelo al reloj, córrelo en directo o publica la ruta.</div>
+    <a class="save-btn" href="/mis-rutas.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Abrir Mis carreras</a>
   </div>
 
   <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
@@ -571,7 +572,7 @@
 
   <div class="tarjeta" id="sec-directos" data-tab="rutas">
     <h2>Carreras en directo</h2>
-    <div class="howto">Las crean tus invitados (o tú) desde Mis rutas y salen en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita la que no deba estar: se borra para todos sus corredores.</div>
+    <div class="howto">Las crean tus invitados (o tú) desde Mis carreras y salen en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita la que no deba estar: se borra para todos sus corredores.</div>
     <div id="dir-lista"></div>
   </div>
 
@@ -1363,7 +1364,7 @@ function guiaPrimeraVez() {
   guiaSolo('btn-guia').hidden = false;
   let vista = false;
   try { vista = localStorage.getItem('guia_admin') === '1'; } catch (e) {}
-  if (!vista) setTimeout(guiaAbrir, 900);
+  // ⚠️ 1/11/2026: abierta sola al entrar, tapaba la pantalla (y en Mis carreras, la lista del invitado). Solo con «? Guía».
 }
 
 let sondeo = null;

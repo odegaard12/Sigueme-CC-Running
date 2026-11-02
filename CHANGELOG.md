@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.55.0 · 2026-11-02
+- **«Mis rutas» ahora es «Mis carreras»** (cabecera, título, botones, guías y panel).
+- **La ruta pública ya no se recorta por defecto**: la distancia y el mapa son los reales («No ocultar»). El selector sigue para quien quiera ocultar su casa.
+- **Panel: «Empezar a seguir ahora» a la vista**, como botón principal de la pestaña Carrera (estaba dentro de un desplegable cerrado, «No uso la app»). El enlace de iGPSPORT queda en un desplegable aparte.
+- **La guía del panel ya no se abre sola** al entrar (tapaba la pantalla); sigue en «? Guía».
+
 ## v1.54.2 · 2026-11-02
 - **Carreras en directo**: apuntarse dos veces a la misma con la misma cuenta ya no duplica al corredor.
 

@@ -193,14 +193,14 @@ function pintarRuta(r) {
 // ---- publicar en la web
 function pintarPublicacion(r) {
   $('pub-no').hidden = !!r.publica; $('pub-si').hidden = !r.publica;
-  $('pub-ocultar').value = String(r.ocultar_m ?? 300); $('pub-autor').value = r.autor || '';
+  $('pub-ocultar').value = String(r.ocultar_m ?? 0); $('pub-autor').value = r.autor || '';
   $('pub-ver').href = '/r/' + r.id;
   aviso('msg-pub', '');
 }
 async function publicacion(publica) {
   const b = publica ? $('publicar') : $('despublicar'); b.disabled = true; aviso('msg-pub', publica ? 'Publicando…' : 'Quitando…');
   try {
-    const d = await post('/ruta', { id: actual.id, publica, ocultar_m: Number($('pub-ocultar').value || 300), autor: $('pub-autor').value });
+    const d = await post('/ruta', { id: actual.id, publica, ocultar_m: Number($('pub-ocultar').value || 0), autor: $('pub-autor').value });
     actual = d.ruta; pintarPublicacion(actual);
     aviso('msg-pub', publica ? 'Publicada. Ya sale en la portada.' : 'Ya no es pública.', 'ok');
   } catch (err) { if (err.message !== 'sesion') aviso('msg-pub', err.message, 'err'); }
@@ -249,7 +249,7 @@ function textoAcceso() {
   return 'Tu acceso vale hasta el ' + fecha(acceso.caduca) + '; después se borra todo lo tuyo. Si necesitas más tiempo, pídele al dueño «+30 días». Si publicas una ruta, sale en «Rutas y relojes»; tus carreras en directo, en la portada.';
 }
 const GUIA = [
-  { t: 'Bienvenido a Mis rutas', x: 'Aquí subes tu ruta, te la llevas al reloj y, si quieres, la corres en directo para que te sigan. Te lo enseño en un minuto. Siempre podrás volver a verlo con el botón «? Ayuda».' },
+  { t: 'Bienvenido a Mis carreras', x: 'Aquí subes tus rutas, te las llevas al reloj y, si quieres, las corres en directo para que te sigan. Te lo enseño en un minuto. Siempre podrás volver a verlo con el botón «? Ayuda».' },
   { t: 'Sube tu GPX', sel: () => $('gpx').closest('.tarjeta'), x: 'El fichero sale de Strava, Komoot, Wikiloc o de la web de la carrera. Ponle un nombre y pulsa «Subir ruta».' },
   { t: 'Ponle avituallamientos', x: 'Al abrir una ruta puedes añadir cada avituallamiento con su nombre y su kilómetro. Se llevan al reloj como puntos de control.' },
   { t: 'Llévatela al reloj', x: 'Descarga el GPX con el botón «Descargar GPX para el reloj» y súbelo con la app de tu reloj. Debajo tienes un botón por marca (Xiaomi, Huawei, Amazfit, Garmin, Coros…) que te explica cómo.' },
