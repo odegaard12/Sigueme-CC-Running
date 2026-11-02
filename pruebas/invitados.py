@@ -102,7 +102,7 @@ try:
 
     st, d, _ = http('GET', '/api/invitado/yo', cookie=ana)
     st2, d2, _ = http('GET', '/api/invitado/yo')
-    ok(st == 200 and d == {'sesion': True, 'dueno': False} and st2 == 200 and d2 == {'sesion': False, 'dueno': False}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
+    ok(st == 200 and d == {'sesion': True, 'dueno': False, 'usuario': 'ana'} and st2 == 200 and d2 == {'sesion': False, 'dueno': False, 'usuario': ''}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
 
     # ---- subir una ruta
     st, d, _ = http('GET', '/api/invitado/rutas', cookie=ana)

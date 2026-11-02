@@ -43,6 +43,7 @@ $('salir').addEventListener('click', async () => { try { await post('/logout', {
 // ---- lista de rutas
 async function lista() {
   const d = await api('/rutas');
+  if (window.marcaUsuario) window.marcaUsuario();
   $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '; después se borra todo lo tuyo.');
   $('salir').hidden = !!d.dueno;
   acceso = { caduca: d.caduca, dueno: !!d.dueno, nombre: d.dueno ? '' : d.nombre };
@@ -72,18 +73,20 @@ async function lista() {
   const io = new IntersectionObserver(es => {
     for (const e of es) if (e.isIntersecting) {
       enlaces.forEach(a => a.classList.toggle('activo', a.getAttribute('href') === '#' + e.target.id));
+      if (e.target.id === 'card-directo') vistoDirecto = true;
       const a = menu.querySelector('a.activo'); if (a && menu.scrollWidth > menu.clientWidth) menu.scrollTo({ left: a.offsetLeft - (menu.clientWidth - a.offsetWidth) / 2 });
     }
   }, { rootMargin: '-30% 0px -60% 0px' });
   enlaces.forEach(a => { const t = document.querySelector(a.getAttribute('href')); if (t) io.observe(t); });
   // al llegar al final de la página, la última tarjeta es la activa aunque no cruce la franja
-  addEventListener('scroll', () => { if (innerHeight + scrollY >= document.documentElement.scrollHeight - 6 && document.getElementById('vista-ruta') && !document.getElementById('vista-ruta').hidden) enlaces.forEach((a, i) => a.classList.toggle('activo', i === enlaces.length - 1)); }, { passive: true });
+  addEventListener('scroll', () => { if (innerHeight + scrollY >= document.documentElement.scrollHeight - 6 && document.getElementById('vista-ruta') && !document.getElementById('vista-ruta').hidden) { enlaces.forEach((a, i) => a.classList.toggle('activo', i === enlaces.length - 1)); vistoDirecto = true; } }, { passive: true });
 })();
 
 // ---- carreras en directo (v1.54): las tuyas y en las que corres; «Tu móvil» se configura de un toque
 async function cargarDirectos(abierta) {
   const d = await api('/directos');
   const cont = $('directos'); cont.textContent = '';
+  hayDirectos = d.directos.length > 0;
   $('card-directos').hidden = false;
   if (!d.directos.length) {
     const p = document.createElement('p'); p.className = 'sub';
@@ -267,7 +270,17 @@ $('pub-copiar').addEventListener('click', async () => {
 });
 
 $('mas-avit').addEventListener('click', () => { const f = filaAvit({}); $('avits').append(f); f.querySelector('input').focus(); });
-$('volver').addEventListener('click', () => lista().catch(() => {}));
+let vistoDirecto = false, avisadoSalir = false, hayDirectos = true;
+$('volver').addEventListener('click', () => {
+  // quien aún no tiene ninguna carrera en directo y no ha visto el final de la ruta: se le avisa una vez
+  if (!vistoDirecto && !hayDirectos && !avisadoSalir && !acceso.dueno) {
+    avisadoSalir = true;
+    if (confirm('Antes de salir: al final de esta página está «Correr en directo», donde se configura tu móvil para correr con seguimiento. ¿Quieres verlo ahora? (Aceptar = verlo · Cancelar = salir)')) {
+      $('card-directo').scrollIntoView({ block: 'start', behavior: 'smooth' }); return;
+    }
+  }
+  lista().catch(() => {});
+});
 
 $('guardar').addEventListener('click', async () => {
   const filas = [...document.querySelectorAll('#avits .avit')].map(f => { const [n, k] = f.querySelectorAll('input'); return { name: n.value.trim(), km: k.value }; })
