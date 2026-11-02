@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.63.3 · 2026-11-02
+- **Tira de caras** del directo: solo sale con 2 o más corredores (o si alguien tiene foto); con uno solo y sin foto la lista ya lo dice. Las iniciales, con letra más suave.
+
 ## v1.63.2 · 2026-11-02
 - **Ajustes del corredor solo con sesión**: la página del directo enseña «Tu móvil», «Mi foto» y «Retirarme» solo con la sesión iniciada; el código guardado en el navegador de antes ya no basta. Se salva quien se apuntó con el enlace y sin cuenta.
 

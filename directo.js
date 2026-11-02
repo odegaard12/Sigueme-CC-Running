@@ -40,6 +40,7 @@ function pintar(d) {
   });
   // la tira de caras de arriba: la foto de cada uno (o su inicial), su nombre y su tiempo; al tocar, el mapa va a él
   const tira = $('tira'); tira.textContent = '';
+  tira.hidden = !(d.corredores.length > 1 || d.corredores.some(g => g.foto));       // uno solo y sin foto: la lista de abajo ya lo dice
   d.corredores.forEach(g => {
     const b = document.createElement('button'); b.type = 'button';
     b.className = 'cara' + (elegido === g.cid ? ' sel' : '') + (g.situacion === 'retirado' ? ' retirado' : '');
