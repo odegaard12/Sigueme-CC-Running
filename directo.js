@@ -13,7 +13,7 @@ const SITUACION = { sin_empezar: 'Aún sin salir', en_la_salida: 'En la salida',
 const ESTADO = { proxima: 'Próxima', en_directo: 'En directo', terminada: 'Terminada' };
 const clave = 'directo.' + ID;
 const token = new URLSearchParams(location.hash.slice(1)).get('unirse');
-let mapa = null, marcas = {}, datos = null;
+let mapa = null, marcas = {}, datos = null, elegido = null;
 
 function guardado() { try { return localStorage.getItem(clave); } catch (e) { return null; } }
 function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || '·'; }
@@ -32,9 +32,22 @@ function pintar(d) {
     const c1 = document.createElement('div'); c1.className = 'cifra'; const b1 = document.createElement('b'); b1.textContent = km(g.km); const u1 = document.createElement('span'); u1.textContent = 'KM'; c1.append(b1, u1);
     const c2 = document.createElement('div'); c2.className = 'cifra'; const b2 = document.createElement('b'); b2.textContent = g.tiempo_s != null ? tiempo(g.tiempo_s) : '–'; const u2 = document.createElement('span'); u2.textContent = g.situacion === 'en_meta' ? 'TIEMPO' : 'EN CARRERA'; c2.append(b2, u2);
     f.append(n, c1, c2); lista.append(f);
+    f.tabIndex = 0; f.setAttribute('role', 'button'); f.setAttribute('aria-pressed', String(elegido === g.cid));
+    f.classList.toggle('sel', elegido === g.cid);
+    const elige = () => { elegido = elegido === g.cid ? null : g.cid; pintar(datos); if (elegido) verEnMapa(g.cid); };
+    f.addEventListener('click', elige);
+    f.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elige(); } });
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
   if (mapa && mapa.loaded()) pintarMarcas();
+}
+
+function verEnMapa(cid) {
+  const m = marcas[cid];
+  if (!mapa || !m) { $('aviso-posicion').hidden = false; return; }       // aún sin posición: no hay dónde ir
+  mapa.flyTo({ center: m.getLngLat(), zoom: Math.max(mapa.getZoom(), 14.5) });
+  const p = m.getPopup(); if (p && !p.isOpen()) m.togglePopup();
+  document.getElementById('mapa').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
 function pintarMarcas() {
@@ -44,6 +57,7 @@ function pintarMarcas() {
       const el = document.createElement('div'); el.className = 'corredor-dir' + (g.situacion === 'en_meta' ? ' meta' : ''); el.textContent = iniciales(g.nombre); el.title = g.nombre;
       marcas[g.cid] = new maplibregl.Marker({ element: el }).setLngLat([g.lon, g.lat]).setPopup(new maplibregl.Popup({ offset: 16, closeButton: false }).setText(g.nombre)).addTo(mapa);
     } else marcas[g.cid].setLngLat([g.lon, g.lat]);
+    marcas[g.cid].getElement().classList.toggle('elegido', elegido === g.cid);
   }
 }
 

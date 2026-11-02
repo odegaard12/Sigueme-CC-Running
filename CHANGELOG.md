@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.61.0 · 2026-11-02
+- **Directo con varios corredores**: tocas a un corredor de la lista y el mapa va a él (marcador resaltado y su nombre); vuelves a tocarlo y se quita. La lista dice qué hace cada uno (km y tiempo) y, al llegar, se ordena por tiempo.
+- **Inicio**: en una carrera terminada, cada corredor sale con su tiempo (antes solo el mejor).
+- El nombre del marcador se lee bien (texto oscuro sobre fondo blanco).
+
 ## v1.60.1 · 2026-11-02
 - **Inicio**: si hay una carrera en directo de un invitado, sale arriba con el título «En directo ahora», antes que la próxima carrera o los accesos; la del dueño sigue en su tarjeta grande.
 

@@ -123,6 +123,10 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .listo-dir { margin: 12px 0 0; font-weight: 700; }
 .corredor-dir { min-width: 34px; height: 34px; padding: 0 6px; border: 3px solid var(--tinta); border-radius: 999px; background: var(--acento); color: var(--tinta);
   font: 800 13px/28px var(--cuerpo); text-align: center; cursor: pointer; }
+.fila.simple[role="button"] { cursor: pointer; }
+.fila.simple.sel { box-shadow: inset 4px 0 0 var(--acento); }
+.corredor-dir.elegido { transform: scale(1.25); box-shadow: 0 0 0 3px var(--texto); z-index: 5; }
+.maplibregl-popup-content { color: var(--tinta); font: 700 .95rem system-ui, sans-serif; padding: 8px 12px; }
 .corredor-dir.meta { background: var(--texto); }
 .fila.vivo-dir { box-shadow: inset 4px 0 0 var(--acento); }
 .mini-perfil { display: block; width: 100%; max-width: 420px; height: 34px; margin: 0 0 6px; color: var(--acento); opacity: 0.85; }
