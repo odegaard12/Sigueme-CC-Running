@@ -36,7 +36,8 @@ $('form-login').addEventListener('submit', async e => {
   } catch (err) { aviso('msg-login', err.message === 'sesion' ? '' : err.message, 'err'); }
   finally { b.disabled = false; }
 });
-$('salir').addEventListener('click', async () => { try { await post('/logout', {}); } catch (e) { /* da igual */ } ver('login'); aviso('msg-login', 'Hasta la próxima.', 'ok'); });
+$('salir').addEventListener('click', async () => { try { await post('/logout', {}); } catch (e) { /* da igual */ }
+  try { Object.keys(localStorage).filter(k => k.startsWith('directo.')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* da igual */ } ver('login'); aviso('msg-login', 'Hasta la próxima.', 'ok'); });
 
 // ---- lista de rutas
 async function lista() {
@@ -93,7 +94,7 @@ async function cargarDirectos(abierta) {
   }
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
   for (const c of d.directos) {
-    if (c.ident) { try { localStorage.setItem('directo.' + c.id, c.ident); } catch (e) { /* da igual */ } }
+    if (c.ident) { try { localStorage.setItem('directo.' + c.id, c.ident); localStorage.setItem('directo.' + c.id + '.cuenta', '1'); } catch (e) { /* da igual */ } }
     const item = el('div', 'dir-item');
     if (c.id === abierta) item.append(el('p', 'listo-cab', '✓ Tu carrera está lista'));
     item.append(el('b', '', c.nombre), el('span', 'sub', fecha(c.fecha) + ' · salida ' + c.hora_salida + ' · ' + c.corredores.join(', ')));

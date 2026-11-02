@@ -128,7 +128,15 @@ $('compartir').addEventListener('click', async () => {
   try { if (navigator.share) await navigator.share({ title: document.title, url }); else { await navigator.clipboard.writeText(url); $('compartir').textContent = 'Enlace copiado'; } } catch (e) { /* cancelado */ }
 });
 
-if (guardado()) enseñarMovil(guardado());
+if (guardado()) {
+  // apuntado con cuenta: los ajustes solo salen con la sesión iniciada; apuntado con el enlace (sin cuenta): salen siempre en su móvil
+  let cuenta = false; try { cuenta = !!localStorage.getItem(clave + '.cuenta'); } catch (e) { /* da igual */ }
+  if (!cuenta) enseñarMovil(guardado());
+  else fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(y => {
+    if (y && y.sesion) enseñarMovil(guardado());
+    else { try { localStorage.removeItem(clave); localStorage.removeItem(clave + '.cuenta'); } catch (e) { /* da igual */ } }
+  }).catch(() => {});
+}
 else if (token) {
   $('sec-unirse').hidden = false;
   $('u-boton').addEventListener('click', async () => {

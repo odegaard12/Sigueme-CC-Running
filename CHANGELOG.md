@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.63.1 · 2026-11-02
+- **Al cerrar sesión**, la página del directo ya no enseña «Tu móvil», «Mi foto» ni «Retirarme»: esos ajustes solo salen con la sesión iniciada. Quien se apuntó con el enlace (sin cuenta) los sigue viendo en su móvil.
+
 ## v1.63.0 · 2026-11-02
 - **Mis carreras** empieza por «Tus carreras en directo» (y «Carreras en las que te puedes apuntar»); después, tus carreras y subir una ruta.
 - **«Cómo configurar mi móvil»**: dentro se elige primero Android o iPhone y solo se enseña lo de ese móvil (en el móvil se elige solo según el tuyo; en el ordenador se elige a mano).
