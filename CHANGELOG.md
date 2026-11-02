@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.64.1 · 2026-11-02
+- **Mapa del directo**: botón «Ver en 3D» / «Ver en 2D» (el mismo satélite sobre el relieve real).
+- **Ordenador**: la ficha de corredor(es) va a la derecha, a la altura del título de la carrera; en el móvil sigue debajo.
+
 ## v1.64.0 · 2026-11-02
 - **Ficha de corredor** arriba de la página del directo: con un solo corredor, su foto (o inicial), su nombre, su estado, sus km y su tiempo; con 2 o más, la **ficha de corredores** con todas las caras (toca una para verla en el mapa).
 

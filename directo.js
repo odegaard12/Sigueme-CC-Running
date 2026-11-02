@@ -84,12 +84,24 @@ function pintarMarcas() {
 
 function arrancarMapa(d) {
   const lons = d.ruta.map(p => p[0]), lats = d.ruta.map(p => p[1]);
-  mapa = new maplibregl.Map({ container: 'mapa', attributionControl: { compact: true }, cooperativeGestures: true,
+  mapa = new maplibregl.Map({ container: 'mapa', attributionControl: { compact: true }, cooperativeGestures: true, maxPitch: 62,
     style: { version: 8, sources: { sat: { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Esri, Maxar, Earthstar Geographics',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] } },
       layers: [{ id: 'sat', type: 'raster', source: 'sat' }] },
     bounds: [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], fitBoundsOptions: { padding: 40 } });
   mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  // «Ver en 3D»: el mismo satélite sobre el relieve real (AWS Terrain Tiles); «Ver en 2D» lo deja plano otra vez
+  const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'ver3d'; b3.textContent = 'Ver en 3D'; b3.setAttribute('aria-pressed', 'false');
+  let en3d = false;
+  b3.addEventListener('click', () => {
+    en3d = !en3d;
+    if (en3d) {
+      if (!mapa.getSource('terreno')) mapa.addSource('terreno', { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, encoding: 'terrarium', maxzoom: 14 });
+      mapa.setTerrain({ source: 'terreno', exaggeration: 1.4 }); mapa.easeTo({ pitch: 55, bearing: -20, duration: 900 });
+    } else { mapa.setTerrain(null); mapa.easeTo({ pitch: 0, bearing: 0, duration: 700 }); }
+    b3.textContent = en3d ? 'Ver en 2D' : 'Ver en 3D'; b3.setAttribute('aria-pressed', String(en3d));
+  });
+  $('mapa').append(b3);
   mapa.on('load', () => {
     mapa.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: d.ruta } } });
     mapa.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });

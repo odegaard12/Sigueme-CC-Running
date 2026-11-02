@@ -12,23 +12,25 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=18">
+<link rel="stylesheet" href="/cartel.css?v=19">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
 <header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
 <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
+<div class="cab-fila">
 <div class="campo cab">
   <span class="pill-hero" id="estado" hidden></span>
   <h1 class="nombre-ruta" id="titulo">{{TITULO}}</h1>
   <p class="autor" id="linea"></p>
   <div class="acciones"><button class="boton claro" id="compartir" type="button">Compartir el directo</button></div>
 </div>
-<main>
   <section class="tarjeta-corr" id="tarjeta-corr" hidden>
     <h2 id="tira-tit">Corredor</h2>
     <div class="tira" id="tira" role="group" aria-label="Corredores: toca uno para verlo en el mapa"></div>
   </section>
+</div>
+<main>
   <section class="oscuro" id="sec-unirse" hidden>
     <div class="tarjeta-dir">
       <h2 class="titulo">¿Corres tú también?</h2>
@@ -62,7 +64,7 @@
 <script src="/avisos-movil.js?v=2"></script>
 <script src="/directo-movil.js?v=3"></script>
 <script src="/foto-corredor.js?v=1"></script>
-<script src="/directo.js?v=9"></script>
+<script src="/directo.js?v=10"></script>
 <script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>
