@@ -13,11 +13,11 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=11">
+<link rel="stylesheet" href="/cartel.css?v=19">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
-<header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
 <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas" aria-current="page">Rutas y relojes</a></nav>
 <div class="campo cab">
   <h1 class="nombre-ruta" id="titulo">&nbsp;</h1>
@@ -44,7 +44,8 @@
   </details>
   <section class="oscuro" id="error" hidden><p class="vacio">Esta ruta ya no está disponible: puede que su dueño la haya quitado.</p><a class="boton" href="/rutas">Ver las rutas</a></section>
 </main>
-<footer class="pie"><span>{{SITIO}}</span><small>Mapa: imágenes de Esri. Los primeros y últimos metros de cada ruta no se muestran.</small></footer>
+<footer class="pie"><small>Mapa: imágenes de Esri. Los primeros y últimos metros de cada ruta no se muestran.</small></footer>
 <script src="/ruta.js?v=2"></script>
+<script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>

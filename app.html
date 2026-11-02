@@ -7,11 +7,11 @@
 <meta name="theme-color" content="#0e1110">
 <title>La app · {{SITIO}}</title>
 <link rel="icon" type="image/png" href="favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=11">
+<link rel="stylesheet" href="/cartel.css?v=19">
 </head>
 <body class="cartel">
 <div class="campo">
-  <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+  <header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
   <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
   <h1 class="gigante">La app</h1>
   <div class="bajo"><p>Sigue tu carrera con el GPS del móvil, aunque no haya cobertura, y lleva los avisos a tu pulsera.</p></div>
@@ -32,9 +32,10 @@
   </ol>
   <p><b>Para el reloj:</b> los avisos llegan a través de la app de tu reloj (Mi Fitness, Huawei Health, Zepp, Garmin Connect,
     COROS…): actívale las notificaciones de «Sígueme CC». Qué hace cada modelo, en <a href="/pulseras">Relojes y pulseras</a>.</p>
-  <p>iPhone: no hay app; usa <b>Traccar Client</b> con la dirección y el identificador de abajo.</p>
+  <p><b>iPhone:</b> no hay app; usa <b>Traccar Client</b> (se configura de un toque en «Mis carreras» o con el QR del panel) y, para los avisos de subidas, instala esta web en la pantalla de inicio y actívalos allí.</p>
   <p>Configurar a mano: dirección <code id="dir"></code> y el identificador del panel.</p>
 </main>
 <script src="app-enlace.js"></script>
+<script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>

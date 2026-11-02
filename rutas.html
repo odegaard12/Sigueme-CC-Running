@@ -13,11 +13,11 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=11">
+<link rel="stylesheet" href="/cartel.css?v=19">
 </head>
 <body class="cartel">
 <div class="campo">
-  <header class="barra"><a class="marca" href="/inicio">{{SITIO}}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+  <header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
   <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas" aria-current="page">Rutas y relojes</a></nav>
   <h1 class="gigante">Rutas y relojes</h1>
   <div class="bajo"><p>Mira la ruta, descarga el GPX para tu reloj y sal.</p></div>
@@ -25,18 +25,19 @@
 <main>
   <section class="oscuro" aria-label="Rutas">
     <div id="rutas"></div>
-    <p class="vacio" id="sin-rutas" hidden>Todavía no hay rutas publicadas. Si tienes un acceso, sube la tuya y publícala desde «Mis rutas».</p>
+    <p class="vacio" id="sin-rutas" hidden>Todavía no hay rutas publicadas. Si tienes un acceso, sube la tuya y publícala desde «Mis carreras».</p>
   </section>
   <div class="pul">
     <h2 class="titulo">Llévala al reloj</h2>
     <nav class="chips-marcas" aria-label="Guía de tu marca">
       <a href="/pulseras#xiaomi">Xiaomi</a><a href="/pulseras#huawei">Huawei</a><a href="/pulseras#amazfit">Amazfit</a><a href="/pulseras#garmin">Garmin</a><a href="/pulseras#coros">Coros</a><a href="/pulseras#polar">Polar</a><a href="/pulseras#suunto">Suunto</a><a href="/pulseras#apple">Apple Watch</a>
     </nav>
-    <div class="acciones"><a class="boton" href="/ruta-carrera.gpx" download>GPX de la carrera</a><a class="boton claro" href="/pulseras">Qué reloj sirve</a></div>
+    <div class="acciones"><a class="boton" href="/pulseras">Qué reloj sirve</a></div>
   </div>
 </main>
-<footer class="pie"><span>{{SITIO}}</span><small>¿Quieres tus rutas aquí? Entra con tu acceso y publícalas desde «Mis rutas».</small></footer>
+<footer class="pie"><small>¿Quieres tus rutas aquí? Entra con tu acceso y publícalas desde «Mis carreras».</small></footer>
 <noscript><p class="vacio" style="padding:0 22px 30px">Esta página necesita JavaScript para listar las rutas.</p></noscript>
 <script src="/rutas.js?v=3"></script>
+<script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>

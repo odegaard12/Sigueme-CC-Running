@@ -8,7 +8,7 @@ Todo vive en <raíz>/invitados/ con extensiones que el servidor NO sirve (.dat,
 su perfil; el fichero original no se guarda.
 
 Cada ruta es PRIVADA hasta que su dueño la publica. Lo público se ve recortado
-(por defecto sin los primeros y últimos 300 m: ahí suele estar su casa) y deja de
+(si su dueño lo pide, sin los primeros y últimos metros: ahí puede estar su casa; por defecto, entera) y deja de
 verse en cuanto caduca el acceso del invitado.
 """
 import bisect, hashlib, json, math, os, re, secrets, tempfile, threading
@@ -25,7 +25,7 @@ MARGEN_DIAS = 0                                   # el día siguiente a la fecha
 MAX_GPX = 8_000_000                               # bytes
 RESERVADOS = {"admin", "dueno"}
 SIN_CADUCIDAD = "2099-12-31"                      # días=0: una cuenta que no caduca (la del dueño)
-OCULTAR_POR_DEFECTO = 300                         # m sin enseñar al principio y al final de lo público
+OCULTAR_POR_DEFECTO = 0                           # m sin enseñar al principio y al final de lo público (0: la ruta entera; v1.55)
 
 _lock = threading.RLock()
 # cada scrypt usa ~16 MB: como mucho dos a la vez (la Pi es pequeña)

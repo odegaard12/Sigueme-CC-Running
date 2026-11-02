@@ -4,6 +4,109 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.64.2 · 2026-11-02
+- **Directo**: el ritmo medio (min/km) de cada corredor, en su ficha y en la lista, desde que lleva 300 m.
+
+## v1.64.1 · 2026-11-02
+- **Mapa del directo**: botón «Ver en 3D» / «Ver en 2D» (el mismo satélite sobre el relieve real).
+- **Ordenador**: la ficha de corredor(es) va a la derecha, a la altura del título de la carrera; en el móvil sigue debajo.
+
+## v1.64.0 · 2026-11-02
+- **Ficha de corredor** arriba de la página del directo: con un solo corredor, su foto (o inicial), su nombre, su estado, sus km y su tiempo; con 2 o más, la **ficha de corredores** con todas las caras (toca una para verla en el mapa).
+
+## v1.63.3 · 2026-11-02
+- **Tira de caras** del directo: solo sale con 2 o más corredores (o si alguien tiene foto); con uno solo y sin foto la lista ya lo dice. Las iniciales, con letra más suave.
+
+## v1.63.2 · 2026-11-02
+- **Ajustes del corredor solo con sesión**: la página del directo enseña «Tu móvil», «Mi foto» y «Retirarme» solo con la sesión iniciada; el código guardado en el navegador de antes ya no basta. Se salva quien se apuntó con el enlace y sin cuenta.
+
+## v1.63.1 · 2026-11-02
+- **Al cerrar sesión**, la página del directo ya no enseña «Tu móvil», «Mi foto» ni «Retirarme»: esos ajustes solo salen con la sesión iniciada. Quien se apuntó con el enlace (sin cuenta) los sigue viendo en su móvil.
+
+## v1.63.0 · 2026-11-02
+- **Mis carreras** empieza por «Tus carreras en directo» (y «Carreras en las que te puedes apuntar»); después, tus carreras y subir una ruta.
+- **«Cómo configurar mi móvil»**: dentro se elige primero Android o iPhone y solo se enseña lo de ese móvil (en el móvil se elige solo según el tuyo; en el ordenador se elige a mano).
+- **Inicio**: la próxima carrera, también la de un invitado, sale arriba en la tarjeta grande («Próxima carrera»); la última carrera pasa a «Más carreras».
+
+## v1.62.2 · 2026-11-02
+- **Tu usuario es tu perfil**: con la sesión iniciada, «Entrar» pasa a ser tu usuario y al pulsarlo vas a Mis carreras (igual en Inicio, Carreras, Rutas y Pulseras).
+- **Panel y Mis carreras** con la misma cabecera: sin el nombre del sitio y, en el ordenador, el menú a la izquierda.
+- **Pie de página**: fuera el nombre del sitio. El pie de la página de la carrera ya no repite el lugar cuando ya va en el nombre.
+
+## v1.62.1 · 2026-11-02
+- **Cabecera**: la página de la carrera ya no pone el nombre del sitio arriba. En el ordenador, el menú (Inicio, Carreras, Rutas y relojes) va a la izquierda de la barra de arriba y a la derecha quedan el perfil, compartir y la ayuda; en el móvil, igual que antes.
+
+## v1.62.0 · 2026-11-02
+- **Fotos de los corredores en el directo**: cada uno puede subir su foto (opcional) desde «Tu móvil» en su carrera o desde Mis carreras. Se recorta cuadrada y se reduce a 256 px en su móvil, solo sale en esa carrera y la puede quitar cuando quiera.
+- **Tira de caras arriba de la página del directo**: la foto de cada corredor (o su inicial), su nombre y su tiempo; vale para 2, 3 o más. Al tocar uno, el mapa va a él. En el mapa, su marcador lleva su foto.
+
+## v1.61.1 · 2026-11-02
+- **Cabecera**: fuera el nombre del sitio de arriba a la izquierda (sobraba). Con un invitado dentro sigue saliendo su usuario.
+
+## v1.61.0 · 2026-11-02
+- **Directo con varios corredores**: tocas a un corredor de la lista y el mapa va a él (marcador resaltado y su nombre); vuelves a tocarlo y se quita. La lista dice qué hace cada uno (km y tiempo) y, al llegar, se ordena por tiempo.
+- **Inicio**: en una carrera terminada, cada corredor sale con su tiempo (antes solo el mejor).
+- El nombre del marcador se lee bien (texto oscuro sobre fondo blanco).
+
+## v1.60.1 · 2026-11-02
+- **Inicio**: si hay una carrera en directo de un invitado, sale arriba con el título «En directo ahora», antes que la próxima carrera o los accesos; la del dueño sigue en su tarjeta grande.
+
+## v1.60.0 · 2026-11-02
+- **Arriba del todo sale quien ha entrado**: donde ponía el nombre del sitio, un invitado ve su usuario (en Inicio, Carreras, Rutas, Mis carreras…). El dueño sigue viendo el nombre del sitio.
+- **Aviso al salir de una ruta**: si aún no tienes ninguna carrera en directo y sales sin haber llegado a «Correr en directo», te lo recuerda una vez y te lleva allí si quieres.
+
+## v1.59.1 · 2026-11-02
+- **Mis carreras**: la lista de tus rutas se llama «Tus carreras» (antes «Tus rutas»), como la página; su ayuda «?» y el texto de arriba también.
+
+## v1.59.0 · 2026-11-02
+- **Menú de saltos en cada ruta** (Mis carreras): en el móvil, una barra fija arriba con Datos · Avituallamientos · Subidas · Reloj · Publicar · Correr en directo; en el PC, una columna a la izquierda. Marca el paso que estás viendo y salta al pulsar, así «Correr en directo» ya no queda escondido al final.
+
+## v1.58.2 · 2026-11-02
+- **Mis carreras**: «Tus carreras en directo» sale siempre; si aún no hay ninguna, dice dónde se configura el móvil (paso 6 de una ruta) y que una carrera pasada no se repite.
+- **Página de una ruta**: atajos arriba para saltar a «llevarla al reloj», «publicarla» y «correrla en directo».
+
+## v1.58.1 · 2026-11-02
+- **Panel**: la última pestaña se llama «Invitados» (antes «Rutas», que se confundía con la sección Rutas de la web) y el texto de Archivar dice «Carreras», como la página.
+- **Mis carreras**: «Subir una ruta» sube justo debajo de «Tus rutas».
+- El aviso de prueba del iPhone dice dónde sale el botón.
+
+## v1.58.0 · 2026-11-02
+- **Bajar el GPX desde Inicio y Carreras**: cada carrera terminada tiene su botón «Bajar el GPX» (tarjeta grande de Inicio, filas de «Más carreras» y de «Rutas para tu reloj», y página Carreras).
+- **Las carreras terminadas no admiten a nadie**: si todos llegaron o se retiraron, ya no sale en «Carreras en las que te puedes apuntar», ni se puede entrar con el enlace.
+- **Menos líos**: «Últimas rutas» pasa a «Rutas para tu reloj»; quitado el botón «GPX de la carrera», que no decía de cuál era.
+
+## v1.57.0 · 2026-11-02
+- **Aviso de prueba en el iPhone**: botón «Enviar un aviso de prueba» junto a los avisos de subidas. Sirve para que «Sígueme CC» aparezca en la app de la pulsera y dejarlo pasar.
+- **«Retirarme»** de una carrera en directo (en Mis carreras y en la página del directo): dejas de salir en el mapa, tus puntos ya no cuentan y no recibes avisos; los demás siguen.
+- **Carreras en las que te puedes apuntar**: en Mis carreras salen las carreras en directo de otros que aún no han acabado, con un botón «Apuntarme» (sin pedir el enlace).
+
+## v1.56.0 · 2026-11-02
+- **Avisos de subidas en el iPhone**: con la web instalada en la pantalla de inicio, el servidor ve en qué km vas (Traccar) y manda subida, cima y último km como notificación solo a tu móvil; la pulsera la repite. Solo con cobertura.
+- **«¿Qué móvil llevas?»** al principio de la pestaña Móvil del panel: iPhone o Android y solo ves lo que te toca; se acuerda tu elección.
+- Textos de ayuda, guías de pulsera y de la app explican qué hace cada móvil.
+
+## v1.55.1 · 2026-11-02
+- **Un «?» en cada apartado** del panel y de Mis carreras: dos líneas de qué hace y qué poner (de dónde sacar el GPX, qué es el directo, cómo subir el resultado del reloj o de Strava, qué avisos van solo con Android…).
+
+## v1.55.0 · 2026-11-02
+- **«Mis rutas» ahora es «Mis carreras»** (cabecera, título, botones, guías y panel).
+- **La ruta pública ya no se recorta por defecto**: la distancia y el mapa son los reales («No ocultar»). El selector sigue para quien quiera ocultar su casa.
+- **Panel: «Empezar a seguir ahora» a la vista**, como botón principal de la pestaña Carrera (estaba dentro de un desplegable cerrado, «No uso la app»). El enlace de iGPSPORT queda en un desplegable aparte.
+- **La guía del panel ya no se abre sola** al entrar (tapaba la pantalla); sigue en «? Guía».
+
+## v1.54.2 · 2026-11-02
+- **Carreras en directo**: apuntarse dos veces a la misma con la misma cuenta ya no duplica al corredor.
+
+## v1.54.1 · 2026-11-02
+- **Mis rutas, ordenado para el directo**: la cabecera y los pasos 5 (publicar la ruta) y 6 (correrla en directo) dicen claro qué es cada cosa; el directo sale solo en la portada, sin publicar nada. La guía «? Ayuda» tiene un paso para el directo.
+
+## v1.54.0 · 2026-11-02
+- **Carreras en directo de varios corredores**: cualquiera con acceso (el dueño o un invitado) crea la carrera desde una de sus rutas (día y hora) en «Mis rutas» → «Correrla en directo»; los demás se apuntan con el enlace de invitación, sin cuenta.
+  - Cada corredor tiene su identificador: «Configurar mi móvil» abre la app Sígueme CC (Android) o Traccar (iPhone) ya configurados, de un toque y sin QR.
+  - Todo solo para cada uno: en marcha con su primer punto desde 1 h antes, el tiempo cuenta desde que empieza a correr (más rápido que 12 min/km) y la meta se da sola.
+  - /d/<id>: el mapa con todos, sus km y sus tiempos, cada 10 s. Sale en la portada («Carreras en directo»); el dueño puede quitarla desde el panel (Rutas).
+  - La app Android no cambia: baja el plan y manda la posición con su identificador de corredor.
+
 ## v1.53.7 · 2026-11-01
 - **Lo que falló el 1/11 al usarlo de verdad**:
   - Mis rutas (invitados): la guía «Paso 1 de 5» se abría sola al entrar y tapaba justo la lista de rutas; el invitado no veía la suya ni cómo editarla. Ya no se abre sola: está en «? Ayuda».

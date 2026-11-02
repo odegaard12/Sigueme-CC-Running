@@ -68,6 +68,11 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
   background: var(--acento); color: var(--tinta); font: 400 1.15rem/1 var(--display); text-transform: uppercase; text-decoration: none; cursor: pointer; transition: transform 0.1s, filter 0.15s; }
 .boton:hover, .boton-hero:hover { filter: brightness(1.07); }
 .boton:active, .boton-hero:active { transform: scale(0.98); }
+.hero-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+.boton-hero.claro { background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); }
+.item-gpx { margin: 0 0 8px; }
+.item-gpx .fila { margin-bottom: 2px; }
+.mini-gpx { display: block; text-align: right; padding: 8px 6px 10px; font: 700 0.9rem var(--cuerpo); color: var(--acento); text-decoration: none; }
 .boton.claro, .boton.sec { background: transparent; color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); }
 .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; }
 
@@ -108,6 +113,33 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .ficha-grande .hero-titulo a:hover { color: var(--acento); }
 .ficha-grande .acciones { margin-top: 4px; }
 .ficha-grande .hero-traza { display: block; }
+/* carreras en directo de varios corredores (/d/<id>) */
+.tarjeta-dir { margin: 16px 0 0; padding: 18px 20px; border-radius: var(--r2); background: var(--sup); }
+.tarjeta-dir .titulo { margin: 0 0 8px; }
+.campo-dir { display: block; margin: 12px 0 4px; color: var(--suave); font-size: 0.9rem; font-weight: 700; }
+.entrada-dir { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #2a322d; border-radius: var(--r1); background: var(--fondo); color: var(--texto); font-size: 1rem; }
+.msg-dir { min-height: 1.3em; margin: 8px 0 0; color: var(--aviso); }
+.nota-dir { margin: 8px 0 0; color: var(--suave); font-size: 0.9rem; }
+.listo-dir { margin: 12px 0 0; font-weight: 700; }
+.corredor-dir { min-width: 34px; height: 34px; padding: 0 6px; border: 3px solid var(--tinta); border-radius: 999px; background: var(--acento); color: var(--tinta);
+  font: 800 13px/28px var(--cuerpo); text-align: center; cursor: pointer; }
+.fila.simple[role="button"] { cursor: pointer; }
+.fila.simple.sel { box-shadow: inset 4px 0 0 var(--acento); }
+.tira { display: flex; gap: 14px; overflow-x: auto; max-width: 760px; margin: 0 auto; padding: 14px var(--m) 6px; scrollbar-width: none; }
+.tira::-webkit-scrollbar { display: none; }
+.tira .cara { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 78px; padding: 4px; background: none; border: 0; color: var(--texto); cursor: pointer; }
+.tira .av { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--acento); color: var(--tinta);
+  font: 800 1.35rem/1 var(--cuerpo); border: 3px solid var(--fondo); }
+.tira .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tira .cara.sel .av { box-shadow: 0 0 0 3px var(--acento); }
+.tira .cara b { max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
+.tira .cara small { color: var(--suave); font-size: .78rem; }
+.tira .cara.retirado { opacity: .5; }
+.corredor-dir.con-foto { background-size: cover; background-position: center; color: transparent; }
+.corredor-dir.elegido { transform: scale(1.25); box-shadow: 0 0 0 3px var(--texto); z-index: 5; }
+.maplibregl-popup-content { color: var(--tinta); font: 700 .95rem system-ui, sans-serif; padding: 8px 12px; }
+.corredor-dir.meta { background: var(--texto); }
+.fila.vivo-dir { box-shadow: inset 4px 0 0 var(--acento); }
 .mini-perfil { display: block; width: 100%; max-width: 420px; height: 34px; margin: 0 0 6px; color: var(--acento); opacity: 0.85; }
 .pill-hero { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-hero.vivo { background: var(--acento); color: var(--tinta); }
@@ -229,3 +261,30 @@ details.como p { max-width: 64ch; }
 .entra { opacity: 0; transform: translateY(12px); animation: entra 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i, 0) * 50ms); }
 @keyframes entra { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .entra { animation: none; opacity: 1; transform: none; } * { transition: none !important; } html { scroll-behavior: auto; } }
+
+/* ordenador: el menú de la web va a la izquierda de la barra de arriba y a la derecha queda el perfil (Entrar o el usuario) */
+@media (min-width: 900px) {
+  body.cartel { position: relative; }
+  body.cartel .pestanas-sitio { position: absolute; top: 4px; left: 0; width: 460px; max-width: none; margin: 0 var(--m); }
+  .barra { justify-content: flex-end; }
+}
+
+/* ficha de corredor / de corredores, arriba de la página del directo */
+.tarjeta-corr { max-width: 760px; margin: 14px auto 0; padding: 0 var(--m); }
+.tarjeta-corr h2 { margin: 0 0 8px; font: 400 1.3rem/1 var(--display); text-transform: uppercase; }
+.tarjeta-corr .tira { max-width: none; margin: 0; padding: 14px 16px; background: var(--sup); border-radius: var(--r2); }
+.tira.solo .cara { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: center; text-align: left; }
+.tira.solo .cara .av { grid-row: 1 / 3; }
+.tira.solo .cara b { max-width: none; font-size: 1.2rem; white-space: normal; }
+.tira.solo .cara small { font-size: .95rem; }
+
+/* el botón 3D / 2D del mapa del directo */
+.mapa .ver3d { position: absolute; top: 10px; left: 10px; z-index: 2; min-height: 40px; padding: 0 14px; border: 0; border-radius: var(--r1); background: var(--tinta);
+  color: var(--acento); box-shadow: inset 0 0 0 2px var(--acento); font: 700 0.9rem var(--cuerpo); cursor: pointer; }
+/* ordenador: el título de la carrera a la izquierda y, a su altura y a la derecha, la ficha de corredor(es) */
+@media (min-width: 900px) {
+  .cab-fila:has(#tarjeta-corr:not([hidden])) { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: stretch; margin: 18px var(--m) 0; }
+  .cab-fila:has(#tarjeta-corr:not([hidden])) .campo.cab { margin: 0; }
+  .cab-fila .tarjeta-corr { max-width: none; margin: 0; padding: 18px 20px; background: var(--sup); border-radius: var(--r2); }
+  .cab-fila .tarjeta-corr .tira { padding: 0; background: none; }
+}

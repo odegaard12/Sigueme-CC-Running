@@ -36,7 +36,7 @@ for f in ('ruta.html', 'mis-rutas.html'):
 garmin = re.search(r'<article class="marca-tarj" id="garmin">.*?</article>', guia, re.S)
 ok(garmin and all(x in garmin.group(0) for x in ('Cursos', 'Exportar original', 'LiveTrack')), 'Garmin: ruta, resultado FIT y aviso sobre LiveTrack')
 iphone = re.search(r'<article class="marca-tarj" id="iphone">.*?</article>', guia, re.S)
-ok(iphone and 'Traccar' in iphone.group(0) and 'no hay avisos' in iphone.group(0), 'iPhone: Traccar y la limitación de los avisos, dicha claramente')
+ok(iphone and 'Traccar' in iphone.group(0) and 'Sin cobertura' in iphone.group(0), 'iPhone: Traccar y la limitación de los avisos (con cobertura), dicha claramente')
 for f in ('cartel.css', 'cartel-panel.css'):
     ok('.chips-marcas a' in (RAIZ / f).read_text(encoding='utf-8'), f'{f}: estilo de los botones de marca')
 

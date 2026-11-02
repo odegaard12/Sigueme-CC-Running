@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0e1110">
-<title>Mis rutas</title>
+<title>Mis carreras</title>
 <link rel="icon" href="/favicon.png?v=4">
 <style>
   * { box-sizing: border-box; }
@@ -20,7 +20,7 @@
   body.mis .pestanas-sitio { width: calc(100% - 32px); max-width: 648px; }
   .tarjeta { padding: 18px; margin-top: 16px; }
   label { display: block; color: var(--muted); font-size: .9rem; margin: 12px 0 4px; }
-  input[type=text], input[type=password], input[type=number], input[type=file], select {
+  input[type=text], input[type=password], input[type=number], input[type=file], input[type=date], input[type=time], select {
     width: 100%; min-height: 48px; background: var(--panel-2); color: var(--papel); border: 1px solid var(--border);
     border-radius: 4px; padding: 10px 14px; font: inherit; }
   input:focus-visible, select:focus-visible, button:focus-visible, a.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -45,18 +45,40 @@
   details p { color: #dfe6d0; font-size: .95rem; }
   svg { width: 100%; height: auto; display: block; margin-top: 10px; background: var(--panel-2); border-radius: 4px; }
   [hidden] { display: none !important; }
+  /* «Tu móvil» (directo-movil.js) y las carreras en directo */
+  .boton { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; margin-top: 12px; border-radius: 4px;
+    background: var(--accent); color: var(--tinta); font: 400 1.35rem/1 var(--display); text-transform: uppercase; text-decoration: none; text-align: center; padding: 0 12px; }
+  .boton.claro { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .nota-dir { color: var(--muted); font-size: .9rem; margin: 8px 0 0; } .listo-dir { margin: 12px 0 0; font-weight: 700; }
+  .dir-item { padding: 14px 0; border-top: 1px solid var(--border); } .dir-item:first-of-type { border-top: 0; }
+  .dir-item b { display: block; font: 400 1.5rem/1.05 var(--display); text-transform: uppercase; overflow-wrap: anywhere; }
+  .dir-item .listo-cab { color: var(--accent); font: 400 1.2rem/1 var(--display); text-transform: uppercase; margin: 0 0 6px; }
+  /* menú de saltos de una ruta: chips fijos arriba en el móvil, columna a la izquierda en pantallas anchas */
+  html { scroll-behavior: smooth; }
+  #vista-ruta .tarjeta { scroll-margin-top: 76px; }
+  .menu-ruta { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; margin: 10px -16px 0; padding: 10px 16px; overflow-x: auto; background: var(--tinta);
+    border-bottom: 1px solid var(--border); scrollbar-width: none; }
+  .menu-ruta::-webkit-scrollbar { display: none; }
+  .menu-ruta a { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 20px; background: #232b26; color: var(--papel);
+    font: 700 .95rem/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-decoration: none; white-space: nowrap; }
+  .menu-ruta a.directo { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+  .menu-ruta a.activo { background: var(--accent); color: var(--tinta); box-shadow: none; }
+  @media (min-width: 1100px) {
+    .menu-ruta { position: fixed; top: 150px; left: calc(50% - 340px - 224px); width: 200px; margin: 0; padding: 0; flex-direction: column; overflow: visible; background: none; border: 0; }
+    .menu-ruta a { border-radius: 10px; min-height: 44px; }
+  }
   .entra { animation: entra .28s ease-out both; }
   @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .entra { animation: none; } .btn { transition: none; } }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css?v=8">
+<link rel="stylesheet" href="/cartel-panel.css?v=12">
 </head>
 <body class="mis">
 <div class="campo-cartel">
-  <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio">Sígueme CC</a><nav><a href="/admin.html" id="nav-admin" hidden>Admin</a></nav></header>
+  <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/admin.html" id="nav-admin" hidden>Admin</a></nav></header>
   <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
-  <div class="topbar"><h1>Mis rutas</h1><button type="button" class="btn-guia" id="btn-guia" hidden>? Ayuda</button></div>
-  <p class="sub-cab" id="cabecera">Sube un GPX, pon los avituallamientos y llévate la ruta al reloj.</p>
+  <div class="topbar"><h1>Mis carreras</h1><button type="button" class="btn-guia" id="btn-guia" hidden>? Ayuda</button></div>
+  <p class="sub-cab" id="cabecera">Tus carreras: sube un GPX, llévalo al reloj, publícalo o córrelo en directo.</p>
 </div>
 <main>
   <section class="tarjeta entra" id="vista-login">
@@ -74,10 +96,19 @@
   </section>
 
   <section id="vista-lista" hidden>
+    <div class="tarjeta entra" id="card-directos" hidden>
+      <h2>Tus carreras en directo</h2>
+      <div id="directos"></div>
+    </div>
+    <div class="tarjeta entra" id="card-abiertas" hidden>
+      <h2>Carreras en las que te puedes apuntar</h2>
+      <p class="sub">Carreras en directo de otros que aún no han terminado. Apúntate, configura tu móvil y saldrás en el mapa con los demás.</p>
+      <div id="abiertas"></div>
+    </div>
     <div class="tarjeta entra">
-      <h2>Tus rutas</h2>
+      <h2>Tus carreras</h2>
       <div id="lista"></div>
-      <p class="sub" id="lista-vacia" hidden>Aún no tienes ninguna. Sube tu primer GPX aquí abajo.</p>
+      <p class="sub" id="lista-vacia" hidden>Aún no tienes ninguna. Sube tu primer GPX aquí debajo.</p>
     </div>
     <div class="tarjeta entra">
       <h2>Subir una ruta</h2>
@@ -93,26 +124,29 @@
   </section>
 
   <section id="vista-ruta" hidden>
-    <button class="btn" type="button" id="volver">‹ Mis rutas</button>
-    <div class="tarjeta entra">
+    <button class="btn" type="button" id="volver">‹ Mis carreras</button>
+    <nav class="menu-ruta" id="r-menu" aria-label="Pasos de esta ruta">
+      <a href="#card-datos">Datos</a><a href="#card-avit">Avituallamientos</a><a href="#card-subidas">Subidas</a><a href="#card-reloj">Reloj</a><a href="#card-publicar">Publicar</a><a href="#card-directo" class="directo">Correr en directo</a>
+    </nav>
+    <div class="tarjeta entra" id="card-datos">
       <h2 id="r-titulo">Ruta</h2>
       <p class="sub" id="r-datos"></p>
       <svg id="r-perfil" viewBox="0 0 320 110" role="img" aria-label="Perfil de la ruta"></svg>
       <label for="r-nombre">Nombre</label>
       <input type="text" id="r-nombre" maxlength="60">
     </div>
-    <div class="tarjeta entra">
+    <div class="tarjeta entra" id="card-avit">
       <div class="paso"><span class="n">2</span><span><b>Avituallamientos</b> (opcional). Aparecerán en el reloj como puntos de control.</span></div>
       <div id="avits"></div>
       <button class="btn" type="button" id="mas-avit">+ Añadir avituallamiento</button>
       <button class="btn principal" type="button" id="guardar">Guardar</button>
       <div class="msg" id="msg-ruta" role="status"></div>
     </div>
-    <div class="tarjeta entra">
+    <div class="tarjeta entra" id="card-subidas">
       <div class="paso"><span class="n">3</span><span><b>Subidas</b> detectadas en tu ruta. Se llevan al reloj como puntos de control.</span></div>
       <ul class="subidas" id="subidas"></ul>
     </div>
-    <div class="tarjeta entra">
+    <div class="tarjeta entra" id="card-reloj">
       <div class="paso"><span class="n">4</span><span><b>Llévatela al reloj.</b> Descarga el fichero y súbelo con la app de tu reloj.</span></div>
       <a class="btn principal" id="bajar" href="#" download>Descargar GPX para el reloj</a>
       <details>
@@ -122,16 +156,16 @@
       </details>
     </div>
     <div class="tarjeta entra" id="card-publicar">
-      <div class="paso"><span class="n">5</span><span><b>Publicar en la web</b> (opcional). Así aparece en la portada y cualquiera puede verla y llevársela al reloj. Es privada hasta que tú lo decidas.</span></div>
+      <div class="paso"><span class="n">5</span><span><b>Publicar la ruta</b> (opcional). Su mapa y su GPX salen en «Rutas y relojes» para que cualquiera se la lleve al reloj. Para que te sigan mientras corres, usa el paso 6.</span></div>
       <div id="pub-no">
         <label for="pub-ocultar">Ocultar el principio y el final</label>
         <select id="pub-ocultar">
-          <option value="0">No ocultar</option>
-          <option value="300" selected>300 m (recomendado)</option>
+          <option value="0" selected>No ocultar: la ruta entera</option>
+          <option value="300">300 m</option>
           <option value="500">500 m</option>
           <option value="1000">1 km</option>
         </select>
-        <p class="sub" style="margin-top:6px">Si la ruta sale de tu casa, no dejes que se vea dónde empieza y dónde acaba.</p>
+        <p class="sub" style="margin-top:6px">Si tu ruta sale de tu casa, puedes ocultar dónde empieza y dónde acaba (la distancia pública será menor).</p>
         <label for="pub-autor">Firmar como (opcional)</label>
         <input type="text" id="pub-autor" maxlength="30" placeholder="Tu nombre o apodo">
         <button class="btn principal" type="button" id="publicar">Publicar esta ruta</button>
@@ -143,6 +177,17 @@
         <button class="btn peligro" type="button" id="despublicar">Dejar de publicar</button>
       </div>
       <div class="msg" id="msg-pub" role="status"></div>
+    </div>
+    <div class="tarjeta entra" id="card-directo">
+      <div class="paso"><span class="n">6</span><span><b>Correrla en directo</b> (opcional). Pon el día y la hora: tu móvil sale en un mapa en directo con tu tiempo, y la carrera <b>sale sola en la portada</b> de la web (no hace falta publicar nada). Puedes invitar a quien corra contigo.</span></div>
+      <label for="d-fecha">Día de la carrera</label>
+      <input type="date" id="d-fecha">
+      <label for="d-hora">Hora de salida</label>
+      <input type="time" id="d-hora" value="10:00">
+      <label for="d-nombre">Tu nombre en el directo</label>
+      <input type="text" id="d-nombre" maxlength="30" placeholder="Tu nombre o apodo">
+      <button class="btn principal" type="button" id="d-crear">Crear la carrera en directo</button>
+      <div class="msg" id="msg-directo" role="status"></div>
     </div>
     <button class="btn peligro" type="button" id="borrar">Borrar esta ruta</button>
   </section>
@@ -158,6 +203,11 @@
     <button type="button" class="guia-sig" id="guia-sig">Siguiente ›</button>
   </div>
 </div>
-<script src="/mis-rutas.js?v=2"></script>
+<script src="/avisos-movil.js?v=2"></script>
+<script src="/directo-movil.js?v=3"></script>
+<script src="/foto-corredor.js?v=1"></script>
+<script src="/mis-rutas.js?v=14"></script>
+<script src="/ayuda.js?v=4"></script>
+<script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>

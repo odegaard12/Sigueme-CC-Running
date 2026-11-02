@@ -102,7 +102,7 @@ try:
 
     st, d, _ = http('GET', '/api/invitado/yo', cookie=ana)
     st2, d2, _ = http('GET', '/api/invitado/yo')
-    ok(st == 200 and d == {'sesion': True, 'dueno': False} and st2 == 200 and d2 == {'sesion': False, 'dueno': False}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
+    ok(st == 200 and d == {'sesion': True, 'dueno': False, 'usuario': 'ana'} and st2 == 200 and d2 == {'sesion': False, 'dueno': False, 'usuario': ''}, '«¿hay sesión?»: sí con cookie, no sin ella (sin 403)')
 
     # ---- subir una ruta
     st, d, _ = http('GET', '/api/invitado/rutas', cookie=ana)
@@ -320,7 +320,7 @@ try:
     # el nombre del sitio sale del dominio
     r = urllib.request.urlopen(urllib.request.Request(U + '/inicio', headers={'Host': 'odegaard12.online'}))
     pg = r.read().decode('utf-8')
-    ok('<title>Sígueme CC · odegaard12</title>' in pg and 'class="marca" href="/inicio">odegaard12<' in pg, 'la portada lleva el dominio: «odegaard12»')
+    ok('<title>Sígueme CC · odegaard12</title>' in pg and 'class="marca" href="/inicio" aria-label="Inicio"></a>' in pg, 'la portada lleva el dominio en el título y ya no en la cabecera')
     r = urllib.request.urlopen(urllib.request.Request(U + '/rutas', headers={'Host': 'odegaard12.online'}))
     pg2 = r.read().decode('utf-8')
     ok('<title>Rutas y relojes · odegaard12</title>' in pg2, '  y /rutas, «Rutas y relojes · odegaard12»')

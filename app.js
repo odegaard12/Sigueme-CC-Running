@@ -87,7 +87,7 @@ function pintarCarrera() {
     bici.hidden = false;
   }
   const pie = document.getElementById('pie-carrera');
-  if (pie) pie.textContent = [c.nombre, c.lugar].filter(Boolean).join(' · ');
+  if (pie) pie.textContent = [c.nombre, c.lugar && !String(c.nombre || '').toLowerCase().includes(String(c.lugar).toLowerCase()) ? c.lugar : ''].filter(Boolean).join(' · ');
 }
 
 function precargado(nombre, respaldo) {

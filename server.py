@@ -1694,6 +1694,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             print(f"[gps] petición ilegible: {exc!r}", flush=True)
             self._send_json(400, {"error": "petición no válida"})
             return
+        if str(ident or "").startswith("dir-"):        # un corredor de una carrera en directo (v1.54): su carrera
+            try:
+                with gps_lock:
+                    hecho = herramienta("directos").recibir(ROOT, ident, puntos)
+            except Exception as exc:
+                print(f"[directo] error con {len(puntos)} puntos: {exc!r}", flush=True)
+                hecho = True                 # 200 igual: si no, el móvil reintenta ese lote para siempre
+            if not hecho:
+                with gps_fallos_lock:
+                    gps_fallos[ip] = (n + 1, t0)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            self._send_json(200, {"ok": True, "puntos": len(puntos)})
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(str(ident).encode(), clave.encode()):
             with gps_fallos_lock:
@@ -1738,6 +1752,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
             return self._publico_get(crudo)
+        if crudo == "/api/directo":
+            p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
+            return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
+        m_foto = re.fullmatch(r"/d/([0-9a-f]{10})/foto/([0-9a-f]{8})\.png", crudo)
+        if m_foto:
+            ruta_f = herramienta("directos").ruta_foto(ROOT, m_foto.group(1), m_foto.group(2))
+            if not ruta_f:
+                return self._send_json(404, {"error": "sin foto"})
+            with open(ruta_f, "rb") as f:
+                cuerpo = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(cuerpo)
+            return
+        m_dir = re.fullmatch(r"/d/([0-9a-f]{10})", crudo)
+        if m_dir:
+            c = herramienta("directos").carrera(ROOT, m_dir.group(1))
+            return self._pagina("directo.html", {"TITULO": c["nombre"] if c else "Carrera no disponible"}, 200 if c else 404)
         if crudo == "/inicio":
             return self._pagina("inicio.html")
         if crudo == "/pulseras":
@@ -1863,7 +1900,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             filas.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
                          f'<span class="pill-hero">{esc(" · ".join(x for x in (fecha, c.get("lugar", "")) if x))}</span>'
                          f'<h2 class="hero-titulo"><a href="{enlace}">{esc(c.get("nombre") or slug)}</a></h2>'
-                         f'<div class="hero-cifras">{cifras}</div><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a></div>'
+                         f'<div class="hero-cifras">{cifras}</div><div class="hero-botones"><a class="boton-hero" href="{enlace}">Ver el resultado ▶</a>'
+                         f'<a class="boton-hero claro" href="{enlace}ruta-carrera.gpx" download>Bajar el GPX</a></div></div>'
                          f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg(slug)}</a></article>')
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
@@ -1874,14 +1912,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=11">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=19">'
                 '</head><body class="cartel"><div class="campo">'
-                f'<header class="barra"><a class="marca" href="/inicio">{sitio}</a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
+                f'<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
                 f'<div class="bajo"><p>{bajo}</p></div></div>'
                 f'<main>{en_marcha}<section class="oscuro" aria-label="Todas las carreras">'
                 f'{"".join(filas) or "<p class=vacio>Todavía no hay carreras archivadas.</p>"}</section></main>'
-                f'<footer class="pie"><span>{sitio}</span></footer></body></html>').encode("utf-8")
+                f'<footer class="pie"></footer><script src="/marca-usuario.js?v=2" defer></script></body></html>').encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(html)))
@@ -2037,7 +2075,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         usuario = invitado_de(self.headers.get("Cookie"))
         if ruta == "/api/invitado/yo":
             # «¿ya hay sesión?» sin que el navegador pinte un error 403 en la consola
-            self._send_json(200, {"sesion": bool(usuario), "dueno": usuario == invitados_mod().DUENO})
+            self._send_json(200, {"sesion": bool(usuario), "dueno": usuario == invitados_mod().DUENO,
+                                  "usuario": usuario if usuario and usuario != invitados_mod().DUENO else ""})
             return
         if not usuario:
             self._send_json(403, {"error": "entra primero"})
@@ -2049,6 +2088,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 reg = inv.activo(ROOT, usuario)
                 self._send_json(200, {"usuario": usuario, "nombre": reg["nombre"], "caduca": reg["caduca"],
                                       "dueno": usuario == inv.DUENO, "rutas": inv.rutas(ROOT, usuario)})
+                return
+            if ruta == "/api/invitado/directos":
+                self._send_json(200, {"directos": herramienta("directos").mias(ROOT, usuario)})
+                return
+            if ruta == "/api/invitado/abiertas":
+                self._send_json(200, {"abiertas": herramienta("directos").abiertas(ROOT, usuario)})
                 return
             if ruta == "/api/invitado/ruta":
                 r = inv.ruta(ROOT, usuario, id_)
@@ -2112,6 +2157,75 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.mismo_origen() is not True:
             self._send_json(403, {"error": "origen no permitido"})
             return
+        if ruta == "/api/invitado/unirse":           # apuntarse con la invitación: sin cuenta (con sesión, sale en «Mis rutas»)
+            ip = "dir:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            if d is None:
+                self._send_json(400, {"error": "invalid json"})
+                return
+            try:
+                yo = herramienta("directos").unirse(ROOT, str(d.get("id") or ""), d.get("token"), d.get("nombre"),
+                                                    invitado_de(self.headers.get("Cookie")))
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not yo:
+                fallo_de(ip)
+                self._send_json(403, {"error": "esa invitación no vale (pídele el enlace otra vez a quien la creó)"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True, "ident": yo["ident"], "nombre": yo["nombre"]})
+            return
+        if ruta == "/api/invitado/foto":             # foto del corredor: PNG pequeño; lo identifica su identificador (cabecera X-Ident)
+            ip = "foto:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            ident = str(self.headers.get("X-Ident") or "")
+            dm = herramienta("directos")
+            if not ident.startswith("dir-") or not dm.buscar(ROOT, ident)[0]:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            try:
+                largo = int(self.headers.get("Content-Length", 0))
+            except ValueError:
+                largo = -1
+            if self.headers.get("X-Quitar") == "1":
+                if 0 < largo <= 1_000_000:
+                    self.rfile.read(largo)
+                dm.quitar_foto(ROOT, ident)
+                self._send_json(200, {"ok": True})
+                return
+            if not 0 < largo <= 300_000:
+                self._send_json(413, {"error": "la foto tiene que pesar menos de 300 KB"})
+                return
+            cuerpo = self.rfile.read(largo)
+            ancho, alto = int.from_bytes(cuerpo[16:20], "big"), int.from_bytes(cuerpo[20:24], "big")
+            if not (cuerpo.startswith(b"\x89PNG\r\n\x1a\n") and cuerpo[12:16] == b"IHDR" and 0 < ancho <= 512 and 0 < alto <= 512):
+                self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
+                return
+            dm.guardar_foto(ROOT, ident, cuerpo)
+            self._send_json(200, {"ok": True})
+            return
+        if ruta == "/api/invitado/retirarme":        # retirarse: basta el identificador del móvil (es secreto)
+            ip = "ret:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
+            if not ident.startswith("dir-") or not herramienta("directos").retirar(ROOT, ident):
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True})
+            return
         usuario = invitado_de(self.headers.get("Cookie"))
         if not usuario:
             self._send_json(403, {"error": "sesión caducada: entra otra vez"})
@@ -2135,6 +2249,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if ruta == "/api/invitado/borrar":
                 hecho = inv.borrar_ruta(ROOT, usuario, d.get("id"))
                 self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa ruta no existe"})
+                return
+            if ruta == "/api/invitado/apuntarme":
+                yo = herramienta("directos").unirse(ROOT, str(d.get("id") or ""), None, d.get("nombre"), usuario, abierto=True)
+                self._send_json(200 if yo else 404, {"ok": True, "ident": yo["ident"]} if yo else {"error": "esa carrera no existe"})
+                return
+            if ruta == "/api/invitado/directo":
+                dm = herramienta("directos")
+                if d.get("accion") == "borrar":
+                    hecho = dm.borrar(ROOT, str(d.get("id") or ""), usuario)
+                    self._send_json(200 if hecho else 404, {"ok": True} if hecho else {"error": "esa carrera no existe"})
+                    return
+                r = inv._leer_ruta(ROOT, usuario, str(d.get("ruta") or ""))
+                c, yo = dm.crear(ROOT, usuario, d.get("nombre"), r, d.get("fecha"), d.get("hora"), herramienta("plan_avisos").calcular)
+                self._send_json(200, {"ok": True, "id": c["id"], "invitacion": c["invitacion"], "ident": yo["ident"]})
                 return
         except ValueError as e:
             self._send_json(400, {"error": str(e)})
@@ -2184,7 +2312,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     and slug_de(c) not in {x["slug"] for x in lista} and not os.path.exists(os.path.join(ROOT, "resultado.json")):
                 proxima = {k: c.get(k) for k in ("nombre", "lugar", "fecha", "hora_salida", "modalidad", "distancia_km", "desnivel_m")}
                 proxima["traza"] = traza_puntos(None, fichero=os.path.join(ROOT, "route.geojson"))
-            self._send_json(200, {"carreras": lista, "proxima": proxima,
+            self._send_json(200, {"carreras": lista, "proxima": proxima, "directos": herramienta("directos").lista(ROOT),
                                   "en_marcha": bool(live.get("started_at") and not live.get("finished_at"))}, cache=cache)
             return
         id_ = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
@@ -2538,6 +2666,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             ident = str(cuerpo.get("device_id") or "")
         except (ValueError, AttributeError, RecursionError):
             cuerpo, ident = {}, ""
+        if ident.startswith("dir-"):                  # un corredor de una carrera en directo: su plan (la app no cambia)
+            dm = herramienta("directos")
+            c, _ = dm.buscar(ROOT, ident)
+            if not c:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            respuesta = dm.plan_app(c)
+            if cuerpo.get("accion") == "empezar":
+                respuesta["estado"], respuesta["mensaje"] = dm.empezar_desde_app(ROOT, ident)
+            self._send_json(200, respuesta)
+            return
         clave = clave_gps()
         if not clave or not ident or not compare_digest(ident.encode(), clave.encode()):
             fallo_de(ip)
@@ -2564,6 +2705,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             sub = json.loads(self.rfile.read(largo))
         except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             return self._send_json(400, {"error": "invalid json"})
+        if self.path in ("/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
+            return self._push_mio(sub)
         av = herramienta("avisos_web")
         # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
         with datos_lock:
@@ -2571,6 +2714,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 av.baja(ROOT, sub.get("endpoint") if isinstance(sub, dict) else None)
                 return self._send_json(200, {"ok": True})
             si = av.alta(ROOT, sub)
+        return self._send_json(200 if si else 400, {"ok": si})
+
+    def _push_mio(self, d):
+        """Alta o baja de los avisos de subidas de UN corredor (su identificador de GPS) en ESTE móvil (v1.56)."""
+        ip = "pushmio:" + self.ip_cliente()
+        if segundos_de_castigo(ip) > 5:
+            return self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+        d = d if isinstance(d, dict) else {}
+        ident = str(d.get("ident") or "")
+        clave = clave_gps()
+        es_dueno = bool(clave) and compare_digest(ident.encode(), clave.encode())
+        if not (es_dueno or (ident.startswith("dir-") and herramienta("directos").buscar(ROOT, ident)[0])):
+            fallo_de(ip)
+            return self._send_json(403, {"error": "identificador incorrecto"})
+        acierto_de(ip)
+        av, ar = herramienta("avisos_web"), herramienta("avisos_ruta")
+        if self.path.endswith("/prueba"):
+            r = ar.prueba(ROOT, av, ident)
+            msgs = {"sin_avisos": "este móvil no tiene los avisos activados", "espera": "espera unos segundos antes de otra prueba"}
+            return self._send_json(200 if r == "ok" else (429 if r == "espera" else 400), {"ok": r == "ok", "error": msgs.get(r)})
+        with datos_lock:
+            if self.path.endswith("/baja"):
+                ar.baja(ROOT, av, ident, d.get("endpoint"))
+                return self._send_json(200, {"ok": True})
+            si = ar.alta(ROOT, av, ident, d.get("sub"))
         return self._send_json(200 if si else 400, {"ok": si})
 
     def do_POST(self):
@@ -2591,7 +2759,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path in ("/api/push/alta", "/api/push/baja"):
+        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
@@ -2692,7 +2860,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         accion = data.get("action")
 
         if accion in ("invitados", "invitado_crear", "invitado_renovar", "invitado_codigo", "invitado_borrar",
-                      "rutas_todas", "ruta_moderar"):
+                      "rutas_todas", "ruta_moderar", "directo_borrar"):
             # los amigos que pueden preparar sus rutas para el reloj (el código solo se ve al crearlo)
             inv = invitados_mod()
             usuario = str(data.get("usuario") or "").strip().lower()
@@ -2708,11 +2876,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     inv.borrar(ROOT, usuario)
                 elif accion == "ruta_moderar":
                     inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
+                elif accion == "directo_borrar":
+                    herramienta("directos").borrar(ROOT, str(data.get("id") or ""))
                 inv.purgar(ROOT)
             except ValueError as e:
                 self._send_json(400, {"error": str(e)})
                 return
-            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT)))
+            self._send_json(200, dict(extra, ok=True, invitados=inv.listar(ROOT), rutas=inv.todas(ROOT), directos=herramienta("directos").todas(ROOT)))
             return
 
         if accion == "rotar_gps":
@@ -3001,6 +3171,12 @@ if __name__ == "__main__":
                     herramienta("avisos_web").revisar(ROOT, read_live(), leer_json("aid_stations.json") or [], carrera().get("nombre"))
             except Exception as exc:
                 print(f"[avisos] {exc}", flush=True)
+            try:        # subidas, cimas y último km en el iPhone del corredor (v1.56)
+                if tengo_la_vip():
+                    herramienta("avisos_ruta").revisar(ROOT, herramienta("avisos_web"), read_live(), leer_json("avisos.json") or {},
+                                                       leer_json("route.geojson") or {}, clave_gps(), herramienta("directos"))
+            except Exception as exc:
+                print(f"[avisos-ruta] {exc}", flush=True)
             time.sleep(15)
     threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
