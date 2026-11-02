@@ -35,6 +35,12 @@ a { color: var(--acento); }
 .pestanas-sitio a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 6px; border-radius: 10px;
   color: var(--suave); font-weight: 700; font-size: clamp(0.8rem, 3.4vw, 0.92rem); white-space: nowrap; text-decoration: none; }
 .pestanas-sitio a:hover { color: var(--texto); }
+/* «?» de cada apartado: dos líneas de ayuda que se abren y se cierran */
+.ayuda-q { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-left: 10px; padding: 0; border: 0; border-radius: 50%; background: #232b26;
+  color: #d9f24a; font: 800 16px/1 system-ui, sans-serif; vertical-align: middle; cursor: pointer; flex: none; }
+.ayuda-q[aria-expanded="true"] { background: #d9f24a; color: #0e1110; }
+.ayuda-txt { margin: 8px 0 12px; padding: 10px 12px; border-radius: 8px; background: rgba(217, 242, 74, 0.08); color: #dfe6d0; font-size: 0.92rem; line-height: 1.45; }
+.ayuda-txt[hidden] { display: none; }
 .campo-cartel .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 1240px; margin: 0 auto; padding: 6px var(--m) 14px;
   background: none; border: 0; color: var(--texto); }
 .campo-cartel .topbar h1 { margin: 0; font: 400 clamp(1.9rem, 6vw, 2.8rem)/1.02 var(--display); text-transform: uppercase; color: var(--texto); }

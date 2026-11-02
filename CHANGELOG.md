@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.55.1 · 2026-11-02
+- **Un «?» en cada apartado** del panel y de Mis carreras: dos líneas de qué hace y qué poner (de dónde sacar el GPX, qué es el directo, cómo subir el resultado del reloj o de Strava, qué avisos van solo con Android…).
+
 ## v1.55.0 · 2026-11-02
 - **«Mis rutas» ahora es «Mis carreras»** (cabecera, título, botones, guías y panel).
 - **La ruta pública ya no se recorta por defecto**: la distancia y el mapa son los reales («No ocultar»). El selector sigue para quien quiera ocultar su casa.
