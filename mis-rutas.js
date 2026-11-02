@@ -100,7 +100,7 @@ async function cargarDirectos(abierta) {
     const ver = el('a', 'btn principal', 'Ver el directo'); ver.href = '/d/' + c.id; item.append(ver);
     const movil = el('div');
     if (c.ident) {
-      const conf = el('button', 'btn', 'Configurar mi móvil'); conf.type = 'button';
+      const conf = el('button', 'btn', 'Cómo configurar mi móvil'); conf.type = 'button';
       conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) window.pintarMovil(movil, c.ident); });
       movil.hidden = c.id !== abierta; if (!movil.hidden) window.pintarMovil(movil, c.ident);
       const ret = el('button', 'btn', 'Retirarme de esta carrera'); ret.type = 'button';

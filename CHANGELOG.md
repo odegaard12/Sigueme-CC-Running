@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.63.0 · 2026-11-02
+- **Mis carreras** empieza por «Tus carreras en directo» (y «Carreras en las que te puedes apuntar»); después, tus carreras y subir una ruta.
+- **«Cómo configurar mi móvil»**: dentro se elige primero Android o iPhone y solo se enseña lo de ese móvil (en el móvil se elige solo según el tuyo; en el ordenador se elige a mano).
+- **Inicio**: la próxima carrera, también la de un invitado, sale arriba en la tarjeta grande («Próxima carrera»); la última carrera pasa a «Más carreras».
+
 ## v1.62.2 · 2026-11-02
 - **Tu usuario es tu perfil**: con la sesión iniciada, «Entrar» pasa a ser tu usuario y al pulsarlo vas a Mis carreras (igual en Inicio, Carreras, Rutas y Pulseras).
 - **Panel y Mis carreras** con la misma cabecera: sin el nombre del sitio y, en el ordenador, el menú a la izquierda.

@@ -61,6 +61,9 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   const lista = ((datos && datos.carreras) || []).slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
   const rutas = (pub && pub.rutas) || [];
   const pill = $('hero-pill'), titulo = $('hero-titulo'), linea = $('hero-linea'), boton = $('hero-boton');
+  const dirsTodas = (datos && datos.directos) || [];
+  const siguienteDir = dirsTodas.filter(c => c.estado === 'proxima').sort((a, b) => a.salida_ts - b.salida_ts)[0];
+  let heroDir = null;
   let estado = '', nombre = 'Sígueme CC', partes = [], cifras = [], puntos = null, texto = '', href = '/', ultima = null, gpx = '';
   if (datos && datos.en_marcha) {
     const c = (await json('/carrera.json')) || {};
@@ -76,6 +79,14 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
     cifras = [[p.distancia_km ? km(p.distancia_km) : '', 'KM'], [p.desnivel_m ? miles(p.desnivel_m) : '', 'D+'], [p.hora_salida || '', 'SALIDA']];
     puntos = p.traza;
     texto = 'Ver la carrera ▶'; href = '/index.html?previa'; gpx = '/ruta-carrera.gpx';      // «/» es esta portada hasta el día de la carrera
+  } else if (siguienteDir) {                    // la próxima carrera de un invitado, si la del dueño no tiene otra a la vista
+    heroDir = siguienteDir;
+    estado = 'Próxima carrera'; nombre = siguienteDir.nombre;
+    partes = [fecha(siguienteDir.fecha), 'salida ' + siguienteDir.hora_salida];
+    cifras = [[siguienteDir.distancia_km ? km(siguienteDir.distancia_km) : '', 'KM'], [siguienteDir.desnivel_m ? miles(siguienteDir.desnivel_m) : '', 'D+'],
+      [String(siguienteDir.corredores.length), siguienteDir.corredores.length === 1 ? 'CORREDOR' : 'CORREDORES']];
+    puntos = siguienteDir.traza;
+    texto = 'Ver la carrera ▶'; href = '/d/' + siguienteDir.id;
   } else if (lista.length) {
     ultima = lista[0];
     estado = 'Última carrera'; nombre = ultima.nombre || ultima.slug;
@@ -109,7 +120,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
   }
   // carreras en directo de varios corredores (v1.54): en directo, próximas y terminadas
   const ESTADO = { en_directo: 'En directo', proxima: 'Próxima', terminada: 'Terminada' };
-  const dirs = (datos && datos.directos) || [];
+  const dirs = dirsTodas.filter(c => c !== heroDir);
   if (dirs.length) {
     $('directos-sec').hidden = false;
     dirs.slice(0, 6).forEach((c, i) => {
