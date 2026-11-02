@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.60.1 · 2026-11-02
+- **Inicio**: si hay una carrera en directo de un invitado, sale arriba con el título «En directo ahora», antes que la próxima carrera o los accesos; la del dueño sigue en su tarjeta grande.
+
 ## v1.60.0 · 2026-11-02
 - **Arriba del todo sale quien ha entrado**: donde ponía el nombre del sitio, un invitado ve su usuario (en Inicio, Carreras, Rutas, Mis carreras…). El dueño sigue viendo el nombre del sitio.
 - **Aviso al salir de una ruta**: si aún no tienes ninguna carrera en directo y sales sin haber llegado a «Correr en directo», te lo recuerda una vez y te lleva allí si quieres.

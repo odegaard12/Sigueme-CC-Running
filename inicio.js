@@ -119,6 +119,12 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
       if (c.estado === 'en_directo') f.classList.add('vivo-dir');
       $('directos').append(f);
     });
+    // con una carrera en directo, esa sección sube justo debajo del título para que se vea lo primero
+    if (dirs.some(c => c.estado === 'en_directo')) {
+      const sec = $('directos-sec'), t = sec.querySelector('.sec-tit');
+      if (t) t.textContent = 'En directo ahora';
+      const grid = document.querySelector('.portada-grid'); if (grid) grid.parentNode.insertBefore(sec, grid);
+    }
   }
   if (rutas.length) {
     $('rutas-sec').hidden = false;
