@@ -134,6 +134,10 @@ def unirse(raiz, id_, token, nombre, usuario=None, ahora=None):
             raise ValueError("esta carrera ya está llena")
         if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
             raise ValueError("esta carrera ya terminó")
+        if usuario:                                   # con cuenta: apuntarse dos veces no duplica, devuelve el que ya tiene
+            ya = next((x for x in c["corredores"] if x.get("usuario") == usuario), None)
+            if ya:
+                return ya
         yo = _nuevo_corredor(nombre, usuario)
         c["corredores"].append(yo)
         _escribir(_f(raiz, id_), c)

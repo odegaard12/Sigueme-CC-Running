@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.54.2 · 2026-11-02
+- **Carreras en directo**: apuntarse dos veces a la misma con la misma cuenta ya no duplica al corredor.
+
 ## v1.54.1 · 2026-11-02
 - **Mis rutas, ordenado para el directo**: la cabecera y los pasos 5 (publicar la ruta) y 6 (correrla en directo) dicen claro qué es cada cosa; el directo sale solo en la portada, sin publicar nada. La guía «? Ayuda» tiene un paso para el directo.
 
