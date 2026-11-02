@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.58.1 · 2026-11-02
+- **Panel**: la última pestaña se llama «Invitados» (antes «Rutas», que se confundía con la sección Rutas de la web) y el texto de Archivar dice «Carreras», como la página.
+- **Mis carreras**: «Subir una ruta» sube justo debajo de «Tus rutas».
+- El aviso de prueba del iPhone dice dónde sale el botón.
+
 ## v1.58.0 · 2026-11-02
 - **Bajar el GPX desde Inicio y Carreras**: cada carrera terminada tiene su botón «Bajar el GPX» (tarjeta grande de Inicio, filas de «Más carreras» y de «Rutas para tu reloj», y página Carreras).
 - **Las carreras terminadas no admiten a nadie**: si todos llegaron o se retiraron, ya no sale en «Carreras en las que te puedes apuntar», ni se puede entrar con el enlace.
