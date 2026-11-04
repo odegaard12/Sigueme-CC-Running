@@ -288,3 +288,6 @@ details.como p { max-width: 64ch; }
   .cab-fila .tarjeta-corr { max-width: none; margin: 0; padding: 18px 20px; background: var(--sup); border-radius: var(--r2); }
   .cab-fila .tarjeta-corr .tira { padding: 0; background: none; }
 }
+
+/* el aviso de un corredor sin señal o con poca batería */
+small.alerta, .tira .cara small.alerta { color: var(--aviso); }
