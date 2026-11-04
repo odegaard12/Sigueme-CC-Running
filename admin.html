@@ -341,7 +341,7 @@
     </ol>
     <input type="hidden" id="hora-salida">
     <p class="estado-fila" style="margin:10px 0 4px"><span>Salida oficial: <b id="hora-txt">—</b>
-      · el crono cuenta desde ahí (cambiar: Preparar → Datos)</span></p>
+      · el directo cuenta el tiempo desde esa hora; el resultado final, desde que empiezas a correr (cambiar: Preparar → Datos)</span></p>
     <button class="save-btn" id="save" type="button">Empezar a seguir ahora</button>
     <p class="howto" style="margin:6px 0 10px">Con la app o con Traccar no hace falta: la carrera se pone en marcha sola con el primer punto, desde 1 h antes de la salida. Úsalo si quieres empezar a mano.</p>
     <details class="sin-app">
@@ -499,7 +499,7 @@
 
   <div class="tarjeta" id="sec-avisos" data-tab="preparar">
     <h2>Perfil y avisos</h2>
-    <div class="howto"><b>Normalmente no hay que tocar nada:</b> los avisos se crean solos al subir la ruta. La app los lanza <b>sin cobertura</b> y Zepp o Mi Fitness los pasan a la pulsera.</div>
+    <div class="howto"><b>Normalmente no hay que tocar nada:</b> los avisos se crean solos al subir la ruta. La app de Android los lanza <b>sin cobertura</b> y Zepp o Mi Fitness los pasan a la pulsera. En iPhone llegan como notificación de la web (con cobertura).</div>
     <svg id="perfil-avisos" class="perfil-avisos" viewBox="0 0 860 190" role="img" aria-label="Perfil de la ruta con los avisos" hidden></svg>
     <div class="ley-avisos" id="ley-avisos" hidden><span style="--c:#ff9a5c">subida</span><span style="--c:#ffd27a">mitad</span><span style="--c:#5cc2e8">cima</span><span style="--c:#8fe06a">avituallamiento</span><span style="--c:#9aa596">resumen</span><span style="--c:#d9f24a">tu aviso</span></div>
     <div class="row2" style="margin-top:10px">
@@ -602,7 +602,7 @@
 
   <div class="tarjeta" id="sec-invitados" data-tab="rutas">
     <h2>Invitados</h2>
-    <div class="howto">Para que un amigo prepare <b>sus</b> rutas sin ver tu carrera ni tu panel. Le das un usuario y un código que caduca; entra en <b id="inv-url"></b>.</div>
+    <div class="howto">Para que un amigo prepare <b>sus</b> rutas y carreras, y corra contigo en directo, sin ver tu carrera ni tu panel. Le das un usuario y un código que caduca; entra en <b id="inv-url"></b>.</div>
     <div id="inv-lista"></div>
     <div class="row2" style="margin-top:12px">
       <div class="field"><label for="inv-usuario">Usuario nuevo</label>
@@ -757,7 +757,7 @@ function pintarResumen() {
   // que empezaba. Ese día empieza de verdad (con la misma confirmación que «Empezar a seguir»).
   const hoyEs = new Date().toLocaleDateString('sv') === p.fecha;
   const empiezaYa = heroEstado !== 'fin' && heroEstado !== 'vivo' && hoyEs;
-  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : empiezaYa ? 'Empezar a seguir ▶' : 'Ir a empezar ▶';
+  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : empiezaYa ? 'Empezar a seguir ▶' : 'El día de la carrera ›';
   // en la pestaña Carrera, baja hasta el botón de empezar (o al estado, ya en marcha)
   ir.onclick = () => { verPestana(destino); if (empiezaYa) { $('save').click(); return; }
     const t = destino === 'hoy' ? $(heroEstado === 'vivo' ? 't-estado' : 't-empezar') : null;
@@ -1505,6 +1505,6 @@ $('save-manual').addEventListener('click', () => {
   let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
 })();
 </script>
-<script src="/ayuda.js?v=6"></script>
+<script src="/ayuda.js?v=7"></script>
 </body>
 </html>

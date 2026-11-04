@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.66.2 · 2026-11-04
+- **Panel**: el botón grande de arriba dice «El día de la carrera ›» los días sin carrera (antes «Ir a empezar ▶», que solo cambiaba de pestaña).
+- El crono se explica igual en el panel y en la ayuda: el directo cuenta desde la hora de salida; el resultado final, desde que empiezas a correr.
+- «Perfil y avisos» cuenta también el iPhone, e «Invitados» que el amigo puede correr contigo en directo.
+
 ## v1.66.1 · 2026-11-04
 - **Guías paso a paso al día**: la del panel ya llama «Invitados» a la pestaña 5, explica el móvil según iPhone o Android y que la carrera arranca sola; la de Mis carreras enseña el menú de saltos y un paso nuevo, «Correr con otros» (invitar, apuntarse, retirarse y volver).
 - **Ayudas «?»**: «Perfil y avisos», «Tus carreras en directo» y «Carreras en las que te puedes apuntar» con los nombres de botones de ahora.

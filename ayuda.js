@@ -10,7 +10,7 @@
     '¿Qué móvil llevas?': 'Elige iPhone o Android y solo verás lo tuyo. iPhone: Traccar sigue tu posición y los avisos de subidas llegan como notificación de la web instalada. Android: lo hace todo la app Sígueme CC.',
     'Avisos de subidas en tu iPhone': 'En iPhone no hay app. La web instalada en la pantalla de inicio te manda una notificación en cada subida, cima y último km, y tu pulsera la repite. Solo llega con cobertura.',
     'Preparar la carrera': 'Los pasos para dejarla lista: datos, ruta, avituallamientos y avisos. Lo que falta sale marcado.',
-    'Datos de la carrera': 'Nombre, día y hora de salida (el tiempo cuenta desde que empiezas a correr, no desde esa hora), límite de tiempo y la distancia oficial si la sabes. La dirección de archivo es «año-nombre».',
+    'Datos de la carrera': 'Nombre, día y hora de salida (el directo cuenta desde esa hora; el resultado final, desde que empiezas a correr), límite de tiempo y la distancia oficial si la sabes. La dirección de archivo es «año-nombre».',
     'Ruta (GPX)': 'El fichero de la ruta (de Strava, Komoot, Wikiloc o de la organización). De él salen el perfil, las subidas y los avisos. Ojo: la distancia de la ruta no es la que corres; el resultado usa la medida de tu reloj.',
     'Avituallamientos': 'Nombre y kilómetro de cada uno. Salen en el mapa. Si la organización no dice dónde están, déjalo vacío.',
     'Perfil y avisos': 'Los avisos de subidas, cimas y último km que llegan a la pulsera. «Avisa antes» es cuántos metros antes. En Android los lanza la app (también sin cobertura); en iPhone, la web instalada (con cobertura).',
