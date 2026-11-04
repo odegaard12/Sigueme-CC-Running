@@ -117,7 +117,13 @@ def crear(raiz, usuario, nombre_corredor, ruta, fecha, hora, calcular, limite_h=
          "distancia_km": ruta.get("distancia_km"), "desnivel_m": ruta.get("desnivel_m"), "subidas": ruta.get("subidas") or [],
          "plan": plan, "corredores": [yo]}
     with _lock:
-        if len(_ids(raiz)) >= MAX_DIRECTOS:
+        # el tope cuenta las de los últimos 60 días y las próximas (las viejas no bloquean crear otra)
+        recientes = 0
+        for i in _ids(raiz):
+            ci = carrera(raiz, i)
+            if ci and time.time() - salida(ci).timestamp() < 60 * 86400:
+                recientes += 1
+        if recientes >= MAX_DIRECTOS:
             raise ValueError("hay demasiadas carreras en directo: borra alguna antigua")
         _escribir(_f(raiz, c["id"]), c)
         _indice[yo["ident"]] = (c["id"], yo["cid"])
@@ -328,8 +334,24 @@ def retirar(raiz, ident):
         return False
     with _lock:
         st = estado(raiz, c["id"], co["cid"])
+        if st.get("llegada"):
+            raise ValueError("ya has llegado a meta: tu tiempo se queda")
         if not st.get("retirado"):
             st["retirado"] = time.time()
+            _escribir(_f(raiz, c["id"], co["cid"]), st)
+    return True
+
+
+def volver(raiz, ident, ahora=None):
+    """Deshace «Retirarme» mientras la carrera no haya terminado. False si el identificador no vale."""
+    c, co = buscar(raiz, ident)
+    if not c:
+        return False
+    if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
+        raise ValueError("esta carrera ya terminó")
+    with _lock:
+        st = estado(raiz, c["id"], co["cid"])
+        if st.pop("retirado", None) is not None:
             _escribir(_f(raiz, c["id"], co["cid"]), st)
     return True
 
@@ -436,7 +458,8 @@ def mias(raiz, usuario):
             continue
         out.append({"id": id_, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"],
                     "creador": c.get("creador") == usuario, "invitacion": c["invitacion"] if c.get("creador") == usuario else None,
-                    "ident": yo["ident"] if yo else None, "corredores": [x["nombre"] for x in c["corredores"]]})
+                    "ident": yo["ident"] if yo else None, "corredores": [x["nombre"] for x in c["corredores"]],
+                    "retirado": bool(yo and estado(raiz, id_, yo["cid"]).get("retirado"))})
     out.sort(key=lambda x: x["fecha"], reverse=True)
     return out
 

@@ -104,12 +104,15 @@ async function cargarDirectos(abierta) {
       const conf = el('button', 'btn', 'Cómo configurar mi móvil'); conf.type = 'button';
       conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) window.pintarMovil(movil, c.ident); });
       movil.hidden = c.id !== abierta; if (!movil.hidden) window.pintarMovil(movil, c.ident);
-      const ret = el('button', 'btn', 'Retirarme de esta carrera'); ret.type = 'button';
+      const ret = el('button', 'btn', c.retirado ? 'Volver a la carrera' : 'Retirarme de esta carrera'); ret.type = 'button';
       const rmsg = el('div', 'msg');
+      if (c.retirado) { rmsg.textContent = 'Te retiraste de esta carrera. Si fue sin querer, vuelve a ella.'; rmsg.className = 'msg'; }
       ret.addEventListener('click', async () => {
-        if (!confirm('¿Retirarte de «' + c.nombre + '»? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
-        try { await post('/retirarme', { ident: c.ident }); rmsg.textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; rmsg.className = 'msg ok'; ret.hidden = true; }
-        catch (err) { rmsg.textContent = err.message; rmsg.className = 'msg err'; }
+        if (!c.retirado && !confirm('¿Retirarte de «' + c.nombre + '»? Dejarás de salir en el mapa y tu móvil ya no contará. Podrás volver mientras la carrera no termine.')) return;
+        try {
+          await post(c.retirado ? '/volver' : '/retirarme', { ident: c.ident });
+          await cargarDirectos();
+        } catch (err) { rmsg.textContent = err.message; rmsg.className = 'msg err'; }
       });
       const fo = el('div'); if (window.fotoCorredor) window.fotoCorredor(fo, c.ident, null);
       item.append(conf, movil, fo, ret, rmsg);

@@ -1741,7 +1741,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         crudo = self.path.split("?")[0]
         if crudo == "/api/push/clave":
             c = herramienta("avisos_web").clave_publica()
-            return self._send_json(200 if c else 404, {"clave": c} if c else {"error": "avisos apagados"})
+            return self._send_json(200, {"clave": c or None})      # sin avisos montados: clave null (sin 404 en la consola)
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
         if crudo == "/rutas.html":
@@ -2219,7 +2219,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             d = self._inv_json(2048)
             ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
-            if not ident.startswith("dir-") or not herramienta("directos").retirar(ROOT, ident):
+            try:
+                hecho = ident.startswith("dir-") and herramienta("directos").retirar(ROOT, ident)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not hecho:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True})
+            return
+        if ruta == "/api/invitado/volver":           # deshacer «Retirarme»: basta el identificador del móvil
+            ip = "ret:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
+            try:
+                hecho = ident.startswith("dir-") and herramienta("directos").volver(ROOT, ident)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not hecho:
                 fallo_de(ip)
                 self._send_json(403, {"error": "identificador incorrecto"})
                 return

@@ -176,6 +176,21 @@ ok(st == 400, 'aviso de prueba sin avisos activados: avisa')
 st, _, _ = http('POST', '/api/push/mio/prueba', {'ident': 'dir-inventado-123456789012'})
 ok(st == 403, 'aviso de prueba con identificador inventado, no')
 
+# ---- v1.65: volver a la carrera y no retirarse tras la meta
+st, d, _ = http('POST', '/api/invitado/volver', {'ident': ID_LUIS})
+ok(st == 200, 'Luis vuelve a la carrera (deshace «Retirarme»)')
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+ok(next(g for g in p['corredores'] if g['nombre'] == 'Luis')['situacion'] != 'retirado', 'ya no sale como retirado')
+st, m, _ = http('GET', '/api/invitado/directos', cookie=galleta_luis)
+ok(st == 200 and m['directos'][0]['retirado'] is False, 'en sus carreras ya no consta como retirado')
+st, d, _ = http('POST', '/api/invitado/volver', {'ident': 'dir-inventado-123456789012'})
+ok(st == 403, 'volver con un identificador inventado, no')
+st, d, _ = http('POST', '/api/invitado/retirarme', {'ident': ID_ANA})
+ok(st == 400 and 'meta' in d.get('error', ''), 'quien ya llegó a meta no se puede retirar (su tiempo se queda)')
+http('POST', '/api/invitado/retirarme', {'ident': ID_LUIS})
+st, m, _ = http('GET', '/api/invitado/directos', cookie=galleta_luis)
+ok(m['directos'][0]['retirado'] is True, 'retirado otra vez: en sus carreras consta como retirado')
+
 # ---- v1.62: foto de cada corredor
 import struct, zlib
 def png_de(w, h):

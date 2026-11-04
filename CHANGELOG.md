@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.65.0 · 2026-11-04
+- **«Volver a la carrera»**: quien pulsa «Retirarme» sin querer puede deshacerlo mientras la carrera no termine (en Mis carreras y en la página del directo).
+- **Quien ya llegó a meta no se puede retirar**: antes «Retirarme» le borraba el resultado.
+- **Tope de carreras en directo**: solo cuentan las de los últimos 60 días y las próximas; las viejas ya no impiden crear otra.
+- Sin avisos montados en el servidor, la clave de avisos responde sin error (la consola del navegador queda limpia).
+
 ## v1.64.2 · 2026-11-02
 - **Directo**: el ritmo medio (min/km) de cada corredor, en su ficha y en la lista, desde que lleva 300 m.
 

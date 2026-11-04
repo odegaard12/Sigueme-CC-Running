@@ -131,14 +131,20 @@ async function cargar() {
 function enseñarMovil(ident) {
   $('sec-movil').hidden = false; window.pintarMovil($('movil'), ident);
   if (window.fotoCorredor) window.fotoCorredor($('foto-mia'), ident, () => cargar());
+  let retirado = false;
   $('retirarme').onclick = async () => {
-    if (!confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
+    if (!retirado && !confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará. Podrás volver mientras la carrera no termine.')) return;
     $('retirarme').disabled = true;
     try {
-      const r = await fetch('/api/invitado/retirarme', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ident }) });
-      if (!r.ok) throw new Error('No se pudo retirar. Prueba otra vez.');
-      $('r-msg').textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; cargar();
-    } catch (e) { $('r-msg').textContent = e.message; $('retirarme').disabled = false; }
+      const r = await fetch(retirado ? '/api/invitado/volver' : '/api/invitado/retirarme', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ident }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'No se pudo. Prueba otra vez.');
+      retirado = !retirado;
+      $('retirarme').textContent = retirado ? 'Volver a la carrera' : 'Retirarme de la carrera';
+      $('r-msg').textContent = retirado ? 'Te has retirado. Si fue sin querer, pulsa «Volver a la carrera».' : 'Vuelves a estar en la carrera.';
+      cargar();
+    } catch (e) { $('r-msg').textContent = e.message; }
+    $('retirarme').disabled = false;
   };
 }
 
