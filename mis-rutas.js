@@ -99,11 +99,28 @@ async function cargarDirectos(abierta) {
     if (c.id === abierta) item.append(el('p', 'listo-cab', '✓ Tu carrera está lista'));
     item.append(el('b', '', c.nombre), el('span', 'sub', fecha(c.fecha) + ' · salida ' + c.hora_salida + ' · ' + c.corredores.join(', ')));
     const ver = el('a', 'btn principal', 'Ver el directo'); ver.href = '/d/' + c.id; item.append(ver);
-    const movil = el('div');
+    // orden: ver, invitar (lo que hace falta para correr juntos), mi móvil y mi foto, y abajo retirarse o borrar
+    const movil = el('div'), msg = el('div', 'msg');
+    if (c.invitacion) {
+      const inv = el('button', 'btn', 'Invitar a quien corra contigo'); inv.type = 'button';
+      inv.addEventListener('click', async () => {
+        const url = location.origin + '/d/' + c.id + '#unirse=' + c.invitacion;
+        try { if (navigator.share) await navigator.share({ title: c.nombre + ' · apúntate', url }); else { await navigator.clipboard.writeText(url); msg.textContent = 'Invitación copiada: mándala por WhatsApp.'; msg.className = 'msg ok'; } }
+        catch (e) { msg.textContent = url; }
+      });
+      item.append(inv, el('p', 'sub', 'Le llega un enlace para apuntarse y salir en el mapa contigo. Para que solo te sigan, manda el enlace de «Ver el directo».'), msg);
+    }
     if (c.ident) {
-      const conf = el('button', 'btn', 'Cómo configurar mi móvil'); conf.type = 'button';
-      conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) window.pintarMovil(movil, c.ident); });
-      movil.hidden = c.id !== abierta; if (!movil.hidden) window.pintarMovil(movil, c.ident);
+      const conf = el('button', 'btn', 'Mi móvil y mi foto'); conf.type = 'button';
+      const abrir = () => {
+        window.pintarMovil(movil, c.ident);
+        const fo = el('div'); if (window.fotoCorredor) window.fotoCorredor(fo, c.ident, null);
+        fo.querySelectorAll('.boton').forEach(b => { b.className = 'btn'; });      // los mismos botones que el resto de la página
+        movil.append(fo);
+      };
+      conf.addEventListener('click', () => { movil.hidden = !movil.hidden; if (!movil.hidden) abrir(); });
+      movil.hidden = c.id !== abierta; if (!movil.hidden) abrir();
+      item.append(conf, movil);
       const ret = el('button', 'btn', c.retirado ? 'Volver a la carrera' : 'Retirarme de esta carrera'); ret.type = 'button';
       const rmsg = el('div', 'msg');
       if (c.retirado) { rmsg.textContent = 'Te retiraste de esta carrera. Si fue sin querer, vuelve a ella.'; rmsg.className = 'msg'; }
@@ -114,23 +131,15 @@ async function cargarDirectos(abierta) {
           await cargarDirectos();
         } catch (err) { rmsg.textContent = err.message; rmsg.className = 'msg err'; }
       });
-      const fo = el('div'); if (window.fotoCorredor) window.fotoCorredor(fo, c.ident, null);
-      item.append(conf, movil, fo, ret, rmsg);
+      item.append(ret, rmsg);
     }
     if (c.invitacion) {
-      const inv = el('button', 'btn', 'Invitar a quien corra contigo'); inv.type = 'button';
-      const msg = el('div', 'msg');
-      inv.addEventListener('click', async () => {
-        const url = location.origin + '/d/' + c.id + '#unirse=' + c.invitacion;
-        try { if (navigator.share) await navigator.share({ title: c.nombre + ' · apúntate', url }); else { await navigator.clipboard.writeText(url); msg.textContent = 'Invitación copiada: mándala por WhatsApp.'; msg.className = 'msg ok'; } }
-        catch (e) { msg.textContent = url; }
-      });
       const borrar = el('button', 'btn peligro', 'Borrar esta carrera'); borrar.type = 'button';
       borrar.addEventListener('click', async () => {
         if (!confirm('¿Borrar «' + c.nombre + '» del ' + fecha(c.fecha) + '? Se borra para todos los apuntados.')) return;
         try { await post('/directo', { accion: 'borrar', id: c.id }); await cargarDirectos(); } catch (err) { msg.textContent = err.message; msg.className = 'msg err'; }
       });
-      item.append(inv, msg, borrar);
+      item.append(borrar);
     }
     cont.append(item);
   }
@@ -322,7 +331,7 @@ const GUIA = [
   { t: 'Sube tu GPX', sel: () => $('gpx').closest('.tarjeta'), x: 'El fichero sale de Strava, Komoot, Wikiloc o de la web de la carrera. Ponle un nombre y pulsa «Subir ruta».' },
   { t: 'Ponle avituallamientos', x: 'Al abrir una ruta puedes añadir cada avituallamiento con su nombre y su kilómetro. Se llevan al reloj como puntos de control.' },
   { t: 'Llévatela al reloj', x: 'Descarga el GPX con el botón «Descargar GPX para el reloj» y súbelo con la app de tu reloj. Debajo tienes un botón por marca (Xiaomi, Huawei, Amazfit, Garmin, Coros…) que te explica cómo.' },
-  { t: 'Córrela en directo', x: 'Al abrir una ruta, el paso 6: pon el día y la hora y pulsa «Crear la carrera en directo». Luego «Configurar mi móvil» deja la app Sígueme CC (Android) o Traccar (iPhone) listos de un toque, e «Invitar» manda el enlace a quien corra contigo. Sale sola en la portada; el día de la carrera solo hay que tener el móvil encendido. En iPhone, activa también «los avisos de subidas» en ese mismo apartado.' },
+  { t: 'Córrela en directo', x: 'Al abrir una ruta, el paso 6: pon el día y la hora y pulsa «Crear la carrera en directo». Luego «Mi móvil y mi foto» deja la app Sígueme CC (Android) o Traccar (iPhone) listos de un toque, e «Invitar» manda el enlace a quien corra contigo. Sale sola en la portada; el día de la carrera solo hay que tener el móvil encendido. En iPhone, activa también «los avisos de subidas» en ese mismo apartado.' },
   { t: 'Tu acceso', sel: null, x: null },
 ];
 let guiaPaso = -1;

@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.66.0 · 2026-11-04
+- **Privacidad**: cuando un invitado caduca o se borra, sus datos salen de las carreras en directo (su nombre en la carrera, su tiempo, sus puntos y su foto). La carrera se queda con su recorrido; si la creó él, queda sin creador y su enlace de invitación deja de valer.
+- **Mis carreras**: cada carrera en directo con orden y menos botones: Ver el directo · Invitar a quien corra contigo (con lo que hace) · Mi móvil y mi foto (dentro, Android o iPhone y la foto) · Retirarme · Borrar.
+- **Página del directo**: quien la creó puede invitar desde ahí, y se explica la diferencia: «Compartir» para que te sigan, «Invitar» para que corra contigo.
+
 ## v1.65.1 · 2026-11-04
 - **Carreras**: las carreras en directo ya terminadas salen también aquí, con el tiempo de cada corredor (o «retirado») y el mejor tiempo.
 - README al día: ficha y fotos, mapa 2D/3D, ritmo y volver a la carrera.

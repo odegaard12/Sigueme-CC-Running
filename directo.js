@@ -148,6 +148,22 @@ function enseñarMovil(ident) {
   };
 }
 
+// quien creó la carrera (con la sesión iniciada) también invita desde aquí
+fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(y => {
+  if (!y || !y.sesion) return null;
+  return fetch('/api/invitado/directos', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null);
+}).then(d => {
+  const c = d && (d.directos || []).find(x => x.id === ID && x.invitacion); if (!c) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'boton'; b.textContent = 'Invitar a quien corra contigo';
+  b.addEventListener('click', async () => {
+    const url = location.origin + '/d/' + ID + '#unirse=' + c.invitacion;
+    try { if (navigator.share) await navigator.share({ title: document.title + ' · apúntate', url }); else { await navigator.clipboard.writeText(url); b.textContent = 'Invitación copiada'; } } catch (e) { /* cancelado */ }
+  });
+  $('compartir').after(b);
+  const p = document.createElement('p'); p.className = 'autor'; p.textContent = '«Compartir»: para que te sigan. «Invitar»: para que corra contigo y salga en el mapa.';
+  $('compartir').parentNode.after(p);
+}).catch(() => {});
+
 $('compartir').addEventListener('click', async () => {
   const url = location.origin + '/d/' + ID;
   try { if (navigator.share) await navigator.share({ title: document.title, url }); else { await navigator.clipboard.writeText(url); $('compartir').textContent = 'Enlace copiado'; } } catch (e) { /* cancelado */ }

@@ -246,6 +246,15 @@ def carreras_archivadas():
     return sorted(salida, key=lambda x: str(x[1].get("fecha") or x[0]), reverse=True)
 
 
+def purgar_invitados():
+    """Borra a los invitados caducados y, de las carreras en directo, los datos de quien ya no existe (se queda el recorrido)."""
+    inv = invitados_mod()
+    inv.purgar(ROOT)
+    todos = inv._usuarios_seguro(ROOT)
+    if todos is not None:                              # lista ilegible: no se toca nada
+        herramienta("directos").purgar_ausentes(ROOT, set(todos) | {inv.DUENO})
+
+
 def traza_svg(slug, puntos=None):
     """El recorrido archivado como dibujo pequeño (SVG en línea) para el
     índice. Vacío si no hay ruta o no se entiende."""
@@ -2173,7 +2182,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(403, {"error": "usuario o código incorrecto, o el acceso ha caducado"})
                 return
             acierto_de(ip)
-            inv.purgar(ROOT)
+            purgar_invitados()
             print(f"[invitado] {usuario} entra", flush=True)
             self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv")
             return
@@ -2926,7 +2935,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
                 elif accion == "directo_borrar":
                     herramienta("directos").borrar(ROOT, str(data.get("id") or ""))
-                inv.purgar(ROOT)
+                purgar_invitados()
             except ValueError as e:
                 self._send_json(400, {"error": str(e)})
                 return
@@ -3205,7 +3214,7 @@ if __name__ == "__main__":
         while True:
             try:
                 if tengo_la_vip():
-                    invitados_mod().purgar(ROOT)
+                    purgar_invitados()
             except Exception as exc:
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)

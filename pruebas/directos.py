@@ -233,6 +233,14 @@ st, _, _ = http('POST', '/api/invitado/unirse', {'id': ID2, 'token': TOKEN2, 'no
 ok(st == 400, 'ni con el enlace de invitación')
 http('POST', '/api/invitado/directo', {'accion': 'borrar', 'id': ID2}, galleta_luis)
 
+# ---- v1.66: un invitado que caduca sale de las carreras en directo (se queda el recorrido)
+todos = inv._usuarios_seguro(str(W)); todos['luis']['caduca'] = '2000-01-01'; inv._guardar(str(W), todos)
+http('POST', '/api/invitado/login', {'usuario': 'ana', 'codigo': codigo})         # entrar lanza la purga
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+ok(st == 200 and 'Luis' not in [g['nombre'] for g in p['corredores']] and len(p['ruta']) > 10, 'Luis caducado: fuera de la carrera (nombre, tiempo, puntos); el recorrido se queda')
+ok(http('GET', f'/api/gps?id={ID_LUIS}&lat=40.6&lon=-4.2&timestamp={int(time.time())}')[0] == 403, 'su identificador ya no vale')
+ok({'Ana', 'Berto'} <= {g['nombre'] for g in p['corredores']}, 'los demás siguen igual')
+
 # ---- el dueño la quita desde el panel
 st, _, h = http('POST', '/api/login', {'usuario': 'prueba', 'password': 'clave'})
 adm = h['Set-Cookie'].split(';')[0]

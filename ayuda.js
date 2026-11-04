@@ -27,7 +27,7 @@
     'Tus carreras': 'Las carreras (rutas) que has subido. «Abrir» para editarla, llevártela al reloj, publicarla o correrla en directo.',
     'Subir una ruta': 'Sube el GPX de una ruta. Se prepara sola: perfil, subidas y avisos.',
     'Carreras en las que te puedes apuntar': 'Carreras en directo de otros que aún no han acabado. «Apuntarme» te mete con tu nombre; luego configura tu móvil y saldrás en el mapa. Si no corres al final, «Retirarme» en tu carrera te quita del mapa.',
-    'Tus carreras en directo': 'Las carreras que has creado o en las que corres. «Configurar mi móvil» deja la app o Traccar listos; «Invitar» manda el enlace a quien corra contigo.',
+    'Tus carreras en directo': 'Las carreras que has creado o en las que corres. «Mi móvil y mi foto» deja la app o Traccar listos; «Invitar» manda el enlace a quien corra contigo.',
   };
   const PASOS = {
     1: 'El GPX sale de Strava, Komoot, Wikiloc o de la web de la carrera.',
@@ -35,7 +35,7 @@
     3: 'Se detectan solas con el perfil del GPX: no hay que hacer nada.',
     4: 'Descarga el GPX y ábrelo con la app de tu reloj (Mi Fitness, Zepp, Huawei Health…). No todos los modelos admiten rutas: mira la guía de tu marca.',
     5: 'Solo publica la ruta (mapa y GPX) para que otros se la lleven al reloj. No tiene que ver con el directo.',
-    6: 'Elige día y hora de salida y la carrera sale en la portada. Pulsa «Configurar mi móvil» antes del día; el día de la carrera solo enciende el móvil.',
+    6: 'Elige día y hora de salida y la carrera sale en la portada. Pulsa «Mi móvil y mi foto» antes del día; el día de la carrera solo enciende el móvil.',
   };
   function poner(ancla, texto) {
     if (ancla.querySelector(':scope > .ayuda-q')) return;

@@ -482,6 +482,36 @@ def borrar(raiz, id_, usuario=None):
     return True
 
 
+def purgar_ausentes(raiz, vivos):
+    """Corredores con cuenta que ya no existe (invitado caducado o borrado): fuera sus datos (su nombre en la carrera, su tiempo, sus
+    puntos y su foto). La carrera se queda con su recorrido; si la creó él, queda sin creador (la puede borrar el dueño).
+    `vivos` son los usuarios que siguen existiendo. Devuelve cuántos corredores se han quitado."""
+    n = 0
+    with _lock:
+        for id_ in _ids(raiz):
+            c = carrera(raiz, id_)
+            if not c:
+                continue
+            cambio = False
+            for co in [x for x in c["corredores"] if x.get("usuario") and x["usuario"] not in vivos]:
+                for ext in ("dat", "pts", "png"):
+                    try:
+                        os.remove(_f(raiz, id_, co["cid"], ext))
+                    except OSError:
+                        pass
+                _indice.pop(co["ident"], None)
+                c["corredores"].remove(co)
+                n += 1
+                cambio = True
+            if c.get("creador") and c["creador"] not in vivos:
+                c["creador"] = None
+                c["invitacion"] = secrets.token_urlsafe(9)      # el enlace de invitación viejo deja de valer
+                cambio = True
+            if cambio:
+                _escribir(_f(raiz, id_), c)
+    return n
+
+
 def todas(raiz):
     """Para el panel del dueño."""
     return [{"id": i, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"], "creador": c.get("creador"),
