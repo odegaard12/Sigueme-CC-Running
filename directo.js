@@ -25,7 +25,16 @@ function alerta(g) {
   if (g.bateria != null && g.bateria < 20) a.push('batería baja (' + g.bateria + ' %)');
   return a.join(' · ');
 }
-function ritmo(g) { if (!(g.tiempo_s > 0 && g.km >= 0.3)) return ''; const sp = Math.round(g.tiempo_s / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
+// llegada prevista: su ritmo medio desde la salida real aplicado a los km que le faltan (desde el km 1, para que valga algo)
+// el tiempo hasta su ÚLTIMO punto (si no, sin señal el ritmo empeoraría solo mientras el reloj sigue corriendo)
+function hastaUltimo(g) { return g.visto && g.salida && g.visto > g.salida ? g.visto - g.salida : g.tiempo_s; }
+function prevista(g) {
+  const t = hastaUltimo(g);
+  if (g.situacion !== 'corriendo' || !(g.km >= 1) || !(t > 0) || !(datos && datos.distancia_km > g.km)) return '';
+  const eta = (g.salida || Date.now() / 1000 - g.tiempo_s) + t / g.km * datos.distancia_km;
+  return 'llega hacia las ' + new Date(eta * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+function ritmo(g) { const t = g.situacion === 'en_meta' ? g.tiempo_s : hastaUltimo(g); if (!(t > 0 && g.km >= 0.3)) return ''; const sp = Math.round(t / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
 function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || '·'; }
 
 function pintar(d) {
@@ -38,7 +47,7 @@ function pintar(d) {
   d.corredores.forEach((g, i) => {
     const f = document.createElement('div'); f.className = 'fila simple';
     const n = document.createElement('div'); n.className = 'nombre'; n.textContent = (g.situacion === 'en_meta' ? (i + 1) + ' · ' : '') + g.nombre;
-    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g), alerta(g)].filter(Boolean).join(' · '); if (alerta(g)) s.classList.add('alerta'); n.append(s);
+    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · '); if (alerta(g)) s.classList.add('alerta'); n.append(s);
     const c1 = document.createElement('div'); c1.className = 'cifra'; const b1 = document.createElement('b'); b1.textContent = km(g.km); const u1 = document.createElement('span'); u1.textContent = 'KM'; c1.append(b1, u1);
     const c2 = document.createElement('div'); c2.className = 'cifra'; const b2 = document.createElement('b'); b2.textContent = g.tiempo_s != null ? tiempo(g.tiempo_s) : '–'; const u2 = document.createElement('span'); u2.textContent = g.situacion === 'en_meta' ? 'TIEMPO' : 'EN CARRERA'; c2.append(b2, u2);
     f.append(n, c1, c2); lista.append(f);
@@ -62,7 +71,7 @@ function pintar(d) {
     const n = document.createElement('b'); n.textContent = g.nombre;
     const s = document.createElement('small');
     if (alerta(g)) s.classList.add('alerta');
-    s.textContent = alerta(g) && d.corredores.length > 1 ? alerta(g) : d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g), alerta(g)].filter(Boolean).join(' · ')
+    s.textContent = alerta(g) && d.corredores.length > 1 ? alerta(g) : d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · ')
       : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
     b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });

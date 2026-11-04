@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.67.1 · 2026-11-04
+- **Directo**: la **llegada prevista** de cada corredor («llega hacia las 12:45»), con su ritmo real y los km que le faltan.
+- **Arreglo**: el ritmo medio se calcula hasta el último punto recibido; antes, sin señal, empeoraba solo mientras el reloj seguía corriendo.
+
 ## v1.67.0 · 2026-11-04
 - **Directo**: si un corredor lleva más de 3 minutos sin mandar su posición, su ficha y la lista dicen «sin señal desde las 12:03»; y «batería baja» si su móvil baja del 20 %.
 
