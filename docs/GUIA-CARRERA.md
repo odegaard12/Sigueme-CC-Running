@@ -138,7 +138,9 @@ los puntos de control o el perfil: si el tuyo no los enseña, la ruta se sigue i
    cobertura en ese momento, lo hace sola en cuanto la hay). Hasta la hora
    oficial la web dice «En la salida», el crono no corre y no salen avisos.
    Guarda el móvil y olvídate: sigue solo con la pantalla apagada.
-2. Sin la app (Traccar o el reloj): panel → **Carrera** → **Empezar a seguir**.
+2. Sin la app (Traccar o el reloj): no hay que pulsar nada. El primer punto, desde 1 h antes de la salida, pone la
+   carrera en marcha, y el tiempo cuenta desde que empiezas a correr. Panel → **Carrera** → **Empezar a seguir ahora**
+   solo si quieres empezar a mano.
 3. Comparte el enlace con el botón de la web.
 4. **Sin cobertura**, la web lo dice («Sin cobertura desde las 12:03, km 44»)
    y una marca transparente avanza por la ruta a tu ritmo medio. También

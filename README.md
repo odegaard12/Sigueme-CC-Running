@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.66.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.66.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -141,7 +141,7 @@ ves todo lo publicado y puedes quitarlo.
 Desde **Mis carreras** (el panel o el acceso de un invitado) se crea una **carrera en directo** a partir de
 una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con el mapa y cada corredor
 (posición, km y tiempo, cada 10 s). Cada uno corre con **su** identificador, en su móvil:
-**Android** con la app Sígueme CC y **iPhone** con Traccar Client («Configurar mi móvil» lo deja listo de un toque).
+**Android** con la app Sígueme CC y **iPhone** con Traccar Client («Mi móvil y mi foto» lo deja listo de un toque).
 
 - **Apuntarse**: con el enlace de invitación («Invitar») o, con cuenta, desde «Carreras en las que te puedes apuntar».
   Una carrera terminada (todos llegaron o se retiraron) ya no admite a nadie.

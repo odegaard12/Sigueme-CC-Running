@@ -1328,9 +1328,9 @@ verPestana(['hoy', 'preparar', 'movil', 'mas', 'rutas'].includes(inicial) ? inic
 const GUIA = [
   { t: 'Bienvenido al panel', x: 'Desde aquí preparas la carrera y la sigues. Son 5 pasos y te los enseño en un minuto. Si quieres, sáltate la guía: siempre estará en el botón «Guía» de arriba.' },
   { t: 'El resumen', sel: '#resumen', x: 'De un vistazo: cuánto tienes preparado, si el móvil está conectado y qué botón toca pulsar ahora. Se actualiza solo según avanzas.' },
-  { t: 'Los 5 pasos', sel: '.pestanas', x: 'Van en orden: 1 Preparar (nombre, ruta GPX, avituallamientos) · 2 Móvil (instalar la app) · 3 Carrera (empezar y seguir) · 4 Resultado (subir el FIT y archivar) · 5 Rutas (invitados). Un ✓ quiere decir que ese paso está hecho.', tab: 'preparar' },
+  { t: 'Los 5 pasos', sel: '.pestanas', x: 'Van en orden: 1 Preparar (nombre, ruta GPX, avituallamientos) · 2 Móvil (iPhone con Traccar o Android con la app) · 3 Carrera (el día de la carrera) · 4 Resultado (subir el fichero del reloj y archivar) · 5 Invitados (tus amigos, lo que publican y sus carreras en directo). Un ✓ quiere decir que ese paso está hecho.', tab: 'preparar' },
   { t: 'Qué toca ahora', sel: '#siguiente', x: 'Esta caja te dice el siguiente paso que falta. Pulsa «Ir» y te lleva al sitio exacto. Cuando no quede nada, ya estás listo.', tab: 'preparar' },
-  { t: 'Listo para empezar', x: 'Haz lo que falte, de arriba abajo. El día de la carrera entra en «Carrera» y pulsa empezar. Esta guía no vuelve a salir sola.' },
+  { t: 'Listo para empezar', x: 'Haz lo que falte, de arriba abajo. El día de la carrera solo enciende el móvil: con la app o con Traccar la carrera se pone en marcha sola desde 1 h antes de la salida, y el tiempo cuenta desde que empiezas a correr. Esta guía no vuelve a salir sola.' },
 ];
 let guiaPaso = -1;
 const guiaSolo = id => document.getElementById(id);
@@ -1505,6 +1505,6 @@ $('save-manual').addEventListener('click', () => {
   let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
 })();
 </script>
-<script src="/ayuda.js?v=5"></script>
+<script src="/ayuda.js?v=6"></script>
 </body>
 </html>

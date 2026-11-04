@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.66.1 · 2026-11-04
+- **Guías paso a paso al día**: la del panel ya llama «Invitados» a la pestaña 5, explica el móvil según iPhone o Android y que la carrera arranca sola; la de Mis carreras enseña el menú de saltos y un paso nuevo, «Correr con otros» (invitar, apuntarse, retirarse y volver).
+- **Ayudas «?»**: «Perfil y avisos», «Tus carreras en directo» y «Carreras en las que te puedes apuntar» con los nombres de botones de ahora.
+- README y guía escrita: el día de la carrera con Traccar o el reloj no hay que pulsar nada.
+
 ## v1.66.0 · 2026-11-04
 - **Privacidad**: cuando un invitado caduca o se borra, sus datos salen de las carreras en directo (su nombre en la carrera, su tiempo, sus puntos y su foto). La carrera se queda con su recorrido; si la creó él, queda sin creador y su enlace de invitación deja de valer.
 - **Mis carreras**: cada carrera en directo con orden y menos botones: Ver el directo · Invitar a quien corra contigo (con lo que hace) · Mi móvil y mi foto (dentro, Android o iPhone y la foto) · Retirarme · Borrar.
