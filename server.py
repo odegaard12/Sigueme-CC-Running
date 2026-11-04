@@ -246,13 +246,14 @@ def carreras_archivadas():
     return sorted(salida, key=lambda x: str(x[1].get("fecha") or x[0]), reverse=True)
 
 
-def traza_svg(slug):
+def traza_svg(slug, puntos=None):
     """El recorrido archivado como dibujo pequeño (SVG en línea) para el
     índice. Vacío si no hay ruta o no se entiende."""
     try:
-        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
-            pts = json.load(f)["features"][0]["geometry"]["coordinates"]
-        pts = [(float(p[0]), float(p[1])) for p in pts[::max(1, len(pts) // 120)]]
+        if puntos is None:
+            with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+                puntos = json.load(f)["features"][0]["geometry"]["coordinates"]
+        pts = [(float(p[0]), float(p[1])) for p in puntos[::max(1, len(puntos) // 120)]]
         if len(pts) < 2:
             raise ValueError
         k = math.cos(math.radians(sum(p[1] for p in pts) / len(pts)))
@@ -1906,7 +1907,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
         en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
-        n = len(filas)
+        dm, filas_dir = herramienta("directos"), []
+        terminadas = [p for p in (dm.publico(ROOT, i) for i in dm._ids(ROOT)) if p and p["estado"] == "terminada"]
+        for p in sorted(terminadas, key=lambda x: -x["salida_ts"]):
+            f = str(p.get("fecha") or "")
+            fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
+                     if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
+            hm = lambda s: f"{s // 3600}h {s % 3600 // 60:02d}m"
+            con_tiempo = [g for g in p["corredores"] if g.get("tiempo_s") and g["situacion"] == "en_meta"]
+            km = f"{round(float(p['distancia_km']), 1):g}".replace(".", ",") if p.get("distancia_km") else ""
+            des = f"{int(p['desnivel_m']):,}".replace(",", ".") if p.get("desnivel_m") else ""
+            mejor = hm(min(g["tiempo_s"] for g in con_tiempo)) if con_tiempo else ""
+            cifras = "".join(f'<div class="cifra"><b>{esc(v)}</b><span>{u}</span></div>' for v, u in ((km, "KM"), (des, "D+"), (mejor, "MEJOR")) if v)
+            gente = " · ".join(esc(g["nombre"]) + (" " + hm(g["tiempo_s"]) if g in con_tiempo else (" retirado" if g["situacion"] == "retirado" else ""))
+                               for g in p["corredores"])
+            enlace = f"/d/{esc(p['id'])}"
+            filas_dir.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
+                             f'<span class="pill-hero">{esc(fecha)} · {len(p["corredores"])} {"corredor" if len(p["corredores"]) == 1 else "corredores"}</span>'
+                             f'<h2 class="hero-titulo"><a href="{enlace}">{esc(p["nombre"])}</a></h2>'
+                             f'<div class="hero-cifras">{cifras}</div><p class="hero-linea">{gente}</p>'
+                             f'<a class="boton-hero" href="{enlace}">Ver la carrera ▶</a></div>'
+                             f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg("", p.get("ruta"))}</a></article>')
+        n = len(filas) + len(filas_dir)
+        if filas_dir:
+            filas += ['<h2 class="sec-tit">Carreras en directo</h2>'] + filas_dir
         bajo = (f'{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.' if n
                 else 'Aquí quedan las carreras terminadas, con su recorrido, su tiempo y la repetición.')
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'

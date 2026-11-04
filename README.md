@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.65.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.65.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -152,6 +152,10 @@ una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con e
   manda por notificación cada subida, cima y el último km (la pulsera los repite). Solo con cobertura; en Android los lanza
   la app sin cobertura. El botón «Enviar un aviso de prueba» sirve para que la app de la pulsera deje pasarlos.
 - **GPX**: cada carrera terminada tiene su botón «Bajar el GPX» en Inicio y en Carreras.
+- **Ficha y fotos**: arriba de la página, la ficha de corredor (uno) o de corredores (varios), con la foto que cada uno sube si quiere
+  (se recorta y reduce en su móvil, solo sale en esa carrera y se quita cuando quiera). Al tocar a uno, el mapa va a él.
+- **Mapa en 2D o 3D**, y el **ritmo medio** (min/km) de cada corredor. Quien pulsa «Retirarme» sin querer puede **volver a la carrera**
+  mientras no termine; quien ya llegó a meta no se puede retirar. Al terminar, la carrera queda en **Carreras** con el tiempo de cada uno.
 
 La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
 las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada

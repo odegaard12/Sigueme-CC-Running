@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.65.1 · 2026-11-04
+- **Carreras**: las carreras en directo ya terminadas salen también aquí, con el tiempo de cada corredor (o «retirado») y el mejor tiempo.
+- README al día: ficha y fotos, mapa 2D/3D, ritmo y volver a la carrera.
+
 ## v1.65.0 · 2026-11-04
 - **«Volver a la carrera»**: quien pulsa «Retirarme» sin querer puede deshacerlo mientras la carrera no termine (en Mis carreras y en la página del directo).
 - **Quien ya llegó a meta no se puede retirar**: antes «Retirarme» le borraba el resultado.
