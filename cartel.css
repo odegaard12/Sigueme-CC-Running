@@ -196,7 +196,7 @@ details.como p { max-width: 64ch; }
 @media (max-width: 380px) {
   .tabla-modelos { font-size: 0.8rem; }
   .tabla-modelos th, .tabla-modelos td { padding: 7px 4px; }
-  .tabla-modelos .si, .tabla-modelos .algunos, .tabla-modelos .no, .tabla-modelos .duda { padding: 2px 5px; font-size: 0.68rem; }
+  .tabla-modelos .si, .tabla-modelos .algunos, .tabla-modelos .no, .tabla-modelos .duda { padding: 2px 5px; font-size: 0.75rem; }
 }
 .si, .algunos, .no, .duda { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: 800; font-size: 0.75rem; white-space: nowrap; }
 .si { background: var(--acento); color: var(--tinta); }
@@ -300,3 +300,6 @@ small.alerta, .tira .cara small.alerta { color: var(--aviso); }
 
 /* el + / − del mapa, más grande para el dedo */
 .mapa .maplibregl-ctrl-group button { width: 40px; height: 40px; }
+
+/* los enlaces dentro de un texto: se tocan en 44 px de alto sin mover las líneas */
+main p a:not(.boton):not(.boton-hero), main dd a, main li a { padding-block: 12px; }

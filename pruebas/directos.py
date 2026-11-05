@@ -114,6 +114,11 @@ parc = pa.get('parciales') or []
 ok(st == 200 and len(parc) >= 9 and all(300 <= s <= 420 for s in parc[1:-1]), f'parciales de Ana: {len(parc)} km, unos 6 min cada uno ({parc[:3]}…)')
 ok(http('GET', f'/api/directo/parciales?id={ID}&cid=00000000')[0] == 404, 'un corredor que no existe da 404')
 
+# ---- v1.69: el GPX de la carrera en directo
+r = urllib.request.urlopen(U + f'/d/{ID}/ruta.gpx'); gx = r.read()
+ok(r.status == 200 and b'<gpx' in gx and b'<trkpt' in gx and 'attachment' in r.headers.get('Content-Disposition', ''), 'el GPX de la carrera en directo se baja')
+ok(http('GET', '/d/0000000000/ruta.gpx')[0] == 404, 'de una carrera que no existe, 404')
+
 # ---- la portada, la página y lo privado
 st, c, _ = http('GET', '/api/carreras')
 ok(any(x['id'] == ID and x['estado'] == 'en_directo' for x in c['directos']), 'sale en la portada como «en directo»')

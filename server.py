@@ -1776,6 +1776,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if crudo == "/api/directo":
             p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
             return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
+        m_gpxd = re.fullmatch(r"/d/([0-9a-f]{10})/ruta\.gpx", crudo)
+        if m_gpxd:
+            c = herramienta("directos").carrera(ROOT, m_gpxd.group(1))
+            try:
+                cuerpo = herramienta("gpx_reloj").generar(c["nombre"], c["coords"], c.get("perfil") or [], (), c.get("subidas") or []).encode("utf-8") if c else None
+            except (ValueError, KeyError, TypeError):
+                cuerpo = None
+            if not cuerpo:
+                return self._send_json(404, {"error": "esa carrera no existe"})
+            nombre = re.sub(r"[^a-z0-9]+", "-", c["nombre"].lower()).strip("-") or "ruta"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{nombre}-reloj.gpx"')
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", "public, max-age=300")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(cuerpo)
+            return
         m_foto = re.fullmatch(r"/d/([0-9a-f]{10})/foto/([0-9a-f]{8})\.png", crudo)
         if m_foto:
             ruta_f = herramienta("directos").ruta_foto(ROOT, m_foto.group(1), m_foto.group(2))
@@ -1946,7 +1965,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                              f'<span class="pill-hero">{esc(fecha)} · {len(p["corredores"])} {"corredor" if len(p["corredores"]) == 1 else "corredores"}</span>'
                              f'<h2 class="hero-titulo"><a href="{enlace}">{esc(p["nombre"])}</a></h2>'
                              f'<div class="hero-cifras">{cifras}</div><p class="hero-linea">{gente}</p>'
-                             f'<a class="boton-hero" href="{enlace}">Ver la carrera ▶</a></div>'
+                             f'<div class="hero-botones"><a class="boton-hero" href="{enlace}">Ver la carrera ▶</a>'
+                             f'<a class="boton-hero claro" href="{enlace}/ruta.gpx" download>Bajar el GPX</a></div></div>'
                              f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg("", p.get("ruta"))}</a></article>')
         n = len(filas) + len(filas_dir)
         if filas_dir:
@@ -1956,7 +1976,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=22">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=23">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'

@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.69.0 · 2026-11-05
+- **GPX de las carreras en directo**: «Bajar el GPX» en la página del directo, y en Carreras e Inicio cuando la carrera ya terminó (la ruta con las subidas como puntos de control, lista para el reloj).
+- Los enlaces dentro de un texto (el de la APK, «Relojes y pulseras»…) se tocan en 44 px sin mover el texto; la letra más pequeña de Pulseras sube a 12 px.
+
 ## v1.68.3 · 2026-11-05
 - **Directo**: la lista de abajo se llama «Clasificación» (antes había dos títulos «Corredores» seguidos).
 - **Más fácil de tocar en el móvil**: los desplegables del panel («Más datos…», «Ver la configuración», «Pruebas»…) con letra más grande y 44 px de alto, el + / − del mapa a 40 px y los «?» de ayuda con zona de toque de 44 px.

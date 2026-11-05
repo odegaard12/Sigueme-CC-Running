@@ -131,7 +131,7 @@ fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json(
         const pl = document.createElement('span'); pl.className = 'pill-hero vivo'; pl.textContent = 'En directo';
         const n = f.querySelector('.nombre'); n.prepend(pl, document.createElement('br'));
       }
-      $('directos').append(f);
+      $('directos').append(c.estado === 'terminada' ? conGpx(f, '/d/' + c.id + '/ruta.gpx') : f);
     });
     // con una carrera en directo, esa sección sube justo debajo del título para que se vea lo primero
     if (dirs.some(c => c.estado === 'en_directo')) {

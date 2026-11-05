@@ -206,6 +206,9 @@ fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.jso
   $('compartir').parentNode.after(p);
 }).catch(() => {});
 
+// el GPX de la ruta, para llevarla al reloj
+{ const g = document.createElement('a'); g.className = 'boton claro'; g.href = '/d/' + ID + '/ruta.gpx'; g.setAttribute('download', ''); g.textContent = 'Bajar el GPX'; $('compartir').parentNode.append(g); }
+
 $('compartir').addEventListener('click', async () => {
   const url = location.origin + '/d/' + ID;
   try { if (navigator.share) await navigator.share({ title: document.title, url }); else { await navigator.clipboard.writeText(url); $('compartir').textContent = 'Enlace copiado'; } } catch (e) { /* cancelado */ }
