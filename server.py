@@ -1762,6 +1762,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
             return self._publico_get(crudo)
+        if crudo == "/api/directo/parciales":
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                r = herramienta("directos").parciales(ROOT, (q.get("id") or [""])[0], (q.get("cid") or [""])[0])
+            except ValueError:
+                r = None
+            return self._send_json(200 if r is not None else 404, {"parciales": r} if r is not None else {"error": "no existe"},
+                                   cache="public, max-age=10, s-maxage=10")
         if crudo == "/api/directo":
             p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
             return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
@@ -1945,7 +1953,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=20">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=21">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'

@@ -291,3 +291,9 @@ details.como p { max-width: 64ch; }
 
 /* el aviso de un corredor sin señal o con poca batería */
 small.alerta, .tira .cara small.alerta { color: var(--aviso); }
+
+/* las barras del ritmo de cada km en el directo */
+.parciales { margin: 14px 0 0; padding: 14px 16px; border-radius: var(--r2); background: var(--sup); }
+.parciales .titulo-parc { margin: 0 0 8px; font-weight: 700; }
+.barras-km { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
+.barras-km i { flex: 1; min-width: 4px; border-radius: 3px 3px 0 0; background: var(--acento); }

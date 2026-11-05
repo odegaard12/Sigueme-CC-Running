@@ -77,9 +77,30 @@ function pintar(d) {
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
   if (mapa && mapa.isStyleLoaded()) { ponerRuta(d); pintarMarcas(); }
+  if (elegido) verParciales();
 }
 
-function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); }
+function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); verParciales(); }
+
+// las barras del ritmo de cada km del corredor elegido (se piden al servidor solo al elegirlo y al refrescar)
+async function verParciales() {
+  const caja = $('parciales'), g = elegido && datos && datos.corredores.find(x => x.cid === elegido);
+  if (!g) { caja.hidden = true; return; }
+  try {
+    const r = await fetch('/api/directo/parciales?id=' + encodeURIComponent(ID) + '&cid=' + encodeURIComponent(g.cid));
+    const p = r.ok ? (await r.json()).parciales : [];
+    if (elegido !== g.cid) return;
+    caja.hidden = false;
+    const barras = $('barras-km'); barras.textContent = '';
+    if (!p || !p.length) { $('parc-tit').textContent = g.nombre + ': su ritmo por km sale en cuanto lleve el primer kilómetro.'; barras.hidden = true; $('parc-pie').hidden = true; return; }
+    const mm = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const max = Math.max(...p), min = Math.min(...p);
+    $('parc-tit').textContent = g.nombre + ' · ritmo por km (más rápido ' + mm(min) + ', más lento ' + mm(max) + ' min/km)';
+    barras.hidden = false; $('parc-pie').hidden = false;
+    barras.setAttribute('aria-label', 'Ritmo de cada kilómetro de ' + g.nombre + ': ' + p.map((s, i) => 'km ' + (i + 1) + ' ' + mm(s)).join(', '));
+    p.forEach((s, i) => { const b = document.createElement('i'); b.style.height = (25 + 75 * (s - min) / Math.max(1, max - min)) + '%'; b.title = 'km ' + (i + 1) + ' · ' + mm(s) + ' min/km'; barras.append(b); });
+  } catch (e) { /* sin red: se reintenta en el próximo refresco */ }
+}
 
 function verEnMapa(cid) {
   const m = marcas[cid];

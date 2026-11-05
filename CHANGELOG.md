@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.68.0 · 2026-11-05
+- **Directo**: al tocar a un corredor salen las **barras de su ritmo en cada kilómetro** (más alta, más lenta), con su km más rápido y el más lento. El servidor las calcula con sus puntos solo cuando alguien las pide.
+
 ## v1.67.2 · 2026-11-05
 - **Directo**: si con mala cobertura el mapa carga sin la línea del recorrido, se vuelve a poner en la siguiente actualización (antes podían salir los corredores sin la línea).
 - **Capturas nuevas** en el README: la carrera en directo con varios corredores, Mis carreras, y de nuevo Inicio, Rutas y el panel con el diseño de ahora.

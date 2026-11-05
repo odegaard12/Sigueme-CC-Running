@@ -107,6 +107,13 @@ ok(p['corredores'][0]['nombre'] == 'Ana', 'el que ya llegó va primero')
 texto = json.dumps(p)
 ok('dir-' not in texto and TOKEN not in texto, 'lo público no lleva identificadores ni la invitación')
 
+# ---- v1.68: parciales por km (Ana a 10 km/h: unos 6 min por km)
+ana_cid = next(g['cid'] for g in p['corredores'] if g['nombre'] == 'Ana')
+st, pa, _ = http('GET', f'/api/directo/parciales?id={ID}&cid={ana_cid}')
+parc = pa.get('parciales') or []
+ok(st == 200 and len(parc) >= 9 and all(300 <= s <= 420 for s in parc[1:-1]), f'parciales de Ana: {len(parc)} km, unos 6 min cada uno ({parc[:3]}…)')
+ok(http('GET', f'/api/directo/parciales?id={ID}&cid=00000000')[0] == 404, 'un corredor que no existe da 404')
+
 # ---- la portada, la página y lo privado
 st, c, _ = http('GET', '/api/carreras')
 ok(any(x['id'] == ID and x['estado'] == 'en_directo' for x in c['directos']), 'sale en la portada como «en directo»')

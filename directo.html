@@ -12,7 +12,7 @@
 <meta property="og:url" content="">
 <meta property="og:image" content="/og.jpg">
 <link rel="icon" href="/favicon.png?v=4">
-<link rel="stylesheet" href="/cartel.css?v=20">
+<link rel="stylesheet" href="/cartel.css?v=21">
 <link rel="stylesheet" href="/lib/maplibre-gl-4.7.1.css">
 </head>
 <body class="cartel ruta">
@@ -57,6 +57,11 @@
     <h2 class="titulo">Corredores</h2>
     <p class="nota-dir" style="margin:0 0 10px">Toca un corredor para verlo en el mapa. Aquí está cada uno con sus km y su tiempo; al llegar, la lista se ordena por tiempo.</p>
     <div class="lista-filas" id="gente"></div>
+    <div class="parciales" id="parciales" hidden>
+      <p class="titulo-parc" id="parc-tit"></p>
+      <div class="barras-km" id="barras-km" role="img"></div>
+      <p class="nota-dir" id="parc-pie">Ritmo de cada kilómetro: cuanto más alta la barra, más lento. Toca otro corredor para ver el suyo.</p>
+    </div>
     <p class="vacio" id="aviso-posicion">Cada corredor sale en el mapa en cuanto está en marcha: desde 1 h antes de la salida, con su móvil encendido.</p>
   </section>
 </main>
@@ -64,7 +69,7 @@
 <script src="/avisos-movil.js?v=2"></script>
 <script src="/directo-movil.js?v=3"></script>
 <script src="/foto-corredor.js?v=1"></script>
-<script src="/directo.js?v=16"></script>
+<script src="/directo.js?v=17"></script>
 <script src="/marca-usuario.js?v=2" defer></script>
 </body>
 </html>

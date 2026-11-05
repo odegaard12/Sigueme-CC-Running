@@ -373,6 +373,43 @@ def abiertas(raiz, usuario, ahora=None):
     return out
 
 
+_parciales_cache = {}                # (id, cid) -> (fecha del fichero de puntos, parciales)
+
+
+def parciales(raiz, id_, cid):
+    """Segundos que tardó en cada kilómetro completo, desde su salida real (lista vacía si aún no ha hecho uno)."""
+    c = carrera(raiz, id_)
+    if not c or not any(x["cid"] == cid for x in c["corredores"]):
+        return None
+    st = estado(raiz, id_, cid)
+    ruta = _f(raiz, id_, cid, "pts")
+    if not st.get("salida_real") or not os.path.isfile(ruta):
+        return []
+    clave, marca = (id_, cid), os.path.getmtime(ruta)
+    if clave in _parciales_cache and _parciales_cache[clave][0] == marca:
+        return _parciales_cache[clave][1]
+    salida_t, km, siguiente, antes, out = st["salida_real"], 0.0, 1, st["salida_real"], []
+    with open(ruta, encoding="utf-8") as f:
+        for linea in f:
+            try:
+                t, la, lo = json.loads(linea)
+            except (ValueError, TypeError):
+                continue
+            if t < salida_t:
+                continue
+            k = _km_en_ruta(c, la, lo, km)
+            if k is None:
+                continue
+            km = max(km, k)
+            while km >= siguiente:
+                out.append(round(t - antes))
+                antes, siguiente = t, siguiente + 1
+            if st.get("llegada") and t >= st["llegada"]:
+                break
+    _parciales_cache[clave] = (marca, out)
+    return out
+
+
 def _situacion(st):
     if st.get("retirado"):
         return "retirado"
