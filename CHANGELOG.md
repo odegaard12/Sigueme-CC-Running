@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.70.1 · 2026-11-05
+- README al día con lo nuevo del directo para quien mira: llegada prevista, sin señal y batería baja, ritmo por km, campana de avisos y GPX.
+
 ## v1.70.0 · 2026-11-05
 - **Campana en la página del directo**: «Avisarme de salidas y llegadas». Quien sigue la carrera recibe en el móvil «Ana ha salido», «Luis ha llegado a meta en 1h 02m» o «… se ha retirado», una vez cada aviso. Quien se apunta tarde no recibe lo de hace más de 10 minutos. En iPhone, con la web instalada en la pantalla de inicio.
 

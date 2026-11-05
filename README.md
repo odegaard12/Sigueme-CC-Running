@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.70.0-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.70.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -163,6 +163,9 @@ una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con e
   (se recorta y reduce en su móvil, solo sale en esa carrera y se quita cuando quiera). Al tocar a uno, el mapa va a él.
 - **Mapa en 2D o 3D**, y el **ritmo medio** (min/km) de cada corredor. Quien pulsa «Retirarme» sin querer puede **volver a la carrera**
   mientras no termine; quien ya llegó a meta no se puede retirar. Al terminar, la carrera queda en **Carreras** con el tiempo de cada uno.
+- **Para quien mira**: cada corredor con su ritmo medio, su **llegada prevista** y, si hace falta, «sin señal desde las 12:03» o «batería baja».
+  Al tocarlo, las **barras de su ritmo en cada kilómetro**. Con la **campana** («Avisarme de salidas y llegadas») llega al móvil «Ana ha salido»
+  o «Luis ha llegado a meta en 1h 02m» (en iPhone, con la web instalada). Y «Bajar el GPX» para llevarse la ruta al reloj.
 
 La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
 las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada
