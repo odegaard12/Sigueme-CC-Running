@@ -206,6 +206,45 @@ fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.jso
   $('compartir').parentNode.after(p);
 }).catch(() => {});
 
+// la campana: avisos en el móvil de quien sigue la carrera (salidas, llegadas a meta y retiradas)
+(async () => {
+  let k = null; try { k = await fetch('/api/push/clave').then(r => r.ok ? r.json() : null); } catch (e) { /* sin red */ }
+  if (!k || !k.clave) return;                                    // avisos sin montar en el servidor: sin botón
+  const puede = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalada = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'boton claro';
+  const nota = document.createElement('p'); nota.className = 'autor'; nota.hidden = true;
+  const marca = 'sigo.' + ID; let activo = false; try { activo = localStorage.getItem(marca) === '1'; } catch (e) { /* da igual */ }
+  const pinta = () => { b.textContent = activo ? 'Avisos activados · quitar' : 'Avisarme de salidas y llegadas'; };
+  const di = t => { nota.hidden = false; nota.textContent = t; };
+  const b64 = s => Uint8Array.from(atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const post = (u, d) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+  pinta(); $('compartir').after(b); $('compartir').parentNode.after(nota);
+  b.addEventListener('click', async () => {
+    if (!puede || (ios && !instalada)) return di(ios ? 'En el iPhone los avisos llegan con la web instalada: Compartir → «Añadir a pantalla de inicio», ábrela desde su icono y vuelve a pulsar aquí.' : 'Este navegador no puede recibir avisos.');
+    const permiso = !activo && Notification.permission === 'default' ? Notification.requestPermission() : null;   // en el mismo toque (Safari)
+    b.disabled = true;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw-avisos.js', { scope: '/avisos/' });
+      if (!reg.active) { const w = reg.installing || reg.waiting; if (w) await new Promise(ok => { const m = () => { if (w.state === 'activated' || w.state === 'redundant') ok(); }; w.addEventListener('statechange', m); m(); }); }
+      const actual = await reg.pushManager.getSubscription();
+      if (activo) {
+        if (actual) await post('/api/push/directo/baja', { id: ID, endpoint: actual.endpoint }).catch(() => {});
+        activo = false; try { localStorage.removeItem(marca); } catch (e) { /* da igual */ }
+        pinta(); return di('Ya no te avisaremos de esta carrera.');
+      }
+      if ((permiso ? await permiso : Notification.permission) !== 'granted') return di('Sin permiso no te podemos avisar: actívalo en los ajustes del navegador y vuelve a pulsar.');
+      const sub = actual || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(k.clave) });
+      const r = await post('/api/push/directo', { id: ID, sub: sub.toJSON() });
+      if (!r.ok) throw new Error('alta ' + r.status);
+      activo = true; try { localStorage.setItem(marca, '1'); } catch (e) { /* da igual */ }
+      pinta(); di('Listo: te avisaremos en este móvil cuando cada corredor salga, llegue a meta o se retire.');
+    } catch (e) { di('No se pudieron activar los avisos. Prueba otra vez.'); }
+    finally { b.disabled = false; }
+  });
+})();
+
 // el GPX de la ruta, para llevarla al reloj
 { const g = document.createElement('a'); g.className = 'boton claro'; g.href = '/d/' + ID + '/ruta.gpx'; g.setAttribute('download', ''); g.textContent = 'Bajar el GPX'; $('compartir').parentNode.append(g); }
 

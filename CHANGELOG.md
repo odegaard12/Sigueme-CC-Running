@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.70.0 · 2026-11-05
+- **Campana en la página del directo**: «Avisarme de salidas y llegadas». Quien sigue la carrera recibe en el móvil «Ana ha salido», «Luis ha llegado a meta en 1h 02m» o «… se ha retirado», una vez cada aviso. Quien se apunta tarde no recibe lo de hace más de 10 minutos. En iPhone, con la web instalada en la pantalla de inicio.
+
 ## v1.69.0 · 2026-11-05
 - **GPX de las carreras en directo**: «Bajar el GPX» en la página del directo, y en Carreras e Inicio cuando la carrera ya terminó (la ruta con las subidas como puntos de control, lista para el reloj).
 - Los enlaces dentro de un texto (el de la APK, «Relojes y pulseras»…) se tocan en 44 px sin mover el texto; la letra más pequeña de Pulseras sube a 12 px.

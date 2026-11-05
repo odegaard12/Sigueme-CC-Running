@@ -119,6 +119,17 @@ r = urllib.request.urlopen(U + f'/d/{ID}/ruta.gpx'); gx = r.read()
 ok(r.status == 200 and b'<gpx' in gx and b'<trkpt' in gx and 'attachment' in r.headers.get('Content-Disposition', ''), 'el GPX de la carrera en directo se baja')
 ok(http('GET', '/d/0000000000/ruta.gpx')[0] == 404, 'de una carrera que no existe, 404')
 
+# ---- v1.70: seguir la carrera (la campana del directo)
+sub_seg = {'endpoint': 'https://web.push.apple.com/seguidor', 'keys': {'p256dh': 'x', 'auth': 'y'}}
+st, _, _ = http('POST', '/api/push/directo', {'id': ID, 'sub': sub_seg})
+ok(st == 200, 'un móvil se apunta a los avisos de la carrera en directo')
+st, _, _ = http('POST', '/api/push/directo', {'id': '0000000000', 'sub': sub_seg})
+ok(st == 400, 'a una carrera que no existe, no')
+st, _, _ = http('POST', '/api/push/directo', {'id': ID, 'sub': {'endpoint': 'https://evil.example/x', 'keys': {'p256dh': 'x', 'auth': 'y'}}})
+ok(st == 400, 'una suscripción que no es de un servicio de avisos, no')
+st, _, _ = http('POST', '/api/push/directo/baja', {'id': ID, 'endpoint': sub_seg['endpoint']})
+ok(st == 200, 'y se quita')
+
 # ---- la portada, la página y lo privado
 st, c, _ = http('GET', '/api/carreras')
 ok(any(x['id'] == ID and x['estado'] == 'en_directo' for x in c['directos']), 'sale en la portada como «en directo»')

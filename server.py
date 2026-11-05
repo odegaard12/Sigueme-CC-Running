@@ -2795,6 +2795,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._send_json(400, {"error": "invalid json"})
         if self.path in ("/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_mio(sub)
+        if self.path in ("/api/push/directo", "/api/push/directo/baja"):        # seguir una carrera en directo (v1.70)
+            d = sub if isinstance(sub, dict) else {}
+            dm, av = herramienta("directos"), herramienta("avisos_web")
+            with datos_lock:
+                if self.path.endswith("/baja"):
+                    dm.dejar(ROOT, av, str(d.get("id") or ""), d.get("endpoint"))
+                    return self._send_json(200, {"ok": True})
+                si = dm.seguir(ROOT, av, str(d.get("id") or ""), d.get("sub"))
+            return self._send_json(200 if si else 400, {"ok": si})
         av = herramienta("avisos_web")
         # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
         with datos_lock:
@@ -2847,7 +2856,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
+        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba",
+                         "/api/push/directo", "/api/push/directo/baja"):
             return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
@@ -3265,6 +3275,11 @@ if __name__ == "__main__":
                                                        leer_json("route.geojson") or {}, clave_gps(), herramienta("directos"))
             except Exception as exc:
                 print(f"[avisos-ruta] {exc}", flush=True)
+            try:        # salidas, llegadas y retiradas para quien sigue una carrera en directo (v1.70)
+                if tengo_la_vip():
+                    herramienta("directos").avisar_seguidores(ROOT, herramienta("avisos_web"))
+            except Exception as exc:
+                print(f"[avisos-directo] {exc}", flush=True)
             time.sleep(15)
     threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una
