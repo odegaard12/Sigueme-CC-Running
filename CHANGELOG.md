@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.67.2 · 2026-11-05
+- **Directo**: si con mala cobertura el mapa carga sin la línea del recorrido, se vuelve a poner en la siguiente actualización (antes podían salir los corredores sin la línea).
+- **Capturas nuevas** en el README: la carrera en directo con varios corredores, Mis carreras, y de nuevo Inicio, Rutas y el panel con el diseño de ahora.
+
 ## v1.67.1 · 2026-11-04
 - **Directo**: la **llegada prevista** de cada corredor («llega hacia las 12:45»), con su ritmo real y los km que le faltan.
 - **Arreglo**: el ritmo medio se calcula hasta el último punto recibido; antes, sin señal, empeoraba solo mientras el reloj seguía corriendo.

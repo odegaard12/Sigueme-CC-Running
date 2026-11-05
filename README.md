@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.67.1-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.67.2-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -137,6 +137,13 @@ deja de verse en cuanto caduca el acceso. Tú, desde la pestaña **Invitados** d
 ves todo lo publicado y puedes quitarlo.
 
 ### Carreras en directo con varios corredores
+
+<p align="center">
+  <img src="docs/capturas/directo.png" width="900" alt="Carrera en directo con dos corredores: ficha con sus fotos, mapa y tiempos, en el ordenador y en el móvil">
+</p>
+<p align="center">
+  <img src="docs/capturas/mis-carreras.png" width="300" alt="Mis carreras: la carrera en directo con ver, invitar, mi móvil y mi foto, retirarme y borrar">
+</p>
 
 Desde **Mis carreras** (el panel o el acceso de un invitado) se crea una **carrera en directo** a partir de
 una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con el mapa y cada corredor

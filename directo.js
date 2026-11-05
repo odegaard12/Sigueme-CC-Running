@@ -76,7 +76,7 @@ function pintar(d) {
     b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
-  if (mapa && mapa.loaded()) pintarMarcas();
+  if (mapa && mapa.isStyleLoaded()) { ponerRuta(d); pintarMarcas(); }
 }
 
 function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); }
@@ -102,6 +102,14 @@ function pintarMarcas() {
   }
 }
 
+// la línea del recorrido; si con mala cobertura no llegó a ponerse al cargar, se pone en la siguiente actualización
+function ponerRuta(d) {
+  if (!mapa || !mapa.isStyleLoaded() || mapa.getSource('ruta')) return;
+  mapa.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: d.ruta } } });
+  mapa.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+  mapa.addLayer({ id: 'linea', type: 'line', source: 'ruta', paint: { 'line-color': '#d9f24a', 'line-width': 4 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+}
+
 function arrancarMapa(d) {
   const lons = d.ruta.map(p => p[0]), lats = d.ruta.map(p => p[1]);
   mapa = new maplibregl.Map({ container: 'mapa', attributionControl: { compact: true }, cooperativeGestures: true, maxPitch: 62,
@@ -122,12 +130,7 @@ function arrancarMapa(d) {
     b3.textContent = en3d ? 'Ver en 2D' : 'Ver en 3D'; b3.setAttribute('aria-pressed', String(en3d));
   });
   $('mapa').append(b3);
-  mapa.on('load', () => {
-    mapa.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: d.ruta } } });
-    mapa.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    mapa.addLayer({ id: 'linea', type: 'line', source: 'ruta', paint: { 'line-color': '#d9f24a', 'line-width': 4 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    pintarMarcas();
-  });
+  mapa.on('load', () => { ponerRuta(d); pintarMarcas(); });
   // Safari: si el mapa termina de pintarse fuera de la pantalla, al bajar hasta él sale en negro (lo del 1/11)
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) mapa.triggerRepaint(); }).observe($('mapa'));
 }
