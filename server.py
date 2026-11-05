@@ -1749,6 +1749,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/sesion":                   # «¿ya hay sesión en el panel?» sin un 403 en la consola de quien aún no ha entrado
+            return self._send_json(200, {"sesion": bool(sesion_valida(self.headers.get("Cookie")))}, cache="no-store")
         if crudo == "/api/push/clave":
             c = herramienta("avisos_web").clave_publica()
             return self._send_json(200, {"clave": c or None})      # sin avisos montados: clave null (sin 404 en la consola)

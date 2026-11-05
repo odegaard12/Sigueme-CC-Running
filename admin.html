@@ -1480,15 +1480,8 @@ $('save-manual').addEventListener('click', () => {
   post(p);
 });
 
-// ¿ya hay sesión? (gps_info solo lee: no toca live.json)
-{
-  fetch('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gps_info' }) })
-    .then(res => {
-      if (res.ok) {
-        entrar();
-      }
-    });
-}
+// ¿ya hay sesión? /api/sesion responde siempre 200 (antes se preguntaba con una orden que daba 403 a quien no había entrado)
+fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(d => { if (d && d.sesion) entrar(); }).catch(() => {});
 </script>
 <script src="/avisos-movil.js?v=2"></script>
 <script>

@@ -4,6 +4,10 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.68.1 · 2026-11-05
+- **Panel**: al abrirlo sin haber entrado ya no deja un error 403 en la consola; comprueba la sesión con `/api/sesion`, que responde siempre.
+- Ensayo completo con una copia de los datos reales (sin claves): panel, Mis carreras, invitado que se apunta, directo y borrar, sin ningún error.
+
 ## v1.68.0 · 2026-11-05
 - **Directo**: al tocar a un corredor salen las **barras de su ritmo en cada kilómetro** (más alta, más lenta), con su km más rápido y el más lento. El servidor las calcula con sus puntos solo cuando alguien las pide.
 
