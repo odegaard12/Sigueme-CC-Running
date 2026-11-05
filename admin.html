@@ -746,20 +746,25 @@ function pintarResumen() {
   const p = (heroPrep && heroPrep.p) || {};
   const km = v => v != null ? String(v).replace('.', ',') : '';
   const pill = $('r-pill');
-  pill.textContent = heroEstado === 'fin' ? 'En meta' : heroEstado === 'vivo' ? 'En carrera' : 'Sin empezar';
+  // la carrera ya archivada (está en «Carreras»): lo que toca es preparar la siguiente
+  const archivada = p.archivada && heroEstado !== 'vivo' && heroEstado !== 'fin';
+  pill.textContent = archivada ? 'Archivada' : heroEstado === 'fin' ? 'En meta' : heroEstado === 'vivo' ? 'En carrera' : 'Sin empezar';
+  if (archivada) $('pill-panel').textContent = 'Archivada';
   $('r-nombre').textContent = p.nombre || 'Sin nombre';
   let dia = '';
   if (p.fecha) { const d = new Date(p.fecha + 'T12:00:00'); if (!isNaN(d)) dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); }
-  $('r-linea').textContent = [dia, p.hora_salida ? 'sale a las ' + p.hora_salida : '', p.ruta_km ? km(p.ruta_km) + ' km' : ''].filter(Boolean).join(' · ');
+  $('r-linea').textContent = archivada ? 'Ya está en «Carreras». Para la próxima, cambia sus datos y sube la ruta nueva.'
+    : [dia, p.hora_salida ? 'sale a las ' + p.hora_salida : '', p.ruta_km ? km(p.ruta_km) + ' km' : ''].filter(Boolean).join(' · ');
   const ir = $('r-ir');
   const destino = heroEstado === 'fin' ? 'mas' : 'hoy';
   // ⚠️ 1/11/2026: el día de la carrera este botón decía «Ir a empezar» y solo cambiaba de pestaña: se pulsó creyendo
   // que empezaba. Ese día empieza de verdad (con la misma confirmación que «Empezar a seguir»).
   const hoyEs = new Date().toLocaleDateString('sv') === p.fecha;
   const empiezaYa = heroEstado !== 'fin' && heroEstado !== 'vivo' && hoyEs;
-  ir.textContent = heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : empiezaYa ? 'Empezar a seguir ▶' : 'El día de la carrera ›';
+  ir.textContent = archivada ? 'Preparar la siguiente ›' : heroEstado === 'fin' ? 'Subir el resultado ›' : heroEstado === 'vivo' ? 'Ver el directo ›' : empiezaYa ? 'Empezar a seguir ▶' : 'El día de la carrera ›';
   // en la pestaña Carrera, baja hasta el botón de empezar (o al estado, ya en marcha)
-  ir.onclick = () => { verPestana(destino); if (empiezaYa) { $('save').click(); return; }
+  ir.onclick = () => { if (archivada) { verPestana('preparar'); const f = $('c-nombre'); if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); } return; }
+    verPestana(destino); if (empiezaYa) { $('save').click(); return; }
     const t = destino === 'hoy' ? $(heroEstado === 'vivo' ? 't-estado' : 't-empezar') : null;
     if (t) t.scrollIntoView({ block: 'start' }); else window.scrollTo({ top: 0 }); };
   if (!heroPrep) return;

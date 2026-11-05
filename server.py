@@ -564,7 +564,8 @@ def preparacion():
     except (KeyError, IndexError, TypeError):
         props = {}
     live = read_live()
-    return {"nombre": c.get("nombre"), "fecha": c.get("fecha"), "hora_salida": c.get("hora_salida"),
+    return {"archivada": slug_de(c) in {a[0] for a in carreras_archivadas()},
+            "nombre": c.get("nombre"), "fecha": c.get("fecha"), "hora_salida": c.get("hora_salida"),
             "distancia_km": c.get("distancia_km"), "ruta_km": props.get("distance_km"),
             "avituallamientos": len(avit), "avisos": len((plan or {}).get("avisos", [])),
             "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,

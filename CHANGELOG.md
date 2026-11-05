@@ -4,6 +4,9 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.68.2 · 2026-11-05
+- **Panel**: si la carrera que tiene ya está archivada (en «Carreras»), lo dice («Archivada», «Ya está en Carreras…») y el botón grande pasa a «Preparar la siguiente ›», que lleva a sus datos. Antes enseñaba «El día de la carrera» de una carrera ya corrida.
+
 ## v1.68.1 · 2026-11-05
 - **Panel**: al abrirlo sin haber entrado ya no deja un error 403 en la consola; comprueba la sesión con `/api/sesion`, que responde siempre.
 - Ensayo completo con una copia de los datos reales (sin claves): panel, Mis carreras, invitado que se apunta, directo y borrar, sin ningún error.
