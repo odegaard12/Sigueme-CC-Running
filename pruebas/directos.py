@@ -107,6 +107,29 @@ ok(p['corredores'][0]['nombre'] == 'Ana', 'el que ya llegó va primero')
 texto = json.dumps(p)
 ok('dir-' not in texto and TOKEN not in texto, 'lo público no lleva identificadores ni la invitación')
 
+# ---- v1.68: parciales por km (Ana a 10 km/h: unos 6 min por km)
+ana_cid = next(g['cid'] for g in p['corredores'] if g['nombre'] == 'Ana')
+st, pa, _ = http('GET', f'/api/directo/parciales?id={ID}&cid={ana_cid}')
+parc = pa.get('parciales') or []
+ok(st == 200 and len(parc) >= 9 and all(300 <= s <= 420 for s in parc[1:-1]), f'parciales de Ana: {len(parc)} km, unos 6 min cada uno ({parc[:3]}…)')
+ok(http('GET', f'/api/directo/parciales?id={ID}&cid=00000000')[0] == 404, 'un corredor que no existe da 404')
+
+# ---- v1.69: el GPX de la carrera en directo
+r = urllib.request.urlopen(U + f'/d/{ID}/ruta.gpx'); gx = r.read()
+ok(r.status == 200 and b'<gpx' in gx and b'<trkpt' in gx and 'attachment' in r.headers.get('Content-Disposition', ''), 'el GPX de la carrera en directo se baja')
+ok(http('GET', '/d/0000000000/ruta.gpx')[0] == 404, 'de una carrera que no existe, 404')
+
+# ---- v1.70: seguir la carrera (la campana del directo)
+sub_seg = {'endpoint': 'https://web.push.apple.com/seguidor', 'keys': {'p256dh': 'x', 'auth': 'y'}}
+st, _, _ = http('POST', '/api/push/directo', {'id': ID, 'sub': sub_seg})
+ok(st == 200, 'un móvil se apunta a los avisos de la carrera en directo')
+st, _, _ = http('POST', '/api/push/directo', {'id': '0000000000', 'sub': sub_seg})
+ok(st == 400, 'a una carrera que no existe, no')
+st, _, _ = http('POST', '/api/push/directo', {'id': ID, 'sub': {'endpoint': 'https://evil.example/x', 'keys': {'p256dh': 'x', 'auth': 'y'}}})
+ok(st == 400, 'una suscripción que no es de un servicio de avisos, no')
+st, _, _ = http('POST', '/api/push/directo/baja', {'id': ID, 'endpoint': sub_seg['endpoint']})
+ok(st == 200, 'y se quita')
+
 # ---- la portada, la página y lo privado
 st, c, _ = http('GET', '/api/carreras')
 ok(any(x['id'] == ID and x['estado'] == 'en_directo' for x in c['directos']), 'sale en la portada como «en directo»')
@@ -176,6 +199,21 @@ ok(st == 400, 'aviso de prueba sin avisos activados: avisa')
 st, _, _ = http('POST', '/api/push/mio/prueba', {'ident': 'dir-inventado-123456789012'})
 ok(st == 403, 'aviso de prueba con identificador inventado, no')
 
+# ---- v1.65: volver a la carrera y no retirarse tras la meta
+st, d, _ = http('POST', '/api/invitado/volver', {'ident': ID_LUIS})
+ok(st == 200, 'Luis vuelve a la carrera (deshace «Retirarme»)')
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+ok(next(g for g in p['corredores'] if g['nombre'] == 'Luis')['situacion'] != 'retirado', 'ya no sale como retirado')
+st, m, _ = http('GET', '/api/invitado/directos', cookie=galleta_luis)
+ok(st == 200 and m['directos'][0]['retirado'] is False, 'en sus carreras ya no consta como retirado')
+st, d, _ = http('POST', '/api/invitado/volver', {'ident': 'dir-inventado-123456789012'})
+ok(st == 403, 'volver con un identificador inventado, no')
+st, d, _ = http('POST', '/api/invitado/retirarme', {'ident': ID_ANA})
+ok(st == 400 and 'meta' in d.get('error', ''), 'quien ya llegó a meta no se puede retirar (su tiempo se queda)')
+http('POST', '/api/invitado/retirarme', {'ident': ID_LUIS})
+st, m, _ = http('GET', '/api/invitado/directos', cookie=galleta_luis)
+ok(m['directos'][0]['retirado'] is True, 'retirado otra vez: en sus carreras consta como retirado')
+
 # ---- v1.62: foto de cada corredor
 import struct, zlib
 def png_de(w, h):
@@ -217,6 +255,14 @@ ok(st == 400, 'y no se puede apuntar')
 st, _, _ = http('POST', '/api/invitado/unirse', {'id': ID2, 'token': TOKEN2, 'nombre': 'Tarde'})
 ok(st == 400, 'ni con el enlace de invitación')
 http('POST', '/api/invitado/directo', {'accion': 'borrar', 'id': ID2}, galleta_luis)
+
+# ---- v1.66: un invitado que caduca sale de las carreras en directo (se queda el recorrido)
+todos = inv._usuarios_seguro(str(W)); todos['luis']['caduca'] = '2000-01-01'; inv._guardar(str(W), todos)
+http('POST', '/api/invitado/login', {'usuario': 'ana', 'codigo': codigo})         # entrar lanza la purga
+st, p, _ = http('GET', f'/api/directo?id={ID}')
+ok(st == 200 and 'Luis' not in [g['nombre'] for g in p['corredores']] and len(p['ruta']) > 10, 'Luis caducado: fuera de la carrera (nombre, tiempo, puntos); el recorrido se queda')
+ok(http('GET', f'/api/gps?id={ID_LUIS}&lat=40.6&lon=-4.2&timestamp={int(time.time())}')[0] == 403, 'su identificador ya no vale')
+ok({'Ana', 'Berto'} <= {g['nombre'] for g in p['corredores']}, 'los demás siguen igual')
 
 # ---- el dueño la quita desde el panel
 st, _, h = http('POST', '/api/login', {'usuario': 'prueba', 'password': 'clave'})

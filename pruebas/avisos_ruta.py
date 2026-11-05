@@ -71,5 +71,23 @@ class DmRet(Dm):
 raiz5 = tempfile.mkdtemp(prefix='avruta5-'); ar.alta(raiz5, aw, 'dir-uno', SUB); n = len(enviados)
 ok(ar.revisar(raiz5, aw, {}, {}, {}, CLAVE, DmRet(), T0) == 0 and len(enviados) == n, 'un corredor retirado no recibe avisos de subidas')
 
+# ---- v1.70: avisos para quien sigue una carrera en directo
+import directos as dm
+raiz6 = tempfile.mkdtemp(prefix='avruta6-')
+c6, yo6 = dm.crear(raiz6, 'u1', 'Ana', {'nombre': 'Trail X', 'coords': coords[:50], 'perfil': []}, '2026-11-05', '10:00', lambda *a: {})
+ok(dm.seguir(raiz6, aw, c6['id'], SUB), 'un móvil sigue la carrera en directo')
+n = len(enviados)
+ok(dm.avisar_seguidores(raiz6, aw, T0) == 0, 'sin salir nadie: ningún aviso')
+dm._escribir(dm._f(raiz6, c6['id'], yo6['cid']), {'salida_real': T0 - 30})
+ok(dm.avisar_seguidores(raiz6, aw, T0) == 1 and enviados[-1][1] == 'Ana ha salido', '«Ana ha salido»')
+ok(dm.avisar_seguidores(raiz6, aw, T0 + 20) == 0, 'no se repite')
+dm._escribir(dm._f(raiz6, c6['id'], yo6['cid']), {'salida_real': T0 - 30, 'llegada': T0 + 3570})
+ok(dm.avisar_seguidores(raiz6, aw, T0 + 3600) == 1 and enviados[-1][1] == 'Ana ha llegado a meta en 1h 00m', '«Ana ha llegado a meta en 1h 00m»')
+raiz7 = tempfile.mkdtemp(prefix='avruta7-')
+c7, yo7 = dm.crear(raiz7, 'u1', 'Luis', {'nombre': 'Trail Y', 'coords': coords[:50], 'perfil': []}, '2026-11-05', '10:00', lambda *a: {})
+dm._escribir(dm._f(raiz7, c7['id'], yo7['cid']), {'salida_real': T0 - 3600})
+dm.seguir(raiz7, aw, c7['id'], SUB); n = len(enviados)
+ok(dm.avisar_seguidores(raiz7, aw, T0) == 0 and len(enviados) == n, 'quien se apunta tarde no recibe la salida de hace una hora')
+
 print('\nTODO BIEN' if not malos else f'\nFALLOS: {len(malos)}')
 sys.exit(1 if malos else 0)

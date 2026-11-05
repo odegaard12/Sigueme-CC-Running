@@ -246,13 +246,23 @@ def carreras_archivadas():
     return sorted(salida, key=lambda x: str(x[1].get("fecha") or x[0]), reverse=True)
 
 
-def traza_svg(slug):
+def purgar_invitados():
+    """Borra a los invitados caducados y, de las carreras en directo, los datos de quien ya no existe (se queda el recorrido)."""
+    inv = invitados_mod()
+    inv.purgar(ROOT)
+    todos = inv._usuarios_seguro(ROOT)
+    if todos is not None:                              # lista ilegible: no se toca nada
+        herramienta("directos").purgar_ausentes(ROOT, set(todos) | {inv.DUENO})
+
+
+def traza_svg(slug, puntos=None):
     """El recorrido archivado como dibujo pequeño (SVG en línea) para el
     índice. Vacío si no hay ruta o no se entiende."""
     try:
-        with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
-            pts = json.load(f)["features"][0]["geometry"]["coordinates"]
-        pts = [(float(p[0]), float(p[1])) for p in pts[::max(1, len(pts) // 120)]]
+        if puntos is None:
+            with open(os.path.join(ARCHIVO_DIR, slug, "route.geojson"), encoding="utf-8") as f:
+                puntos = json.load(f)["features"][0]["geometry"]["coordinates"]
+        pts = [(float(p[0]), float(p[1])) for p in puntos[::max(1, len(puntos) // 120)]]
         if len(pts) < 2:
             raise ValueError
         k = math.cos(math.radians(sum(p[1] for p in pts) / len(pts)))
@@ -554,7 +564,8 @@ def preparacion():
     except (KeyError, IndexError, TypeError):
         props = {}
     live = read_live()
-    return {"nombre": c.get("nombre"), "fecha": c.get("fecha"), "hora_salida": c.get("hora_salida"),
+    return {"archivada": slug_de(c) in {a[0] for a in carreras_archivadas()},
+            "nombre": c.get("nombre"), "fecha": c.get("fecha"), "hora_salida": c.get("hora_salida"),
             "distancia_km": c.get("distancia_km"), "ruta_km": props.get("distance_km"),
             "avituallamientos": len(avit), "avisos": len((plan or {}).get("avisos", [])),
             "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,
@@ -1739,9 +1750,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._gps()
             return
         crudo = self.path.split("?")[0]
+        if crudo == "/api/sesion":                   # «¿ya hay sesión en el panel?» sin un 403 en la consola de quien aún no ha entrado
+            return self._send_json(200, {"sesion": bool(sesion_valida(self.headers.get("Cookie")))}, cache="no-store")
         if crudo == "/api/push/clave":
             c = herramienta("avisos_web").clave_publica()
-            return self._send_json(200 if c else 404, {"clave": c} if c else {"error": "avisos apagados"})
+            return self._send_json(200, {"clave": c or None})      # sin avisos montados: clave null (sin 404 en la consola)
         if crudo == "/api/reloj.gpx":
             return self._gpx_reloj()
         if crudo == "/rutas.html":
@@ -1752,9 +1765,36 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._redirigir({"/inicio.html": "/inicio", "/pulseras.html": "/pulseras", "/ruta.html": "/rutas"}[crudo], 301)
         if crudo in ("/api/rutas-publicas", "/api/ruta-publica", "/api/ruta-publica/reloj.gpx", "/api/carreras"):
             return self._publico_get(crudo)
+        if crudo == "/api/directo/parciales":
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                r = herramienta("directos").parciales(ROOT, (q.get("id") or [""])[0], (q.get("cid") or [""])[0])
+            except ValueError:
+                r = None
+            return self._send_json(200 if r is not None else 404, {"parciales": r} if r is not None else {"error": "no existe"},
+                                   cache="public, max-age=10, s-maxage=10")
         if crudo == "/api/directo":
             p = herramienta("directos").publico(ROOT, (parse_qs(urlparse(self.path).query).get("id") or [""])[0])
             return self._send_json(200 if p else 404, p or {"error": "esa carrera no existe"}, cache="public, max-age=5, s-maxage=5")
+        m_gpxd = re.fullmatch(r"/d/([0-9a-f]{10})/ruta\.gpx", crudo)
+        if m_gpxd:
+            c = herramienta("directos").carrera(ROOT, m_gpxd.group(1))
+            try:
+                cuerpo = herramienta("gpx_reloj").generar(c["nombre"], c["coords"], c.get("perfil") or [], (), c.get("subidas") or []).encode("utf-8") if c else None
+            except (ValueError, KeyError, TypeError):
+                cuerpo = None
+            if not cuerpo:
+                return self._send_json(404, {"error": "esa carrera no existe"})
+            nombre = re.sub(r"[^a-z0-9]+", "-", c["nombre"].lower()).strip("-") or "ruta"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/gpx+xml; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{nombre}-reloj.gpx"')
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", "public, max-age=300")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(cuerpo)
+            return
         m_foto = re.fullmatch(r"/d/([0-9a-f]{10})/foto/([0-9a-f]{8})\.png", crudo)
         if m_foto:
             ruta_f = herramienta("directos").ruta_foto(ROOT, m_foto.group(1), m_foto.group(2))
@@ -1906,13 +1946,37 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         sitio = esc(os.environ.get("SIGUEME_SITIO") or nombre_sitio(re.sub(r":\d+$", "", self.headers.get("Host", ""))))
         live = read_live()          # «en directo» solo si de verdad corre (una carrera preparada para otro día no lo está)
         en_marcha = '<a class="aviso" href="/">En directo ahora<small>Sigue la carrera</small></a>' if live.get("started_at") and not live.get("finished_at") else ""
-        n = len(filas)
+        dm, filas_dir = herramienta("directos"), []
+        terminadas = [p for p in (dm.publico(ROOT, i) for i in dm._ids(ROOT)) if p and p["estado"] == "terminada"]
+        for p in sorted(terminadas, key=lambda x: -x["salida_ts"]):
+            f = str(p.get("fecha") or "")
+            fecha = (f"{int(f[8:10])} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[int(f[5:7]) - 1]} {f[:4]}"
+                     if re.match(r"^\d{4}-(0[1-9]|1[0-2])-\d{2}$", f) else f)
+            hm = lambda s: f"{s // 3600}h {s % 3600 // 60:02d}m"
+            con_tiempo = [g for g in p["corredores"] if g.get("tiempo_s") and g["situacion"] == "en_meta"]
+            km = f"{round(float(p['distancia_km']), 1):g}".replace(".", ",") if p.get("distancia_km") else ""
+            des = f"{int(p['desnivel_m']):,}".replace(",", ".") if p.get("desnivel_m") else ""
+            mejor = hm(min(g["tiempo_s"] for g in con_tiempo)) if con_tiempo else ""
+            cifras = "".join(f'<div class="cifra"><b>{esc(v)}</b><span>{u}</span></div>' for v, u in ((km, "KM"), (des, "D+"), (mejor, "MEJOR")) if v)
+            gente = " · ".join(esc(g["nombre"]) + (" " + hm(g["tiempo_s"]) if g in con_tiempo else (" retirado" if g["situacion"] == "retirado" else ""))
+                               for g in p["corredores"])
+            enlace = f"/d/{esc(p['id'])}"
+            filas_dir.append(f'<article class="hero-tarj ficha-grande"><div class="hero-txt">'
+                             f'<span class="pill-hero">{esc(fecha)} · {len(p["corredores"])} {"corredor" if len(p["corredores"]) == 1 else "corredores"}</span>'
+                             f'<h2 class="hero-titulo"><a href="{enlace}">{esc(p["nombre"])}</a></h2>'
+                             f'<div class="hero-cifras">{cifras}</div><p class="hero-linea">{gente}</p>'
+                             f'<div class="hero-botones"><a class="boton-hero" href="{enlace}">Ver la carrera ▶</a>'
+                             f'<a class="boton-hero claro" href="{enlace}/ruta.gpx" download>Bajar el GPX</a></div></div>'
+                             f'<a class="hero-traza" href="{enlace}" tabindex="-1" aria-hidden="true">{traza_svg("", p.get("ruta"))}</a></article>')
+        n = len(filas) + len(filas_dir)
+        if filas_dir:
+            filas += ['<h2 class="sec-tit">Carreras en directo</h2>'] + filas_dir
         bajo = (f'{n} {"carrera" if n == 1 else "carreras"} con su recorrido, su tiempo y la repetición.' if n
                 else 'Aquí quedan las carreras terminadas, con su recorrido, su tiempo y la repetición.')
         html = ('<!doctype html><html lang="es"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0e1110">'
                 f'<title>Carreras · {sitio}</title><meta name="description" content="Todas las carreras seguidas con Sígueme CC">'
-                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=19">'
+                '<link rel="icon" type="image/png" href="/favicon.png?v=4"><link rel="stylesheet" href="/cartel.css?v=23">'
                 '</head><body class="cartel"><div class="campo">'
                 f'<header class="barra"><a class="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>' + '<nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/" aria-current="page">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>'
                 '<h1 class="gigante">Carreras</h1>'
@@ -2149,7 +2213,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(403, {"error": "usuario o código incorrecto, o el acceso ha caducado"})
                 return
             acierto_de(ip)
-            inv.purgar(ROOT)
+            purgar_invitados()
             print(f"[invitado] {usuario} entra", flush=True)
             self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv")
             return
@@ -2219,7 +2283,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             d = self._inv_json(2048)
             ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
-            if not ident.startswith("dir-") or not herramienta("directos").retirar(ROOT, ident):
+            try:
+                hecho = ident.startswith("dir-") and herramienta("directos").retirar(ROOT, ident)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not hecho:
+                fallo_de(ip)
+                self._send_json(403, {"error": "identificador incorrecto"})
+                return
+            acierto_de(ip)
+            self._send_json(200, {"ok": True})
+            return
+        if ruta == "/api/invitado/volver":           # deshacer «Retirarme»: basta el identificador del móvil
+            ip = "ret:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                self._send_json(429, {"error": "demasiados intentos: espera unos minutos"})
+                return
+            d = self._inv_json(2048)
+            ident = str(d.get("ident") or "") if isinstance(d, dict) else ""
+            try:
+                hecho = ident.startswith("dir-") and herramienta("directos").volver(ROOT, ident)
+            except ValueError as e:
+                self._send_json(400, {"error": str(e)})
+                return
+            if not hecho:
                 fallo_de(ip)
                 self._send_json(403, {"error": "identificador incorrecto"})
                 return
@@ -2707,6 +2795,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._send_json(400, {"error": "invalid json"})
         if self.path in ("/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_mio(sub)
+        if self.path in ("/api/push/directo", "/api/push/directo/baja"):        # seguir una carrera en directo (v1.70)
+            d = sub if isinstance(sub, dict) else {}
+            dm, av = herramienta("directos"), herramienta("avisos_web")
+            with datos_lock:
+                if self.path.endswith("/baja"):
+                    dm.dejar(ROOT, av, str(d.get("id") or ""), d.get("endpoint"))
+                    return self._send_json(200, {"ok": True})
+                si = dm.seguir(ROOT, av, str(d.get("id") or ""), d.get("sub"))
+            return self._send_json(200 if si else 400, {"ok": si})
         av = herramienta("avisos_web")
         # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
         with datos_lock:
@@ -2759,7 +2856,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             self._gps(self.rfile.read(largo) if largo else b"")
             return
-        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
+        if self.path in ("/api/push/alta", "/api/push/baja", "/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba",
+                         "/api/push/directo", "/api/push/directo/baja"):
             return self._push_post()
         if self.path.startswith("/api/invitado/"):
             return self._invitado_post()
@@ -2878,7 +2976,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     inv.moderar(ROOT, usuario, str(data.get("id") or ""), str(data.get("accion") or ""))
                 elif accion == "directo_borrar":
                     herramienta("directos").borrar(ROOT, str(data.get("id") or ""))
-                inv.purgar(ROOT)
+                purgar_invitados()
             except ValueError as e:
                 self._send_json(400, {"error": str(e)})
                 return
@@ -3157,7 +3255,7 @@ if __name__ == "__main__":
         while True:
             try:
                 if tengo_la_vip():
-                    invitados_mod().purgar(ROOT)
+                    purgar_invitados()
             except Exception as exc:
                 print(f"[invitado] purga: {exc}", flush=True)
             time.sleep(6 * 3600)
@@ -3177,6 +3275,11 @@ if __name__ == "__main__":
                                                        leer_json("route.geojson") or {}, clave_gps(), herramienta("directos"))
             except Exception as exc:
                 print(f"[avisos-ruta] {exc}", flush=True)
+            try:        # salidas, llegadas y retiradas para quien sigue una carrera en directo (v1.70)
+                if tengo_la_vip():
+                    herramienta("directos").avisar_seguidores(ROOT, herramienta("avisos_web"))
+            except Exception as exc:
+                print(f"[avisos-directo] {exc}", flush=True)
             time.sleep(15)
     threading.Thread(target=avisos_loop, daemon=True).start()
     # ThreadingHTTPServer y NO TCPServer: el de un solo hilo atiende una

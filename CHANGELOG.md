@@ -4,6 +4,67 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.70.1 · 2026-11-05
+- README al día con lo nuevo del directo para quien mira: llegada prevista, sin señal y batería baja, ritmo por km, campana de avisos y GPX.
+
+## v1.70.0 · 2026-11-05
+- **Campana en la página del directo**: «Avisarme de salidas y llegadas». Quien sigue la carrera recibe en el móvil «Ana ha salido», «Luis ha llegado a meta en 1h 02m» o «… se ha retirado», una vez cada aviso. Quien se apunta tarde no recibe lo de hace más de 10 minutos. En iPhone, con la web instalada en la pantalla de inicio.
+
+## v1.69.0 · 2026-11-05
+- **GPX de las carreras en directo**: «Bajar el GPX» en la página del directo, y en Carreras e Inicio cuando la carrera ya terminó (la ruta con las subidas como puntos de control, lista para el reloj).
+- Los enlaces dentro de un texto (el de la APK, «Relojes y pulseras»…) se tocan en 44 px sin mover el texto; la letra más pequeña de Pulseras sube a 12 px.
+
+## v1.68.3 · 2026-11-05
+- **Directo**: la lista de abajo se llama «Clasificación» (antes había dos títulos «Corredores» seguidos).
+- **Más fácil de tocar en el móvil**: los desplegables del panel («Más datos…», «Ver la configuración», «Pruebas»…) con letra más grande y 44 px de alto, el + / − del mapa a 40 px y los «?» de ayuda con zona de toque de 44 px.
+- Fuera la raya curva verde de la izquierda: la carrera en directo de Inicio lleva la pastilla «● En directo» como el resto del diseño, y el corredor elegido de la clasificación se marca con el fondo.
+
+## v1.68.2 · 2026-11-05
+- **Panel**: si la carrera que tiene ya está archivada (en «Carreras»), lo dice («Archivada», «Ya está en Carreras…») y el botón grande pasa a «Preparar la siguiente ›», que lleva a sus datos. Antes enseñaba «El día de la carrera» de una carrera ya corrida.
+
+## v1.68.1 · 2026-11-05
+- **Panel**: al abrirlo sin haber entrado ya no deja un error 403 en la consola; comprueba la sesión con `/api/sesion`, que responde siempre.
+- Ensayo completo con una copia de los datos reales (sin claves): panel, Mis carreras, invitado que se apunta, directo y borrar, sin ningún error.
+
+## v1.68.0 · 2026-11-05
+- **Directo**: al tocar a un corredor salen las **barras de su ritmo en cada kilómetro** (más alta, más lenta), con su km más rápido y el más lento. El servidor las calcula con sus puntos solo cuando alguien las pide.
+
+## v1.67.2 · 2026-11-05
+- **Directo**: si con mala cobertura el mapa carga sin la línea del recorrido, se vuelve a poner en la siguiente actualización (antes podían salir los corredores sin la línea).
+- **Capturas nuevas** en el README: la carrera en directo con varios corredores, Mis carreras, y de nuevo Inicio, Rutas y el panel con el diseño de ahora.
+
+## v1.67.1 · 2026-11-04
+- **Directo**: la **llegada prevista** de cada corredor («llega hacia las 12:45»), con su ritmo real y los km que le faltan.
+- **Arreglo**: el ritmo medio se calcula hasta el último punto recibido; antes, sin señal, empeoraba solo mientras el reloj seguía corriendo.
+
+## v1.67.0 · 2026-11-04
+- **Directo**: si un corredor lleva más de 3 minutos sin mandar su posición, su ficha y la lista dicen «sin señal desde las 12:03»; y «batería baja» si su móvil baja del 20 %.
+
+## v1.66.2 · 2026-11-04
+- **Panel**: el botón grande de arriba dice «El día de la carrera ›» los días sin carrera (antes «Ir a empezar ▶», que solo cambiaba de pestaña).
+- El crono se explica igual en el panel y en la ayuda: el directo cuenta desde la hora de salida; el resultado final, desde que empiezas a correr.
+- «Perfil y avisos» cuenta también el iPhone, e «Invitados» que el amigo puede correr contigo en directo.
+
+## v1.66.1 · 2026-11-04
+- **Guías paso a paso al día**: la del panel ya llama «Invitados» a la pestaña 5, explica el móvil según iPhone o Android y que la carrera arranca sola; la de Mis carreras enseña el menú de saltos y un paso nuevo, «Correr con otros» (invitar, apuntarse, retirarse y volver).
+- **Ayudas «?»**: «Perfil y avisos», «Tus carreras en directo» y «Carreras en las que te puedes apuntar» con los nombres de botones de ahora.
+- README y guía escrita: el día de la carrera con Traccar o el reloj no hay que pulsar nada.
+
+## v1.66.0 · 2026-11-04
+- **Privacidad**: cuando un invitado caduca o se borra, sus datos salen de las carreras en directo (su nombre en la carrera, su tiempo, sus puntos y su foto). La carrera se queda con su recorrido; si la creó él, queda sin creador y su enlace de invitación deja de valer.
+- **Mis carreras**: cada carrera en directo con orden y menos botones: Ver el directo · Invitar a quien corra contigo (con lo que hace) · Mi móvil y mi foto (dentro, Android o iPhone y la foto) · Retirarme · Borrar.
+- **Página del directo**: quien la creó puede invitar desde ahí, y se explica la diferencia: «Compartir» para que te sigan, «Invitar» para que corra contigo.
+
+## v1.65.1 · 2026-11-04
+- **Carreras**: las carreras en directo ya terminadas salen también aquí, con el tiempo de cada corredor (o «retirado») y el mejor tiempo.
+- README al día: ficha y fotos, mapa 2D/3D, ritmo y volver a la carrera.
+
+## v1.65.0 · 2026-11-04
+- **«Volver a la carrera»**: quien pulsa «Retirarme» sin querer puede deshacerlo mientras la carrera no termine (en Mis carreras y en la página del directo).
+- **Quien ya llegó a meta no se puede retirar**: antes «Retirarme» le borraba el resultado.
+- **Tope de carreras en directo**: solo cuentan las de los últimos 60 días y las próximas; las viejas ya no impiden crear otra.
+- Sin avisos montados en el servidor, la clave de avisos responde sin error (la consola del navegador queda limpia).
+
 ## v1.64.2 · 2026-11-02
 - **Directo**: el ritmo medio (min/km) de cada corredor, en su ficha y en la lista, desde que lleva 300 m.
 

@@ -17,7 +17,24 @@ let mapa = null, marcas = {}, datos = null, elegido = null;
 
 function guardado() { try { return localStorage.getItem(clave); } catch (e) { return null; } }
 // ritmo medio desde la salida real, en min/km (hace falta 300 m para que valga algo)
-function ritmo(g) { if (!(g.tiempo_s > 0 && g.km >= 0.3)) return ''; const sp = Math.round(g.tiempo_s / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
+// en carrera: «sin señal desde las 12:03» si lleva más de 3 min sin mandar posición; «batería baja» por debajo del 20 %
+function alerta(g) {
+  if (g.situacion !== 'corriendo' && g.situacion !== 'en_la_salida') return '';
+  const a = [];
+  if (g.visto && Date.now() / 1000 - g.visto > 180) a.push('sin señal desde las ' + new Date(g.visto * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
+  if (g.bateria != null && g.bateria < 20) a.push('batería baja (' + g.bateria + ' %)');
+  return a.join(' · ');
+}
+// llegada prevista: su ritmo medio desde la salida real aplicado a los km que le faltan (desde el km 1, para que valga algo)
+// el tiempo hasta su ÚLTIMO punto (si no, sin señal el ritmo empeoraría solo mientras el reloj sigue corriendo)
+function hastaUltimo(g) { return g.visto && g.salida && g.visto > g.salida ? g.visto - g.salida : g.tiempo_s; }
+function prevista(g) {
+  const t = hastaUltimo(g);
+  if (g.situacion !== 'corriendo' || !(g.km >= 1) || !(t > 0) || !(datos && datos.distancia_km > g.km)) return '';
+  const eta = (g.salida || Date.now() / 1000 - g.tiempo_s) + t / g.km * datos.distancia_km;
+  return 'llega hacia las ' + new Date(eta * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+function ritmo(g) { const t = g.situacion === 'en_meta' ? g.tiempo_s : hastaUltimo(g); if (!(t > 0 && g.km >= 0.3)) return ''; const sp = Math.round(t / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
 function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || '·'; }
 
 function pintar(d) {
@@ -30,7 +47,7 @@ function pintar(d) {
   d.corredores.forEach((g, i) => {
     const f = document.createElement('div'); f.className = 'fila simple';
     const n = document.createElement('div'); n.className = 'nombre'; n.textContent = (g.situacion === 'en_meta' ? (i + 1) + ' · ' : '') + g.nombre;
-    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g)].filter(Boolean).join(' · '); n.append(s);
+    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · '); if (alerta(g)) s.classList.add('alerta'); n.append(s);
     const c1 = document.createElement('div'); c1.className = 'cifra'; const b1 = document.createElement('b'); b1.textContent = km(g.km); const u1 = document.createElement('span'); u1.textContent = 'KM'; c1.append(b1, u1);
     const c2 = document.createElement('div'); c2.className = 'cifra'; const b2 = document.createElement('b'); b2.textContent = g.tiempo_s != null ? tiempo(g.tiempo_s) : '–'; const u2 = document.createElement('span'); u2.textContent = g.situacion === 'en_meta' ? 'TIEMPO' : 'EN CARRERA'; c2.append(b2, u2);
     f.append(n, c1, c2); lista.append(f);
@@ -53,15 +70,37 @@ function pintar(d) {
     if (g.foto) { const im = document.createElement('img'); im.alt = ''; im.src = '/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto; av.append(im); } else av.textContent = iniciales(g.nombre);
     const n = document.createElement('b'); n.textContent = g.nombre;
     const s = document.createElement('small');
-    s.textContent = d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g)].filter(Boolean).join(' · ')
+    if (alerta(g)) s.classList.add('alerta');
+    s.textContent = alerta(g) && d.corredores.length > 1 ? alerta(g) : d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · ')
       : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
     b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
-  if (mapa && mapa.loaded()) pintarMarcas();
+  if (mapa && mapa.isStyleLoaded()) { ponerRuta(d); pintarMarcas(); }
+  if (elegido) verParciales();
 }
 
-function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); }
+function elegir(cid) { elegido = elegido === cid ? null : cid; pintar(datos); if (elegido) verEnMapa(cid); verParciales(); }
+
+// las barras del ritmo de cada km del corredor elegido (se piden al servidor solo al elegirlo y al refrescar)
+async function verParciales() {
+  const caja = $('parciales'), g = elegido && datos && datos.corredores.find(x => x.cid === elegido);
+  if (!g) { caja.hidden = true; return; }
+  try {
+    const r = await fetch('/api/directo/parciales?id=' + encodeURIComponent(ID) + '&cid=' + encodeURIComponent(g.cid));
+    const p = r.ok ? (await r.json()).parciales : [];
+    if (elegido !== g.cid) return;
+    caja.hidden = false;
+    const barras = $('barras-km'); barras.textContent = '';
+    if (!p || !p.length) { $('parc-tit').textContent = g.nombre + ': su ritmo por km sale en cuanto lleve el primer kilómetro.'; barras.hidden = true; $('parc-pie').hidden = true; return; }
+    const mm = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const max = Math.max(...p), min = Math.min(...p);
+    $('parc-tit').textContent = g.nombre + ' · ritmo por km (más rápido ' + mm(min) + ', más lento ' + mm(max) + ' min/km)';
+    barras.hidden = false; $('parc-pie').hidden = false;
+    barras.setAttribute('aria-label', 'Ritmo de cada kilómetro de ' + g.nombre + ': ' + p.map((s, i) => 'km ' + (i + 1) + ' ' + mm(s)).join(', '));
+    p.forEach((s, i) => { const b = document.createElement('i'); b.style.height = (25 + 75 * (s - min) / Math.max(1, max - min)) + '%'; b.title = 'km ' + (i + 1) + ' · ' + mm(s) + ' min/km'; barras.append(b); });
+  } catch (e) { /* sin red: se reintenta en el próximo refresco */ }
+}
 
 function verEnMapa(cid) {
   const m = marcas[cid];
@@ -84,6 +123,14 @@ function pintarMarcas() {
   }
 }
 
+// la línea del recorrido; si con mala cobertura no llegó a ponerse al cargar, se pone en la siguiente actualización
+function ponerRuta(d) {
+  if (!mapa || !mapa.isStyleLoaded() || mapa.getSource('ruta')) return;
+  mapa.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: d.ruta } } });
+  mapa.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+  mapa.addLayer({ id: 'linea', type: 'line', source: 'ruta', paint: { 'line-color': '#d9f24a', 'line-width': 4 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+}
+
 function arrancarMapa(d) {
   const lons = d.ruta.map(p => p[0]), lats = d.ruta.map(p => p[1]);
   mapa = new maplibregl.Map({ container: 'mapa', attributionControl: { compact: true }, cooperativeGestures: true, maxPitch: 62,
@@ -104,12 +151,7 @@ function arrancarMapa(d) {
     b3.textContent = en3d ? 'Ver en 2D' : 'Ver en 3D'; b3.setAttribute('aria-pressed', String(en3d));
   });
   $('mapa').append(b3);
-  mapa.on('load', () => {
-    mapa.addSource('ruta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: d.ruta } } });
-    mapa.addLayer({ id: 'borde', type: 'line', source: 'ruta', paint: { 'line-color': '#0c0f0e', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    mapa.addLayer({ id: 'linea', type: 'line', source: 'ruta', paint: { 'line-color': '#d9f24a', 'line-width': 4 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    pintarMarcas();
-  });
+  mapa.on('load', () => { ponerRuta(d); pintarMarcas(); });
   // Safari: si el mapa termina de pintarse fuera de la pantalla, al bajar hasta él sale en negro (lo del 1/11)
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) mapa.triggerRepaint(); }).observe($('mapa'));
 }
@@ -131,16 +173,80 @@ async function cargar() {
 function enseñarMovil(ident) {
   $('sec-movil').hidden = false; window.pintarMovil($('movil'), ident);
   if (window.fotoCorredor) window.fotoCorredor($('foto-mia'), ident, () => cargar());
+  let retirado = false;
   $('retirarme').onclick = async () => {
-    if (!confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará.')) return;
+    if (!retirado && !confirm('¿Retirarte de esta carrera? Dejarás de salir en el mapa y tu móvil ya no contará. Podrás volver mientras la carrera no termine.')) return;
     $('retirarme').disabled = true;
     try {
-      const r = await fetch('/api/invitado/retirarme', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ident }) });
-      if (!r.ok) throw new Error('No se pudo retirar. Prueba otra vez.');
-      $('r-msg').textContent = 'Te has retirado. Desactiva el seguimiento en tu móvil.'; cargar();
-    } catch (e) { $('r-msg').textContent = e.message; $('retirarme').disabled = false; }
+      const r = await fetch(retirado ? '/api/invitado/volver' : '/api/invitado/retirarme', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ident }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'No se pudo. Prueba otra vez.');
+      retirado = !retirado;
+      $('retirarme').textContent = retirado ? 'Volver a la carrera' : 'Retirarme de la carrera';
+      $('r-msg').textContent = retirado ? 'Te has retirado. Si fue sin querer, pulsa «Volver a la carrera».' : 'Vuelves a estar en la carrera.';
+      cargar();
+    } catch (e) { $('r-msg').textContent = e.message; }
+    $('retirarme').disabled = false;
   };
 }
+
+// quien creó la carrera (con la sesión iniciada) también invita desde aquí
+fetch('/api/invitado/yo', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(y => {
+  if (!y || !y.sesion) return null;
+  return fetch('/api/invitado/directos', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null);
+}).then(d => {
+  const c = d && (d.directos || []).find(x => x.id === ID && x.invitacion); if (!c) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'boton'; b.textContent = 'Invitar a quien corra contigo';
+  b.addEventListener('click', async () => {
+    const url = location.origin + '/d/' + ID + '#unirse=' + c.invitacion;
+    try { if (navigator.share) await navigator.share({ title: document.title + ' · apúntate', url }); else { await navigator.clipboard.writeText(url); b.textContent = 'Invitación copiada'; } } catch (e) { /* cancelado */ }
+  });
+  $('compartir').after(b);
+  const p = document.createElement('p'); p.className = 'autor'; p.textContent = '«Compartir»: para que te sigan. «Invitar»: para que corra contigo y salga en el mapa.';
+  $('compartir').parentNode.after(p);
+}).catch(() => {});
+
+// la campana: avisos en el móvil de quien sigue la carrera (salidas, llegadas a meta y retiradas)
+(async () => {
+  let k = null; try { k = await fetch('/api/push/clave').then(r => r.ok ? r.json() : null); } catch (e) { /* sin red */ }
+  if (!k || !k.clave) return;                                    // avisos sin montar en el servidor: sin botón
+  const puede = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalada = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'boton claro';
+  const nota = document.createElement('p'); nota.className = 'autor'; nota.hidden = true;
+  const marca = 'sigo.' + ID; let activo = false; try { activo = localStorage.getItem(marca) === '1'; } catch (e) { /* da igual */ }
+  const pinta = () => { b.textContent = activo ? 'Avisos activados · quitar' : 'Avisarme de salidas y llegadas'; };
+  const di = t => { nota.hidden = false; nota.textContent = t; };
+  const b64 = s => Uint8Array.from(atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const post = (u, d) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+  pinta(); $('compartir').after(b); $('compartir').parentNode.after(nota);
+  b.addEventListener('click', async () => {
+    if (!puede || (ios && !instalada)) return di(ios ? 'En el iPhone los avisos llegan con la web instalada: Compartir → «Añadir a pantalla de inicio», ábrela desde su icono y vuelve a pulsar aquí.' : 'Este navegador no puede recibir avisos.');
+    const permiso = !activo && Notification.permission === 'default' ? Notification.requestPermission() : null;   // en el mismo toque (Safari)
+    b.disabled = true;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw-avisos.js', { scope: '/avisos/' });
+      if (!reg.active) { const w = reg.installing || reg.waiting; if (w) await new Promise(ok => { const m = () => { if (w.state === 'activated' || w.state === 'redundant') ok(); }; w.addEventListener('statechange', m); m(); }); }
+      const actual = await reg.pushManager.getSubscription();
+      if (activo) {
+        if (actual) await post('/api/push/directo/baja', { id: ID, endpoint: actual.endpoint }).catch(() => {});
+        activo = false; try { localStorage.removeItem(marca); } catch (e) { /* da igual */ }
+        pinta(); return di('Ya no te avisaremos de esta carrera.');
+      }
+      if ((permiso ? await permiso : Notification.permission) !== 'granted') return di('Sin permiso no te podemos avisar: actívalo en los ajustes del navegador y vuelve a pulsar.');
+      const sub = actual || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(k.clave) });
+      const r = await post('/api/push/directo', { id: ID, sub: sub.toJSON() });
+      if (!r.ok) throw new Error('alta ' + r.status);
+      activo = true; try { localStorage.setItem(marca, '1'); } catch (e) { /* da igual */ }
+      pinta(); di('Listo: te avisaremos en este móvil cuando cada corredor salga, llegue a meta o se retire.');
+    } catch (e) { di('No se pudieron activar los avisos. Prueba otra vez.'); }
+    finally { b.disabled = false; }
+  });
+})();
+
+// el GPX de la ruta, para llevarla al reloj
+{ const g = document.createElement('a'); g.className = 'boton claro'; g.href = '/d/' + ID + '/ruta.gpx'; g.setAttribute('download', ''); g.textContent = 'Bajar el GPX'; $('compartir').parentNode.append(g); }
 
 $('compartir').addEventListener('click', async () => {
   const url = location.origin + '/d/' + ID;

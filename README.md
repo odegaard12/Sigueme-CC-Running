@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="versión" src="https://img.shields.io/badge/versión-v1.64.2-1f8a4c">
+  <img alt="versión" src="https://img.shields.io/badge/versión-v1.70.1-1f8a4c">
   <img alt="Python" src="https://img.shields.io/badge/servidor-Python%203%20·%20stdlib-3776ab">
   <img alt="MapLibre" src="https://img.shields.io/badge/mapa-MapLibre%204.7-396cb2">
   <img alt="Zepp OS" src="https://img.shields.io/badge/reloj-Zepp%20OS%203-ff6a00">
@@ -138,10 +138,17 @@ ves todo lo publicado y puedes quitarlo.
 
 ### Carreras en directo con varios corredores
 
+<p align="center">
+  <img src="docs/capturas/directo.png" width="900" alt="Carrera en directo con dos corredores: ficha con sus fotos, mapa y tiempos, en el ordenador y en el móvil">
+</p>
+<p align="center">
+  <img src="docs/capturas/mis-carreras.png" width="300" alt="Mis carreras: la carrera en directo con ver, invitar, mi móvil y mi foto, retirarme y borrar">
+</p>
+
 Desde **Mis carreras** (el panel o el acceso de un invitado) se crea una **carrera en directo** a partir de
 una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con el mapa y cada corredor
 (posición, km y tiempo, cada 10 s). Cada uno corre con **su** identificador, en su móvil:
-**Android** con la app Sígueme CC y **iPhone** con Traccar Client («Configurar mi móvil» lo deja listo de un toque).
+**Android** con la app Sígueme CC y **iPhone** con Traccar Client («Mi móvil y mi foto» lo deja listo de un toque).
 
 - **Apuntarse**: con el enlace de invitación («Invitar») o, con cuenta, desde «Carreras en las que te puedes apuntar».
   Una carrera terminada (todos llegaron o se retiraron) ya no admite a nadie.
@@ -152,6 +159,13 @@ una ruta: día y hora de salida, y sale sola en la portada y en `/d/<id>`, con e
   manda por notificación cada subida, cima y el último km (la pulsera los repite). Solo con cobertura; en Android los lanza
   la app sin cobertura. El botón «Enviar un aviso de prueba» sirve para que la app de la pulsera deje pasarlos.
 - **GPX**: cada carrera terminada tiene su botón «Bajar el GPX» en Inicio y en Carreras.
+- **Ficha y fotos**: arriba de la página, la ficha de corredor (uno) o de corredores (varios), con la foto que cada uno sube si quiere
+  (se recorta y reduce en su móvil, solo sale en esa carrera y se quita cuando quiera). Al tocar a uno, el mapa va a él.
+- **Mapa en 2D o 3D**, y el **ritmo medio** (min/km) de cada corredor. Quien pulsa «Retirarme» sin querer puede **volver a la carrera**
+  mientras no termine; quien ya llegó a meta no se puede retirar. Al terminar, la carrera queda en **Carreras** con el tiempo de cada uno.
+- **Para quien mira**: cada corredor con su ritmo medio, su **llegada prevista** y, si hace falta, «sin señal desde las 12:03» o «batería baja».
+  Al tocarlo, las **barras de su ritmo en cada kilómetro**. Con la **campana** («Avisarme de salidas y llegadas») llega al móvil «Ana ha salido»
+  o «Luis ha llegado a meta en 1h 02m» (en iPhone, con la web instalada). Y «Bajar el GPX» para llevarse la ruta al reloj.
 
 La **portada** de la web (`/`, cuando no hay una carrera para hoy; siempre en `/inicio`) enseña
 las rutas publicadas y las carreras archivadas, y una carrera de otro día como «próxima». Cada

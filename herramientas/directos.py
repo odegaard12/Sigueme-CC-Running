@@ -117,7 +117,13 @@ def crear(raiz, usuario, nombre_corredor, ruta, fecha, hora, calcular, limite_h=
          "distancia_km": ruta.get("distancia_km"), "desnivel_m": ruta.get("desnivel_m"), "subidas": ruta.get("subidas") or [],
          "plan": plan, "corredores": [yo]}
     with _lock:
-        if len(_ids(raiz)) >= MAX_DIRECTOS:
+        # el tope cuenta las de los últimos 60 días y las próximas (las viejas no bloquean crear otra)
+        recientes = 0
+        for i in _ids(raiz):
+            ci = carrera(raiz, i)
+            if ci and time.time() - salida(ci).timestamp() < 60 * 86400:
+                recientes += 1
+        if recientes >= MAX_DIRECTOS:
             raise ValueError("hay demasiadas carreras en directo: borra alguna antigua")
         _escribir(_f(raiz, c["id"]), c)
         _indice[yo["ident"]] = (c["id"], yo["cid"])
@@ -328,8 +334,24 @@ def retirar(raiz, ident):
         return False
     with _lock:
         st = estado(raiz, c["id"], co["cid"])
+        if st.get("llegada"):
+            raise ValueError("ya has llegado a meta: tu tiempo se queda")
         if not st.get("retirado"):
             st["retirado"] = time.time()
+            _escribir(_f(raiz, c["id"], co["cid"]), st)
+    return True
+
+
+def volver(raiz, ident, ahora=None):
+    """Deshace «Retirarme» mientras la carrera no haya terminado. False si el identificador no vale."""
+    c, co = buscar(raiz, ident)
+    if not c:
+        return False
+    if (ahora or time.time()) > (salida(c) + timedelta(hours=c.get("limite_h") or 6)).timestamp():
+        raise ValueError("esta carrera ya terminó")
+    with _lock:
+        st = estado(raiz, c["id"], co["cid"])
+        if st.pop("retirado", None) is not None:
             _escribir(_f(raiz, c["id"], co["cid"]), st)
     return True
 
@@ -348,6 +370,43 @@ def abiertas(raiz, usuario, ahora=None):
                     "distancia_km": c.get("distancia_km"), "salida_ts": salida(c).timestamp(),
                     "corredores": [x["nombre"] for x in c["corredores"] if not estado(raiz, id_, x["cid"]).get("retirado")]})
     out.sort(key=lambda x: x["salida_ts"])
+    return out
+
+
+_parciales_cache = {}                # (id, cid) -> (fecha del fichero de puntos, parciales)
+
+
+def parciales(raiz, id_, cid):
+    """Segundos que tardó en cada kilómetro completo, desde su salida real (lista vacía si aún no ha hecho uno)."""
+    c = carrera(raiz, id_)
+    if not c or not any(x["cid"] == cid for x in c["corredores"]):
+        return None
+    st = estado(raiz, id_, cid)
+    ruta = _f(raiz, id_, cid, "pts")
+    if not st.get("salida_real") or not os.path.isfile(ruta):
+        return []
+    clave, marca = (id_, cid), os.path.getmtime(ruta)
+    if clave in _parciales_cache and _parciales_cache[clave][0] == marca:
+        return _parciales_cache[clave][1]
+    salida_t, km, siguiente, antes, out = st["salida_real"], 0.0, 1, st["salida_real"], []
+    with open(ruta, encoding="utf-8") as f:
+        for linea in f:
+            try:
+                t, la, lo = json.loads(linea)
+            except (ValueError, TypeError):
+                continue
+            if t < salida_t:
+                continue
+            k = _km_en_ruta(c, la, lo, km)
+            if k is None:
+                continue
+            km = max(km, k)
+            while km >= siguiente:
+                out.append(round(t - antes))
+                antes, siguiente = t, siguiente + 1
+            if st.get("llegada") and t >= st["llegada"]:
+                break
+    _parciales_cache[clave] = (marca, out)
     return out
 
 
@@ -436,7 +495,8 @@ def mias(raiz, usuario):
             continue
         out.append({"id": id_, "nombre": c["nombre"], "fecha": c["fecha"], "hora_salida": c["hora_salida"],
                     "creador": c.get("creador") == usuario, "invitacion": c["invitacion"] if c.get("creador") == usuario else None,
-                    "ident": yo["ident"] if yo else None, "corredores": [x["nombre"] for x in c["corredores"]]})
+                    "ident": yo["ident"] if yo else None, "corredores": [x["nombre"] for x in c["corredores"]],
+                    "retirado": bool(yo and estado(raiz, id_, yo["cid"]).get("retirado"))})
     out.sort(key=lambda x: x["fecha"], reverse=True)
     return out
 
@@ -457,6 +517,106 @@ def borrar(raiz, id_, usuario=None):
         os.remove(_f(raiz, id_))
         _cum.pop(id_, None)
     return True
+
+
+def purgar_ausentes(raiz, vivos):
+    """Corredores con cuenta que ya no existe (invitado caducado o borrado): fuera sus datos (su nombre en la carrera, su tiempo, sus
+    puntos y su foto). La carrera se queda con su recorrido; si la creó él, queda sin creador (la puede borrar el dueño).
+    `vivos` son los usuarios que siguen existiendo. Devuelve cuántos corredores se han quitado."""
+    n = 0
+    with _lock:
+        for id_ in _ids(raiz):
+            c = carrera(raiz, id_)
+            if not c:
+                continue
+            cambio = False
+            for co in [x for x in c["corredores"] if x.get("usuario") and x["usuario"] not in vivos]:
+                for ext in ("dat", "pts", "png"):
+                    try:
+                        os.remove(_f(raiz, id_, co["cid"], ext))
+                    except OSError:
+                        pass
+                _indice.pop(co["ident"], None)
+                c["corredores"].remove(co)
+                n += 1
+                cambio = True
+            if c.get("creador") and c["creador"] not in vivos:
+                c["creador"] = None
+                c["invitacion"] = secrets.token_urlsafe(9)      # el enlace de invitación viejo deja de valer
+                cambio = True
+            if cambio:
+                _escribir(_f(raiz, id_), c)
+    return n
+
+
+SEGUIDORES, AVISADOS = ".push_directo.json", ".push_directo_estado.json"
+MAX_SEGUIDORES = 200
+
+
+def seguir(raiz, av, id_, sub):
+    """Apunta ESTE móvil a los avisos de una carrera en directo. `av` es avisos_web (valida y guarda)."""
+    try:
+        c = carrera(raiz, id_)
+    except ValueError:
+        return False
+    if not c or not av.valida(sub):
+        return False
+    d = av._leer(raiz, SEGUIDORES, {})
+    lista = [s for s in d.get(id_, []) if s.get("endpoint") != sub["endpoint"]] + [{"endpoint": sub["endpoint"], "keys": sub["keys"]}]
+    d[id_] = lista[-MAX_SEGUIDORES:]
+    av._escribir(raiz, SEGUIDORES, d)
+    return True
+
+
+def dejar(raiz, av, id_, endpoint):
+    d = av._leer(raiz, SEGUIDORES, {})
+    if id_ in d:
+        d[id_] = [s for s in d[id_] if s.get("endpoint") != endpoint]
+        if not d[id_]:
+            del d[id_]
+        av._escribir(raiz, SEGUIDORES, d)
+
+
+def avisar_seguidores(raiz, av, ahora=None):
+    """Cada pocos segundos (la Pi con la VIP): salida, meta o retirada de cada corredor, una vez cada una y solo si es reciente
+    (menos de 10 min: quien se apunta tarde no recibe lo de hace una hora). Devuelve cuántos avisos ha mandado."""
+    ahora = ahora or time.time()
+    subs = av._leer(raiz, SEGUIDORES, {})
+    if not subs or not av.clave_publica():
+        return 0
+    est = av._leer(raiz, AVISADOS, {})
+    antes_est, antes_subs = json.dumps(est, sort_keys=True), json.dumps(subs, sort_keys=True)
+    n = 0
+    for id_ in list(subs):
+        c = carrera(raiz, id_)
+        if not c:
+            subs.pop(id_, None)
+            est.pop(id_, None)
+            continue
+        for co in c["corredores"]:
+            st = estado(raiz, id_, co["cid"])
+            hechos = est.setdefault(id_, {}).setdefault(co["cid"], [])
+            evs = []
+            if st.get("salida_real") and "salida" not in hechos:
+                evs.append(("salida", st["salida_real"], f"{co['nombre']} ha salido"))
+            if st.get("llegada") and st.get("salida_real") and "meta" not in hechos:
+                t = int(st["llegada"] - st["salida_real"])
+                evs.append(("meta", st["llegada"], f"{co['nombre']} ha llegado a meta en {t // 3600}h {t % 3600 // 60:02d}m"))
+            if st.get("retirado") and "retirado" not in hechos:
+                evs.append(("retirado", st["retirado"], f"{co['nombre']} se ha retirado"))
+            for clave, cuando, texto in evs:
+                hechos.append(clave)
+                if ahora - cuando > 600 or not subs.get(id_):
+                    continue
+                caducadas = av.enviar(subs[id_], {"title": c["nombre"], "body": texto, "tag": f"dir-{id_}-{co['cid']}-{clave}", "url": f"/d/{id_}"})
+                n += 1
+                if caducadas:
+                    subs[id_] = [s for s in subs[id_] if s.get("endpoint") not in caducadas]
+    if json.dumps(est, sort_keys=True) != antes_est:
+        av._escribir(raiz, AVISADOS, est)
+    if json.dumps(subs, sort_keys=True) != antes_subs:
+        av._escribir(raiz, SEGUIDORES, subs)
+    return n
 
 
 def todas(raiz):
