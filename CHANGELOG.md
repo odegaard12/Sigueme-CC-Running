@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.68.3 · 2026-11-05
+- **Directo**: la lista de abajo se llama «Clasificación» (antes había dos títulos «Corredores» seguidos).
+- **Más fácil de tocar en el móvil**: los desplegables del panel («Más datos…», «Ver la configuración», «Pruebas»…) con letra más grande y 44 px de alto, el + / − del mapa a 40 px y los «?» de ayuda con zona de toque de 44 px.
+- Fuera la raya curva verde de la izquierda: la carrera en directo de Inicio lleva la pastilla «● En directo» como el resto del diseño, y el corredor elegido de la clasificación se marca con el fondo.
+
 ## v1.68.2 · 2026-11-05
 - **Panel**: si la carrera que tiene ya está archivada (en «Carreras»), lo dice («Archivada», «Ya está en Carreras…») y el botón grande pasa a «Preparar la siguiente ›», que lleva a sus datos. Antes enseñaba «El día de la carrera» de una carrera ya corrida.
 

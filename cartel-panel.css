@@ -126,3 +126,7 @@ input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px
   body.mis .pestanas-sitio { position: absolute; top: 4px; left: calc(50% - 340px); width: 440px; max-width: none; margin: 0 16px; }
   body.mis .barra-cartel { justify-content: flex-end; }
 }
+
+/* el «?» se ve igual de pequeño pero se puede tocar en 44 px */
+.ayuda-q { position: relative; }
+.ayuda-q::after { content: ""; position: absolute; inset: -7px; }

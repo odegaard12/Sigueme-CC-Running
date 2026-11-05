@@ -124,7 +124,7 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .corredor-dir { min-width: 34px; height: 34px; padding: 0 6px; border: 3px solid var(--tinta); border-radius: 999px; background: var(--acento); color: var(--tinta);
   font: 800 13px/28px var(--cuerpo); text-align: center; cursor: pointer; }
 .fila.simple[role="button"] { cursor: pointer; }
-.fila.simple.sel { box-shadow: inset 4px 0 0 var(--acento); }
+.fila.simple.sel { background: var(--sup2); }
 .tira { display: flex; gap: 14px; overflow-x: auto; max-width: 760px; margin: 0 auto; padding: 14px var(--m) 6px; scrollbar-width: none; }
 .tira::-webkit-scrollbar { display: none; }
 .tira .cara { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 78px; padding: 4px; background: none; border: 0; color: var(--texto); cursor: pointer; }
@@ -139,7 +139,7 @@ a.fila:hover, a.fila:focus-visible { background: var(--sup2); }
 .corredor-dir.elegido { transform: scale(1.25); box-shadow: 0 0 0 3px var(--texto); z-index: 5; }
 .maplibregl-popup-content { color: var(--tinta); font: 700 .95rem system-ui, sans-serif; padding: 8px 12px; }
 .corredor-dir.meta { background: var(--texto); }
-.fila.vivo-dir { box-shadow: inset 4px 0 0 var(--acento); }
+.fila .pill-hero { margin: 0 0 6px; }
 .mini-perfil { display: block; width: 100%; max-width: 420px; height: 34px; margin: 0 0 6px; color: var(--acento); opacity: 0.85; }
 .pill-hero { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sup2); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-hero.vivo { background: var(--acento); color: var(--tinta); }
@@ -297,3 +297,6 @@ small.alerta, .tira .cara small.alerta { color: var(--aviso); }
 .parciales .titulo-parc { margin: 0 0 8px; font-weight: 700; }
 .barras-km { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
 .barras-km i { flex: 1; min-width: 4px; border-radius: 3px 3px 0 0; background: var(--acento); }
+
+/* el + / − del mapa, más grande para el dedo */
+.mapa .maplibregl-ctrl-group button { width: 40px; height: 40px; }
