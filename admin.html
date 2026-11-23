@@ -1503,6 +1503,6 @@ fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.ok ? r.json() :
   let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
 })();
 </script>
-<script src="/ayuda.js?v=7"></script>
+<script src="/ayuda.js?v=8"></script>
 </body>
 </html>

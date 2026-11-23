@@ -6,6 +6,7 @@ ejemplo del repo y un GPX inventado. No tocan nada fuera de esa carpeta.
 | Prueba | Qué comprueba |
 | --- | --- |
 | `gpx.py` | El lector de GPX: desnivel sin ruido del GPS, elevación con coma, UTF-16 sin BOM. |
+| `relojes.py` | Cada marca de reloj: el GPX de resultado que exporta (Garmin, Strava, Huawei, Zepp, Mi Fitness, Coros, Polar, Suunto) se lee bien, la ruta que generamos es válida y los avisos caben en la pantalla. |
 | `servidor.py` | Panel (sesión, CSRF, bloqueo por intentos), subir GPX/FIT, datos de la carrera, avituallamientos, plan para la app. |
 | `invitados.py` | Invitados: crear con caducidad, entrar, subir una ruta, avituallamientos, GPX para el reloj, aislamiento entre invitados y con el panel, ficheros no públicos, límites. |
 | `ensayo.py` | Una carrera entera: preparar, EMPEZAR desde la app, corte de cobertura, meta sola, Finalizar, FIT, archivar. |

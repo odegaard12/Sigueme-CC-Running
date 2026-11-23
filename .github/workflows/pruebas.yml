@@ -29,5 +29,19 @@ jobs:
         run: python pruebas/invitados.py
       - name: Ensayo de una carrera entera
         run: python pruebas/ensayo.py
+      - name: Resultado del tramo y rutas GPX
+        run: |
+          python pruebas/resultado_tramo.py
+          python pruebas/rutas_gpx.py
+      - name: Relojes de cada marca (resultados, ruta y avisos)
+        run: python pruebas/relojes.py
+      - name: Guía de relojes
+        run: python pruebas/guias.py
+      - name: Carreras en directo y avisos
+        run: |
+          python pruebas/directos.py
+          python pruebas/avisos_ruta.py
+      - name: Endurecimiento del servidor
+        run: python pruebas/endurecimiento.py
       - name: Carga (60 espectadores a la vez)
         run: python pruebas/carga.py 60

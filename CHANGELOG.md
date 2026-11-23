@@ -4,6 +4,11 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.73.0 · 2026-11-23
+- **Banco de pruebas de relojes** (`pruebas/relojes.py`): lee GPX de resultado al estilo de Garmin, Strava, Huawei, Zepp, Mi Fitness, Coros, Polar y Suunto (zonas horarias, milisegundos, BOM, pausas, sin pulso ni altura), comprueba que la ruta que generamos es válida y que los avisos caben en la pantalla.
+- **Avisos durante la actividad**: las guías de Garmin, Huawei y Apple Watch avisan de la opción que puede silenciarlos mientras grabas («Durante la actividad», «No molestar» y la Concentración «Fitness»), y la ayuda «?» lo dice para todas las marcas.
+- La CI de GitHub pasa ahora todas las pruebas sin navegador (antes solo 5 de 14).
+
 ## v1.72.0 · 2026-11-23
 - **Guía de relojes revisada** (Huawei, Garmin y el resto):
   - Huawei: la ruta se importa desde dentro de Huawei Health con «Mi ruta» (antes la guía decía «Mis rutas»); el resultado explica el camino por Strava si el modelo no exporta la ruta, y se avisa de que la app de Android funciona también en móviles Huawei sin servicios de Google.
