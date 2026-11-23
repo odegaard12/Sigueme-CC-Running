@@ -4,6 +4,12 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.72.0 · 2026-11-23
+- **Guía de relojes revisada** (Huawei, Garmin y el resto):
+  - Huawei: la ruta se importa desde dentro de Huawei Health con «Mi ruta» (antes la guía decía «Mis rutas»); el resultado explica el camino por Strava si el modelo no exporta la ruta, y se avisa de que la app de Android funciona también en móviles Huawei sin servicios de Google.
+  - Apple Watch: repite los avisos de subidas que llegan al iPhone con la web instalada; antes la guía decía que no recibía ninguno.
+  - Xiaomi, Huawei, Coros, Polar, Suunto y Apple Watch dicen ahora que el directo lo da el móvil mientras el reloj graba (Garmin y Amazfit ya lo decían).
+
 ## v1.71.0 · 2026-11-23
 - **Revisión de fiabilidad del servidor**, con una prueba nueva para cada arreglo comprobado:
   - Una fecha escrita sin ceros (2026-1-5) ya no bloquea la creación de carreras en directo: se guarda con ceros.
