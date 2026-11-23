@@ -206,8 +206,12 @@ try:
     ok(st == 400, f'foto que dice ser de 30000 x 30000: {st}')
     st, d, _ = pedir('/api/avatar', png(), 'image/png', cookie=False)
     ok(st == 403, 'foto sin sesión: 403')
-    st, d, _ = pedir('/api/avatar', png(), 'image/png')
-    ok(st == 200 and d['carrera'].get('avatar_v') and (W / 'rider.png').read_bytes() == png(), f"foto subida, avatar_v={d['carrera'].get('avatar_v')}")
+    # v1.74.0: se guarda reconstruida (misma cabecera y misma imagen), y lo pegado detrás no llega a la web
+    st, d, _ = pedir('/api/avatar', png() + b'<html><script>alert(1)</script>', 'image/png')
+    guardada = (W / 'rider.png').read_bytes()
+    misma = guardada[:33] == png()[:33] and zlib.decompress(guardada[41:-16]) == (b'\x00' + b'\x7f\xd4\x6a' * 8) * 8
+    ok(st == 200 and d['carrera'].get('avatar_v') and misma and b'script' not in guardada,
+       f"foto subida y limpia de lo que traía pegado, avatar_v={d['carrera'].get('avatar_v')}")
     st, d, _ = pedir('/api/live', {'action': 'guardar_carrera', 'carrera': {'nombre': 'Trail de prueba',
         'corredor': {'nombre': 'Corredor', 'dorsal': '27', 'club': 'Club Montaña', 'categoria': 'Veterano A'}}})
     ok(st == 200 and d['carrera']['corredor'].get('club') == 'Club Montaña' and d['carrera'].get('avatar_v'),

@@ -1,6 +1,10 @@
 """Avisos de subidas en el iPhone del corredor: solo a SU móvil, una vez cada uno, nunca los ya pasados, solo con posición
 fresca y solo con la carrera en marcha. Sin enviar nada real (se captura lo que enviaría). Datos inventados."""
-import json, pathlib, sys, tempfile, time
+import atexit, json, pathlib, shutil, sys, tempfile, time
+
+# todas las carpetas de esta prueba dentro de una sola, que se borra al acabar (llevan suscripciones de prueba)
+tempfile.tempdir = tempfile.mkdtemp(prefix='avruta-')
+atexit.register(shutil.rmtree, tempfile.tempdir, True)
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'herramientas'))
 import avisos_web as aw, avisos_ruta as ar

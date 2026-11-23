@@ -84,6 +84,9 @@ def preparar(gpx, nombre='Ruta', distancia=None):
             raise ValueError('El GPX está en UTF-16: expórtalo en UTF-8.')
         if b'<!ENTITY' in gpx or b'<!DOCTYPE' in gpx:
             raise ValueError('El GPX trae declaraciones DOCTYPE/ENTITY: no se admite.')
+        from generar_resultado import codificacion_segura
+        if not codificacion_segura(gpx):
+            raise ValueError('El GPX usa una codificación rara: expórtalo en UTF-8.')
         try:
             raiz = ET.fromstring(gpx)
         except ET.ParseError as exc:

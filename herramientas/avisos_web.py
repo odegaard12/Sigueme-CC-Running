@@ -70,8 +70,10 @@ def alta(root, sub):
         return False
     with LOCK:
         subs = [s for s in _leer(root, SUBS, []) if s.get("endpoint") != sub["endpoint"]]
+        if len(subs) >= MAX_SUBS:
+            return False        # llena: no se echa a nadie (antes salían los más antiguos, que son los de verdad)
         subs.append({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["keys"]["p256dh"], "auth": sub["keys"]["auth"]}, "t": int(time.time())})
-        _escribir(root, SUBS, subs[-MAX_SUBS:])
+        _escribir(root, SUBS, subs)
     return True
 
 

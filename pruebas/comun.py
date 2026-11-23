@@ -1,6 +1,6 @@
 """Lo común de las pruebas: una carpeta limpia con la web del repo y un GPX
 inventado (nunca una ruta real: el repo es público)."""
-import math, pathlib, shutil, socket, tempfile
+import atexit, math, pathlib, shutil, socket, tempfile
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'robots.txt', 'rider.png',
@@ -10,6 +10,8 @@ WEB = ('server.py', 'index.html', 'app.js', 'sw.js', 'admin.html', 'robots.txt',
 def carpeta(prefijo, datos=('carrera.json',)):
     """Carpeta temporal con la web, lib/, herramientas/ y los datos de ejemplo pedidos."""
     w = pathlib.Path(tempfile.mkdtemp(prefix='sigueme-' + prefijo + '-'))
+    # se borra al acabar la prueba: dentro quedan claves de prueba (.app_secret, suscripciones)
+    atexit.register(shutil.rmtree, w, True)
     for f in WEB + tuple(datos):
         if (RAIZ / f).exists():
             shutil.copy(RAIZ / f, w / f)

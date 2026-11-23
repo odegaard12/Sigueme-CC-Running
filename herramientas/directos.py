@@ -578,8 +578,10 @@ def seguir(raiz, av, id_, sub):
         return False
     with av.LOCK:
         d = av._leer(raiz, SEGUIDORES, {})
-        lista = [s for s in d.get(id_, []) if s.get("endpoint") != sub["endpoint"]] + [{"endpoint": sub["endpoint"], "keys": sub["keys"]}]
-        d[id_] = lista[-MAX_SEGUIDORES:]
+        lista = [s for s in d.get(id_, []) if s.get("endpoint") != sub["endpoint"]]
+        if len(lista) >= MAX_SEGUIDORES:
+            return False        # llena: no se echa a ningún seguidor de verdad
+        d[id_] = lista + [{"endpoint": sub["endpoint"], "keys": sub["keys"]}]
         av._escribir(raiz, SEGUIDORES, d)
     return True
 

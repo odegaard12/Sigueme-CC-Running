@@ -24,3 +24,8 @@ amazfit/.zeus/
 # carreras archivadas (datos personales de cada carrera)
 carreras/
 avisos.json
+
+# instrucciones de asistentes: nunca al repo
+CLAUDE.md
+.claude/
+AGENTS.md

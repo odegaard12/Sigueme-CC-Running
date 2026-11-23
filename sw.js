@@ -71,7 +71,9 @@ async function tesela(r) {
   const c = await caches.open(TESELAS), g = await c.match(r);
   if (g) return g;
   const resp = await fetch(r);
-  if (resp.ok || resp.type === 'opaque') {
+  // solo respuestas legibles: una opaca (sin CORS) cuenta como ~7 MB de cuota y 700 llenaban el espacio de
+  // la web, rompiendo la copia sin cobertura. Los dos servidores de teselas mandan CORS, y el mapa las pide así.
+  if (resp.ok) {
     guardar(c, r, resp.clone());
     if (++puestas % 40 === 0) c.keys().then(ks => ks.slice(0, Math.max(0, ks.length - MAX_TESELAS)).forEach(k => c.delete(k)));
   }

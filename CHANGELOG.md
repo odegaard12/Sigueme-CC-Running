@@ -4,6 +4,13 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.74.0 · 2026-11-23
+- **Fotos subidas sin nada escondido**: la foto del corredor y la de cada invitado se desmontan y se vuelven a montar solo con la imagen. Lo que vaya pegado detrás, dentro de la imagen comprimida o en metadatos (texto, código, la posición GPS de la foto) no llega a la web; un PNG con trozos raros o la suma de control mal se rechaza.
+- **Avisos push a salvo**: como mucho 10 altas por IP cada 15 min, y con la lista llena se rechazan las nuevas en vez de echar a los suscriptores de verdad (antes 500 altas inventadas los borraban a todos).
+- **Clave del panel más dura**: un tope global de 60 fallos por hora desde cualquier IP, y con la Pi ocupada o ese tope el login contesta «prueba en un minuto» sin contar el intento como clave incorrecta.
+- GPX con codificaciones que esquivaban el filtro de XML (EBCDIC, UTF-7) se rechazan.
+- Un aviso del móvil solo abre páginas de esta web y lleva a la que toca aunque ya haya otra abierta; la caché de mapas ya no guarda respuestas opacas que llenaban el espacio de la copia sin cobertura.
+- Las pruebas borran sus carpetas temporales al acabar.
 ## v1.73.0 · 2026-11-23
 - **Banco de pruebas de relojes** (`pruebas/relojes.py`): lee GPX de resultado al estilo de Garmin, Strava, Huawei, Zepp, Mi Fitness, Coros, Polar y Suunto (zonas horarias, milisegundos, BOM, pausas, sin pulso ni altura), comprueba que la ruta que generamos es válida y que los avisos caben en la pantalla.
 - **Avisos durante la actividad**: las guías de Garmin, Huawei y Apple Watch avisan de la opción que puede silenciarlos mientras grabas («Durante la actividad», «No molestar» y la Concentración «Fitness»), y la ayuda «?» lo dice para todas las marcas.

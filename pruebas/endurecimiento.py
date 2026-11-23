@@ -129,5 +129,73 @@ except ValueError:
 # redirecciones: el opener no las sigue
 ok(server._SinRedireccion().redirect_request(None, None, 302, 'x', {}, 'http://10.0.0.1/') is None, 'el enlace de seguimiento no sigue redirecciones')
 
+# --- v1.74.0: fotos subidas reconstruidas (nada escondido dentro ni detrás) ---------------------------
+import zlib as _z
+def _png(ancho, alto, color=6, extra=b'', detras=b'', idat=None):
+    canales = {0: 1, 2: 3, 6: 4}[color]
+    crudo = b''.join(b'\x00' + bytes(ancho * canales) for _ in range(alto))
+    ihdr = ancho.to_bytes(4, 'big') + alto.to_bytes(4, 'big') + bytes([8, color, 0, 0, 0])
+    return (server._PNG_FIRMA + server._trozo_png(b'IHDR', ihdr) + extra
+            + server._trozo_png(b'IDAT', idat if idat is not None else _z.compress(crudo))
+            + server._trozo_png(b'IEND', b'') + detras)
+
+_bueno = _png(16, 16)
+_limpio = server.png_limpio(_bueno, 512)
+ok(_limpio is not None and _limpio.startswith(server._PNG_FIRMA), 'un PNG normal pasa')
+ok(server.png_limpio(_limpio, 512) is not None, 'el PNG reconstruido vuelve a pasar')
+_html = b'<html><script>alert(1)</script></html>'
+_r = server.png_limpio(_bueno + _html, 512)
+ok(_r is not None and _html not in _r, 'lo pegado detrás del PNG (una página, un ejecutable) se tira')
+_r = server.png_limpio(_png(16, 16, extra=server._trozo_png(b'tEXt', b'Comment\x00' + _html)), 512)
+ok(_r is not None and b'script' not in _r, 'un trozo de texto con código dentro se quita')
+_r = server.png_limpio(_png(16, 16, extra=server._trozo_png(b'eXIf', b'MM\x00*GPS 42.6 -8.1')), 512)
+ok(_r is not None and b'GPS' not in _r, 'los metadatos (eXIf con la posición GPS) se quitan')
+_crudo = b''.join(b'\x00' + bytes(64) for _ in range(16))
+ok(server.png_limpio(_png(16, 16, idat=_z.compress(_crudo) + _html), 512) is None, 'datos de más escondidos tras la imagen comprimida: fuera')
+ok(server.png_limpio(_png(16, 16, idat=_z.compress(_crudo + _html)), 512) is None, 'datos de más dentro de la imagen comprimida: fuera')
+_malo = bytearray(_bueno); _malo[30] ^= 1
+ok(server.png_limpio(bytes(_malo), 512) is None, 'un PNG con la suma de control mal: fuera')
+ok(server.png_limpio(_png(600, 16), 512) is None, 'más grande que el tope: fuera')
+ok(server.png_limpio(b'GIF89a' + _bueno[6:], 512) is None and server.png_limpio(b'', 512) is None, 'lo que no es PNG: fuera')
+ok(server.png_limpio(_png(16, 16, extra=server._trozo_png(b'ZZZZ', b'x')), 512) is None, 'un trozo crítico inventado: fuera')
+
+# --- v1.74.0: GPX con codificación disfrazada (cp037 escribe «<!ENTITY» con otros bytes) -----------------
+for _cod, _vale in (('UTF-8', True), ('iso-8859-1', True), ('cp037', False), ('utf-7', False)):
+    ok(generar_resultado.codificacion_segura(f'<?xml version="1.0" encoding="{_cod}"?><gpx/>'.encode()) == _vale,
+       f'codificación {_cod}: {"se admite" if _vale else "se rechaza"}')
+ok(generar_resultado.codificacion_segura(b'<gpx/>'), 'sin declaración (UTF-8 por defecto): se admite')
+try:
+    generar_resultado._leer_gpx('<?xml version="1.0" encoding="cp037"?><gpx/>'.encode('cp037'))
+    ok(False, 'un GPX en EBCDIC debería rechazarse')
+except ValueError:
+    ok(True, 'el GPX en EBCDIC (cp037) se rechaza antes de leerlo')
+
+# --- v1.74.0: avisos push con la lista llena: no se echa a los de verdad -----------------------------
+import avisos_web, directos as _dm
+with tempfile.TemporaryDirectory() as t4:
+    _s = lambda n: {'endpoint': f'https://fcm.googleapis.com/fcm/send/{n}', 'keys': {'p256dh': 'a', 'auth': 'b'}}
+    _viejo = avisos_web.MAX_SUBS
+    avisos_web.MAX_SUBS = 3
+    for n in range(3):
+        avisos_web.alta(t4, _s(n))
+    ok(not avisos_web.alta(t4, _s('atacante')), 'con la lista llena, un alta nueva se rechaza')
+    _eps = [x['endpoint'] for x in avisos_web._leer(t4, avisos_web.SUBS, [])]
+    ok(_eps[0].endswith('/0') and len(_eps) == 3, 'los suscriptores que ya estaban siguen todos')
+    ok(avisos_web.alta(t4, _s(1)), 'quien ya estaba puede renovar su alta aunque esté llena')
+    avisos_web.MAX_SUBS = _viejo
+
+# --- v1.74.0: login: con la Pi ocupada o el freno global, «prueba luego» y no «clave incorrecta» -------
+server.ADMIN_USER, server.ADMIN_HASH = 'dueno', 'scrypt:' + '00' * 16 + ':' + server._scrypt('buena', bytes(16))
+ok(server.credenciales_ok('dueno', 'buena') is True and server.credenciales_ok('dueno', 'mala') is False, 'clave buena True, mala False')
+for _ in range(2):
+    server._scrypt_sem.acquire()
+ok(server.credenciales_ok('dueno', 'buena') is None, 'con la Pi ocupada: None (503), no «clave incorrecta»')
+for _ in range(2):
+    server._scrypt_sem.release()
+server._fallos_admin[:] = [time.time()] * server.FALLOS_GLOBALES
+ok(server.credenciales_ok('dueno', 'buena') is None, f'tras {server.FALLOS_GLOBALES} fallos en una hora desde donde sea: no se comprueba ninguna clave')
+server._fallos_admin.clear()
+ok(server.credenciales_ok('dueno', 'buena') is True, 'pasada la hora, vuelve a entrar')
+
 print('\nTODO BIEN' if all(resultados) else f'\nFALLOS: {resultados.count(False)}')
 sys.exit(0 if all(resultados) else 1)

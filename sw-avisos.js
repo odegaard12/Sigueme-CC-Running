@@ -10,9 +10,13 @@ self.addEventListener('push', e => {
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin).href;
+  // solo páginas de esta web: un aviso nunca abre otra (aunque alguien lograra mandar uno con un enlace externo)
+  let u = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin);
+  if (u.origin !== self.location.origin) u = new URL('/', self.location.origin);
+  const url = u.href;
+  // si esa misma página ya está abierta, se enfoca; si no, se abre (antes enfocaba cualquiera y no llevaba al enlace)
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => {
-    for (const w of ws) if (w.url.startsWith(self.location.origin) && 'focus' in w) return w.focus();
+    for (const w of ws) if (w.url === url && 'focus' in w) return w.focus();
     return clients.openWindow(url);
   }));
 });

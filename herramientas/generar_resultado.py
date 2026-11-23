@@ -50,6 +50,15 @@ def _desnivel(alts):
     return sube
 
 
+def codificacion_segura(datos):
+    """El filtro de DOCTYPE/ENTITY busca bytes ASCII: con una codificación no compatible con ASCII
+    (EBCDIC «cp037», UTF-7…) la declaración pasaba disfrazada. Solo las que escriben ASCII igual."""
+    import re
+    m = re.match(rb'\s*<\?xml[^>]*?encoding\s*=\s*["\']([A-Za-z0-9._-]+)["\']', datos[:300])
+    return not m or m.group(1).decode().lower().replace('_', '-') in (
+        'utf-8', 'utf8', 'us-ascii', 'ascii', 'iso-8859-1', 'latin-1', 'latin1', 'iso-8859-15', 'windows-1252', 'cp1252')
+
+
 def _leer_gpx(datos):
     """GPX de un reloj o pulsera (Mi Fitness, Huawei Health, Zepp, Strava…) → (puntos [(hora, lat, lon)], sesión).
     Necesita la hora de cada punto; el pulso y la altura, si los trae."""
@@ -60,6 +69,8 @@ def _leer_gpx(datos):
         raise ValueError('el GPX está en UTF-16: expórtalo en UTF-8')
     if b'<!ENTITY' in datos or b'<!DOCTYPE' in datos:
         raise ValueError('el GPX trae declaraciones DOCTYPE/ENTITY: no se admite')
+    if not codificacion_segura(datos):
+        raise ValueError('el GPX usa una codificación rara: expórtalo en UTF-8')
     try:
         raiz = ET.fromstring(datos)
     except ET.ParseError as exc:

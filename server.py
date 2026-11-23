@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import urllib.request
+import zlib
 try:
     from curl_cffi import requests as cffi_requests      # solo para iGPSPORT
 except ImportError:
@@ -97,7 +98,25 @@ if sys.argv[1:2] == ["--hash-clave"]:
 _scrypt_sem = threading.BoundedSemaphore(2)
 
 
+# Freno GLOBAL a la clave del panel: el de por IP no para a quien prueba desde cien IP.
+# Más de FALLOS_GLOBALES fallos en una hora y no se comprueba ninguna clave más hasta que
+# baje (quien ya tiene sesión sigue entrando: la sesión no pasa por aquí).
+FALLOS_GLOBALES = 60
+_fallos_admin = []                       # momentos de los fallos de la última hora
+_fallos_admin_lock = threading.Lock()
+
+
+def _admin_frenado():
+    with _fallos_admin_lock:
+        ahora = time.time()
+        _fallos_admin[:] = [t for t in _fallos_admin if ahora - t < 3600]
+        return len(_fallos_admin) >= FALLOS_GLOBALES
+
+
 def credenciales_ok(usuario, clave):
+    """True/False si la clave es buena o mala; None si ahora no se puede comprobar
+    (Pi ocupada o freno global): el que llama contesta 503 y NO lo cuenta como fallo,
+    para que una avalancha de intentos no haga pasar por mala la clave del dueño."""
     if not (ADMIN_USER and ADMIN_HASH):
         return False
     try:
@@ -105,16 +124,76 @@ def credenciales_ok(usuario, clave):
         sal = bytes.fromhex(sal)
     except ValueError:
         return False
+    if _admin_frenado():
+        return None
     if not _scrypt_sem.acquire(timeout=3):
-        return False
+        return None
     try:
         calculado = _scrypt(str(clave), sal)
     finally:
         _scrypt_sem.release()
     # en bytes: compare_digest con texto no ASCII ("ñ") lanzaba una excepción.
     # Las dos comparaciones siempre, en tiempo constante.
-    return (compare_digest(str(usuario).encode(), ADMIN_USER.encode())
-            & compare_digest(calculado.encode(), esperado.encode())) and tipo == "scrypt"
+    ok = (compare_digest(str(usuario).encode(), ADMIN_USER.encode())
+          & compare_digest(calculado.encode(), esperado.encode())) and tipo == "scrypt"
+    if not ok:
+        with _fallos_admin_lock:
+            _fallos_admin.append(time.time())
+    return bool(ok)
+
+
+# --- fotos subidas: PNG reconstruido, sin nada escondido -----------------------
+# Antes bastaba con que empezara como un PNG: detrás podía ir cualquier cosa (un
+# ejecutable, una página web, la posición GPS de la foto en un trozo eXIf) y se
+# servía desde nuestro dominio. Ahora se desmonta, se comprueba trozo a trozo y se
+# vuelve a montar solo con la imagen: lo que no sea imagen no sobrevive.
+_PNG_FIRMA = b"\x89PNG\r\n\x1a\n"
+_PNG_CANALES = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+
+
+def _trozo_png(tipo, datos):
+    return len(datos).to_bytes(4, "big") + tipo + datos + (zlib.crc32(tipo + datos) & 0xFFFFFFFF).to_bytes(4, "big")
+
+
+def png_limpio(datos, max_lado):
+    """El PNG reconstruido (IHDR, PLTE, tRNS, IDAT recomprimido, IEND) o None si no es un PNG sano."""
+    if not datos.startswith(_PNG_FIRMA):
+        return None
+    pos, trozos = len(_PNG_FIRMA), []
+    while pos + 12 <= len(datos):
+        largo = int.from_bytes(datos[pos:pos + 4], "big")
+        tipo, cuerpo = datos[pos + 4:pos + 8], datos[pos + 8:pos + 8 + largo]
+        if len(cuerpo) != largo or pos + 12 + largo > len(datos):
+            return None
+        crc = int.from_bytes(datos[pos + 8 + largo:pos + 12 + largo], "big")
+        if crc != zlib.crc32(tipo + cuerpo) & 0xFFFFFFFF:
+            return None
+        trozos.append((tipo, cuerpo))
+        pos += 12 + largo
+        if tipo == b"IEND":
+            break                                  # lo que venga detrás de IEND se tira
+    if not trozos or trozos[0][0] != b"IHDR" or trozos[-1][0] != b"IEND" or len(trozos[0][1]) != 13:
+        return None
+    ihdr = trozos[0][1]
+    ancho, alto = int.from_bytes(ihdr[0:4], "big"), int.from_bytes(ihdr[4:8], "big")
+    bits, color, entrelazado = ihdr[8], ihdr[9], ihdr[12]
+    if not (0 < ancho <= max_lado and 0 < alto <= max_lado) or color not in _PNG_CANALES \
+            or bits not in (1, 2, 4, 8, 16) or ihdr[10] or ihdr[11] or entrelazado:
+        return None                                # el navegador nunca manda PNG entrelazado
+    if any(t[:1].isupper() and t not in (b"IHDR", b"PLTE", b"IDAT", b"IEND") for t, _ in trozos):
+        return None                                # trozo crítico desconocido: no es un PNG normal
+    esperado = alto * (1 + (ancho * _PNG_CANALES[color] * bits + 7) // 8)
+    d = zlib.decompressobj()
+    try:
+        crudo = d.decompress(b"".join(c for t, c in trozos if t == b"IDAT"), esperado + 1)
+    except zlib.error:
+        return None
+    if len(crudo) != esperado or not d.eof or d.unused_data or d.unconsumed_tail:
+        return None                                # datos de más dentro o detrás de la imagen
+    salida = [_PNG_FIRMA, _trozo_png(b"IHDR", ihdr)]
+    salida += [_trozo_png(t, c) for t, c in trozos if t in (b"PLTE", b"tRNS")]
+    salida += [_trozo_png(b"IDAT", zlib.compress(crudo, 9)), _trozo_png(b"IEND", b"")]
+    return b"".join(salida)
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8710
 BIND_HOST = os.environ.get("BIND_HOST", "0.0.0.0")
 # Preguntar cada 8 s eran 5 400 peticiones en las 12 h de carrera a una API de
@@ -2215,6 +2294,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             usuario = str(d.get("usuario") or "").strip().lower()
             # el dueño también puede entrar aquí con su usuario y su clave del panel
             es_dueno = bool(ADMIN_USER) and usuario == ADMIN_USER.lower() and credenciales_ok(d.get("usuario", ""), d.get("codigo", ""))
+            if es_dueno is None:
+                self._send_json(503, {"error": "hay muchos intentos ahora mismo: prueba en un minuto"})
+                return
             if not (es_dueno or inv.comprobar(ROOT, usuario, d.get("codigo", ""))):
                 fallo_de(ip)
                 print(f"[invitado] acceso incorrecto desde {self.ip_cliente()}", flush=True)
@@ -2276,9 +2358,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not 0 < largo <= 300_000:
                 self._send_json(413, {"error": "la foto tiene que pesar menos de 300 KB"})
                 return
-            cuerpo = self.rfile.read(largo)
-            ancho, alto = int.from_bytes(cuerpo[16:20], "big"), int.from_bytes(cuerpo[20:24], "big")
-            if not (cuerpo.startswith(b"\x89PNG\r\n\x1a\n") and cuerpo[12:16] == b"IHDR" and 0 < ancho <= 512 and 0 < alto <= 512):
+            cuerpo = png_limpio(self.rfile.read(largo), 512)
+            if cuerpo is None:
                 self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
                 return
             dm.guardar_foto(ROOT, ident, cuerpo)
@@ -2611,11 +2692,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         cuerpo = self._subida(2_000_000, "la foto")
         if cuerpo is None:
             return
-        # PNG de verdad y de como mucho 1024×1024 (el panel la recorta a 256): una
+        # PNG de verdad, reconstruido y de como mucho 1024×1024 (el panel la recorta a 256): una
         # imagen que declara 30000×30000 en 2 MB obligaba a cada navegador a descodificarla
-        ancho, alto = int.from_bytes(cuerpo[16:20], "big"), int.from_bytes(cuerpo[20:24], "big")
-        if not (cuerpo.startswith(b"\x89PNG\r\n\x1a\n") and cuerpo[12:16] == b"IHDR"
-                and 0 < ancho <= 1024 and 0 < alto <= 1024):
+        cuerpo = png_limpio(cuerpo, 1024)
+        if cuerpo is None:
             self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
             return
         fd, tmp = tempfile.mkstemp(dir=ROOT, prefix=".rider.", suffix=".tmp")
@@ -2805,6 +2885,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._send_json(400, {"error": "invalid json"})
         if self.path in ("/api/push/mio", "/api/push/mio/baja", "/api/push/mio/prueba"):
             return self._push_mio(sub)
+        # altas sin cuenta: como mucho 10 por IP antes de 15 min de espera. Sin esto, 500 altas
+        # inventadas echaban de la lista a todos los suscriptores de verdad.
+        if not self.path.endswith("/baja"):
+            ip = "pushalta:" + self.ip_cliente()
+            if segundos_de_castigo(ip) > 5:
+                return self._send_json(429, {"error": "demasiadas altas desde aquí: espera unos minutos"})
+            fallo_de(ip)
         if self.path in ("/api/push/directo", "/api/push/directo/baja"):        # seguir una carrera en directo (v1.70)
             d = sub if isinstance(sub, dict) else {}
             dm, av = herramienta("directos"), herramienta("avisos_web")
@@ -2815,7 +2902,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 si = dm.seguir(ROOT, av, str(d.get("id") or ""), d.get("sub"))
             return self._send_json(200 if si else 400, {"ok": si})
         av = herramienta("avisos_web")
-        # ponytail: tope de 500 suscripciones y sin freno por IP; las falsas caducan solas (404/410 al enviar)
+        # tope de 500: con la lista llena se rechazan las nuevas (las falsas caducan solas con 404/410 al enviar)
         with datos_lock:
             if self.path == "/api/push/baja":
                 av.baja(ROOT, sub.get("endpoint") if isinstance(sub, dict) else None)
@@ -2938,7 +3025,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         # login: usuario y clave una vez, a cambio de la cookie de sesión
         if self.path == "/api/login":
-            if not credenciales_ok(data.get("usuario", ""), data.get("password", "")):
+            ok = credenciales_ok(data.get("usuario", ""), data.get("password", ""))
+            if ok is None:
+                self._send_json(503, {"error": "hay muchos intentos ahora mismo: prueba en un minuto"})
+                return
+            if not ok:
                 fallo_de(ip)
                 print(f"[admin] clave incorrecta (login) desde {ip}", flush=True)
                 self._send_json(403, {"error": "clave incorrecta"})
@@ -2948,6 +3039,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
         con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))
+        if con_clave is None:
+            self._send_json(503, {"error": "hay muchos intentos ahora mismo: prueba en un minuto"})
+            return
         # ⚠️ el fallo se cuenta ANTES de mirar el origen: sin Origin (curl) cada
         # clave falsa se iba por «origen no permitido» sin sumar al bloqueo
         if "password" in data and not con_clave:
