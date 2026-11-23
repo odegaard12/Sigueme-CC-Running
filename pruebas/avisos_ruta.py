@@ -89,5 +89,23 @@ dm._escribir(dm._f(raiz7, c7['id'], yo7['cid']), {'salida_real': T0 - 3600})
 dm.seguir(raiz7, aw, c7['id'], SUB); n = len(enviados)
 ok(dm.avisar_seguidores(raiz7, aw, T0) == 0 and len(enviados) == n, 'quien se apunta tarde no recibe la salida de hace una hora')
 
+# ---- v1.71: una fecha sin ceros se normaliza, y un alta durante el envío no se pierde
+raiz8 = tempfile.mkdtemp(prefix='avruta8-')
+c8, yo8 = dm.crear(raiz8, 'u1', 'Eva', {'nombre': 'Trail Z', 'coords': coords[:50], 'perfil': []}, '2026-1-5', '09:05', lambda *a: {})
+otra = dm.crear(raiz8, 'u2', 'Pau', {'nombre': 'Otra', 'coords': coords[:50], 'perfil': []}, '2026-1-6', '10:00', lambda *a: {})
+ok(c8['fecha'] == '2026-01-05' and dm.salida(c8).day == 5 and otra, 'una fecha sin ceros se guarda con ceros y no rompe las demás carreras')
+dm.seguir(raiz8, aw, c8['id'], SUB)
+dm._escribir(dm._f(raiz8, c8['id'], yo8['cid']), {'salida_real': T0 - 30})
+SUB2 = dict(SUB, endpoint=SUB['endpoint'] + '2')
+enviar_original = aw.enviar
+def enviar_y_alguien_se_apunta(subs, datos):
+    dm.seguir(raiz8, aw, c8['id'], SUB2)
+    return {SUB['endpoint']}
+aw.enviar = enviar_y_alguien_se_apunta
+dm.avisar_seguidores(raiz8, aw, T0)
+aw.enviar = enviar_original
+quedan = [s['endpoint'] for s in aw._leer(raiz8, dm.SEGUIDORES, {}).get(c8['id'], [])]
+ok(quedan == [SUB2['endpoint']], f'quien se apunta mientras se mandan los avisos no se pierde (quedan {len(quedan)})')
+
 print('\nTODO BIEN' if not malos else f'\nFALLOS: {len(malos)}')
 sys.exit(1 if malos else 0)

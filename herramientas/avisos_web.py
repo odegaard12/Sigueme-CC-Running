@@ -7,7 +7,7 @@ si falta ese entorno o las claves, los avisos quedan apagados y la campana no sa
 
 Ficheros ocultos (no se sirven; la réplica los lleva a la otra Pi): .push_subs.json (suscripciones) y .push_estado.json
 (lo ya enviado en esta carrera)."""
-import json, os, subprocess, tempfile, time
+import json, os, subprocess, tempfile, threading, time
 from urllib.parse import urlparse
 
 DIR = os.environ.get("SIGUEME_PUSH_DIR", os.path.expanduser("~/sigueme-push"))
@@ -30,6 +30,9 @@ def clave_publica():
             return f.read().strip() or None
     except OSError:
         return None
+
+
+LOCK = threading.Lock()      # los ficheros de suscripciones se cambian de uno en uno (leer, cambiar y escribir)
 
 
 def _leer(root, nombre, defecto):
@@ -65,15 +68,17 @@ def valida(sub):
 def alta(root, sub):
     if not valida(sub):
         return False
-    subs = [s for s in _leer(root, SUBS, []) if s.get("endpoint") != sub["endpoint"]]
-    subs.append({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["keys"]["p256dh"], "auth": sub["keys"]["auth"]}, "t": int(time.time())})
-    _escribir(root, SUBS, subs[-MAX_SUBS:])
+    with LOCK:
+        subs = [s for s in _leer(root, SUBS, []) if s.get("endpoint") != sub["endpoint"]]
+        subs.append({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["keys"]["p256dh"], "auth": sub["keys"]["auth"]}, "t": int(time.time())})
+        _escribir(root, SUBS, subs[-MAX_SUBS:])
     return True
 
 
 def baja(root, endpoint):
-    subs = _leer(root, SUBS, [])
-    _escribir(root, SUBS, [s for s in subs if s.get("endpoint") != endpoint])
+    with LOCK:
+        subs = _leer(root, SUBS, [])
+        _escribir(root, SUBS, [s for s in subs if s.get("endpoint") != endpoint])
 
 
 def km(v):
@@ -123,14 +128,15 @@ def revisar(root, live, avit, nombre):
     _id, titulo, texto = nuevos[0]
     caducadas = enviar(subs, {"title": titulo, "body": texto, "tag": "carrera-" + _id, "url": "/"})
     if caducadas:
-        _escribir(root, SUBS, [s for s in _leer(root, SUBS, []) if s.get("endpoint") not in caducadas])
+        with LOCK:
+            _escribir(root, SUBS, [s for s in _leer(root, SUBS, []) if s.get("endpoint") not in caducadas])
 
 
 def enviar(subs, datos):
     """Manda el aviso a todos; devuelve los endpoints caducados (el navegador se dio de baja) para borrarlos."""
     try:
         r = subprocess.run([PY, ENVIAR, PEM], input=json.dumps({"subs": subs, "data": datos}), capture_output=True,
-                           text=True, timeout=120)
+                           text=True, timeout=30)
         salida = json.loads(r.stdout or "{}")
         print(f"[avisos] enviados {salida.get('ok', 0)} de {len(subs)} · {datos['body'][:60]}", flush=True)
         return set(salida.get("caducadas", []))

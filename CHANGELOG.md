@@ -4,6 +4,17 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.71.0 · 2026-11-23
+- **Revisión de fiabilidad del servidor**, con una prueba nueva para cada arreglo comprobado:
+  - Una fecha escrita sin ceros (2026-1-5) ya no bloquea la creación de carreras en directo: se guarda con ceros.
+  - Quien se apunta a los avisos de una carrera mientras se mandan otros ya no se pierde (cerrojo en los ficheros de suscripciones y seguidores).
+  - Cerrar dos sesiones a la vez ya no pierde una revocación.
+  - Los corredores de un directo ya no hacen cola detrás del GPS del dueño, un identificador desconocido ya no vuelve a leer todas las carreras en cada petición y el ritmo por km se calcula de uno en uno.
+  - Con la hora del móvil adelantada, los reenvíos de Traccar ya no repiten puntos en el historial.
+  - La foto del corredor y la del dueño se guardan de forma atómica y con fsync: un corte de luz no las deja a cero bytes.
+  - Un servicio de avisos que se cuelga retiene el envío 30 s (antes 2 min), y el vigilante del seguimiento deja rastro en el registro si falla.
+- **Huawei Watch GT 6 (Huawei Health)**: la guía dice que la ruta se importa desde dentro de la app (Yo → Mi ruta → Importar ruta), no desde el gestor de ficheros, y que luego se envía al reloj para usarla en el modo trail.
+
 ## v1.70.1 · 2026-11-05
 - README al día con lo nuevo del directo para quien mira: llegada prevista, sin señal y batería baja, ritmo por km, campana de avisos y GPX.
 

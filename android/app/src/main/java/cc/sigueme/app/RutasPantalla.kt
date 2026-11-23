@@ -333,7 +333,7 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
                 if (act.isFinishing || act.isDestroyed) return@runOnUiThread
                 if (uri != null) {
                     avisar("Ruta guardada en Descargas",
-                        "Ahora ábrela con la app de tu reloj:\n\n•  Huawei Health: Yo → Mi ruta → Importar ruta\n•  Zepp, Garmin Connect o Coros: importar GPX",
+                        "Ahora ábrela con la app de tu reloj:\n\n•  Huawei Health: ábrela desde dentro de la app (Yo → Mi ruta → Importar ruta), no desde el gestor de ficheros; luego «Enviar al reloj»\n•  Zepp, Garmin Connect o Coros: importar GPX",
                         listOf("Abrir con…" to { abrirGpx(uri) }, "Compartir" to { compartirGpx(uri) }, "Cerrar" to {}))
                 } else if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
                     // Android 8 o 9: la app no puede guardar en Descargas; lo baja el navegador

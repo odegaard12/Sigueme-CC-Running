@@ -707,6 +707,9 @@ def sesion_valida(cabecera_cookie):
     return not (nonce and nonce in _revocadas())
 
 
+revocadas_lock = threading.Lock()
+
+
 def revocar_sesion(cabecera_cookie):
     """Cerrar sesión de verdad: la cookie robada o copiada deja de valer en las dos Pis."""
     p = _partes_sesion(cabecera_cookie)
@@ -716,12 +719,13 @@ def revocar_sesion(cabecera_cookie):
     if not compare_digest(firma.encode(), _firma(msg).encode()):
         return
     ahora = time.time()
-    datos = {k: v for k, v in _revocadas().items() if isinstance(v, (int, float)) and v > ahora}
-    datos[nonce] = exp
-    try:
-        escribir_json(REVOCADAS, datos)
-    except OSError:
-        pass
+    with revocadas_lock:
+        datos = {k: v for k, v in _revocadas().items() if isinstance(v, (int, float)) and v > ahora}
+        datos[nonce] = exp
+        try:
+            escribir_json(REVOCADAS, datos)
+        except OSError:
+            pass
 
 
 # --- invitados: rutas para el reloj de un amigo ------------------------------
@@ -1215,6 +1219,7 @@ def puntos_traccar(query, cuerpo):
         # ⚠️ Un aparato con la hora adelantada dejaba gps_t en el futuro y
         # todos los puntos buenos siguientes se descartaban por "viejos": la
         # foto se quedaba clavada hasta que el reloj real alcanzaba esa hora.
+        p["t0"] = p["t"]
         p["t"] = min(p["t"], ahora)
         if p["t"] < ahora - 86400:
             continue                     # de hace más de un día: no es de esta carrera
@@ -1233,7 +1238,7 @@ def puntos_traccar(query, cuerpo):
                 continue
             lat = lon = None
         puntos.append({"lat": lat, "lon": lon, "t": p["t"], "kmh": p["kmh"] if valida else None,
-                       "precision": precision, "bateria": bateria, "hr": hr,
+                       "precision": precision, "bateria": bateria, "hr": hr, "t0": p["t0"],
                        "origen": str(p.get("origen") or "movil")[:20]})
     return ident, puntos
 
@@ -1242,7 +1247,7 @@ _puntos_vistos = {}      # los últimos puntos recibidos (hora, lat, lon, pulso)
 
 
 def _repetido(p):
-    k = (round(p["t"], 1), p["lat"], p["lon"], p["hr"])
+    k = (round(p.get("t0", p["t"]), 1), p["lat"], p["lon"], p["hr"])
     if k in _puntos_vistos:
         return True
     _puntos_vistos[k] = True
@@ -1277,6 +1282,8 @@ def arranque_por_gps(live, puntos):
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
     puntos[:] = [p for p in puntos if not _repetido(p)]
+    for p in puntos:
+        p.pop("t0", None)
     if not puntos:
         return
     for p in puntos:
@@ -1707,8 +1714,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if str(ident or "").startswith("dir-"):        # un corredor de una carrera en directo (v1.54): su carrera
             try:
-                with gps_lock:
-                    hecho = herramienta("directos").recibir(ROOT, ident, puntos)
+                for p in puntos:
+                    p.pop("t0", None)
+                hecho = herramienta("directos").recibir(ROOT, ident, puntos)
             except Exception as exc:
                 print(f"[directo] error con {len(puntos)} puntos: {exc!r}", flush=True)
                 hecho = True                 # 200 igual: si no, el móvil reintenta ese lote para siempre
@@ -2610,9 +2618,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 and 0 < ancho <= 1024 and 0 < alto <= 1024):
             self._send_json(400, {"error": "la foto tiene que llegar en PNG"})
             return
-        tmp = os.path.join(ROOT, ".rider.png.tmp")
-        with open(tmp, "wb") as f:
+        fd, tmp = tempfile.mkstemp(dir=ROOT, prefix=".rider.", suffix=".tmp")
+        with os.fdopen(fd, "wb") as f:
             f.write(cuerpo)
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp, os.path.join(ROOT, "rider.png"))
         c = carrera_editable()
         if c is None:
@@ -3232,8 +3242,8 @@ def watch_live_file():
                     start_poller(url)
                 elif not url and poller["url"]:
                     stop_previous_poller()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[watch] {exc!r}", flush=True)
         threading.Event().wait(20)
 
 

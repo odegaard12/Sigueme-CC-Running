@@ -111,9 +111,10 @@ def _enviar_si_toca(root, av, estado, ident, clave_carrera, avisos, km_ahora, su
     if texto:
         caducadas = av.enviar(subs, {"title": "Sígueme CC", "body": texto, "tag": "subida-" + _id(a), "url": "/"})
         if caducadas:
-            d = av._leer(root, SUBS, {})
-            d[ident] = [s for s in d.get(ident, []) if s.get("endpoint") not in caducadas]
-            av._escribir(root, SUBS, d)
+            with av.LOCK:
+                d = av._leer(root, SUBS, {})
+                d[ident] = [s for s in d.get(ident, []) if s.get("endpoint") not in caducadas]
+                av._escribir(root, SUBS, d)
         return 1
     return 0
 

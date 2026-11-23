@@ -31,6 +31,7 @@ PARTE_PARA_META = 0.8               # la meta solo cuenta con el 80 % de la ruta
 
 _lock = threading.RLock()
 _indice = {}                        # identificador → (id de carrera, corredor)
+_indice_t = [0.0]                   # cuándo se releyó por última vez (como mucho una vez cada 5 s)
 _cum = {}                           # id de carrera → km acumulados de su ruta
 
 
@@ -84,7 +85,9 @@ def _ids(raiz):
 
 
 def salida(c):
-    return datetime.fromisoformat(f"{c['fecha']}T{c['hora_salida']}").replace(tzinfo=ZoneInfo(c.get("zona") or ZONA))
+    y, m, d = (int(x) for x in c["fecha"].split("-"))
+    hh, mm = (int(x) for x in c["hora_salida"].split(":"))
+    return datetime(y, m, d, hh, mm, tzinfo=ZoneInfo(c.get("zona") or ZONA))
 
 
 def _nuevo_corredor(nombre, usuario=None):
@@ -96,7 +99,7 @@ def crear(raiz, usuario, nombre_corredor, ruta, fecha, hora, calcular, limite_h=
     """Una carrera en directo desde una ruta (la de invitados._leer_ruta). Devuelve (carrera, su corredor)."""
     fecha, hora = _texto(fecha, 10), _texto(hora, 5)
     try:
-        datetime.strptime(fecha, "%Y-%m-%d")
+        fecha = datetime.strptime(fecha, "%Y-%m-%d").date().isoformat()      # 2026-1-5 → 2026-01-05
     except ValueError:
         raise ValueError("pon el día de la carrera")
     if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", hora):
@@ -161,7 +164,8 @@ def buscar(raiz, ident):
     if not ident.startswith(IDENT_PREFIJO):
         return None, None
     with _lock:
-        if ident not in _indice:                      # carreras nuevas (o de la otra Pi tras un relevo): se relee todo
+        if ident not in _indice and time.time() - _indice_t[0] > 5:   # carreras nuevas (o de la otra Pi tras un relevo): se relee todo
+            _indice_t[0] = time.time()
             _indice.clear()
             for id_ in _ids(raiz):
                 for co in (carrera(raiz, id_) or {}).get("corredores", []):
@@ -295,9 +299,12 @@ def guardar_foto(raiz, ident, png):
         return False
     with _lock:
         ruta = _f(raiz, c["id"], co["cid"], "png")
-        with open(ruta + ".tmp", "wb") as f:
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ruta), prefix=".foto.", suffix=".tmp")
+        with os.fdopen(fd, "wb") as f:
             f.write(png)
-        os.replace(ruta + ".tmp", ruta)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, ruta)
         st = estado(raiz, c["id"], co["cid"])
         st["foto"] = int(time.time())
         _escribir(_f(raiz, c["id"], co["cid"]), st)
@@ -376,7 +383,15 @@ def abiertas(raiz, usuario, ahora=None):
 _parciales_cache = {}                # (id, cid) -> (fecha del fichero de puntos, parciales)
 
 
+_parc_lock = threading.Lock()
+
+
 def parciales(raiz, id_, cid):
+    with _parc_lock:
+        return _parciales(raiz, id_, cid)
+
+
+def _parciales(raiz, id_, cid):
     """Segundos que tardó en cada kilómetro completo, desde su salida real (lista vacía si aún no ha hecho uno)."""
     c = carrera(raiz, id_)
     if not c or not any(x["cid"] == cid for x in c["corredores"]):
@@ -561,20 +576,22 @@ def seguir(raiz, av, id_, sub):
         return False
     if not c or not av.valida(sub):
         return False
-    d = av._leer(raiz, SEGUIDORES, {})
-    lista = [s for s in d.get(id_, []) if s.get("endpoint") != sub["endpoint"]] + [{"endpoint": sub["endpoint"], "keys": sub["keys"]}]
-    d[id_] = lista[-MAX_SEGUIDORES:]
-    av._escribir(raiz, SEGUIDORES, d)
+    with av.LOCK:
+        d = av._leer(raiz, SEGUIDORES, {})
+        lista = [s for s in d.get(id_, []) if s.get("endpoint") != sub["endpoint"]] + [{"endpoint": sub["endpoint"], "keys": sub["keys"]}]
+        d[id_] = lista[-MAX_SEGUIDORES:]
+        av._escribir(raiz, SEGUIDORES, d)
     return True
 
 
 def dejar(raiz, av, id_, endpoint):
-    d = av._leer(raiz, SEGUIDORES, {})
-    if id_ in d:
-        d[id_] = [s for s in d[id_] if s.get("endpoint") != endpoint]
-        if not d[id_]:
-            del d[id_]
-        av._escribir(raiz, SEGUIDORES, d)
+    with av.LOCK:
+        d = av._leer(raiz, SEGUIDORES, {})
+        if id_ in d:
+            d[id_] = [s for s in d[id_] if s.get("endpoint") != endpoint]
+            if not d[id_]:
+                del d[id_]
+            av._escribir(raiz, SEGUIDORES, d)
 
 
 def avisar_seguidores(raiz, av, ahora=None):
@@ -587,11 +604,13 @@ def avisar_seguidores(raiz, av, ahora=None):
     est = av._leer(raiz, AVISADOS, {})
     antes_est, antes_subs = json.dumps(est, sort_keys=True), json.dumps(subs, sort_keys=True)
     n = 0
+    cerradas, quitadas = set(), {}      # lo que hay que quitar del fichero de seguidores (se relee al final: puede haber altas nuevas)
     for id_ in list(subs):
         c = carrera(raiz, id_)
         if not c:
             subs.pop(id_, None)
             est.pop(id_, None)
+            cerradas.add(id_)
             continue
         for co in c["corredores"]:
             st = estado(raiz, id_, co["cid"])
@@ -612,10 +631,20 @@ def avisar_seguidores(raiz, av, ahora=None):
                 n += 1
                 if caducadas:
                     subs[id_] = [s for s in subs[id_] if s.get("endpoint") not in caducadas]
-    if json.dumps(est, sort_keys=True) != antes_est:
-        av._escribir(raiz, AVISADOS, est)
-    if json.dumps(subs, sort_keys=True) != antes_subs:
-        av._escribir(raiz, SEGUIDORES, subs)
+                    quitadas.setdefault(id_, set()).update(caducadas)
+    with av.LOCK:
+        if json.dumps(est, sort_keys=True) != antes_est:
+            av._escribir(raiz, AVISADOS, est)
+        if cerradas or quitadas:
+            actual = av._leer(raiz, SEGUIDORES, {})
+            for id_ in cerradas:
+                actual.pop(id_, None)
+            for id_, eps in quitadas.items():
+                if id_ in actual:
+                    actual[id_] = [s for s in actual[id_] if s.get("endpoint") not in eps]
+                    if not actual[id_]:
+                        del actual[id_]
+            av._escribir(raiz, SEGUIDORES, actual)
     return n
 
 
