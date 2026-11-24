@@ -197,5 +197,58 @@ ok(server.credenciales_ok('dueno', 'buena') is None, f'tras {server.FALLOS_GLOBA
 server._fallos_admin.clear()
 ok(server.credenciales_ok('dueno', 'buena') is True, 'pasada la hora, vuelve a entrar')
 
+# --- v1.75.0: DNS rebinding: se conecta a la IP ya comprobada, aunque el nombre diga otra cosa -------------
+import http.server as _hs, threading as _th
+class _Eco(_hs.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers(); self.wfile.write(b'hola desde la ip fijada')
+    def log_message(self, *a): pass
+_srv = _hs.HTTPServer(('127.0.0.1', 0), _Eco)
+_th.Thread(target=_srv.serve_forever, daemon=True).start()
+import urllib.request as _ur
+_r = server._abrir_fijado('127.0.0.1').open(_ur.Request(f'http://no-existe.invalid:{_srv.server_port}/'), timeout=5)
+ok(_r.read() == b'hola desde la ip fijada', 'con la IP fijada se conecta a ella aunque el nombre no resuelva (no vuelve a preguntar al DNS)')
+_srv.shutdown()
+try:
+    server.fetch_page('http://localhost:9/')
+    ok(False, 'localhost debería rechazarse')
+except ValueError:
+    ok(True, 'un enlace a localhost se rechaza antes de conectar')
+
+# --- v1.75.0: tope de conexiones simultáneas -------------------------------------------------------------
+import socket as _so
+_a, _b = _so.socketpair()
+_sv = server._Servidor.__new__(server._Servidor)
+_viejas = server._Servidor._plazas
+server._Servidor._plazas = _th.BoundedSemaphore(1)
+server._Servidor._plazas.acquire()                      # la única plaza, ocupada
+_sv.process_request(_a, ('127.0.0.1', 1))
+ok(_b.recv(1) == b'', 'sin plazas libres la conexión se cierra sin atenderla')
+server._Servidor._plazas = _viejas
+_b.close()
+
+# --- v1.75.0: la IP de Cloudflare solo se cree si llega de un proxy declarado --------------------------
+class _Req:
+    def __init__(self, local): self._l = local
+    def getsockname(self): return (self._l, 8710)
+def _h(origen, cf, local='10.1.2.202'):
+    h = object.__new__(server.Handler)
+    h.client_address = (origen, 5555)
+    h.headers = {'CF-Connecting-IP': cf} if cf else {}
+    class _Hd(dict):
+        def get(self, k, d=None): return super().get(k, d)
+    h.headers = _Hd(h.headers)
+    h.request = _Req(local)
+    return h
+_antes = server.PROXIES_CONFIANZA
+server.PROXIES_CONFIANZA = set()
+ok(_h('10.1.2.77', '203.0.113.9').ip_cliente() == '203.0.113.9', 'sin SIGUEME_PROXIES: se cree a la cabecera desde cualquier IP privada (como antes)')
+server.PROXIES_CONFIANZA = {'10.1.2.104'}
+ok(_h('10.1.2.77', '203.0.113.9').ip_cliente() == '10.1.2.77', 'con SIGUEME_PROXIES: un equipo de la red que no es proxy no puede inventarse la IP')
+ok(_h('10.1.2.104', '203.0.113.9').ip_cliente() == '203.0.113.9', 'con SIGUEME_PROXIES: el proxy declarado sí vale')
+ok(_h('10.1.2.202', '203.0.113.9').ip_cliente() == '203.0.113.9', 'el túnel de esta misma máquina vale')
+ok(_h('127.0.0.1', '203.0.113.9').ip_cliente() == '203.0.113.9', 'el bucle local vale')
+server.PROXIES_CONFIANZA = _antes
+
 print('\nTODO BIEN' if all(resultados) else f'\nFALLOS: {resultados.count(False)}')
 sys.exit(0 if all(resultados) else 1)

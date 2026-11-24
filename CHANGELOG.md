@@ -4,6 +4,13 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.75.0 · 2026-11-24
+- **Enlaces de seguimiento a prueba de DNS rebinding**: el servidor se conecta a la IP que acaba de comprobar como pública, sin volver a preguntar al DNS, así que un nombre que cambie a una dirección de la red de casa entre una consulta y otra ya no sirve.
+- **Tope de 400 conexiones a la vez**: pasado el tope se cierra la conexión sin atenderla, en lugar de seguir creando hilos hasta agotar la memoria de la Pi.
+- **IP real detrás del túnel**: con `SIGUEME_PROXIES` (las máquinas que llevan el túnel, separadas por comas) la cabecera de Cloudflare solo se cree si llega de una de ellas, de la propia máquina o del bucle local; un equipo de la red de casa ya no puede inventarse su IP para saltarse el freno de claves. Sin la variable todo queda como antes.
+- **Privacidad por defecto**: las rutas nuevas de invitados salen con 300 m sin enseñar al principio y al final (donde suele estar la casa); se cambia al publicar. Las ya guardadas no se tocan.
+- La app de Android codifica el identificador de la ruta en el enlace del GPX del reloj, y la CI fija las versiones de Gradle (9.9.2) y fitdecode (0.11.0).
+
 ## v1.74.0 · 2026-11-23
 - **Fotos subidas sin nada escondido**: la foto del corredor y la de cada invitado se desmontan y se vuelven a montar solo con la imagen. Lo que vaya pegado detrás, dentro de la imagen comprimida o en metadatos (texto, código, la posición GPS de la foto) no llega a la web; un PNG con trozos raros o la suma de control mal se rechaza.
 - **Avisos push a salvo**: como mucho 10 altas por IP cada 15 min, y con la lista llena se rechazan las nuevas en vez de echar a los suscriptores de verdad (antes 500 altas inventadas los borraban a todos).

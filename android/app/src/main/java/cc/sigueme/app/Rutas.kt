@@ -84,7 +84,7 @@ object Rutas {
     /** Baja el GPX para el reloj y lo deja en Descargas (Android 10 o más); devuelve su dirección, o null si no se pudo. */
     fun guardarGpx(c: Context, url: String, id: String, nombre: String): Uri? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
-        val bytes = try { get("$url/api/ruta-publica/reloj.gpx?id=$id") } catch (e: Exception) { return null }
+        val bytes = try { get("$url/api/ruta-publica/reloj.gpx?id=${Uri.encode(id)}") } catch (e: Exception) { return null }
         val valores = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, nombreFichero(nombre))
             put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml")

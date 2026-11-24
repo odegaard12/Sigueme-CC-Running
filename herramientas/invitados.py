@@ -25,7 +25,8 @@ MARGEN_DIAS = 0                                   # el día siguiente a la fecha
 MAX_GPX = 8_000_000                               # bytes
 RESERVADOS = {"admin", "dueno"}
 SIN_CADUCIDAD = "2099-12-31"                      # días=0: una cuenta que no caduca (la del dueño)
-OCULTAR_POR_DEFECTO = 0                           # m sin enseñar al principio y al final de lo público (0: la ruta entera; v1.55)
+OCULTAR_POR_DEFECTO = 0                           # rutas ya guardadas sin el dato: se quedan como estaban (la ruta entera; v1.55)
+OCULTAR_NUEVAS = 300                              # rutas nuevas: 300 m sin enseñar al principio y al final de lo público (la salida suele ser la casa); se cambia al publicar
 
 _lock = threading.RLock()
 # cada scrypt usa ~16 MB: como mucho dos a la vez (la Pi es pequeña)
@@ -319,7 +320,7 @@ def crear_ruta(raiz, usuario, nombre, gpx, preparar, calcular):
     r = {"id": secrets.token_hex(6), "nombre": nombre, "creada": datetime.now().isoformat(timespec="seconds"),
          "distancia_km": resumen["distancia_km"], "desnivel_m": resumen["desnivel_m"], "coords": coords,
          "perfil": [[p["d"], p["ele"]] for p in perfil], "avituallamientos": [], "subidas": subidas,
-         "publica": False, "ocultar_m": OCULTAR_POR_DEFECTO, "autor": "", "publicada": None}
+         "publica": False, "ocultar_m": OCULTAR_NUEVAS, "autor": "", "publicada": None}
     with _lock:
         if len(_ids(raiz, usuario)) >= MAX_RUTAS:
             raise ValueError(f"ya tienes {MAX_RUTAS} rutas: borra alguna para subir otra")

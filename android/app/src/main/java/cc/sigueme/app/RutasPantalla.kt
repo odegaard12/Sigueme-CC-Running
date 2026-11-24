@@ -337,7 +337,7 @@ class RutasPantalla(private val act: Activity, private val prefs: SharedPreferen
                         listOf("Abrir con…" to { abrirGpx(uri) }, "Compartir" to { compartirGpx(uri) }, "Cerrar" to {}))
                 } else if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
                     // Android 8 o 9: la app no puede guardar en Descargas; lo baja el navegador
-                    abrirEnNavegador("$u/api/ruta-publica/reloj.gpx?id=${r.id}")
+                    abrirEnNavegador("$u/api/ruta-publica/reloj.gpx?id=${Uri.encode(r.id)}")
                 } else {
                     avisar("No se pudo bajar la ruta", "Sin cobertura o la ruta ya no está publicada. Prueba otra vez cuando tengas red.",
                         listOf("Reintentar" to { bajarGpx(r) }, "Cerrar" to {}))

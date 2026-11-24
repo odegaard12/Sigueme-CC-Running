@@ -8,6 +8,7 @@ import socketserver
 import sys
 import threading
 import time
+import http.client
 import urllib.request
 import zlib
 try:
@@ -1015,8 +1016,8 @@ def fetch_page(url):
     # otros enlaces: solo http(s) y a direcciones públicas (ni file://, ni la red de casa)
     pu = urlparse(url)
     try:
-        publica = pu.scheme in ("http", "https") and bool(pu.hostname) and all(
-            ipaddress.ip_address(a[4][0]).is_global for a in socket.getaddrinfo(pu.hostname, None))
+        ips = [a[4][0] for a in socket.getaddrinfo(pu.hostname, None)] if pu.scheme in ("http", "https") and pu.hostname else []
+        publica = bool(ips) and all(ipaddress.ip_address(i).is_global for i in ips)
     except (OSError, ValueError):
         publica = False
     if not publica:
@@ -1024,7 +1025,9 @@ def fetch_page(url):
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; SiguemeCC/1.3)"
     })
-    with urllib.request.build_opener(_SinRedireccion).open(req, timeout=10) as resp:
+    # se conecta a la IP que acabamos de comprobar, no a lo que el DNS diga en el segundo intento
+    # (DNS rebinding: primero una IP pública y justo después la de la red de casa)
+    with _abrir_fijado(ips[0]).open(req, timeout=10) as resp:
         return resp.read(2_000_000).decode("utf-8", errors="ignore")
 
 
@@ -1032,6 +1035,28 @@ class _SinRedireccion(urllib.request.HTTPRedirectHandler):
     """Comprobamos que el host es público, pero una redirección saltaba esa comprobación."""
     def redirect_request(self, *a, **k):
         return None
+
+
+def _abrir_fijado(ip):
+    """Un opener que siempre conecta a `ip` (sin volver a preguntar al DNS), con el nombre del
+    sitio intacto para la cabecera Host y el certificado."""
+    class _Http(http.client.HTTPConnection):
+        def connect(self):
+            self.sock = socket.create_connection((ip, self.port), self.timeout)
+
+    class _Https(http.client.HTTPSConnection):
+        def connect(self):
+            crudo = socket.create_connection((ip, self.port), self.timeout)
+            self.sock = self._context.wrap_socket(crudo, server_hostname=self.host)
+
+    class _H(urllib.request.HTTPHandler):
+        def http_open(self, r):
+            return self.do_open(lambda h, **k: _Http(h, **k), r)
+
+    class _S(urllib.request.HTTPSHandler):
+        def https_open(self, r):
+            return self.do_open(lambda h, **k: _Https(h, **k), r)
+    return urllib.request.build_opener(_SinRedireccion, _H, _S)
 
 
 def read_live():
@@ -1701,6 +1726,28 @@ EXTENSIONES_PUBLICAS = {
 }
 
 
+PROXIES_CONFIANZA = {p.strip() for p in os.environ.get("SIGUEME_PROXIES", "").split(",") if p.strip()}
+MAX_CONEXIONES = 400       # conexiones atendidas a la vez; la oleada de una carrera (medida con carga.py) es de unas decenas
+
+
+class _Servidor(http.server.ThreadingHTTPServer):
+    """Con tope de hilos: sin él, miles de conexiones abiertas a la vez (cada una con su hilo y sus
+    20 s de espera) podían agotar la memoria de la Pi. Pasado el tope se cierra la conexión sin leerla."""
+    _plazas = threading.BoundedSemaphore(MAX_CONEXIONES)
+
+    def process_request(self, request, client_address):
+        if not self._plazas.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        super().process_request(request, client_address)
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._plazas.release()
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     server_version = "SiguemeCC"   # antes "SimpleHTTP/0.6 Python/3.x"
     sys_version = ""
@@ -1734,6 +1781,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         directa = self.client_address[0]
         try:
             privada = ipaddress.ip_address(directa).is_private
+            # con SIGUEME_PROXIES (IP de las máquinas que llevan el túnel, separadas por comas) la cabecera solo
+            # vale si llega de una de ellas o de esta misma máquina; sin ella, de cualquier IP privada (como antes).
+            # Así un equipo de la red de casa no puede inventarse la IP para saltarse el freno de claves.
+            if privada and PROXIES_CONFIANZA and not (
+                    ipaddress.ip_address(directa).is_loopback or directa in PROXIES_CONFIANZA
+                    or directa == self.request.getsockname()[0]):
+                privada = False
             real = self.headers.get("CF-Connecting-IP", "").strip()
             if privada and real:
                 ipaddress.ip_address(real)
@@ -3402,7 +3456,7 @@ if __name__ == "__main__":
         if not isinstance(sys.exc_info()[1], ConnectionError):
             _error_de_serie(srv, peticion, cliente)
     http.server.ThreadingHTTPServer.handle_error = _sin_ruido
-    with http.server.ThreadingHTTPServer((BIND_HOST, PORT), Handler) as httpd:
+    with _Servidor((BIND_HOST, PORT), Handler) as httpd:
         print(f"Sígueme CC en http://127.0.0.1:{PORT}"
           + ("" if ADMIN_USER and ADMIN_HASH else "  ⚠️ SIN ADMIN_USER/ADMIN_HASH: el panel no dejará entrar")
           + ("" if VIP else "  · sin SIGUEME_VIP: una sola máquina (con dos Pis, las dos leerían iGPSPORT)"))
