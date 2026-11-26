@@ -4,6 +4,16 @@ Versiones con [SemVer](https://semver.org/lang/es/): la última cifra para
 arreglos, la del medio para funciones nuevas. Cada una tiene su etiqueta y su
 release en GitHub.
 
+## v1.76.0 · 2026-11-27
+- **Kilómetros bien en rutas con ida y vuelta o vueltas**: el punto de la ruta se elige por tiempo y velocidad posible, no solo por cercanía, así que el corredor ya no salta de km cuando la ruta pasa dos veces por el mismo sitio; tampoco cuenta una llegada antes de tiempo ni una salida falsa por el ruido del GPS.
+- **Salida y llegada de verdad**: el tiempo cuenta desde que el corredor empieza a correr (aunque salga del fondo del cajón) y la meta se da sola al llegar y pararse; si deja de llegar señal, la última posición decide. Lo de antes de la carrera, lo de días después y lo de después de la meta no se guarda.
+- **Varios corredores en el mismo mapa**: cada uno con su color y su puesto; los que van juntos o ya han llegado se abren en abanico para que se vean todos.
+- **El móvil del dueño vale para las dos páginas** (la principal y la compartida de la misma carrera), y la principal lleva a la compartida, donde salen todos.
+- **Sin rechazos con mucha gente mirando**: las herramientas solo se recargan cuando cambia el fichero; antes, con muchos espectadores, una posición buena podía recibir «identificador incorrecto».
+- **Una sola entrada y un solo panel**: el panel ya no tiene formulario propio; se entra por «Mis carreras» y una entrada abre las dos sesiones (salir cierra las dos). Las rutas del dueño están dentro del panel, en la pestaña «Rutas».
+- **Menús más claros**: la misma cabecera en toda la web (en ordenador, en una línea), «Mi panel» para el dueño y el nombre para el invitado; el estado del móvil dice si llegan posiciones ahora o desde cuándo están paradas; cada pestaña del panel empieza con lo suyo; la guía del móvil va en pasos numerados; lo que no le sirve al invitado va plegado; fechas como 28/11/2026 y sin nombres internos a la vista.
+- Pruebas nuevas: concurrencia con espectadores, el espejo del móvil del dueño y la minimización de lo que se guarda; la del panel entra por la entrada única.
+
 ## v1.75.0 · 2026-11-24
 - **Enlaces de seguimiento a prueba de DNS rebinding**: el servidor se conecta a la IP que acaba de comprobar como pública, sin volver a preguntar al DNS, así que un nombre que cambie a una dirección de la red de casa entre una consulta y otra ya no sirve.
 - **Tope de 400 conexiones a la vez**: pasado el tope se cierra la conexión sin atenderla, en lugar de seguir creando hilos hasta agotar la memoria de la Pi.

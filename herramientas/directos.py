@@ -25,9 +25,16 @@ MAX_CORREDORES = 30
 MAX_DIRECTOS = 40
 ZONA = "Europe/Madrid"
 ANTES = timedelta(hours=1)          # se pone en marcha con el primer punto desde 1 h antes de la salida
-VEL_SALIDA = 5.0                    # km/h (más rápido que 12 min/km): por encima, tres puntos seguidos, ya no anda: corre
+VEL_SALIDA = 7.0                    # km/h medidos en una ventana de 40 s (5 puntos), dos veces seguidas: ya no anda, corre
+# (entre dos puntos seguidos el ruido del GPS da velocidades falsas de ±4 km/h: andando a 3,5 km/h entre la gente la salida
+# se marcaba hasta 3 min antes de correr; en 40 s ese ruido baja a ±1,4 km/h)
 CERCA_META_M = 100                  # m: ya llegando a meta
 PARTE_PARA_META = 0.8               # la meta solo cuenta con el 80 % de la ruta hecho
+RADIO_SALIDA_KM = 0.8               # antes de salir solo se ve a quien está a menos de esto de la salida (no en casa ni en el autobús)
+GRACIA_FIN_S = 600                  # acabada la carrera (límite de tiempo) se sigue viendo a quien no llegó 10 min más y luego se le deja de seguir
+GRACIA_LLEGADA_S = 600              # tras llegar a meta se sigue guardando 10 min (celebración, volver al coche); luego nada
+PARADO_EN_META_S = 120              # s sin mandar posición junto a la meta: se da por llegado (apagó el móvil al cruzar)
+KM_ULTIMOS = 0.08                   # km: la llegada solo se da con el corredor en los últimos 80 m de la ruta
 
 _lock = threading.RLock()
 _indice = {}                        # identificador → (id de carrera, corredor)
@@ -185,19 +192,37 @@ def _cum_de(c):
     return _cum[c["id"]]
 
 
-def _km_en_ruta(c, la, lo, desde):
-    """Km de la ruta del punto, siempre hacia delante (ventana desde el último km), o None si está lejos (> 150 m)."""
-    cum, coords = _cum_de(c), c["coords"]
-    mejor, mk = 1e9, None
-    for j in range(len(coords)):
+V_MAX = 30.0          # km/h: nadie corre más; limita cuánto puede avanzar el km entre dos puntos
+V_ESP = 12.0          # km/h: ritmo normal, para elegir entre dos pasos por el mismo sitio
+FUERA_LIBRE = 6       # puntos seguidos sin encajar en la ruta: se vuelve a buscar en toda ella (móvil reiniciado, GPS perdido)
+
+
+def _elegir_km(cum, coords, la, lo, desde, dt, libre):
+    """Km de la ruta de un punto GPS, o None si está a más de 150 m. Hay recorridos que pasan por las mismas calles
+    más de una vez (ida y vuelta, lazos): el punto más cercano a secas puede ser el del OTRO paso y el km saltaba
+    kilómetros hacia delante (en la simulación del 16K, 6 km). Por eso solo vale avanzar lo que da de sí el tiempo
+    desde el punto anterior, y entre dos pasos cercanos gana el más próximo a donde se espera al corredor."""
+    dt = 60.0 if dt is None else max(1.0, float(dt))
+    delante = 999.0 if libre else min(8.0, 0.35 + V_MAX * dt / 3600)
+    esperado = desde if libre else desde + min(delante, V_ESP * dt / 3600)
+    mejor = None
+    for j, p in enumerate(coords):
         if cum[j] < desde - 0.5:
             continue
-        if cum[j] > desde + 8:
+        if cum[j] > desde + delante:
             break
-        d = _km((la, lo), (coords[j][1], coords[j][0]))
-        if d < mejor:
-            mejor, mk = d, cum[j]
-    return mk if mejor < 0.15 else None
+        d = _km((la, lo), (p[1], p[0]))
+        if d >= 0.15:
+            continue
+        coste = d * 1000 + 0.05 * abs(cum[j] - esperado) * 1000
+        if mejor is None or coste < mejor[0]:
+            mejor = (coste, cum[j])
+    return mejor[1] if mejor else None
+
+
+def _km_en_ruta(c, la, lo, desde, dt=None, libre=False):
+    """Km de la ruta del punto, siempre hacia delante y sin saltos (ver _elegir_km), o None si está lejos (> 150 m)."""
+    return _elegir_km(_cum_de(c), c["coords"], la, lo, desde, dt, libre)
 
 
 def estado(raiz, id_, cid):
@@ -218,12 +243,17 @@ def recibir(raiz, ident, puntos, ahora=None):
         bat = [p["bateria"] for p in puntos if p.get("bateria") is not None]
         if bat:
             st["bateria"] = round(bat[-1])
+        sal = salida(c)
+        fin = sal + timedelta(hours=c.get("limite_h") or 6)
+        # solo se guarda lo que cae en la carrera: lo de antes (en casa, en el autobús), lo de días después si se deja el móvil
+        # encendido y lo de después de llegar (de vuelta a casa) no se apunta en el servidor
+        desde, hasta = sal.timestamp() - ANTES.total_seconds(), fin.timestamp() + GRACIA_FIN_S
+        lleg = st.get("llegada")
+        con_pos = [p for p in con_pos if desde <= p["t"] <= hasta and not (lleg and p["t"] > lleg + GRACIA_LLEGADA_S)]
         if con_pos:
             with open(_f(raiz, c["id"], co["cid"], "pts"), "a", encoding="utf-8") as f:
                 for p in con_pos:
                     f.write(json.dumps([round(p["t"], 1), round(p["lat"], 6), round(p["lon"], 6)]) + "\n")
-        sal = salida(c)
-        fin = sal + timedelta(hours=c.get("limite_h") or 6)
         if not st.get("en_marcha") and con_pos and sal - ANTES <= datetime.fromtimestamp(ahora, timezone.utc) <= fin:
             st["en_marcha"] = sal.astimezone(timezone.utc).isoformat()
         meta = (c["coords"][-1][1], c["coords"][-1][0])
@@ -238,23 +268,32 @@ def recibir(raiz, ident, puntos, ahora=None):
                 continue
             # salida real: tres puntos seguidos moviéndose, desde la hora oficial (cuenta desde el primero)
             if not st.get("salida_real") and p["t"] >= sal.timestamp():
-                if v > VEL_SALIDA:
-                    st.setdefault("mov_t0", p["t"])
-                    st["mov_n"] = st.get("mov_n", 0) + 1
-                    if st["mov_n"] >= 3:
-                        st["salida_real"] = st.pop("mov_t0")
-                        st.pop("mov_n", None)
-                else:
-                    st.pop("mov_t0", None)
-                    st["mov_n"] = 0
-            k = _km_en_ruta(c, p["lat"], p["lon"], st.get("km", 0))
+                rec = st.setdefault("rec", [])
+                rec.append([p["t"], p["lat"], p["lon"]])
+                del rec[:-5]
+                if len(rec) == 5:
+                    a = rec[0]
+                    dt_v = p["t"] - a[0]
+                    vv = _km((a[1], a[2]), (p["lat"], p["lon"])) / dt_v * 3600 if dt_v > 0 else 0.0
+                    if vv > VEL_SALIDA:
+                        st["mov_n"] = st.get("mov_n", 0) + 1
+                        if st["mov_n"] >= 2:
+                            st["salida_real"] = a[0]           # donde empezó la ventana: cuando de verdad empezó a moverse
+                            for k_ in ("mov_n", "mov_t0", "rec"):
+                                st.pop(k_, None)
+                    else:
+                        st["mov_n"] = 0
+            k = _km_en_ruta(c, p["lat"], p["lon"], st.get("km", 0), p["t"] - ult[2] if ult else None, st.get("fuera_n", 0) >= FUERA_LIBRE)
+            st["fuera_n"] = 0 if k is not None else st.get("fuera_n", 0) + 1
             if k is not None and st.get("salida_real"):
                 st["km"] = max(st.get("km", 0), k)
             # meta: el punto más cercano a la meta del tramo final, en cuanto se aleja o se para
             if st.get("salida_real") and st.get("km", 0) >= minimo_meta:
                 d = _km((p["lat"], p["lon"]), meta) * 1000
                 cerca = st.get("cerca")
-                if d < CERCA_META_M and (not cerca or d < cerca[0]):
+                # solo cuenta en los últimos metros del recorrido: el trazado puede dar vueltas a menos de 100 m de la meta
+                # durante cientos de metros (el 16K de Tui) y daba la llegada 1-2 min antes de tiempo
+                if d < CERCA_META_M and st.get("km", 0) >= _cum_de(c)[-1] - KM_ULTIMOS and (not cerca or d < cerca[0]):
                     st["cerca"], st["lejos_n"] = [d, p["t"]], 0
                 elif cerca:
                     st["lejos_n"] = st.get("lejos_n", 0) + (1 if d > cerca[0] + 3 or v < 2 else 0)
@@ -404,6 +443,7 @@ def _parciales(raiz, id_, cid):
     if clave in _parciales_cache and _parciales_cache[clave][0] == marca:
         return _parciales_cache[clave][1]
     salida_t, km, siguiente, antes, out = st["salida_real"], 0.0, 1, st["salida_real"], []
+    t_ant, fuera = None, 0
     with open(ruta, encoding="utf-8") as f:
         for linea in f:
             try:
@@ -412,7 +452,9 @@ def _parciales(raiz, id_, cid):
                 continue
             if t < salida_t:
                 continue
-            k = _km_en_ruta(c, la, lo, km)
+            k = _km_en_ruta(c, la, lo, km, t - t_ant if t_ant else None, fuera >= FUERA_LIBRE)
+            t_ant = t
+            fuera = 0 if k is not None else fuera + 1
             if k is None:
                 continue
             km = max(km, k)
@@ -443,19 +485,32 @@ def publico(raiz, id_, ahora=None):
     if not c:
         return None
     ahora = ahora or time.time()
+    fin_ts = salida(c).timestamp() + (c.get("limite_h") or 6) * 3600
     gente = []
-    for co in c["corredores"]:
+    for n, co in enumerate(c["corredores"]):
         st = estado(raiz, id_, co["cid"])
+        if not st.get("llegada") and st.get("cerca") and st.get("ult") and not st.get("retirado") and ahora - st["ult"][2] > PARADO_EN_META_S:
+            st = dict(st, llegada=st["cerca"][1])      # llegó a la meta y apagó el móvil: llegada en su punto más cercano a ella
         sit = _situacion(st)
-        x = {"cid": co["cid"], "nombre": co["nombre"], "situacion": sit, "km": round(st.get("km", 0), 2)}
+        # privacidad: el móvil puede estar encendido 1-2 h antes (en casa, en el autobús…). Mientras no está en la zona de salida
+        # sale «Aún sin salir» y sin posición; y acabada la carrera ya no se sigue en público a quien no llegó (de vuelta a casa).
+        if sit == "en_la_salida" and st.get("ult") and _km((st["ult"][0], st["ult"][1]), (c["coords"][0][1], c["coords"][0][0])) > RADIO_SALIDA_KM:
+            sit = "sin_empezar"
+        fuera_de_tiempo = sit != "en_meta" and ahora > fin_ts + GRACIA_FIN_S
+        x = {"cid": co["cid"], "n": n, "nombre": co["nombre"], "situacion": sit, "km": round(st.get("km", 0), 2)}
         if st.get("foto"):
             x["foto"] = st["foto"]
-        if sit not in ("sin_empezar", "retirado") and st.get("ult"):
+        if sit not in ("sin_empezar", "retirado") and st.get("ult") and not fuera_de_tiempo:
             x["lat"], x["lon"], x["visto"] = st["ult"][0], st["ult"][1], st["ult"][2]
             x["bateria"] = st.get("bateria")
         if st.get("salida_real"):
             x["salida"] = st["salida_real"]
-            x["tiempo_s"] = int((st.get("llegada") or ahora) - st["salida_real"])
+            hasta = st.get("llegada") or ahora
+            # carrera acabada sin llegada detectada (apagó el móvil al cruzar la meta, sin batería): el tiempo se para en su
+            # último punto; antes seguía contando para siempre
+            if not st.get("llegada") and ahora > fin_ts and st.get("ult"):
+                hasta = min(ahora, st["ult"][2])
+            x["tiempo_s"] = int(max(0, hasta - st["salida_real"]))
         if sit == "en_meta":
             x["lat"], x["lon"] = c["coords"][-1][1], c["coords"][-1][0]
         gente.append(x)

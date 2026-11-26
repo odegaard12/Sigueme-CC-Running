@@ -101,7 +101,10 @@
   .qr { background: #fff; border-radius: 12px; padding: 12px; width: min(240px, 100%); margin: 12px auto; }
   .qr svg { display: block; width: 100%; height: auto; }
   .qr:empty { display: none; }
-  #login-screen { max-width: 340px; margin: 50px auto 0; padding: 0 16px; }
+  #login-screen { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+  #login-screen .tarjeta { padding: 18px; margin-top: 0; }
+  #login-screen h2 { margin: 0 0 6px; }
+  #login-screen .sub { margin: 0 0 14px; color: var(--suave); }
   /* --- v1.11: diseño nuevo --- */
   body { background: #0a0d0c; }
   .topbar { border-bottom: 0; padding: 16px 16px 6px; }
@@ -111,6 +114,9 @@
   .pill-panel { font-size: 0.86rem; font-weight: 700;
     padding: 5px 11px; border-radius: 999px; background: #1a211e; color: #8a968f; border: 0; }
   .pill-panel:empty { display: none; }
+  #pill-panel { display: none; }
+  #resumen[hidden] { display: none !important; }
+  #r-movil { font-family: inherit; font-size: clamp(1.05rem, 4.2vw, 1.3rem); line-height: 1.2; text-transform: none; letter-spacing: 0; }                      /* el estado ya sale en el resumen y en la pestaña «Carrera» */
   .pill-panel.vivo { background: #d9f24a; color: #0a0d0c; border-color: #d9f24a; }
   .admin-wrap { max-width: 560px; padding-top: 6px; }
   .pestanas { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
@@ -277,30 +283,35 @@
   .inv-nuevo .btn { margin-top: 8px; }
   .inv-codigo { font: 700 1.5rem/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: #d9f24a; user-select: all; margin: 8px 0; }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css?v=13">
+<link rel="stylesheet" href="/cartel-panel.css?v=17">
 </head>
 <body>
 <div class="campo-cartel">
-  <header class="barra-cartel">
-    <nav><a href="/inicio">Inicio</a><a href="/mis-rutas.html">Mis carreras</a><a href="/index.html">La carrera</a></nav></header>
+  <header class="barra-cartel"><a class="marca-cartel" href="/inicio" aria-label="Inicio"></a>
+    <nav><a href="/mis-rutas.html">Entrar</a></nav></header>
+  <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
   <div class="topbar">
-    <h1>Admin</h1>
+    <h1>Mi panel</h1>
     <div class="cabecera-datos"><span class="pill-panel" id="pill-panel"></span>
       <button type="button" class="btn-guia" id="btn-guia" hidden>? Guía</button></div>
   </div>
 </div>
 
-<div id="login-screen">
-  <div class="field">
-    <label for="usuario">Usuario</label>
-    <input type="text" id="usuario" placeholder="usuario" autocomplete="username" autocapitalize="none" autofocus>
+<div id="login-screen" hidden>
+  <div class="tarjeta">
+    <h2>Entrar</h2>
+    <p class="sub">Es la misma entrada que en «Mis carreras»: con tu usuario y tu clave del panel abres las dos.</p>
+    <div class="field">
+      <label for="usuario">Usuario</label>
+      <input type="text" id="usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus>
+    </div>
+    <div class="field">
+      <label for="token">Clave</label>
+      <input type="password" id="token" autocomplete="current-password">
+    </div>
+    <button class="save-btn" id="login-btn">Entrar</button>
+    <p class="msg" id="login-msg"></p>
   </div>
-  <div class="field">
-    <label for="token">Clave</label>
-    <input type="password" id="token" placeholder="clave" autocomplete="current-password">
-  </div>
-  <button class="save-btn" id="login-btn">Entrar</button>
-  <p class="msg" id="login-msg"></p>
 </div>
 
 <div class="admin-wrap" id="panel">
@@ -309,7 +320,7 @@
     <button type="button" role="tab" data-tab="movil" data-n="2"><span class="n" aria-hidden="true">2</span><span class="t"><b>Móvil</b><small id="est-movil">Instalar la app y la pulsera</small></span></button>
     <button type="button" role="tab" data-tab="hoy" data-n="3"><span class="n" aria-hidden="true">3</span><span class="t"><b>Carrera</b><small id="est-hoy">Empezar y seguir el directo</small></span></button>
     <button type="button" role="tab" data-tab="mas" data-n="4"><span class="n" aria-hidden="true">4</span><span class="t"><b>Resultado</b><small id="est-mas">Subir el FIT y archivar</small></span></button>
-    <button type="button" role="tab" data-tab="rutas" data-n="5"><span class="n" aria-hidden="true">5</span><span class="t"><b>Invitados</b><small id="est-rutas">Invitados y rutas públicas</small></span></button>
+    <button type="button" role="tab" data-tab="rutas" data-n="5"><span class="n" aria-hidden="true">5</span><span class="t"><b>Rutas</b><small id="est-rutas">Tus rutas, directos e invitados</small></span></button>
   </nav>
 
   <div class="cuerpo">
@@ -583,20 +594,20 @@
   </div>
 
     <div class="tarjeta primero" id="sec-mis" data-tab="rutas">
-    <h2>Mis carreras</h2>
-    <div class="howto">Tus propias rutas y carreras: sube un GPX, ponle avituallamientos, llévatelo al reloj, córrelo en directo o publica la ruta.</div>
-    <a class="save-btn" href="/mis-rutas.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Abrir Mis carreras</a>
+    <h2>Tus rutas</h2>
+    <div class="howto">Sube un GPX, ponle avituallamientos, llévatelo al reloj, córrelo en directo con quien quieras o publica la ruta.</div>
+    <iframe id="marco-rutas" title="Tus rutas" style="display:block;width:100%;height:600px;border:0;margin-top:6px;background:transparent"></iframe>
   </div>
 
   <div class="tarjeta" id="sec-publicadas" data-tab="rutas">
-    <h2>Rutas publicadas</h2>
-    <div class="howto">Lo que han publicado tus invitados; cualquiera lo ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita lo que no deba estar.</div>
+    <h2>Rutas de tus invitados</h2>
+    <div class="howto">Las que tus invitados han publicado; cualquiera las ve en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita lo que no deba estar.</div>
     <div id="pub-lista"></div>
   </div>
 
   <div class="tarjeta" id="sec-directos" data-tab="rutas">
-    <h2>Carreras en directo</h2>
-    <div class="howto">Las crean tus invitados (o tú) desde Mis carreras y salen en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita la que no deba estar: se borra para todos sus corredores.</div>
+    <h2>Directos de tus invitados</h2>
+    <div class="howto">Los crean tus invitados desde su «Mis carreras» y salen en <a href="/inicio" target="_blank" rel="noopener">la portada</a>. Quita la que no deba estar: se borra para todos sus corredores.</div>
     <div id="dir-lista"></div>
   </div>
 
@@ -693,9 +704,7 @@ try { sessionStorage.removeItem('adminToken'); } catch (e) {}
 function sesionCaducada() {
   clearInterval(sondeo); sondeo = null;
   $('panel').classList.remove('abierto'); $('panel').style.display = 'none';
-  $('login-screen').style.display = 'block';
-  $('login-msg').textContent = 'La sesión ha caducado: vuelve a entrar.';
-  $('login-msg').className = 'msg err';
+  location.replace('/mis-rutas.html?volver=admin&caducada=1');          // una sola entrada: la de Mis carreras
 }
 
 async function post(body) {
@@ -742,6 +751,14 @@ $('hora-salida').addEventListener('input', () => { horaTocada = true; });
 
 // ---------- resumen de arriba: estado, botón y cifras (todo con textContent) ----------
 let heroEstado = 'previo', heroPrep = null;
+// estado del móvil, el mismo en la pestaña «Móvil» y en el resumen: llegan posiciones ahora / paradas / app vinculada / nada
+function estadoMovil(p) {
+  const hace = p.gps_t ? Date.now() / 1000 - p.gps_t : null;
+  if (hace !== null && hace < 180) return { txt: 'Enviando posición', ok: true };
+  if (hace !== null) return { txt: 'Parado · hace ' + (hace < 3600 ? Math.round(hace / 60) + ' min' : Math.round(hace / 3600) + ' h'), ok: true };
+  if (p.app_at) return { txt: 'App vinculada', ok: true };
+  return { txt: 'Falta instalar la app', ok: false };
+}
 function pintarResumen() {
   const p = (heroPrep && heroPrep.p) || {};
   const km = v => v != null ? String(v).replace('.', ',') : '';
@@ -769,7 +786,8 @@ function pintarResumen() {
     if (t) t.scrollIntoView({ block: 'start' }); else window.scrollTo({ top: 0 }); };
   if (!heroPrep) return;
   $('r-listo').textContent = heroPrep.listos + ' / ' + heroPrep.total;
-  const m = $('r-movil'); m.textContent = p.app_at ? 'Conectado' : 'Sin app'; m.classList.toggle('falta', !p.app_at);
+  const m = $('r-movil'); // «Conectado» solo cuando llegan posiciones AHORA (antes, tras abrir la app una vez se quedaba «Conectado» para siempre aunque se parase el seguimiento)
+  const em = estadoMovil(p); m.textContent = em.txt; m.classList.toggle('falta', !em.ok);
   $('r-avisos').textContent = String(p.avisos || 0);
   $('r-ruta').textContent = p.ruta_km ? km(p.ruta_km) + ' km' : '—';
 }
@@ -910,7 +928,7 @@ function pintarPreparacion(p) {
   $('prep-progreso').textContent = listos + ' de ' + pasos.length + ' listos';
   $('est-preparar').textContent = listos === pasos.length ? 'Todo preparado' : listos + ' de ' + pasos.length + ' listos';
   marcarPestana('preparar', listos === pasos.length);
-  $('est-movil').textContent = p.app_at ? 'App conectada' : 'Falta instalar la app';
+  $('est-movil').textContent = estadoMovil(p).txt;
   marcarPestana('movil', !!p.app_at && !!p.id_largo);
   heroPrep = { p, listos, total: pasos.length };
   pintarResumen();
@@ -1076,12 +1094,13 @@ function enseñarCodigo(usuario, codigo, caduca) {
 }
 function pintarDirectos(lista) {
   const c = $('dir-lista'); c.textContent = '';
-  if (!lista.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'No hay ninguna.'; c.append(p); return; }
+  lista = lista.filter(x => x.creador !== 'dueno');                     // las tuyas ya salen arriba, en «Tus rutas»
+  if (!lista.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'Ninguna de tus invitados.'; c.append(p); return; }
   for (const x of lista) {
     const f = document.createElement('div'); f.className = 'inv-fila';
     const t = document.createElement('div'); t.className = 'inv-dato';
     const n = document.createElement('b'); n.textContent = x.nombre;
-    const s = document.createElement('span'); s.textContent = x.fecha + ' · ' + x.hora_salida + ' · creada por ' + x.creador + ' · ' + x.corredores.join(', ');
+    const s = document.createElement('span'); s.textContent = fechaEs(x.fecha) + ' · ' + x.hora_salida + ' · de ' + x.creador + ' · ' + x.corredores.join(', ');
     t.append(n, s);
     const bs = document.createElement('div'); bs.className = 'inv-botones';
     const ver = document.createElement('a'); ver.className = 'btn'; ver.textContent = 'Ver'; ver.href = '/d/' + x.id; ver.target = '_blank'; ver.rel = 'noopener';
@@ -1097,6 +1116,7 @@ function pintarDirectos(lista) {
 
 function pintarPublicadas(rutas) {
   const c = $('pub-lista'); c.textContent = '';
+  rutas = rutas.filter(r => r.usuario !== 'dueno');                    // las tuyas ya salen arriba, en «Tus rutas»
   const pub = rutas.filter(r => r.publica);
   const resto = rutas.length - pub.length;
   if (!pub.length) { const p = document.createElement('p'); p.className = 'howto'; p.textContent = 'Nada publicado todavía' + (resto ? (resto === 1 ? ' (hay 1 ruta privada de un invitado).' : ' (hay ' + resto + ' rutas privadas de invitados).') : '.'); c.append(p); return; }
@@ -1308,8 +1328,11 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && so
 function verPestana(t) {
   document.querySelectorAll('.pestanas button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
   document.querySelectorAll('.tarjeta[data-tab]').forEach(c => { c.hidden = c.dataset.tab !== t; });
+  // el resumen (carrera y cifras) solo en «Preparar»: en las demás tapaba en el móvil lo que cambia al pulsar la pestaña
+  const res = $('resumen'); if (res) res.hidden = t !== 'preparar';
   try { localStorage.setItem('pestana', t); } catch (e) {}
   if (t === 'rutas' && typeof cargarInvitados === 'function') cargarInvitados();
+  if (t === 'rutas') { const f = $('marco-rutas'); if (f && !f.getAttribute('src')) f.src = '/mis-rutas.html?embebido=1'; }
 }
 document.querySelectorAll('.pestanas button').forEach(b => b.addEventListener('click', () => verPestana(b.dataset.tab)));
 // los botones «Siguiente» del final de cada pestaña
@@ -1327,6 +1350,9 @@ function marcarPestana(t, hecho) {
 let pestanaElegida = false;
 let inicial = 'hoy';
 try { inicial = localStorage.getItem('pestana') || 'hoy'; } catch (e) {}
+if (location.hash === '#rutas') { inicial = 'rutas'; pestanaElegida = true; }
+// «Tus rutas» va dentro del panel: el marco dice su alto para que no tenga barra de desplazamiento propia
+window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.altoRutas) $('marco-rutas').style.height = Math.max(300, e.data.altoRutas) + 'px'; });
 verPestana(['hoy', 'preparar', 'movil', 'mas', 'rutas'].includes(inicial) ? inicial : 'hoy');
 
 // ---------- guía de primera vez ----------
@@ -1486,7 +1512,7 @@ $('save-manual').addEventListener('click', () => {
 });
 
 // ¿ya hay sesión? /api/sesion responde siempre 200 (antes se preguntaba con una orden que daba 403 a quien no había entrado)
-fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(d => { if (d && d.sesion) entrar(); }).catch(() => {});
+fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : {}).then(d => { if (d && d.sesion) entrar(); else location.replace('/mis-rutas.html?volver=admin'); }).catch(() => {});
 </script>
 <script src="/avisos-movil.js?v=2"></script>
 <script>
@@ -1503,6 +1529,7 @@ fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.ok ? r.json() :
   let n = 0; const t = setInterval(() => { if (window.__gpsId && window.avisosMovil) { clearInterval(t); window.avisosMovil(document.getElementById('avisos-iphone-cont'), window.__gpsId); } else if (++n > 40) clearInterval(t); }, 500);
 })();
 </script>
-<script src="/ayuda.js?v=8"></script>
+<script src="/ayuda.js?v=10"></script>
+<script src="/marca-usuario.js?v=7" defer></script>
 </body>
 </html>

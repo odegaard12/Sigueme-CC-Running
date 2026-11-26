@@ -76,19 +76,37 @@ def _acumulados(coords):
     return _cum_cache[k]
 
 
-def km_en_ruta(coords, lat, lon, desde=0.0):
-    """Km de la ruta del punto, siempre hacia delante (ventana desde el último km), o None si va a más de 150 m."""
-    cum = _acumulados(coords)
-    mejor, mk = 1e9, None
+V_MAX = 30.0          # km/h: nadie corre más; limita cuánto puede avanzar el km entre dos puntos
+V_ESP = 12.0          # km/h: ritmo normal, para elegir entre dos pasos por el mismo sitio
+FUERA_LIBRE = 6       # puntos seguidos sin encajar en la ruta: se vuelve a buscar en toda ella (móvil reiniciado, GPS perdido)
+
+
+def _elegir_km(cum, coords, la, lo, desde, dt, libre):
+    """Km de la ruta de un punto GPS, o None si está a más de 150 m. Hay recorridos que pasan por las mismas calles
+    más de una vez (ida y vuelta, lazos): el punto más cercano a secas puede ser el del OTRO paso y el km saltaba
+    kilómetros hacia delante (en la simulación del 16K, 6 km). Por eso solo vale avanzar lo que da de sí el tiempo
+    desde el punto anterior, y entre dos pasos cercanos gana el más próximo a donde se espera al corredor."""
+    dt = 60.0 if dt is None else max(1.0, float(dt))
+    delante = 999.0 if libre else min(8.0, 0.35 + V_MAX * dt / 3600)
+    esperado = desde if libre else desde + min(delante, V_ESP * dt / 3600)
+    mejor = None
     for j, p in enumerate(coords):
         if cum[j] < desde - 0.5:
             continue
-        if cum[j] > desde + 8:
+        if cum[j] > desde + delante:
             break
-        d = _km((lat, lon), (p[1], p[0]))
-        if d < mejor:
-            mejor, mk = d, cum[j]
-    return mk if mejor < 0.15 else None
+        d = _km((la, lo), (p[1], p[0]))
+        if d >= 0.15:
+            continue
+        coste = d * 1000 + 0.05 * abs(cum[j] - esperado) * 1000
+        if mejor is None or coste < mejor[0]:
+            mejor = (coste, cum[j])
+    return mejor[1] if mejor else None
+
+
+def km_en_ruta(coords, lat, lon, desde=0.0, dt=None, libre=False):
+    """Km de la ruta del punto, siempre hacia delante y sin saltos (ver _elegir_km), o None si va a más de 150 m."""
+    return _elegir_km(_acumulados(coords), coords, lat, lon, desde, dt, libre)
 
 
 def _id(a):
@@ -136,9 +154,14 @@ def revisar(root, av, live, plan, ruta, clave_dueno, dm, ahora=None):
         except (KeyError, IndexError, TypeError):
             coords = []
         if len(coords) > 1:
-            k = km_en_ruta(coords, ult[0], ult[1], (estado.get(clave_dueno) or {}).get("km", 0.0))
+            prev = estado.get(clave_dueno) or {}
+            dt = ult[2] - prev["tg"] if prev.get("tg") and ult[2] > prev["tg"] else 30
+            k = km_en_ruta(coords, ult[0], ult[1], prev.get("km", 0.0), dt, prev.get("fuera", 0) >= FUERA_LIBRE)
+            fuera = 0 if k is not None else prev.get("fuera", 0) + 1
             if k is not None:
                 enviados += _enviar_si_toca(root, av, estado, clave_dueno, "dueno:" + str(live.get("started_at")), (plan or {}).get("avisos", []), k, subs[clave_dueno])
+            e = estado.setdefault(clave_dueno, {})
+            e["tg"], e["fuera"] = ult[2], fuera
     # las carreras en directo de varios corredores: el km de cada uno ya lo lleva su estado
     for id_ in (dm._ids(root) if dm else []):
         c = dm.carrera(root, id_)

@@ -59,11 +59,7 @@ function ficha(r, i) {
 
 async function json(url) { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 
-// «Entrar»: al dueño lo lleva al panel; al invitado, a su espacio de rutas
-fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
-  const a = document.getElementById('nav-admin');
-  if (a && d && d.dueno) a.href = '/admin.html';
-}).catch(() => {});
+// (el enlace de acceso de la cabecera lo pone marca-usuario.js)
 
 (async () => {
   const rutas = await json('/api/rutas-publicas');

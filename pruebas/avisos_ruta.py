@@ -37,8 +37,8 @@ def en_km(km, t, salida=True):
 ok(not ar.alta(raiz, aw, CLAVE, {'endpoint': 'https://evil.example/x', 'keys': {'p256dh': 'x', 'auth': 'y'}}), 'una suscripción de un servicio que no es de avisos no se guarda')
 ok(ar.alta(raiz, aw, CLAVE, SUB) and ar.alta(raiz, aw, CLAVE, SUB) and len(json.load(open(pathlib.Path(raiz) / '.push_corredor.json'))[CLAVE]) == 1, 'su móvil se apunta (dos veces no se duplica)')
 ok(ar.revisar(raiz, aw, en_km(1.0, T0), plan, ruta, CLAVE, None, T0) == 0, 'km 1: aún no hay aviso')
-ok(ar.revisar(raiz, aw, en_km(2.1, T0 + 60), plan, ruta, CLAVE, None, T0 + 60) == 1 and enviados[-1][1:] == ('SUBIDA 1', 'subida-1'), 'km 2,1: «SUBIDA 1» a su móvil')
-ok(ar.revisar(raiz, aw, en_km(2.2, T0 + 90), plan, ruta, CLAVE, None, T0 + 90) == 0, 'km 2,2: no se repite')
+ok(ar.revisar(raiz, aw, en_km(2.1, T0 + 600), plan, ruta, CLAVE, None, T0 + 600) == 1 and enviados[-1][1:] == ('SUBIDA 1', 'subida-1'), 'km 2,1: «SUBIDA 1» a su móvil')
+ok(ar.revisar(raiz, aw, en_km(2.2, T0 + 660), plan, ruta, CLAVE, None, T0 + 660) == 0, 'km 2,2: no se repite')
 ok(ar.revisar(raiz, aw, en_km(5.1, T0 + 1200), plan, ruta, CLAVE, None, T0 + 1200) == 1 and enviados[-1][1] == 'CIMA', 'km 5,1 (tras un tramo sin cobertura): solo «CIMA»')
 n = len(enviados)
 ok(ar.revisar(raiz, aw, en_km(9.0, T0 + 2000), plan, ruta, CLAVE, None, T0 + 2000) == 0 and len(enviados) == n, 'km 9: «ULTIMO KM» ya pasó (valía hasta el 8,4): no se manda tarde')
@@ -53,6 +53,7 @@ ok(ar.revisar(raiz2, aw, en_km(2.1, T0), plan, ruta, 'otra-clave', None, T0) == 
 ar.baja(raiz2, aw, CLAVE, SUB['endpoint'])
 ok(ar.revisar(raiz2, aw, en_km(2.1, T0), plan, ruta, CLAVE, None, T0) == 0, 'tras darse de baja: nada')
 
+# (km 1 a km 2,1 en 10 min: el servidor ya no admite saltos que no cuadran con el tiempo; v1.76.0)
 # una carrera de varios corredores: cada uno el suyo
 class Dm:
     def __init__(s): s.c = {'id': 'abcdef0123', 'plan': {'avisos': avisos}, 'corredores': [{'cid': 'c1', 'ident': 'dir-uno'}, {'cid': 'c2', 'ident': 'dir-dos'}]}

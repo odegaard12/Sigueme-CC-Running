@@ -121,12 +121,20 @@ input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px
 @media (prefers-reduced-motion: reduce) { #guia-foco { transition: none; } }
 
 /* ordenador: Mis carreras lleva el menú de la web a la izquierda de la barra de arriba; a la derecha, el usuario */
-@media (min-width: 900px) {
-  body.mis .campo-cartel { position: relative; }
-  body.mis .pestanas-sitio { position: absolute; top: 4px; left: calc(50% - 340px); width: 440px; max-width: none; margin: 0 16px; }
-  body.mis .barra-cartel { justify-content: flex-end; }
-}
+/* (quitado 25/11: con el logo con nombre, la franja colocada encima de la barra lo tapaba) */
 
 /* el «?» se ve igual de pequeño pero se puede tocar en 44 px */
 .ayuda-q { position: relative; }
 .ayuda-q::after { content: ""; position: absolute; inset: -7px; }
+
+/* el logo era un enlace vacío: ahora lleva el nombre */
+.barra-cartel .marca-cartel::before { content: "Sígueme CC"; }
+
+/* ordenador (propuesta A, 25/11): una sola línea — logo a la izquierda, menú en texto centrado (la página actual subrayada), acceso a la derecha */
+@media (min-width: 900px) {
+  .campo-cartel { position: relative; }
+  html body .campo-cartel > .pestanas-sitio { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: auto; max-width: none; margin: 0; padding: 0; background: none; gap: 28px; }
+  html body .campo-cartel > .pestanas-sitio a { flex: none; min-height: 40px; padding: 0 2px; border-radius: 0; background: none; color: var(--suave); }
+  html body .campo-cartel > .pestanas-sitio a:hover { color: var(--texto); }
+  html body .campo-cartel > .pestanas-sitio a[aria-current="page"] { background: none; color: var(--texto); box-shadow: inset 0 -2px 0 var(--acento, #d9f24a); }
+}

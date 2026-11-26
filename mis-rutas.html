@@ -19,6 +19,11 @@
   body.mis .barra-cartel, body.mis .campo-cartel .topbar { max-width: 680px; padding-left: 16px; padding-right: 16px; }
   body.mis .pestanas-sitio { width: calc(100% - 32px); max-width: 648px; }
   .tarjeta { padding: 18px; margin-top: 16px; }
+  .embebido .campo-cartel, .embebido #salir, .embebido #btn-guia { display: none !important; }
+  .embebido body, html.embebido { background: transparent; }
+  .embebido main { padding-left: 0; padding-right: 0; }
+  .embebido .propias > summary { display: none; }
+  .propias > summary { margin-top: 16px; padding: 14px 4px; cursor: pointer; font-weight: 700; }
   label { display: block; color: var(--muted); font-size: .9rem; margin: 12px 0 4px; }
   input[type=text], input[type=password], input[type=number], input[type=file], input[type=date], input[type=time], select {
     width: 100%; min-height: 48px; background: var(--panel-2); color: var(--papel); border: 1px solid var(--border);
@@ -71,11 +76,11 @@
   @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .entra { animation: none; } .btn { transition: none; } }
 </style>
-<link rel="stylesheet" href="/cartel-panel.css?v=13">
+<link rel="stylesheet" href="/cartel-panel.css?v=17">
 </head>
 <body class="mis">
 <div class="campo-cartel">
-  <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/admin.html" id="nav-admin" hidden>Admin</a></nav></header>
+  <header class="barra-cartel"><a class="marca-cartel" id="marca" href="/inicio" aria-label="Inicio"></a><nav><a href="/mis-rutas.html">Entrar</a></nav></header>
   <nav class="pestanas-sitio" aria-label="Secciones"><a href="/inicio">Inicio</a><a href="/carreras/">Carreras</a><a href="/rutas">Rutas y relojes</a></nav>
   <div class="topbar"><h1>Mis carreras</h1><button type="button" class="btn-guia" id="btn-guia" hidden>? Ayuda</button></div>
   <p class="sub-cab" id="cabecera">Tus carreras: sube un GPX, llévalo al reloj, publícalo o córrelo en directo.</p>
@@ -84,7 +89,6 @@
   <section class="tarjeta entra" id="vista-login">
     <h2>Entrar</h2>
     <p class="sub">Entra con el usuario y el código que te dieron. Tu acceso caduca en la fecha que te dijeron: pasada, se borra todo lo tuyo y hay que pedir otro.</p>
-    <p class="sub">¿Eres el dueño de la web? Entra con tu usuario y tu clave del panel.</p>
     <form id="form-login" autocomplete="on">
       <label for="usuario">Usuario</label>
       <input type="text" id="usuario" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
@@ -105,6 +109,8 @@
       <p class="sub">Carreras en directo de otros que aún no han terminado. Apúntate, configura tu móvil y saldrás en el mapa con los demás.</p>
       <div id="abiertas"></div>
     </div>
+    <details id="propias" class="propias">
+    <summary>Mis propias rutas: subir un GPX y llevarlo al reloj</summary>
     <div class="tarjeta entra">
       <h2>Tus carreras</h2>
       <div id="lista"></div>
@@ -120,6 +126,7 @@
       <button class="btn principal" type="button" id="subir">Subir ruta</button>
       <div class="msg" id="msg-lista" role="status"></div>
     </div>
+    </details>
     <button class="btn peligro" type="button" id="salir">Salir</button>
   </section>
 
@@ -129,6 +136,7 @@
       <a href="#card-datos">Datos</a><a href="#card-avit">Avituallamientos</a><a href="#card-subidas">Subidas</a><a href="#card-reloj">Reloj</a><a href="#card-publicar">Publicar</a><a href="#card-directo" class="directo">Correr en directo</a>
     </nav>
     <div class="tarjeta entra" id="card-datos">
+      <div class="paso"><span class="n">1</span><span><b>Tu ruta.</b> Comprueba el nombre y el perfil; los pasos siguientes son opcionales.</span></div>
       <h2 id="r-titulo">Ruta</h2>
       <p class="sub" id="r-datos"></p>
       <svg id="r-perfil" viewBox="0 0 320 110" role="img" aria-label="Perfil de la ruta"></svg>
@@ -204,10 +212,10 @@
   </div>
 </div>
 <script src="/avisos-movil.js?v=2"></script>
-<script src="/directo-movil.js?v=3"></script>
+<script src="/directo-movil.js?v=6"></script>
 <script src="/foto-corredor.js?v=1"></script>
-<script src="/mis-rutas.js?v=17"></script>
-<script src="/ayuda.js?v=8"></script>
-<script src="/marca-usuario.js?v=2" defer></script>
+<script src="/mis-rutas.js?v=25"></script>
+<script src="/ayuda.js?v=10"></script>
+<script src="/marca-usuario.js?v=7" defer></script>
 </body>
 </html>

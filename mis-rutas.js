@@ -7,6 +7,19 @@ const base = '/api/invitado';
 let actual = null;          // la ruta abierta
 
 function aviso(id, texto, tipo) { const m = $(id); m.textContent = texto || ''; m.className = 'msg' + (tipo ? ' ' + tipo : ''); }
+// dentro del panel (pestaña «Rutas»): sin cabecera propia, los enlaces a otras páginas abren la página entera y el alto se avisa al panel
+const EMBEBIDO = new URLSearchParams(location.search).has('embebido') && window.parent !== window;
+if (EMBEBIDO) {
+  document.documentElement.classList.add('embebido');
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href]');
+    if (!a || a.getAttribute('href').startsWith('#') || a.target === '_blank' || a.hasAttribute('download')) return;
+    e.preventDefault(); window.top.location.href = a.href;
+  });
+  const avisar = () => window.parent.postMessage({ altoRutas: document.documentElement.scrollHeight }, location.origin);
+  new ResizeObserver(avisar).observe(document.body); window.addEventListener('load', avisar);
+}
+
 function ver(vista) {
   for (const v of ['login', 'lista', 'ruta']) $('vista-' + v).hidden = v !== vista;
   if (vista === 'login') { const g = $('btn-guia'); if (g) g.hidden = true; }
@@ -45,11 +58,20 @@ async function lista() {
   if (window.marcaUsuario) window.marcaUsuario();
   $('cabecera').textContent = d.dueno ? 'Las rutas del dueño de la web, sin caducidad.' : 'Hola, ' + d.nombre + (d.caduca === '2099-12-31' ? '. Tu acceso no caduca.' : '. Tu acceso vale hasta el ' + fecha(d.caduca) + '; después se borra todo lo tuyo.');
   $('salir').hidden = !!d.dueno;
+  const h1 = document.querySelector('.topbar h1'); if (h1) h1.textContent = d.dueno ? 'Mis rutas' : 'Mis carreras';
+  $('volver').textContent = d.dueno ? '‹ Tus rutas' : '‹ Mis carreras';
+  if (d.dueno && !EMBEBIDO) {                                                     // el dueño tiene todo en su panel (pestaña «Rutas»)
+    const ok = await fetch('/api/sesion', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({}));
+    if (ok.sesion) { location.replace(new URLSearchParams(location.search).get('volver') === 'admin' ? '/admin.html' : '/admin.html#rutas'); return; }
+    try { await post('/logout', {}); } catch (e) { /* da igual */ }                     // sesión a medias de antes: se limpia y se recarga limpia
+    location.reload(); return;
+  }
   acceso = { caduca: d.caduca, dueno: !!d.dueno, nombre: d.dueno ? '' : d.nombre };
   $('btn-guia').hidden = false;
   guiaPrimeraVez();
   const cont = $('lista'); cont.textContent = '';
   $('lista-vacia').hidden = d.rutas.length > 0;
+  nRutas = d.rutas.length; plegarPropias();
   for (const r of d.rutas) {
     const fila = document.createElement('div'); fila.className = 'ruta-fila';
     const dato = document.createElement('div'); dato.className = 'dato';
@@ -85,7 +107,7 @@ async function lista() {
 async function cargarDirectos(abierta) {
   const d = await api('/directos');
   const cont = $('directos'); cont.textContent = '';
-  hayDirectos = d.directos.length > 0;
+  hayDirectos = d.directos.length > 0; if (typeof plegarPropias === "function") plegarPropias();
   $('card-directos').hidden = false;
   if (!d.directos.length) {
     const p = document.createElement('p'); p.className = 'sub';
@@ -147,11 +169,22 @@ async function cargarDirectos(abierta) {
   cargarAbiertas().catch(() => {});
 }
 
+// «Mis propias rutas» (subir un GPX…) va plegado si quien entra solo viene a correr una carrera: no le sirve y tapaba el paso que importa
+let nRutas = 0, nAbiertas = 0;
+function plegarPropias() {
+  const p = $('propias'); if (!p) return;
+  if (p.dataset.tocado) return;                       // si la abrió o cerró él, se respeta
+  p.open = nRutas > 0 || !!acceso.dueno || (!hayDirectos && !nAbiertas);
+}
+$('propias').querySelector('summary').addEventListener('click', () => { $('propias').dataset.tocado = '1'; });
+
 // carreras de otros a las que apuntarse sin enlace (v1.57)
 async function cargarAbiertas() {
   const d = await api('/abiertas');
   const cont = $('abiertas'); cont.textContent = '';
   $('card-abiertas').hidden = !d.abiertas.length;
+  nAbiertas = d.abiertas.length; plegarPropias();
+  if (!hayDirectos && d.abiertas.length) $('card-directos').hidden = true;      // sin carreras propias y con una abierta: solo esa
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
   let nombreGuardado = ''; try { nombreGuardado = localStorage.getItem('nombre_carrera') || ''; } catch (e) { /* da igual */ }
   for (const c of d.abiertas) {
@@ -311,13 +344,10 @@ $('borrar').addEventListener('click', async () => {
 });
 
 // si ya hay sesión (cookie), se entra directo
-api('/yo').then(d => d.sesion ? lista() : ver('login')).catch(() => ver('login'));
+const entrarAviso = () => { ver('login'); if (new URLSearchParams(location.search).get('volver') === 'admin') aviso('msg-login', 'Entra con tu usuario y tu clave para abrir tu panel.', 'ok'); };
+api('/yo').then(d => d.sesion ? lista() : entrarAviso()).catch(entrarAviso);
 
-// «Admin» solo aparece si quien mira es el dueño (sesión del panel)
-fetch('/api/invitado/yo', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(d => {
-  const a = document.getElementById('nav-admin');
-  if (a && d && d.dueno) a.hidden = false;
-}).catch(() => {});
+// (el enlace de arriba a la derecha —«Entrar», el nombre o «Mi panel»— lo pone marca-usuario.js, igual que en el resto de la web)
 
 // ---------- guía de primera vez y botón «? Ayuda» ----------
 let acceso = { caduca: '', dueno: false };

@@ -41,6 +41,10 @@ jobs:
         run: |
           python pruebas/directos.py
           python pruebas/avisos_ruta.py
+      - name: El móvil del dueño alimenta la carrera principal y la compartida
+        run: python pruebas/espejo.py
+      - name: Posiciones válidas mientras muchos miran la página del directo
+        run: python pruebas/concurrencia.py
       - name: Endurecimiento del servidor
         run: python pruebas/endurecimiento.py
       - name: Carga (60 espectadores a la vez)

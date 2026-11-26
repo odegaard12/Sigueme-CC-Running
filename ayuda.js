@@ -18,9 +18,9 @@
     'Que los avisos lleguen': 'La app de tu reloj (Mi Fitness, Zepp, Huawei Health) tiene que dejar pasar las notificaciones de «Sígueme CC». Pulsa «Probar aviso» una vez para que aparezca en su lista. Y mira que el modo «No molestar» o «Concentración» del reloj no los silencie mientras grabas la actividad.',
     'Resultado de la carrera': 'Sube el fichero de tu reloj (FIT o GPX): da tu tiempo real desde que empiezas a correr, la distancia medida y el pulso. Con Strava: la actividad → ⋯ → Exportar GPX (en la web de Strava). Mejor el del reloj que el del móvil: guarda un punto por segundo.',
     'Archivar': 'Cuando el resultado esté bien, pasa la carrera a «Carreras» y deja la portada libre para la siguiente. Antes pon la dirección de archivo («año-nombre») en Datos.',
-    'Mis carreras': 'Tus carreras y tus carreras en directo, igual que las de un invitado.',
-    'Rutas publicadas': 'Lo que han publicado tus invitados. Puedes quitarlo de la web o borrarlo.',
-    'Carreras en directo': 'Carreras con varios corredores, creadas por tus invitados o por ti. Quita las que no deban estar.',
+    'Tus rutas': 'Tus rutas y tus carreras en directo, igual que las de un invitado, sin salir del panel.',
+    'Rutas de tus invitados': 'Lo que han publicado tus invitados. Puedes quitarlo de la web o borrarlo.',
+    'Directos de tus invitados': 'Carreras con varios corredores que han creado tus invitados. Quita las que no deban estar.',
     'Invitados': 'Un usuario y un código que caduca, para que un amigo prepare sus rutas y carreras sin ver tu panel. «Sin caducidad» es para tu propia cuenta.',
     'Avanzado': 'Ajustes poco habituales. Si no sabes qué es, no lo toques.',
     // Mis carreras

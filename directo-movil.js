@@ -12,18 +12,43 @@ window.pintarMovil = function (cont, ident) {
     '&id=' + encodeURIComponent(ident) + '&accuracy=highest&interval=10&distance=0&angle=0&heartbeat=0&buffer=true&stop_detection=false';
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
   const boton = (txt, href, principal) => { const a = el('a', principal ? 'boton' : 'boton claro', txt); a.href = href; return a; };
-  const listo = () => el('p', 'listo-dir', 'El día de la carrera solo enciéndelo: desde 1 h antes de la salida te pone en marcha él solo, y el tiempo cuenta desde que empiezas a correr.');
+  // a mano: por si el enlace no abre Traccar (otro navegador, versión vieja). Los dos datos largos, con botón de copiar.
+  const aMano = () => {
+    const d = el('details', 'nota-dir');
+    d.append(el('summary', '', 'Si el botón no abre Traccar: ponerlo a mano'));
+    d.append(el('p', 'nota-dir', 'En Traccar Client escribe estos datos (los nombres pueden variar un poco según el idioma y la versión):'));
+    const dato = (rotulo, valor) => {
+      const p = el('p', 'nota-dir', rotulo + ': '), b = el('b', '', valor), c = el('button', 'boton claro', 'Copiar');
+      b.style.cssText = 'overflow-wrap:anywhere;text-transform:none;font:600 .95rem/1.5 ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;color:var(--texto)'; c.type = 'button'; c.style.marginLeft = '8px';
+      c.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(valor); c.textContent = 'Copiado'; } catch (e) { c.textContent = 'Mantén pulsado el texto para copiarlo'; }
+      });
+      p.append(b, el('br'), c); return p;
+    };
+    d.append(dato('Identificador del dispositivo', ident), dato('Dirección del servidor (URL)', location.origin + '/api/gps'));
+    d.append(el('p', 'nota-dir', 'Frecuencia: 10 segundos · Distancia: 0 · Ángulo: 0 · Precisión: máxima · Búfer sin conexión: activado · Detección de paradas: desactivada.'));
+    return d;
+  };
+  const listo = () => el('p', 'listo-dir', 'El día de la carrera solo enciéndelo; puedes hacerlo 1 o 2 horas antes (con poca batería, mejor media hora antes). Sales en el mapa al llegar a la zona de salida, y el tiempo cuenta desde que empiezas a correr de verdad, no desde la hora oficial si sales por el fondo.');
+  // pasos numerados: cada uno, una sola cosa que hacer (los textos de los botones no cambian: ya están en los mensajes enviados)
+  const paso = (n, titulo, ...resto) => { const d = el('div', 'paso-dir'); const t = el('p', 'listo-dir'); t.textContent = n + '. ' + titulo; d.append(t, ...resto); return d; };
   const contenido = {
-    android: () => [boton('Configurar la app Sígueme CC', '/app.html#id=' + encodeURIComponent(ident), true),
-      el('p', 'nota-dir', 'Si aún no tienes la app, esa página te la deja descargar; luego vuelve y pulsa «Abrir en la app».'), listo()],
+    android: () => [
+      paso(1, 'Configura la app', boton('Configurar la app Sígueme CC', '/app.html#id=' + encodeURIComponent(ident), true),
+        el('p', 'nota-dir', 'Si aún no la tienes, esa página te deja descargarla (el móvil avisará de «origen desconocido»: permítelo). Después vuelve aquí y pulsa «Abrir en la app».')),
+      paso(2, 'Dale los permisos', el('p', 'nota-dir', 'En la app, sigue el «Siguiente paso» hasta «Todo listo»: ubicación «Permitir siempre» y sin ahorro de batería.')),
+      paso(3, 'El día de la carrera', listo())],
     iphone: () => {
-      const l = [boton('Abrir en Traccar', traccar, true),
-        el('p', 'nota-dir', 'Instala antes Traccar Client (gratis, App Store) y vuelve a pulsar. En Ajustes → Traccar Client → Localización: «Siempre» y «Ubicación exacta».'), listo()];
-      // el iPhone no tiene app: los avisos de subidas llegan como notificación de la web instalada (v1.56)
-      if (ios && window.avisosMovil) {
-        const av = el('div'); av.append(el('p', 'listo-dir', 'Avisos de subidas en tu iPhone'));
-        const caja = el('div'); av.append(caja); l.push(av); window.avisosMovil(caja, ident);
-      } else l.push(el('p', 'nota-dir', 'Los avisos de subidas se activan desde el propio iPhone, con la web instalada en la pantalla de inicio.'));
+      const l = [
+        paso(1, 'Instala Traccar Client', el('p', 'nota-dir', 'Es gratis, en la App Store. Solo la primera vez.')),
+        paso(2, 'Ábrelo con tus datos', boton('Abrir en Traccar', traccar, true), aMano()),
+        paso(3, 'Dale los permisos', el('p', 'nota-dir', 'Ajustes del iPhone → Traccar Client → Localización: «Siempre» y «Ubicación exacta».')),
+        paso(4, 'El día de la carrera', listo())];
+      // opcional y al final: los avisos de subidas llegan como notificación de la web instalada (v1.56)
+      const op = el('details', 'nota-dir'); op.append(el('summary', '', 'Opcional: avisos de subidas en el iPhone'));
+      if (ios && window.avisosMovil) { const caja = el('div'); op.append(caja); window.avisosMovil(caja, ident); }
+      else op.append(el('p', 'nota-dir', 'Se activan desde el propio iPhone, con la web instalada en la pantalla de inicio.'));
+      l.push(op);
       return l;
     },
   };

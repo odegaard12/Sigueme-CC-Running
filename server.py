@@ -380,14 +380,29 @@ HERRAMIENTAS = os.path.join(ROOT, "herramientas")
 MAX_GPX = 20_000_000          # bytes: un GPX de 100 km con 1 punto/s ronda 5 MB
 
 
+_herr_lock = threading.Lock()
+_herr_version = {}      # herramienta → fecha del fichero con el que se cargó
+
+
 def herramienta(nombre):
     """Importa herramientas/<nombre>.py al usarla: si falta la carpeta, el
     servidor arranca igual y solo falla esa acción."""
     if HERRAMIENTAS not in sys.path:
         sys.path.insert(0, HERRAMIENTAS)
-    # recargado cada vez (son ms): al desplegar una herramienta nueva no hace
-    # falta reiniciar el servidor
-    return importlib.reload(importlib.import_module(nombre))
+    # Se recarga SOLO cuando el fichero ha cambiado (al desplegar una herramienta nueva no hace falta reiniciar el servidor).
+    # Antes se recargaba en CADA petición: al coincidir dos a la vez, el módulo se reiniciaba por debajo de la otra (índice de
+    # corredores vacío un instante) y un móvil con identificador válido recibía «identificador incorrecto»; con decenas de
+    # espectadores mirando una carrera en directo pasaba casi siempre. Con el candado, nunca se recarga a la vez.
+    with _herr_lock:
+        modulo = importlib.import_module(nombre)
+        try:
+            version = os.path.getmtime(modulo.__file__)
+        except (OSError, AttributeError, TypeError):
+            version = None
+        if _herr_version.get(nombre) != version:
+            modulo = importlib.reload(modulo)
+            _herr_version[nombre] = version
+        return modulo
 
 
 def leer_json(nombre, defecto=None):
@@ -650,7 +665,7 @@ def preparacion():
             "avituallamientos": len(avit), "avisos": len((plan or {}).get("avisos", [])),
             "subidas": len((plan or {}).get("subidas", [])), "id_largo": len(clave_gps()) >= 30,
             "resultado_pendiente": os.path.exists(os.path.join(ROOT, "resultado.json")),
-            "app_at": live.get("app_at")}
+            "app_at": live.get("app_at"), "gps_t": live.get("gps_t")}
 
 
 def nombre_sitio(host):
@@ -1383,6 +1398,41 @@ def arranque_por_gps(live, puntos):
     return Handler._empezar(Handler, c["hora_salida"], origen="gps")
 
 
+def espejos_del_dueno():
+    """Identificadores del dueño en las carreras en directo que son LA MISMA que la principal (misma fecha y hora). La portada
+    enseña las dos y su móvil solo puede mandar a una: lo que llegue a una se copia a la otra, así ninguna se queda en «Sin iniciar»."""
+    salida = []
+    try:
+        c0 = carrera()
+        if not (c0.get("fecha") and c0.get("hora_salida")):
+            return salida
+        dm = herramienta("directos")
+        for id_ in dm._ids(ROOT):
+            c = dm.carrera(ROOT, id_)
+            if c and c.get("fecha") == c0["fecha"] and c.get("hora_salida") == c0["hora_salida"]:
+                salida += [co["ident"] for co in c["corredores"] if co.get("usuario") == "dueno"]
+    except Exception as exc:
+        print(f"[espejo] {exc!r}", flush=True)
+    return salida
+
+
+def directo_espejo():
+    """Id de la carrera en directo que es LA MISMA que la principal (mismo día y hora) y lleva al dueño. La página principal
+    lleva ahí: una sola página por carrera (con todos los que corren), no una solo del dueño y otra con todos."""
+    try:
+        c0 = carrera()
+        if not (c0.get("fecha") and c0.get("hora_salida")):
+            return None
+        dm = herramienta("directos")
+        for id_ in dm._ids(ROOT):
+            c = dm.carrera(ROOT, id_)
+            if c and c.get("fecha") == c0["fecha"] and c.get("hora_salida") == c0["hora_salida"]                     and any(co.get("usuario") == "dueno" for co in c["corredores"]):
+                return id_
+    except Exception as exc:
+        print(f"[espejo] {exc!r}", flush=True)
+    return None
+
+
 def recibir_gps(puntos):
     puntos.sort(key=lambda p: p["t"])
     puntos[:] = [p for p in puntos if not _repetido(p)]
@@ -1850,6 +1900,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 for p in puntos:
                     p.pop("t0", None)
                 hecho = herramienta("directos").recibir(ROOT, ident, puntos)
+                if not hecho:                                       # una vez más: que un móvil bueno no reciba un 403 por un despiste
+                    time.sleep(0.15)
+                    hecho = herramienta("directos").recibir(ROOT, ident, puntos)
+                if hecho and ident in espejos_del_dueno():          # el móvil del dueño: también vale para la página principal
+                    with gps_lock:
+                        recibir_gps([dict(p) for p in puntos])
             except Exception as exc:
                 print(f"[directo] error con {len(puntos)} puntos: {exc!r}", flush=True)
                 hecho = True                 # 200 igual: si no, el móvil reintenta ese lote para siempre
@@ -1876,6 +1932,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(403, {"error": "identificador incorrecto"})
             return
         if puntos:
+            copia = [dict(p) for p in puntos]                       # recibir_gps recorta la lista: se copia antes
+            for ident_dir in espejos_del_dueno():                   # y su corredor en la carrera compartida, si hay
+                try:
+                    herramienta("directos").recibir(ROOT, ident_dir, [dict(p) for p in copia])
+                except Exception as exc:
+                    print(f"[espejo] {exc!r}", flush=True)
             try:
                 with gps_lock:
                     recibir_gps(puntos)
@@ -1979,6 +2041,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._servir_archivada(m.group(1), (m.group(2) or "/").lstrip("/"))
         if ruta == "/" and not directo_ahora() and not os.path.exists(os.path.join(ROOT, "resultado.json")):
             return self._pagina("inicio.html")          # sin carrera para hoy: la portada son las rutas
+        if ruta in ("/", "/index.html") and "?previa" not in self.path and not os.path.exists(os.path.join(ROOT, "resultado.json")):
+            espejo = directo_espejo()
+            if espejo:                                      # una sola página por carrera: la que tiene a todos los que corren
+                return self._redirigir("/d/" + espejo, 302)
         if ruta in ("/", "/index.html") and not hay_carrera_en_marcha() and not directo_ahora() \
                 and not os.path.exists(os.path.join(ROOT, "resultado.json")) and "?previa" not in self.path:
             # sin carrera en marcha: la portada lleva al último resultado (302,
@@ -2206,19 +2272,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("X-Robots-Tag", "noindex, nofollow")   # el espacio de invitados no sale en Google
         super().end_headers()
 
-    def _send_json(self, status, payload, cookie=None, cache="no-store", galleta="adm"):
+    def _send_json(self, status, payload, cookie=None, cache="no-store", galleta="adm", extras=()):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", cache)
-        if cookie is not None:
-            # Secure solo si llega por https (Cloudflare); por la red de casa
-            # (http) el navegador no guardaría una cookie Secure
-            https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
-            horas = INV_SESION_HORAS if galleta == "inv" else SESION_HORAS
-            self.send_header("Set-Cookie", f"{galleta}={cookie}; Path={'/api/invitado' if galleta == 'inv' else '/api'}; HttpOnly; SameSite=Strict"
+        # Secure solo si llega por https (Cloudflare); por la red de casa
+        # (http) el navegador no guardaría una cookie Secure
+        https = "https" in (self.headers.get("X-Forwarded-Proto", "") + self.headers.get("Cf-Visitor", ""))
+        # extras: más cookies en la misma respuesta. El dueño tiene DOS sesiones (panel y «Mis carreras»): una entrada abre las dos y una salida cierra las dos
+        for valor, nombre in (([(cookie, galleta)] if cookie is not None else []) + list(extras)):
+            horas = INV_SESION_HORAS if nombre == "inv" else SESION_HORAS
+            self.send_header("Set-Cookie", f"{nombre}={valor}; Path={'/api/invitado' if nombre == 'inv' else '/api'}; HttpOnly; SameSite=Strict"
                              + ("; Secure" if https else "")
-                             + (f"; Max-Age={horas * 3600}" if cookie else "; Max-Age=0"))
+                             + (f"; Max-Age={horas * 3600}" if valor else "; Max-Age=0"))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -2359,7 +2426,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             acierto_de(ip)
             purgar_invitados()
             print(f"[invitado] {usuario} entra", flush=True)
-            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv")
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion_invitado(inv.DUENO if es_dueno else usuario), galleta="inv",
+                            extras=[(nueva_sesion(), "adm")] if es_dueno else ())
             return
         # lo demás: desde esta misma web y con sesión de invitado
         if self.mismo_origen() is not True:
@@ -2463,7 +2531,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             if ruta == "/api/invitado/logout":
-                self._send_json(200, {"ok": True}, cookie="", galleta="inv")
+                revocar_sesion(self.headers.get("Cookie", ""))       # si es el dueño, también cae la sesión del panel
+                self._send_json(200, {"ok": True}, cookie="", galleta="inv", extras=[("", "adm")])
                 return
             if ruta == "/api/invitado/gpx":
                 self._invitado_subir(usuario, inv)
@@ -3021,7 +3090,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if self.path == "/api/logout":
             revocar_sesion(self.headers.get("Cookie", ""))
-            self._send_json(200, {"ok": True}, cookie="")
+            self._send_json(200, {"ok": True}, cookie="", extras=[("", "inv")])
             return
         if self.path not in ("/api/live", "/api/login"):
             self._send_json(404, {"error": "not found"})
@@ -3089,7 +3158,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(403, {"error": "clave incorrecta"})
                 return
             acierto_de(ip)
-            self._send_json(200, {"ok": True}, cookie=nueva_sesion())
+            self._send_json(200, {"ok": True}, cookie=nueva_sesion(), extras=[(nueva_sesion_invitado(invitados_mod().DUENO), "inv")])
             return
         # el resto: con sesión (panel) o con usuario y clave en el cuerpo (scripts)
         con_clave = "password" in data and credenciales_ok(data.get("usuario", ""), data.get("password", ""))

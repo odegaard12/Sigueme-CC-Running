@@ -49,7 +49,8 @@ try:
             pg = ctx.new_page(); errores = []
             pg.on('pageerror', lambda e: errores.append(str(e)[:120]))
             pg.goto(U + '/admin.html'); pg.wait_for_timeout(800)
-            pg.fill('#usuario', 'prueba'); pg.fill('#token', 'clave'); pg.keyboard.press('Enter'); pg.wait_for_timeout(2000)
+            # entrada única (v1.76.0): el panel sin sesión lleva a la de «Mis carreras» y vuelve solo al panel
+            pg.fill('#usuario', 'prueba'); pg.fill('#codigo', 'clave'); pg.keyboard.press('Enter'); pg.wait_for_url('**/admin.html*', timeout=15000); pg.wait_for_timeout(2000)
             pg.evaluate('clearInterval(sondeo)')
             for nombre, datos in casos.items():
                 pg.evaluate('d => pintarPreparacion(d)', datos)

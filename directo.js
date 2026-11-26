@@ -15,14 +15,17 @@ const clave = 'directo.' + ID;
 const token = new URLSearchParams(location.hash.slice(1)).get('unirse');
 let mapa = null, marcas = {}, datos = null, elegido = null;
 
+const acabada = () => !!(datos && datos.estado === 'terminada');
+// con la carrera acabada, quien siguió «corriendo» (no se le detectó la llegada) sale «Sin llegada», no «Corriendo»
+const etiqueta = g => acabada() && (g.situacion === 'corriendo' || g.situacion === 'en_la_salida') ? 'Sin llegada' : (SITUACION[g.situacion] || '');
 function guardado() { try { return localStorage.getItem(clave); } catch (e) { return null; } }
 // ritmo medio desde la salida real, en min/km (hace falta 300 m para que valga algo)
 // en carrera: «sin señal desde las 12:03» si lleva más de 3 min sin mandar posición; «batería baja» por debajo del 20 %
 function alerta(g) {
-  if (g.situacion !== 'corriendo' && g.situacion !== 'en_la_salida') return '';
+  if (acabada() || (g.situacion !== 'corriendo' && g.situacion !== 'en_la_salida')) return '';
   const a = [];
   if (g.visto && Date.now() / 1000 - g.visto > 180) a.push('sin señal desde las ' + new Date(g.visto * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
-  if (g.bateria != null && g.bateria < 20) a.push('batería baja (' + g.bateria + ' %)');
+  if (g.bateria != null && g.bateria < 20) a.push('batería baja (' + g.bateria + '\u00a0%)');
   return a.join(' · ');
 }
 // llegada prevista: su ritmo medio desde la salida real aplicado a los km que le faltan (desde el km 1, para que valga algo)
@@ -30,24 +33,37 @@ function alerta(g) {
 function hastaUltimo(g) { return g.visto && g.salida && g.visto > g.salida ? g.visto - g.salida : g.tiempo_s; }
 function prevista(g) {
   const t = hastaUltimo(g);
-  if (g.situacion !== 'corriendo' || !(g.km >= 1) || !(t > 0) || !(datos && datos.distancia_km > g.km)) return '';
+  if (acabada() || g.situacion !== 'corriendo' || !(g.km >= 1) || !(t > 0) || !(datos && datos.distancia_km > g.km)) return '';
   const eta = (g.salida || Date.now() / 1000 - g.tiempo_s) + t / g.km * datos.distancia_km;
   return 'llega hacia las ' + new Date(eta * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
-function ritmo(g) { const t = g.situacion === 'en_meta' ? g.tiempo_s : hastaUltimo(g); if (!(t > 0 && g.km >= 0.3)) return ''; const sp = Math.round(t / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + ' min/km'; }
+function ritmo(g) { const t = g.situacion === 'en_meta' ? g.tiempo_s : hastaUltimo(g); if (!(t > 0 && g.km >= 0.3)) return ''; const sp = Math.round(t / g.km); return Math.floor(sp / 60) + ':' + String(sp % 60).padStart(2, '0') + '\u00a0min/km'; }
+// un color por corredor (por orden de apuntarse), para distinguirlos en el mapa, en la tira y en la lista; el trazado es lima
+const PALETA = ['#ff7a59', '#4cc9f0', '#c77dff', '#ffd166', '#06d6a0', '#ff6fb5'];
+const color = g => PALETA[(g.n || 0) % PALETA.length];
+// puesto de cada uno: por tiempo los que han llegado y, detrás, por km los que corren (la lista ya viene en ese orden)
+function puestos(d) { const m = {}; let p = 0; if (d.corredores.length > 1) for (const g of d.corredores) if (g.situacion === 'en_meta' || g.situacion === 'corriendo') m[g.cid] = ++p; return m; }
+function distanciaAlPrimero(g, d, pu) {
+  if (g.situacion !== 'corriendo' || !(pu[g.cid] > 1)) return '';
+  const l = d.corredores.find(x => pu[x.cid] === 1); if (!l) return '';
+  const dif = (l.situacion === 'en_meta' ? d.distancia_km : l.km) - g.km;
+  return dif >= 0.1 ? 'a\u00a0' + km(dif) + '\u00a0km del primero' : 'junto al primero';
+}
 function iniciales(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || '·'; }
 
 function pintar(d) {
   datos = d;
+  const pu = puestos(d);
   if (d.estado === 'terminada') $('sec-unirse').hidden = true;      // una carrera terminada ya no admite a nadie
   const e = $('estado'); e.textContent = ESTADO[d.estado] || ''; e.hidden = false; e.classList.toggle('vivo', d.estado === 'en_directo');
-  $('linea').textContent = [fecha(d.fecha) + ' · salida ' + d.hora_salida, d.distancia_km ? km(d.distancia_km) + ' km' : '',
-    d.desnivel_m ? '+' + miles(d.desnivel_m) + ' m' : ''].filter(Boolean).join(' · ');
+  $('linea').textContent = [fecha(d.fecha) + ' · salida ' + d.hora_salida, d.distancia_km ? km(d.distancia_km) + '\u00a0km' : '',
+    d.desnivel_m ? '+' + miles(d.desnivel_m) + '\u00a0m' : ''].filter(Boolean).join(' · ');
   const lista = $('gente'); lista.textContent = '';
   d.corredores.forEach((g, i) => {
     const f = document.createElement('div'); f.className = 'fila simple';
-    const n = document.createElement('div'); n.className = 'nombre'; n.textContent = (g.situacion === 'en_meta' ? (i + 1) + ' · ' : '') + g.nombre;
-    const s = document.createElement('small'); s.textContent = [SITUACION[g.situacion] || '', g.situacion === 'retirado' ? '' : ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · '); if (alerta(g)) s.classList.add('alerta'); n.append(s);
+    const n = document.createElement('div'); n.className = 'nombre'; n.textContent = (pu[g.cid] ? pu[g.cid] + 'º · ' : '') + g.nombre;
+    f.style.setProperty('--c', color(g));
+    const s = document.createElement('small'); s.textContent = [etiqueta(g), g.situacion === 'retirado' ? '' : ritmo(g), distanciaAlPrimero(g, d, pu), prevista(g), alerta(g)].filter(Boolean).join(' · '); if (alerta(g)) s.classList.add('alerta'); n.append(s);
     const c1 = document.createElement('div'); c1.className = 'cifra'; const b1 = document.createElement('b'); b1.textContent = km(g.km); const u1 = document.createElement('span'); u1.textContent = 'KM'; c1.append(b1, u1);
     const c2 = document.createElement('div'); c2.className = 'cifra'; const b2 = document.createElement('b'); b2.textContent = g.tiempo_s != null ? tiempo(g.tiempo_s) : '–'; const u2 = document.createElement('span'); u2.textContent = g.situacion === 'en_meta' ? 'TIEMPO' : 'EN CARRERA'; c2.append(b2, u2);
     f.append(n, c1, c2); lista.append(f);
@@ -71,9 +87,12 @@ function pintar(d) {
     const n = document.createElement('b'); n.textContent = g.nombre;
     const s = document.createElement('small');
     if (alerta(g)) s.classList.add('alerta');
-    s.textContent = alerta(g) && d.corredores.length > 1 ? alerta(g) : d.corredores.length === 1 ? [SITUACION[g.situacion] || '', g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · ')
-      : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : (SITUACION[g.situacion] || ''));
-    b.append(av, n, s); b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
+    s.textContent = alerta(g) && d.corredores.length > 1 ? alerta(g) : d.corredores.length === 1 ? [etiqueta(g), g.km ? km(g.km) + ' km' : '', g.tiempo_s != null ? tiempo(g.tiempo_s) : '', ritmo(g), prevista(g), alerta(g)].filter(Boolean).join(' · ')
+      : g.situacion === 'retirado' ? 'Retirado' : (g.tiempo_s != null ? tiempo(g.tiempo_s) : etiqueta(g));
+    b.style.setProperty('--c', color(g));
+    b.append(av, n, s);
+    if (pu[g.cid]) { const pb = document.createElement('span'); pb.className = 'pos'; pb.textContent = pu[g.cid] + 'º'; b.append(pb); }
+    b.addEventListener('click', () => elegir(g.cid)); tira.append(b);
   });
   $('aviso-posicion').hidden = d.corredores.some(g => g.lat != null);
   if (mapa && mapa.isStyleLoaded()) { ponerRuta(d); pintarMarcas(); }
@@ -111,16 +130,36 @@ function verEnMapa(cid) {
   document.getElementById('mapa').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
+const ABANICO = [[0, 0], [28, 0], [-28, 0], [0, -28], [0, 28], [28, -28], [-28, -28], [28, 28], [-28, 28]];
+const DISPERSION = { 2: [[-19, 0], [19, 0]], 3: [[-20, 9], [20, 9], [0, -18]] };
+function desolapar() {
+  if (!mapa || !datos) return;
+  const gs = datos.corredores.filter(g => marcas[g.cid]);
+  const pant = {}; gs.forEach(g => { pant[g.cid] = mapa.project(marcas[g.cid].getLngLat()); marcas[g.cid].setOffset([0, 0]); });
+  const hechos = new Set();
+  gs.forEach(g => {
+    if (hechos.has(g.cid)) return;
+    const grupo = gs.filter(h => !hechos.has(h.cid) && Math.hypot(pant[h.cid].x - pant[g.cid].x, pant[h.cid].y - pant[g.cid].y) < 34);
+    grupo.forEach(h => hechos.add(h.cid));
+    if (grupo.length < 2) return;
+    const fig = DISPERSION[grupo.length] || ABANICO;
+    grupo.forEach((h, i) => marcas[h.cid].setOffset(fig[i % fig.length]));      // la lista viene ordenada: el primero, el primero del abanico
+  });
+}
 function pintarMarcas() {
+  const pu = puestos(datos);
   for (const g of datos.corredores) {
     if (g.lat == null) { if (marcas[g.cid]) { marcas[g.cid].remove(); delete marcas[g.cid]; } continue; }
     if (!marcas[g.cid]) {
-      const el = document.createElement('div'); el.className = 'corredor-dir' + (g.situacion === 'en_meta' ? ' meta' : ''); el.textContent = iniciales(g.nombre); el.title = g.nombre;
+      const el = document.createElement('div'); el.className = 'corredor-dir' + (g.situacion === 'en_meta' ? ' meta' : ''); el.textContent = iniciales(g.nombre); el.title = g.nombre; el.style.setProperty('--c', color(g));
       marcas[g.cid] = new maplibregl.Marker({ element: el }).setLngLat([g.lon, g.lat]).setPopup(new maplibregl.Popup({ offset: 16, closeButton: false }).setText(g.nombre)).addTo(mapa);
     } else marcas[g.cid].setLngLat([g.lon, g.lat]);
+    marcas[g.cid].getPopup().setText((pu[g.cid] ? pu[g.cid] + 'º · ' : '') + g.nombre);
+    marcas[g.cid].getElement().style.zIndex = elegido === g.cid ? '20' : String(pu[g.cid] ? 10 - Math.min(pu[g.cid], 9) : 1);
     marcas[g.cid].getElement().classList.toggle('elegido', elegido === g.cid);
     if (g.foto) { const e2 = marcas[g.cid].getElement(); e2.classList.add('con-foto'); e2.style.backgroundImage = 'url(/d/' + ID + '/foto/' + g.cid + '.png?v=' + g.foto + ')'; e2.textContent = ''; }
   }
+  desolapar();
 }
 
 // la línea del recorrido; si con mala cobertura no llegó a ponerse al cargar, se pone en la siguiente actualización
@@ -134,6 +173,8 @@ function ponerRuta(d) {
 function arrancarMapa(d) {
   const lons = d.ruta.map(p => p[0]), lats = d.ruta.map(p => p[1]);
   mapa = new maplibregl.Map({ container: 'mapa', attributionControl: { compact: true }, cooperativeGestures: true, maxPitch: 62,
+    locale: { 'CooperativeGesturesHandler.WindowsHelpText': 'Usa Ctrl + rueda para hacer zoom', 'CooperativeGesturesHandler.MacHelpText': 'Usa ⌘ + rueda para hacer zoom',
+      'CooperativeGesturesHandler.MobileHelpText': 'Mueve el mapa con dos dedos', 'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar' },
     style: { version: 8, sources: { sat: { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Esri, Maxar, Earthstar Geographics',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] } },
       layers: [{ id: 'sat', type: 'raster', source: 'sat' }] },
@@ -152,6 +193,7 @@ function arrancarMapa(d) {
   });
   $('mapa').append(b3);
   mapa.on('load', () => { ponerRuta(d); pintarMarcas(); });
+  mapa.on('zoomend', desolapar);
   // Safari: si el mapa termina de pintarse fuera de la pantalla, al bajar hasta él sale en negro (lo del 1/11)
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) mapa.triggerRepaint(); }).observe($('mapa'));
 }

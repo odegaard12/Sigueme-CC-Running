@@ -250,5 +250,122 @@ ok(_h('10.1.2.202', '203.0.113.9').ip_cliente() == '203.0.113.9', 'el túnel de 
 ok(_h('127.0.0.1', '203.0.113.9').ip_cliente() == '203.0.113.9', 'el bucle local vale')
 server.PROXIES_CONFIANZA = _antes
 
+# --- v1.76.0: carrera acabada sin llegada detectada: el tiempo se para en el último punto (antes contaba para siempre) ---
+import directos as _dir, json as _js
+with tempfile.TemporaryDirectory() as t5:
+    from datetime import datetime as _dt, timedelta as _td
+    from zoneinfo import ZoneInfo as _zi
+    _sal = _dt.now(_zi('Europe/Madrid')) - _td(hours=5)
+    _ruta = {'nombre': 'Prueba', 'coords': [[-8.0, 42.0], [-8.0, 42.1]], 'perfil': [], 'distancia_km': 11.1}
+    _c, _yo = _dir.crear(t5, None, 'Corredor', _ruta, _sal.date().isoformat(), _sal.strftime('%H:%M'), lambda *a: {}, limite_h=3)
+    _t0 = _sal.timestamp() + 60
+    _st = {'en_marcha': 'x', 'salida_real': _t0, 'km': 9.0, 'ult': [42.08, -8.0, _t0 + 3600]}
+    _dir._escribir(_dir._f(t5, _c['id'], _yo['cid']), _st)
+    _g = _dir.publico(t5, _c['id'])['corredores'][0]
+    ok(_g['tiempo_s'] == 3600, f"carrera acabada sin llegada: el tiempo se para en su último punto ({_g['tiempo_s']} s, no {int(time.time() - _t0)} s)")
+    ok(_dir.publico(t5, _c['id'])['estado'] == 'terminada', 'y la carrera sale terminada')
+
+# --- v1.76.0: recorrido que pasa dos veces por la misma calle (ida y vuelta): el km no salta al otro paso, la llegada no se da antes ---
+import random as _rnd
+def _simular(sigma, ritmo_kmh, apagar_a_m=None, semilla=1):
+    r = _rnd.Random(semilla)
+    ida = [[-8.0, 42.0 + i * 0.0005] for i in range(101)]
+    vuelta = [[-8.00005, 42.05 - i * 0.0005] for i in range(101)]            # vuelve por la misma calle, a 4 m
+    ruta = {'nombre': 'Ida y vuelta', 'coords': ida + vuelta, 'perfil': [], 'distancia_km': 11.1}
+    with tempfile.TemporaryDirectory() as t6:
+        c, yo = _dir.crear(t6, None, 'Corredor', ruta, '2026-11-28', '19:30', lambda *a: {}, limite_h=3)
+        cum = _dir._cum_de(c); total = cum[-1]; sal = _dir.salida(c).timestamp()
+        t, k, errmax, llegada_real = sal - 120, 0.0, 0.0, None
+        while k < total + 0.15:
+            if t >= sal:
+                k += ritmo_kmh * 10 / 3600
+            if apagar_a_m is not None and total - k < apagar_a_m / 1000:
+                break
+            kk = min(k, total)
+            i = min(range(len(cum)), key=lambda j: abs(cum[j] - kk))
+            la, lo = c['coords'][i][1], c['coords'][i][0]
+            if sigma:
+                la, lo = la + r.gauss(0, sigma) / 111190, lo + r.gauss(0, sigma) / 82000
+            _dir.recibir(t6, yo['ident'], [{'t': t, 'lat': la, 'lon': lo}], ahora=t + 1)
+            st = _dir.estado(t6, c['id'], yo['cid'])
+            if st.get('salida_real'):
+                errmax = max(errmax, abs(st.get('km', 0) - kk))
+            if llegada_real is None and kk >= total:
+                llegada_real = t
+            if st.get('llegada') and kk < total - 0.2:
+                return 'llegada antes de tiempo', errmax, None, None
+            t += 10
+        pub = _dir.publico(t6, c['id'], ahora=t + 300)['corredores'][0]
+        return pub, errmax, total, (llegada_real - sal if llegada_real else None)
+for _sig in (5, 15):
+    _pub, _err, _tot, _real = _simular(_sig, 10, semilla=_sig)
+    ok(isinstance(_pub, dict) and _err < 0.45, f'ida y vuelta por la misma calle, GPS con {_sig} m de ruido: el km no salta al otro paso (error máximo {_err * 1000:.0f} m)')
+    ok(isinstance(_pub, dict) and _pub['situacion'] == 'en_meta' and _real and abs(_pub['tiempo_s'] - _real) < 40,
+       f"y la llegada sale en su sitio ({_pub['tiempo_s'] if isinstance(_pub, dict) else '-'} s frente a {_real} s reales)")
+_pub, _err, _tot, _real = _simular(6, 10, apagar_a_m=30, semilla=2)
+ok(isinstance(_pub, dict) and _pub['situacion'] == 'en_meta', 'apaga el móvil a 30 m de la meta: a los 2 min sin mandar se da por llegado')
+
+# --- v1.76.0: salida por el fondo de la cola: andar entre la gente (3,5 km/h, GPS con ruido) no cuenta como salir ---------------
+def _salida_por_el_fondo(semilla, sigma=8):
+    r = _rnd.Random(semilla)
+    ruta = {'nombre': 'Recta', 'coords': [[-8.0, 42.0 + i * 0.0005] for i in range(201)], 'perfil': [], 'distancia_km': 11.1}
+    with tempfile.TemporaryDirectory() as t7:
+        c, yo = _dir.crear(t7, None, 'Corredor', ruta, '2026-11-28', '19:30', lambda *a: {}, limite_h=3)
+        cum = _dir._cum_de(c); sal = _dir.salida(c).timestamp()
+        espera, andando = 240, 180                      # 4 min quieto y 3 min andando antes de correr
+        t, k, real = sal - 300, 0.0, None
+        while t < sal + espera + andando + 300:
+            rel = t - sal
+            if rel >= espera + andando:
+                real = real if real is not None else rel
+                k += 10 * 10 / 3600
+            elif rel >= espera:
+                k += 3.5 * 10 / 3600
+            i = min(range(len(cum)), key=lambda j: abs(cum[j] - k))
+            la, lo = c['coords'][i][1] + r.gauss(0, sigma) / 111190, c['coords'][i][0] + r.gauss(0, sigma) / 82000
+            _dir.recibir(t7, yo['ident'], [{'t': t, 'lat': la, 'lon': lo}], ahora=t + 1)
+            t += 10
+        st = _dir.estado(t7, c['id'], yo['cid'])
+        return (st['salida_real'] - sal) - real if st.get('salida_real') else None
+_difs = [_salida_por_el_fondo(s) for s in range(8)]
+ok(all(d is not None and -45 <= d <= 30 for d in _difs), f'salida por el fondo (4 min quieto, 3 min andando, GPS 8 m): la salida se marca al echar a correr, no al andar ({sorted(_difs)} s)')
+
+# --- v1.76.0: privacidad: con el móvil encendido antes de la salida no se ve a quien está lejos de ella; acabada la carrera no se sigue a quien no llegó ---
+def _privacidad():
+    ida = [[-8.0, 42.0 + i * 0.0005] for i in range(101)]
+    ruta = {'nombre': 'Recta', 'coords': ida, 'perfil': [], 'distancia_km': 5.5}
+    with tempfile.TemporaryDirectory() as t8:
+        c, yo = _dir.crear(t8, None, 'Corredor', ruta, '2026-11-28', '19:30', lambda *a: {}, limite_h=3)
+        sal = _dir.salida(c).timestamp()
+        def punto(rel, lat):
+            _dir.recibir(t8, yo['ident'], [{'t': sal + rel, 'lat': lat, 'lon': -8.0}], ahora=sal + rel + 1)
+            return _dir.publico(t8, c['id'], ahora=sal + rel + 2)['corredores'][0]
+        lejos = punto(-2400, 42.05)                      # 40 min antes, a 5,5 km de la salida (en casa)
+        cerca = punto(-300, 42.001)                      # 5 min antes, a 110 m de la salida
+        for i in range(12):                              # empieza a correr a 10 km/h, pasados 2 min de la hora de salida
+            corre = punto(120 + i * 10, 42.0005 + i * 0.00025)
+        _dir.recibir(t8, yo['ident'], [{'t': sal + 3600 + 3 * 3600, 'lat': 42.06, 'lon': -8.0}], ahora=sal + 3600 + 3 * 3600)    # tras el límite, de vuelta a casa
+        despues = _dir.publico(t8, c['id'], ahora=sal + 3 * 3600 + 700 + 3600)['corredores'][0]
+        return lejos, cerca, corre, despues
+_l, _c, _r, _d = _privacidad()
+ok(_l['situacion'] == 'sin_empezar' and 'lat' not in _l, 'móvil encendido 40 min antes y lejos de la salida: «Aún sin salir» y sin posición pública')
+ok(_c['situacion'] == 'en_la_salida' and 'lat' in _c, 'a 110 m de la salida sí se ve («En la salida»)')
+ok(_r['situacion'] == 'corriendo' and 'lat' in _r, 'corriendo se ve normal')
+ok('lat' not in _d, 'acabada la carrera, quien no llegó deja de verse en público (de vuelta a casa)')
+
+# --- v1.76.0: minimización: no se guarda lo de antes de la carrera (en casa), ni lo de días después, ni lo de después de llegar ---
+def _minimizacion():
+    ida = [[-8.0, 42.0 + i * 0.0005] for i in range(101)]
+    ruta = {'nombre': 'Recta', 'coords': ida, 'perfil': [], 'distancia_km': 5.5}
+    with tempfile.TemporaryDirectory() as t9:
+        c, yo = _dir.crear(t9, None, 'Corredor', ruta, '2026-11-28', '19:30', lambda *a: {}, limite_h=3)
+        sal = _dir.salida(c).timestamp()
+        for rel, lat in ((-4 * 3600, 42.06), (-1800, 42.001), (600, 42.002), (3 * 3600 + 3000, 42.003), (3 * 86400, 42.07)):
+            _dir.recibir(t9, yo['ident'], [{'t': sal + rel, 'lat': lat, 'lon': -8.0}], ahora=sal + rel + 1)
+        guardados = [json.loads(l)[0] - sal for l in open(_dir._f(t9, c['id'], yo['cid'], 'pts'), encoding='utf-8')]
+        return sorted(round(g) for g in guardados)
+_g = _minimizacion()
+ok(_g == [-1800, 600], f'solo se guarda lo que cae en la carrera: 4 h antes, 50 min tras el límite y 3 días después no ({_g})')
+
 print('\nTODO BIEN' if all(resultados) else f'\nFALLOS: {resultados.count(False)}')
 sys.exit(0 if all(resultados) else 1)
